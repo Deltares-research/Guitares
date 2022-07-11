@@ -71,17 +71,23 @@ class OlMap(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(int, str)
     def polygonModified(self, id, coords):
-        print("Polygon (id=" + str(id) + ") was changed")
-        print(coords)
+#        print("Polygon (id=" + str(id) + ") was changed")
+#        print(coords)
+        if self.polygon_modify_callback:
+            self.polygon_modify_callback(id, coords)
 
     @QtCore.pyqtSlot(int, str)
     def polylineAdded(self, id, coords):
-        print("Polyline (id=" + str(id) + ") was added")
-        print(coords)
+#        print("Polyline (id=" + str(id) + ") was added")
+#        print(coords)
+        if self.polyline_create_callback:
+            self.polyline_create_callback(id, coords)
 
     @QtCore.pyqtSlot(int, str)
     def polylineModified(self, id, coords):
-        print("Polyline (id=" + str(id) + ") was changed")
+#        print("Polyline (id=" + str(id) + ") was changed")
+        if self.polyline_modify_callback:
+            self.polyline_modify_callback(id, coords)
 
     @QtCore.pyqtSlot(int, str)
     def pointAdded(self, id, coords):
@@ -93,11 +99,15 @@ class OlMap(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(int, str)
     def rectangleAdded(self, id, coords):
-        print("Rectngle (id=" + str(id) + ") was added")
+#        print("Rectngle (id=" + str(id) + ") was added")
+        if self.rectangle_create_callback:
+            self.rectangle_create_callback(id, coords)
 
     @QtCore.pyqtSlot(int, str)
     def rectangleModified(self, id, coords):
-        print("Rectangle (id=" + str(id) + ") was changed")
+#        print("Rectangle (id=" + str(id) + ") was changed")
+        if self.rectangle_modify_callback:
+            self.rectangle_modify_callback(id, coords)
 
     def add_layer(self, layer_name, layer_parent):
         self.layer[layer_parent][layer_name] = {}
@@ -110,26 +120,41 @@ class OlMap(QtWidgets.QWidget):
         self.new_polygon.create = create
         self.new_polygon.modify = modify
         self.new_polygon.layer  = layer_name
+        layer_group_name = "_base"
         js_string = "import('/main.js').then(module => {module.drawPolygon('" + layer_group_name + "','" + layer_name + "');});"
         self.view.page().runJavaScript(js_string)
-        # self.polygon_create_callback = None
-        # self.polygon_modify_callback = None
-        # if create:
-        #     self.polygon_create_callback = create
-        # if modify:
-        #     self.polygon_modify_callback = modify
+        self.polygon_create_callback = None
+        self.polygon_modify_callback = None
+        if create:
+            self.polygon_create_callback = create
+        if modify:
+            self.polygon_modify_callback = modify
 
-    def draw_polyline(self, layer_group_name, layer_name):
+    def draw_polyline(self, layer_name, create=None, modify=None):
+        layer_group_name = "_base"
         js_string = "import('/main.js').then(module => {module.drawPolyline('" + layer_group_name + "','" + layer_name + "');});"
         self.view.page().runJavaScript(js_string)
+        self.polyline_create_callback = None
+        self.polyline_modify_callback = None
+        if create:
+            self.polyline_create_callback = create
+        if modify:
+            self.polyline_modify_callback = modify
 
     def draw_point(self, layer_group_name, layer_name):
         js_string = "import('/main.js').then(module => {module.drawPoint('" + layer_group_name + "','" + layer_name + "');});"
         self.view.page().runJavaScript(js_string)
 
-    def draw_rectangle(self, layer_group_name, layer_name):
+    def draw_rectangle(self, layer_name, create=None, modify=None):
+        layer_group_name = "_base"
         js_string = "import('/main.js').then(module => {module.drawRectangle('" + layer_group_name + "','" + layer_name + "');});"
         self.view.page().runJavaScript(js_string)
+        self.rectangle_create_callback = None
+        self.rectangle_modify_callback = None
+        if create:
+            self.rectangle_create_callback = create
+        if modify:
+            self.rectangle_modify_callback = modify
 
     def update_image_layer(self, file_name, extent, srs, proj4):
         js_string = "import('/main.js').then(module => {module.updateImageLayer('" + file_name + "', [" + str(

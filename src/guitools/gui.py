@@ -180,7 +180,7 @@ class GUI:
         if "module" not in self.config["window"]:
             self.config["window"]["module"] = None
         if "variable_group" not in self.config["window"]:
-            self.config["window"]["variable_group"] = ""
+            self.config["window"]["variable_group"] = "_main"
 
         # Menu
             
