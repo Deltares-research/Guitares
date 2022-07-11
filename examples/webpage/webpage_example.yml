@@ -1,0 +1,20 @@
+window:
+  title: A Handy News Comparison App!
+  width: 1030
+  height: 520
+  package: webpage_example
+element:
+  - style: webpage
+    url: https://www.msnbc.com/
+    position:
+      x: 10
+      y: 10
+      width: 500
+      height: 500
+  - style: webpage
+    url: https://www.foxnews.com/
+    position:
+      x: 520
+      y: 10
+      width: 500
+      height: 500
