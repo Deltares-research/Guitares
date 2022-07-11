@@ -1,44 +1,47 @@
-from calculator_gui import getvar, setvar, gui
+from openlayers_test import olt
 
-
-def calculate():
-    a = getvar("calculator", "a")
-    b = getvar("calculator", "b")
-    operator = getvar("calculator", "operator")
-
-    if operator == "plus":
-        answer = a + b
-    elif operator == "minus":
-        answer = a - b
-    elif operator == "times":
-        answer = a * b
-    elif operator == "divided_by":
-        answer = a / b
-#        gui.olmap["main_map"].add_layer("new_layer", "base")
-        gui.olmap["main_map"].draw_polygon("layer1",
-                                           create=add_polygon,
-                                           modify=modify_polygon)
-
-    setvar("calculator", "answer", answer)
-
-    # Update all GUI elements
-    gui.update()
-
+def draw_polygon():
+    olt.gui.olmap["main_map"].draw_polygon("layer1",
+                                       create=add_polygon,
+                                       modify=modify_polygon)
 
 def add_polygon(polid, coords):
-    print("Added")
+    print("Polygon added")
     print(polid)
     print(coords)
-
 
 def modify_polygon(polid, coords):
-    print("Modified")
+    print("Polygon modified")
     print(polid)
     print(coords)
 
-# polygon = None
-# gui.olmap["main_map"].add_layer("new_layer", "base")
-#gui.olmap["main_map"].delete_layer("new_layer")
 
-#p = gui.olmap["main_map"].add_polygon(polygon, "new_layer")
-#gui.olmap["main_map"].delete_polygon(polygon, "new_layer")
+def draw_polyline():
+    olt.gui.olmap["main_map"].draw_polyline("layer1",
+                                       create=add_polyline,
+                                       modify=modify_polyline)
+
+def add_polyline(polid, coords):
+    print("Polyline added")
+    print("ID= " + str(polid))
+    print("Coords = " + str(coords))
+
+def modify_polyline(polid, coords):
+    print("Polyline modified")
+    print("ID= " + str(polid))
+    print("Coords = " + str(coords))
+
+def draw_rectangle():
+    olt.gui.olmap["main_map"].draw_rectangle("layer1",
+                                             create=add_rectangle,
+                                             modify=modify_rectangle)
+
+def add_rectangle(polid, coords):
+    print("Rectangle added")
+    print("ID= " + str(polid))
+    print("Coords = " + str(coords))
+
+def modify_rectangle(polid, coords):
+    print("Rectangle modified")
+    print("ID= " + str(polid))
+    print("Coords = " + str(coords))
