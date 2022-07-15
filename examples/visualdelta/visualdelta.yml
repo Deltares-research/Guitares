@@ -1,0 +1,47 @@
+window:
+  title: The Visual Delta
+  width: 530
+  height: 80
+  package: visualdelta
+  module: operations
+  variable_group: visualdelta
+element:
+  - style: panel
+    title: SSP Scenario
+    position:
+      x: 20
+      y: 20
+      width: -20
+      height: 40
+    element:
+    - style: popupmenu
+      position:
+        x: 20
+        y: 10
+        width: 100
+        height: 20
+      variable: ssp
+      option_value:
+        variable: ssp_values
+      option_string:
+        variable: ssp_strings
+      method: calculate
+      tooltip: Select the operator
+    - style: edit
+      position:
+        x: 150
+        y: 10
+        width: 80
+        height: 20
+      variable: b
+      method: calculate
+    - style: edit
+      position:
+        x: 250
+        y: 10
+        width: 80
+        height: 20
+      text: "="  
+      variable: answer
+      enable: False
+      tooltip: This should be your answer. Is it correct?
