@@ -1,10 +1,10 @@
 from visualdelta import visualdelta
 
 
-def calculate():
+# def calculate():
 
-    a = visualdelta.gui.getvar("visualdelta", "a")
-    b = visualdelta.gui.getvar("visualdelta", "b")
+    # a = visualdelta.gui.getvar("visualdelta", "a")
+    # b = visualdelta.gui.getvar("visualdelta", "b")
     # operator = visualdelta.gui.getvar("visualdelta", "operator")
     #
     # if operator == "plus":

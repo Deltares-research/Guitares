@@ -7,10 +7,10 @@ window:
   variable_group: visualdelta
 element:
   - style: panel
-    title: SSP Scenario
+    title: Choose your scenario, impact and exposure
     position:
       x: 20
-      y: 20
+      y: 15
       width: -20
       height: 40
     element:
@@ -25,23 +25,25 @@ element:
         variable: ssp_values
       option_string:
         variable: ssp_strings
-      method: calculate
-      tooltip: Select the operator
-    - style: edit
+    - style: popupmenu
       position:
-        x: 150
+        x: 140
         y: 10
-        width: 80
+        width: 100
         height: 20
-      variable: b
-      method: calculate
-    - style: edit
+      variable: impact
+      option_value:
+        variable: impact_values
+      option_string:
+        variable: impact_strings
+    - style: popupmenu
       position:
-        x: 250
+        x: 260
         y: 10
-        width: 80
+        width: 100
         height: 20
-      text: "="  
-      variable: answer
-      enable: False
-      tooltip: This should be your answer. Is it correct?
+      variable: exposure
+      option_value:
+        variable: exposure_values
+      option_string:
+        variable: exposure_strings
