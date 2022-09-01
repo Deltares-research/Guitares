@@ -35,6 +35,7 @@ class VisualDelta:
         self.gui.setvar("visualdelta", "exposure_values", ["Population", "Transport", "Critical Infrastructure", "Economy", "Other..."])
         self.gui.setvar("visualdelta", "exposure_strings", ["Population", "Transport", "Critical Infrastructure", "Economy", "Other..."])
         self.gui.setvar("visualdelta", "adaptation", "Floodwall")
+        self.gui.setvar("visualdelta", "adaptation_text", "Floodwall")
 
 
 visualdelta = VisualDelta()

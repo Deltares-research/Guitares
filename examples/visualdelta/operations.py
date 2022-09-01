@@ -1,7 +1,7 @@
 from visualdelta import visualdelta
 
 
-# def calculate():
+def add_option():
 
     # a = visualdelta.gui.getvar("visualdelta", "a")
     # b = visualdelta.gui.getvar("visualdelta", "b")
@@ -19,6 +19,10 @@ from visualdelta import visualdelta
     #     answer = a / b
     #
     # visualdelta.gui.setvar("visualdelta", "answer", answer)
-    #
-    # # Update all GUI elements
-    # visualdelta.gui.update()
+
+    # Update all GUI elements
+    visualdelta.gui.update()
+
+def calculate_slr():
+    slr =0
+    return slr

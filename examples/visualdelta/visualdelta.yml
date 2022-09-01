@@ -10,7 +10,7 @@ element:
     title: Choose your scenario, impact and exposure
     position:
       x: 20
-      y: 15
+      y: 10
       width: -20
       height: 40
     element:
@@ -18,7 +18,7 @@ element:
       position:
         x: 20
         y: 10
-        width: 100
+        width: 60
         height: 20
       variable: ssp
       option_value:
@@ -27,9 +27,9 @@ element:
         variable: ssp_strings
     - style: popupmenu
       position:
-        x: 140
+        x: 100
         y: 10
-        width: 100
+        width: 60
         height: 20
       variable: impact
       option_value:
@@ -38,12 +38,28 @@ element:
         variable: impact_strings
     - style: popupmenu
       position:
-        x: 260
+        x: 180
         y: 10
-        width: 100
+        width: 60
         height: 20
       variable: exposure
       option_value:
         variable: exposure_values
       option_string:
         variable: exposure_strings
+    - style: pushbutton
+      position:
+        x: 260
+        y: 10
+        width: 20
+        height: 20
+      method: add_option
+      icon: "adaptation_icons\\floodwall.jpg"
+    - style: pushbutton
+      text: Elevate
+      position:
+        x: 330
+        y: 10
+        width: 50
+        height: 20
+      method: add_option
