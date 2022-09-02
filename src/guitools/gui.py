@@ -136,6 +136,10 @@ class GUI:
                     from .pyqt5.webpage import WebPage
                     WebPage(element, parent)
 
+                if element["style"] == "slider":
+                    from .pyqt5.slider import Slider
+                    element["widget_group"] = Slider(element, parent)
+
                 # And set the values    
                 if "widget_group" in element:
                     element["widget_group"].set()
