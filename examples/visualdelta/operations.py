@@ -1,28 +1,16 @@
 from visualdelta import visualdelta
+import pandas as pd
+import numpy as np
 
 
 def add_option():
 
-    # a = visualdelta.gui.getvar("visualdelta", "a")
-    # b = visualdelta.gui.getvar("visualdelta", "b")
-    # operator = visualdelta.gui.getvar("visualdelta", "operator")
-    #
-    # if operator == "plus":
-    #     answer = a + b
-    # elif operator == "minus":
-    #     answer = a - b
-    # elif operator == "times":
-    #     answer = a * b
-    # elif operator == "divided_by":
-    #     if b == 0.0:
-    #         b = 1.0e-9
-    #     answer = a / b
-    #
-    # visualdelta.gui.setvar("visualdelta", "answer", answer)
-
     # Update all GUI elements
     visualdelta.gui.update()
 
-def calculate_slr():
-    slr =0
-    return slr
+def calculate_slr(year):
+    slr_ts = pd.read_csv('slr\\SLR_245.csv', index_col=0, header=0)
+    slr_val = np.interp(year,slr_ts.index, slr_ts['0.5'])
+    slr_low = np.interp(year,slr_ts.index, slr_ts['0.17'])
+    slr_high = np.interp(year, slr_ts.index, slr_ts['0.83'])
+    print('Median SLR for SSP2-4.5 in year {} is {:.2f} (likely range {:.2f} - {:.2f})'.format(year,slr_val, slr_low, slr_high))

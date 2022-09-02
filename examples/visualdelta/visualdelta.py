@@ -25,8 +25,8 @@ class VisualDelta:
         # self.gui.setvar("visualdelta", "operator", "SSP1-2.6")
         # self.gui.setvar("visualdelta", "operator_values", ["plus", "minus", "times", "divided_by"])
         # self.gui.setvar("visualdelta", "operator_strings", ["+", "-", "*", "/"])
-        self.gui.setvar("visualdelta", "ssp", "SSP2-4.5")
-        self.gui.setvar("visualdelta", "ssp_values", ["SSP1-1.9", "SSP1-2.6", "SSP2-4.5", "SSP3-7.0", "SSP5-8.5"])
+        self.gui.setvar("visualdelta", "ssp", 245)
+        self.gui.setvar("visualdelta", "ssp_values", [119, 126, 245, 370, 585])
         self.gui.setvar("visualdelta", "ssp_strings", ["SSP1-1.9", "SSP1-2.6", "SSP2-4.5", "SSP3-7.0", "SSP5-8.5"])
         self.gui.setvar("visualdelta", "impact", "Flooding")
         self.gui.setvar("visualdelta", "impact_values", ["Flooding", "Erosion", "Salt Intrusion", "Drought", "Other..."])
@@ -36,6 +36,7 @@ class VisualDelta:
         self.gui.setvar("visualdelta", "exposure_strings", ["Population", "Transport", "Critical Infrastructure", "Economy", "Other..."])
         self.gui.setvar("visualdelta", "adaptation", "Floodwall")
         self.gui.setvar("visualdelta", "adaptation_text", "Floodwall")
+        self.gui.setvar("visualdelta", "year", 2020)
 
 
 visualdelta = VisualDelta()
