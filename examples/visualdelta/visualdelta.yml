@@ -25,11 +25,12 @@ element:
         variable: ssp_values
       option_string:
         variable: ssp_strings
+      method: calculate_slr
     - style: popupmenu
       position:
         x: 100
         y: 10
-        width: 60
+        width: 100
         height: 20
       variable: impact
       option_value:
@@ -38,9 +39,9 @@ element:
         variable: impact_strings
     - style: popupmenu
       position:
-        x: 180
+        x: 220
         y: 10
-        width: 60
+        width: 100
         height: 20
       variable: exposure
       option_value:
@@ -49,7 +50,7 @@ element:
         variable: exposure_strings
     - style: pushbutton
       position:
-        x: 260
+        x: 340
         y: 10
         width: 20
         height: 20
@@ -58,17 +59,26 @@ element:
     - style: pushbutton
       text: Elevate
       position:
-        x: 330
+        x: 380
         y: 10
         width: 50
         height: 20
       method: add_option
     - style: slider
-      test: Year
+      text: Year
       position:
         x: 200
         y: 50
-        width: 100
+        width: 250
         height: 20
       variable: year
       method: calculate_slr
+    # - style: pushbutton
+      # text: Update Scenario
+      # position:
+        # x: 20
+        # y: 50
+        # width: 8
+        # height: 20
+      # variable: year
+      # method: calculate_slr

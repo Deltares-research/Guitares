@@ -15,7 +15,7 @@ class Slider(WidgetGroup):
         #ToDO: Make minimum and maximum flexible
         s.setMinimum(2000)
         s.setMaximum(2300)
-        s.setTickInterval(1)
+        s.setTickInterval(10)
         s.setSingleStep(1)
         s.setTickPosition(QSlider.TicksBothSides)
         self.widgets.append(s)

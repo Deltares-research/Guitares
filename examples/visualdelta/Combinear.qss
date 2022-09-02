@@ -793,7 +793,7 @@ QSlider::groove:horizontal
 
 QSlider::sub-page:horizontal 
 {
-	background-color: #b78620;
+	background-color: #32ccef;
 
 }
 
@@ -807,7 +807,7 @@ QSlider::add-page:horizontal
 
 QSlider::handle:horizontal 
 {
-	background-color: #b78620;
+	background-color: #32ccef;
 	width: 14px;
 	margin-top: -6px;
 	margin-bottom: -6px;
@@ -818,7 +818,7 @@ QSlider::handle:horizontal
 
 QSlider::handle:horizontal:hover 
 {
-	background-color: #d89e25;
+	background-color: #91e0f2;
 	border-radius: 6px;
 
 }
