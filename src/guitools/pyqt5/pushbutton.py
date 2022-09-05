@@ -24,8 +24,9 @@ class PushButton(WidgetGroup):
                 print("No method found in element !")
         if "icon" in element.keys():
             b.setIcon(QIcon(element["icon"]))
-        else:
-            print("No button icon found in element !")
+        if "tooltip" in element.keys():
+            b.setToolTip(element["tooltip"])
+
 
     def set(self):
         self.set_dependencies()

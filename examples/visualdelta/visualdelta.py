@@ -14,8 +14,8 @@ class VisualDelta:
         self.gui = GUI(self,
                        framework="pyqt5",
                        splash_file="visualdelta.jpg",
-                       config_file="visualdelta.yml",
-                       stylesheet="Combinear.qss")
+                       config_file="visualdelta.yml")#,
+                       # stylesheet="Combinear.qss")
 
     def initialize(self):
 
