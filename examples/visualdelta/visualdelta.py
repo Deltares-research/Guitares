@@ -14,17 +14,12 @@ class VisualDelta:
         self.gui = GUI(self,
                        framework="pyqt5",
                        splash_file="visualdelta.jpg",
-                       config_file="visualdelta.yml")#,
-                       # stylesheet="Combinear.qss")
+                       config_file="visualdelta.yml",
+                       stylesheet="Combinear.qss")
 
     def initialize(self):
 
         # Define GUI variables
-        # self.gui.setvar("visualdelta", "b", 2.0)
-        # self.gui.setvar("visualdelta", "answer", 3.0)
-        # self.gui.setvar("visualdelta", "operator", "SSP1-2.6")
-        # self.gui.setvar("visualdelta", "operator_values", ["plus", "minus", "times", "divided_by"])
-        # self.gui.setvar("visualdelta", "operator_strings", ["+", "-", "*", "/"])
         self.gui.setvar("visualdelta", "ssp", 245)
         self.gui.setvar("visualdelta", "ssp_values", [119, 126, 245, 370, 585])
         self.gui.setvar("visualdelta", "ssp_strings", ["SSP1-1.9", "SSP1-2.6", "SSP2-4.5", "SSP3-7.0", "SSP5-8.5"])
@@ -37,6 +32,8 @@ class VisualDelta:
         self.gui.setvar("visualdelta", "adaptation", "Floodwall")
         self.gui.setvar("visualdelta", "adaptation_text", "Floodwall")
         self.gui.setvar("visualdelta", "year", 2020)
+        self.gui.setvar("visualdelta", "slr", 0.)
+        self.gui.setvar("visualdelta", "slr_string", "{} m ({} - {} m)".format(0.,0.,0.))
 
 
 visualdelta = VisualDelta()

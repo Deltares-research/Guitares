@@ -1,6 +1,6 @@
 window:
   title: The Visual Delta
-  width: 530
+  width: 650
   height: 150
   package: visualdelta
   module: operations
@@ -94,9 +94,27 @@ element:
         x: 200
         y: 50
         width: 250
-        height: 20
+        height: 15
       variable: year
       method: calculate_slr
+    - style: edit
+      position:
+        x: 200
+        y: 70
+        width: 30
+        height: 15
+      text: "Current Year:"  
+      variable: year
+      enable: False
+    - style: edit
+      position:
+        x: 400
+        y: 70
+        width: 50
+        height: 15
+      text: "Median SLR [m]:"  
+      variable: slr
+      enable: False
     # - style: pushbutton
       # text: Update Scenario
       # position:
