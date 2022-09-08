@@ -5,7 +5,7 @@ Created on Tue Jul  5 13:40:07 2022
 @author: ormondt
 """
 
-from guitools.gui import GUI
+from src.guitools.gui import GUI
 
 
 class Calculator:

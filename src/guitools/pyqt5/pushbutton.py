@@ -1,4 +1,5 @@
 from PyQt5.QtWidgets import QPushButton
+from PyQt5.QtGui import QIcon
 #from PyQt5.QtWidgets import QLabel
 #from PyQt5 import QtCore
 
@@ -21,6 +22,11 @@ class PushButton(WidgetGroup):
                 b.clicked.connect(fcn)
             else:
                 print("No method found in element !")
+        if "icon" in element.keys():
+            b.setIcon(QIcon(element["icon"]))
+        if "tooltip" in element.keys():
+            b.setToolTip(element["tooltip"])
+
 
     def set(self):
         self.set_dependencies()
