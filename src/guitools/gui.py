@@ -44,7 +44,7 @@ class GUI:
         self.config["toolbar"] = toolbar
         self.config["element"] = element
 
-        self.olmap = {}
+        self.map_widget = {}
         
         if self.config_file:
             # Read element file
@@ -130,7 +130,14 @@ class GUI:
 
                 elif element["style"] == "olmap":
                     from .pyqt5.olmap import OlMap
-                    self.olmap[element["id"]] = OlMap(element, parent)
+                    element["widget_group"] = OlMap(element, parent)
+                    self.map_widget[element["id"]] = element["widget_group"]
+
+                elif element["style"] == "mapbox":
+                    from .pyqt5.mapbox import MapBox
+#                    self.olmap[element["id"]] = MapBox(element, parent)
+                    element["widget_group"] = MapBox(element, parent)
+                    self.map_widget[element["id"]] = element["widget_group"]
 
                 elif element["style"] == "webpage":
                     from .pyqt5.webpage import WebPage

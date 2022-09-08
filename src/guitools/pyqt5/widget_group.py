@@ -182,3 +182,6 @@ class WidgetGroup:
         #     return False
 
         return True
+
+    def set(self):
+        pass

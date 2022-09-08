@@ -2,3 +2,5 @@
 /examples/openlayers/__pycache__
 /src/guitools/pyqt5/__pycache__
 __pycache__
+.idea
+deltares_guitools.egg-info

@@ -67,6 +67,10 @@ class MainWindow(QMainWindow):
             elif element["style"] == "olmap":
                 x0, y0, wdt, hgt = self.get_position_from_string(element["position"], parent)
                 element["widget"].setGeometry(x0, y0, wdt, hgt)
+            elif element["style"] == "mapbox":
+                x0, y0, wdt, hgt = self.get_position_from_string(element["position"], parent)
+#                element["widget"].view.setGeometry(x0, y0, wdt, hgt)
+                element["widget"].setGeometry(x0, y0, wdt, hgt)
             elif element["style"] == "webpage":
                 x0, y0, wdt, hgt = self.get_position_from_string(element["position"], parent)
                 element["widget"].setGeometry(x0, y0, wdt, hgt)
