@@ -53,9 +53,13 @@ class Slider(WidgetGroup):
 
         fcn = lambda: self.callback()
         s.valueChanged.connect(fcn)
+        if self.element["module"] and "slide_method" in self.element:
+            fcn = getattr(self.element["module"], self.element["slide_method"])
+            s.valueChanged.connect(fcn)
+
         if self.element["module"] and "method" in self.element:
             fcn = getattr(self.element["module"], self.element["method"])
-            s.valueChanged.connect(fcn)
+            s.sliderReleased.connect(fcn)
 
     def set(self):
         if self.check_variables():

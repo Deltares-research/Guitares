@@ -2,6 +2,12 @@ import os
 import yaml
 import importlib
 
+import http.server
+import socketserver
+from urllib.request import urlopen
+from urllib.error import *
+import threading
+
 
 class GUI:
     def __init__(self, module,
@@ -9,7 +15,9 @@ class GUI:
                  splash_file=None,
                  stylesheet=None,
                  config_path=None,
-                 config_file=None):
+                 config_file=None,
+                 server_path=None,
+                 server_port=3000):
 
         self.module      = module
         self.framework   = framework
@@ -20,11 +28,29 @@ class GUI:
         self.splash      = None
         self.config      = {}
         self.variables   = {}
+        self.server_path = server_path
+        self.server_port = server_port
+
+        if not self.config_path:
+            self.config_path = os.getcwd()
+
+        if server_path:
+
+            # Check if something's already running on port 3000.
+            try:
+                html = urlopen("http://localhost:" + str(server_port) + "/")
+                print("Found server running at port 3000 ...")
+            except:
+                print("Starting http server ...")
+#                threading.Thread(target=run_server(server_path, server_port)).start()
+                threading.Thread(target=run_server).start()
+
+
 
     def show_splash(self):
         if self.framework == "pyqt5" and self.splash_file:
             from .pyqt5.splash import Splash
-            self.splash = Splash(self.splash_file, seconds=2.0).splash
+            self.splash = Splash(os.path.join(self.config_path, self.splash_file), seconds=2.0).splash
 
     def close_splash(self):
         if self.splash:
@@ -36,8 +62,9 @@ class GUI:
               toolbar={},
               element=[]):
 
+
         if self.stylesheet:
-            app.setStyleSheet(open(self.stylesheet, "r").read())
+            app.setStyleSheet(open(os.path.join(self.config_path, self.stylesheet), "r").read())
 
         self.config["window"]  = window
         self.config["menu"]    = menu
@@ -48,16 +75,11 @@ class GUI:
         
         if self.config_file:
             # Read element file
-            if not self.config_path:
-                self.config_path = os.getcwd()
             self.read_gui_config(self.config_path, self.config_file)
 
         self.set_missing_config_values()
 
-        # Splash screen
-
-
-        # Add main window        
+        # Add main window
         if self.framework=="pyqt5":        
             from .pyqt5.main_window import MainWindow
 
@@ -136,12 +158,16 @@ class GUI:
                 elif element["style"] == "mapbox":
                     from .pyqt5.mapbox import MapBox
 #                    self.olmap[element["id"]] = MapBox(element, parent)
-                    element["widget_group"] = MapBox(element, parent)
+                    element["widget_group"] = MapBox(element,
+                                                     parent,
+                                                     self.server_path,
+                                                     self.server_port)
                     self.map_widget[element["id"]] = element["widget_group"]
 
                 elif element["style"] == "webpage":
                     from .pyqt5.webpage import WebPage
-                    WebPage(element, parent)
+                    pass
+#                    WebPage(element, parent)
 
                 if element["style"] == "slider":
                     from .pyqt5.slider import Slider
@@ -167,7 +193,7 @@ class GUI:
     
     def read_gui_elements(self, path, file_name):
         # Return just the elements    
-        d = yaml2dict(file_name)
+        d = yaml2dict(os.path.join(path, file_name))
         element = d["element"]
         for el in d["element"]:
             if el["style"] == "tabpanel":
@@ -258,6 +284,10 @@ class GUI:
                         if "variable_group" not in el["option_string"]:
                             el["option_string"]["variable_group"] = el["variable_group"]
 
+                # Icon paths
+                if "icon" in el:
+                    el["icon"] = os.path.join(self.config_path, el["icon"])
+
                 # Other missing default values
                 default = {}
                 default["text"]       = ""
@@ -266,6 +296,8 @@ class GUI:
                 for key, val in default.items():
                     if key not in el:
                         el[key] = val
+
+
 
     def update(self):
         # Update all elements
@@ -314,3 +346,22 @@ def yaml2dict(file_name):
     file = open(file_name,"r")
     dct = yaml.load(file, Loader=yaml.FullLoader)
     return dct
+
+#def run_server(server_path, server_port):
+def run_server():
+
+    server_path = "d:\\checkouts\\github\\GUITools\\examples\\visualdelta\\server"
+    server_port = 3000
+
+    os.chdir(server_path)
+    PORT = server_port
+    Handler = http.server.SimpleHTTPRequestHandler
+    Handler.extensions_map['.js']     = 'text/javascript'
+    Handler.extensions_map['.mjs']    = 'text/javascript'
+    Handler.extensions_map['.css']    = 'text/css'
+    Handler.extensions_map['.html']   = 'text/html'
+    Handler.extensions_map['main.js'] = 'module'
+    print("Server path : " + server_path)
+    with socketserver.TCPServer(("", PORT), Handler) as httpd:
+        print("Serving at port", PORT)
+        httpd.serve_forever()

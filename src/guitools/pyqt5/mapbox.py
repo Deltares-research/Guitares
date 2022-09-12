@@ -3,11 +3,21 @@ import functools
 from PyQt5 import QtWebEngineWidgets
 from PyQt5 import QtCore, QtWidgets, QtWebChannel
 import json
-import threading
-import http.server
-import socketserver
-from urllib.request import urlopen
-from urllib.error import *
+import numpy as np
+# import threading
+# import http.server
+# import socketserver
+# from urllib.request import urlopen
+# from urllib.error import *
+
+from PIL import Image
+import matplotlib
+from matplotlib import cm
+# from osgeo import gdal
+import rasterio
+import rasterio.features
+from rasterio.warp import calculate_default_transform, reproject, Resampling, transform_bounds
+from rasterio import MemoryFile
 
 from .widget_group import WidgetGroup
 #from .overlays import ImageOverlay
@@ -17,93 +27,64 @@ class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
         print("javaScriptConsoleMessage: ", level, message, lineNumber, sourceID)
 
 
-def create_server():
-
-    # Path where web server is running
-    path = os.path.abspath(__file__)
-    dir_path = os.path.dirname(path)
-    dir_path = os.path.join(dir_path, "mapbox")
-
-    os.chdir(dir_path)
-    PORT = 3000
-    Handler = http.server.SimpleHTTPRequestHandler
-    Handler.extensions_map['.js']     = 'text/javascript'
-    Handler.extensions_map['.mjs']    = 'text/javascript'
-    Handler.extensions_map['.css']    = 'text/css'
-    Handler.extensions_map['.html']   = 'text/html'
-    Handler.extensions_map['main.js'] = 'module'
-    print("Server path : " + dir_path)
-    with socketserver.TCPServer(("", PORT), Handler) as httpd:
-        print("Serving at port", PORT)
-        httpd.serve_forever()
+# def create_server():
+#
+#     # Path where web server is running
+#     path = os.path.abspath(__file__)
+#     dir_path = os.path.dirname(path)
+#     dir_path = os.path.join(dir_path, "mapbox")
+#
+#     os.chdir(dir_path)
+#     PORT = 3000
+#     Handler = http.server.SimpleHTTPRequestHandler
+#     Handler.extensions_map['.js']     = 'text/javascript'
+#     Handler.extensions_map['.mjs']    = 'text/javascript'
+#     Handler.extensions_map['.css']    = 'text/css'
+#     Handler.extensions_map['.html']   = 'text/html'
+#     Handler.extensions_map['main.js'] = 'module'
+#     print("Server path : " + dir_path)
+#     with socketserver.TCPServer(("", PORT), Handler) as httpd:
+#         print("Serving at port", PORT)
+#         httpd.serve_forever()
 
 class MapBox(QtWidgets.QWidget):
 #class MapBox(WidgetGroup):
 
-    def __init__(self, element, parent):
-#        super().__init__(element, parent)
+    def __init__(self, element, parent, server_path, server_port):
         super().__init__(parent)
 
-        # Path where web server is running
-        path = os.path.abspath(__file__)
-        dir_path = os.path.dirname(path)
-        dir_path = os.path.join(dir_path, "mapbox")
+            # # Path where web server is running
+            # path = os.path.abspath(__file__)
+            # dir_path = os.path.dirname(path)
+            # dir_path = os.path.join(dir_path, "mapbox")
+            #
+            # # Check if something's already running on port 3000.
+            # try:
+            #     html = urlopen("http://localhost:3000/")
+            #     print("Found server running at port 3000 ...")
+            # except:
+            #     print("Starting http server ...")
+            # threading.Thread(target=create_server).start()
 
-        # Check if something's already running on port 3000.
-        try:
-            html = urlopen("http://localhost:3000/")
-            print("Found server running at port 3000 ...")
-        except:
-            print("Starting http server ...")
-            threading.Thread(target=create_server).start()
+        self.server_path = server_path
 
-#        b = QtWidgets.QWidget(parent)
-#        self.widgets.append(b)
         self.map_moved = None
 
-        self.server_path = dir_path
-
         self.layers = {}
-
-        # b.view = QtWebEngineWidgets.QWebEngineView(parent)
-        # channel = QtWebChannel.QWebChannel()
-        # b.view.page().profile().clearHttpCache()
-
 
         view = self.view = QtWebEngineWidgets.QWebEngineView(parent)
         channel = self.channel = QtWebChannel.QWebChannel()
         view.page().profile().clearHttpCache()
         view.setGeometry(10, 10, 100, 100)
 
-
-#        b.view.setGeometry(10, 10, 100, 100)
-
-        # x0, y0, wdt, hgt = element["window"].get_position_from_string(self.element["position"], self.parent)
-        # b.view.setGeometry(x0, y0, wdt, hgt)
-
-        # page = WebEnginePage(b.view)
-        # b.view.setPage(page)
-
-
         page = WebEnginePage(view)
         view.setPage(page)
 
-
-        channel.registerObject("OlMap", self)
         view.page().setWebChannel(channel)
 
-        view.load(QtCore.QUrl('http://localhost:3000/'))
+        view.load(QtCore.QUrl('http://localhost:' + str(server_port) + '/'))
 
         channel.registerObject("MapBox", self)
-
-#        b.view.page().setWebChannel(channel)
-
-#        b.view.load(QtCore.QUrl('http://localhost:3000/'))
-
-#        b.view.load(QtCore.QUrl('https://opendap.deltares.nl/static/deltares/cosmos/nopp_event_viewer/index.html'))
-
-#        element["widget"] = b
-
 
         element["widget"] = view
 
@@ -236,28 +217,81 @@ class MapBox(QtWidgets.QWidget):
         print(js_string)
  #       self.view.page().runJavaScript(js_string)
 
-    def add_image_layer(self, file_name, layer_name, layer_group_name, bounds):
-        # js_string = "import('/main.js').then(module => {module.updateImageLayer('" + file_name + "', [" + str(
-        #     extent[0]) + "," + str(extent[1]) + "," + str(extent[2]) + "," + str(
-        #     extent[3]) + "],'" + srs + "','" + proj4 + "');});"
-#        overlay = ImageOverlay(file_name=image_file, file_type="tif")
-        # First copy image over
+    def add_image_layer(self,
+                        image_file,
+                        layer_name=None,
+                        layer_group_name=None):
+
+        dataset = rasterio.open(image_file)
+
+        src_crs = 'EPSG:4326'
+        dst_crs = 'EPSG:3857'
+
+        with rasterio.open(image_file) as src:
+            transform, width, height = calculate_default_transform(
+                src.crs, dst_crs, src.width, src.height, *src.bounds)
+            kwargs = src.meta.copy()
+            kwargs.update({
+                'crs': dst_crs,
+                'transform': transform,
+                'width': width,
+                'height': height
+            })
+            bnds = src.bounds
+
+            mem_file = MemoryFile()
+            with mem_file.open(**kwargs) as dst:
+                for i in range(1, src.count + 1):
+                    reproject(
+                        source=rasterio.band(src, i),
+                        destination=rasterio.band(dst, i),
+                        src_transform=src.transform,
+                        src_crs=src.crs,
+                        dst_transform=transform,
+                        dst_crs=dst_crs,
+                        resampling=Resampling.nearest)
+
+                band1 = dst.read(1)
+
+        new_bounds = transform_bounds(dst_crs, src_crs,
+                                      dst.bounds[0],
+                                      dst.bounds[1],
+                                      dst.bounds[2],
+                                      dst.bounds[3])
+        isn = np.where(band1 < 0.001)
+        band1[isn] = np.nan
+
+        band1 = np.flipud(band1)
+        cmin = np.nanmin(band1)
+        cmax = np.nanmax(band1)
+
+        norm = matplotlib.colors.Normalize(vmin=cmin, vmax=cmax)
+        vnorm = norm(band1)
+
+        im = Image.fromarray(np.uint8(cm.gist_earth(vnorm) * 255))
+
+        overlay_file = "overlay.png"
+        im.save(os.path.join(self.server_path, overlay_file))
+
+        bounds = [[new_bounds[0], new_bounds[2]], [new_bounds[3], new_bounds[1]]]
 
         layer = Layer(name=layer_name, type="image")
         layer_group = self.find_layer_group(layer_group_name)
         layer_group[layer_name] = layer
         bounds_string = "[[" + str(bounds[0][0]) + "," + str(bounds[0][1]) + "],[" + str(bounds[1][0]) + "," + str(bounds[1][1]) + "]]"
-        js_string = "import('/main.js').then(module => {module.addImageLayer('" + file_name + "','" + layer_name + "','" + layer_group_name + "'," + bounds_string + ")});"
-#        print(js_string)
+        js_string = "import('/main.js').then(module => {module.addImageLayer('" + overlay_file + "','" + layer_name + "','" + layer_group_name + "'," + bounds_string + ")});"
         self.view.page().runJavaScript(js_string)
 
     def remove_layer(self, layer_name, layer_group_name):
         layer_group = self.find_layer_group(layer_group_name)
-        id = layer_group[layer_name].id
-        js_string = "import('/main.js').then(module => {module.removeLayer('" + id + "')});"
-        self.view.page().runJavaScript(js_string)
-        # Now remove layer from layer group
-        layer_group.pop(layer_name)
+        if layer_group:
+            if layer_name in layer_group:
+                id = layer_group[layer_name].id
+                if id:
+                    js_string = "import('/main.js').then(module => {module.removeLayer('" + id + "')});"
+                    self.view.page().runJavaScript(js_string)
+                # Now remove layer from layer group
+                layer_group.pop(layer_name)
 
     # def show_image_layer(self):
     #     js_string = "import('/main.js').then(module => {module.showImageLayer()});"
@@ -266,9 +300,11 @@ class MapBox(QtWidgets.QWidget):
     def add_layer_group(self, name, parent=None):
         if parent:
             parent_layer = self.find_layer_group(parent)
-            parent_layer[name] = {}
+            if parent_layer:
+                parent_layer[name] = {}
         else:
-            self.layer_group[name] = {}
+            if name not in self.layer_group:
+                self.layer_group[name] = {}
 
     def find_layer_group(self, name):
         layer_group = tree_traverse(self.layer_group, name)

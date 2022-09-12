@@ -6,6 +6,14 @@ window:
   module: operations
   variable_group: visualdelta
 element:
+  - style: mapbox
+    id: main_map
+    position:
+      x: 20
+      y: 120
+      width: -20
+      height: -20
+    module: mapbox_map
   - style: panel
     title: Select...
     position:
@@ -26,7 +34,7 @@ element:
         variable: ssp_values
       option_string:
         variable: ssp_strings
-      method: calculate_slr
+      method: change_scenario
     - style: popupmenu
       text: Impact
       position:
@@ -39,6 +47,7 @@ element:
         variable: impact_values
       option_string:
         variable: impact_strings
+      method: change_impact
     - style: popupmenu
       text: Exposure
       position:
@@ -51,6 +60,7 @@ element:
         variable: exposure_values
       option_string:
         variable: exposure_strings
+      method: change_exposure
     - style: pushbutton
       title: Adaptation options
       position:
@@ -97,7 +107,8 @@ element:
         width: 250
         height: 15
       variable: year
-      method: calculate_slr
+      slide_method: change_year_slider
+      method: change_year
     - style: edit
       position:
         x: 300
@@ -114,22 +125,5 @@ element:
         width: 50
         height: 15
       text: "Median SLR [m]:"  
-      variable: slr
+      variable: slr_string
       enable: False
-  - style: mapbox
-    id: main_map
-    position:
-      x: 20
-      y: 120
-      width: -20
-      height: -20
-    module: mapbox_map
-      # - style: pushbutton
-      # text: Update Scenario
-      # position:
-        # x: 20
-        # y: 50
-        # width: 8
-        # height: 20
-      # variable: year
-      # method: calculate_slr
