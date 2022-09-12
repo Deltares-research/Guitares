@@ -1,7 +1,7 @@
 window:
   title: The Visual Delta
   width: 650
-  height: 150
+  height: 550
   package: visualdelta
   module: operations
   variable_group: visualdelta
@@ -54,16 +54,17 @@ element:
     - style: pushbutton
       title: Adaptation options
       position:
-        x: 200
+        x: 280
         y: 10
         width: 20
         height: 20
       method: add_option
+      Text: Adaptation options
       icon: "adaptation_icons\\floodwall.jpg"
       tooltip: Floodwall or levee
     - style: pushbutton
       position:
-        x: 230
+        x: 310
         y: 10
         width: 20
         height: 20
@@ -72,7 +73,7 @@ element:
       tooltip: Elevate
     - style: pushbutton
       position:
-        x: 260
+        x: 340
         y: 10
         width: 20
         height: 20
@@ -81,7 +82,7 @@ element:
       tooltip: Floodproof
     - style: pushbutton
       position:
-        x: 290
+        x: 370
         y: 10
         width: 20
         height: 20
@@ -91,7 +92,7 @@ element:
     - style: slider
       text: Year
       position:
-        x: 200
+        x: 300
         y: 50
         width: 250
         height: 15
@@ -99,23 +100,31 @@ element:
       method: calculate_slr
     - style: edit
       position:
-        x: 200
+        x: 300
         y: 70
         width: 30
         height: 15
-      text: "Current Year:"  
+      text: "Selected Year:"
       variable: year
       enable: False
     - style: edit
       position:
-        x: 400
+        x: 500
         y: 70
         width: 50
         height: 15
       text: "Median SLR [m]:"  
       variable: slr
       enable: False
-    # - style: pushbutton
+  - style: mapbox
+    id: main_map
+    position:
+      x: 20
+      y: 120
+      width: -20
+      height: -20
+    module: mapbox_map
+      # - style: pushbutton
       # text: Update Scenario
       # position:
         # x: 20
