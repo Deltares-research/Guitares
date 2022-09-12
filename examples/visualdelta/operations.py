@@ -2,15 +2,6 @@ from visualdelta import visualdelta
 import pandas as pd
 import numpy as np
 import os
-# from PIL import Image
-# import matplotlib
-# from matplotlib import cm
-# # from osgeo import gdal
-# import rasterio
-# import rasterio.features
-# from rasterio.warp import calculate_default_transform, reproject, Resampling, transform_bounds
-# from rasterio import MemoryFile
-
 
 def add_option():
 
@@ -18,6 +9,7 @@ def add_option():
     visualdelta.gui.update()
 
 def change_scenario():
+    # Get new value for ssp
     visualdelta.ssp = visualdelta.gui.getvar("visualdelta", "ssp")
     # First calculate SLR (and update GUI)
     calculate_slr()
@@ -25,6 +17,7 @@ def change_scenario():
     update_flood_map()
 
 def change_impact():
+    # Get new value for impact
     visualdelta.impact = visualdelta.gui.getvar("visualdelta", "impact")
     # First calculate SLR (and update GUI)
     calculate_slr()
@@ -32,6 +25,7 @@ def change_impact():
     update_flood_map()
 
 def change_exposure():
+    # Get new value for exposure
     visualdelta.exposure = visualdelta.gui.getvar("visualdelta", "exposure")
     # First calculate SLR (and update GUI)
     calculate_slr()
@@ -39,6 +33,7 @@ def change_exposure():
     update_flood_map()
 
 def change_year():
+    # Get new value for year
     visualdelta.year = visualdelta.gui.getvar("visualdelta", "year")
     # First calculate SLR (and update GUI)
     calculate_slr()
@@ -51,6 +46,7 @@ def change_year_slider():
     calculate_slr()
 
 def calculate_slr():
+    # Compute SLR
     csv_file = os.path.join(visualdelta.main_path, "slr", 'SLR_{}.csv'.format(visualdelta.ssp))
     slr_ts = pd.read_csv(csv_file, index_col=0, header=0)
     slr_val = np.interp(visualdelta.year, slr_ts.index, slr_ts['0.5'])
@@ -83,7 +79,7 @@ def update_flood_map():
     layer_name = "flood_map_layer"
     layer_group_name = "flood_map_layer_group"
 
-    # Add layer group
+    # Add layer group (this only does something when there is no layer group with layer_group_name)
     visualdelta.gui.map_widget["main_map"].add_layer_group(layer_group_name)
 
     # Remove old layer from layer group
@@ -95,60 +91,3 @@ def update_flood_map():
                                                            layer_name=layer_name,
                                                            layer_group_name=layer_group_name)
 
-
-#     dataset = rasterio.open(image_file)
-#
-#     src_crs = 'EPSG:4326'
-#     dst_crs = 'EPSG:3857'
-#
-#     with rasterio.open(image_file) as src:
-#         transform, width, height = calculate_default_transform(
-#             src.crs, dst_crs, src.width, src.height, *src.bounds)
-#         kwargs = src.meta.copy()
-#         kwargs.update({
-#             'crs': dst_crs,
-#             'transform': transform,
-#             'width': width,
-#             'height': height
-#         })
-#         bnds = src.bounds
-#
-#         mem_file = MemoryFile()
-#         with mem_file.open(**kwargs) as dst:
-#             for i in range(1, src.count + 1):
-#                 reproject(
-#                     source=rasterio.band(src, i),
-#                     destination=rasterio.band(dst, i),
-#                     src_transform=src.transform,
-#                     src_crs=src.crs,
-#                     dst_transform=transform,
-#                     dst_crs=dst_crs,
-#                     resampling=Resampling.nearest)
-#
-#             band1 = dst.read(1)
-#
-#     new_bounds = transform_bounds(dst_crs, src_crs,
-#                                   dst.bounds[0],
-#                                   dst.bounds[1],
-#                                   dst.bounds[2],
-#                                   dst.bounds[3])
-#     isn = np.where(band1 < 0.001)
-#     band1[isn] = np.nan
-#
-#     band1 = np.flipud(band1)
-#     cmin = np.nanmin(band1)
-#     cmax = np.nanmax(band1)
-#
-#     norm = matplotlib.colors.Normalize(vmin=cmin, vmax=cmax)
-#     vnorm = norm(band1)
-#
-#     im = Image.fromarray(np.uint8(cm.gist_earth(vnorm) * 255))
-#
-#     overlay_file = "overlay.png"
-#     im.save(os.path.join(server_path, overlay_file))
-#
-# #    extent = [x[0], y[0], x[-1], y[-1]]
-#
-#     bounds = [[new_bounds[0], new_bounds[2]], [new_bounds[3], new_bounds[1]]]
-#
-# #    mpbox.gui.map_widget["main_map"].remove_layer("flood_map_layer", "flood_map_layer_group")
