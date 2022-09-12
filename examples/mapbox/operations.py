@@ -1,6 +1,8 @@
 import rasterio
 import rasterio.features
-import rasterio.warp
+from rasterio.warp import calculate_default_transform, reproject, Resampling, transform_bounds
+from rasterio import MemoryFile
+
 import numpy as np
 import matplotlib
 import os
@@ -79,16 +81,68 @@ def show_geotiff():
 
 #    mpbox.gui.map_widget["main_map"].show_image_layer()
     dataset = rasterio.open(image_file)
-    band1 = dataset.read(1)
+
+    src_crs = 'EPSG:4326'
+    dst_crs = 'EPSG:3857'
+
+    with rasterio.open(image_file) as src:
+        transform, width, height = calculate_default_transform(
+            src.crs, dst_crs, src.width, src.height, *src.bounds)
+        kwargs = src.meta.copy()
+        kwargs.update({
+            'crs': dst_crs,
+            'transform': transform,
+            'width': width,
+            'height': height
+        })
+        bnds = src.bounds
+#         dst_shape = (width, height)
+#         dst = np.zeros(dst_shape, src.dtypes[0])
+#
+#         for i in range(1, src.count + 1):
+#             reproject(
+#                 rasterio.band(src, i),
+# #                destination=rasterio.band(dst, i),
+#                 dst,
+#                 src_transform=src.transform,
+#                 src_crs=src.crs,
+#                 dst_transform=transform,
+#                 dst_crs=dst_crs,
+#                 resampling=Resampling.nearest)
+
+        # calculate_default_transform(src_crs, dst_crs, width, height, left=None, bottom=None, right=None,
+        #                                           top=None, gcps=None, rpcs=None, resolution=None, dst_width=None,
+        #                                           dst_height=None, **kwargs)
+        mem_file = MemoryFile()
+        with mem_file.open(**kwargs) as dst:
+            for i in range(1, src.count + 1):
+                reproject(
+                    source=rasterio.band(src, i),
+                    destination=rasterio.band(dst, i),
+                    src_transform=src.transform,
+                    src_crs=src.crs,
+                    dst_transform=transform,
+                    dst_crs=dst_crs,
+                    resampling=Resampling.nearest)
+
+            band1 = dst.read(1)
+
+    new_bounds = transform_bounds(dst_crs, src_crs,
+                                  dst.bounds[0],
+                                  dst.bounds[1],
+                                  dst.bounds[2],
+                                  dst.bounds[3])
     isn = np.where(band1 < 0.001)
     band1[isn] = np.nan
+
+    band1 = np.flipud(band1)
     cmin = np.nanmin(band1)
     cmax = np.nanmax(band1)
 
     norm = matplotlib.colors.Normalize(vmin=cmin, vmax=cmax)
-    v = norm(band1)
+    vnorm = norm(band1)
 
-    im = Image.fromarray(np.uint8(cm.gist_earth(v) * 255))
+    im = Image.fromarray(np.uint8(cm.gist_earth(vnorm) * 255))
     # cmin = np.nanmin(band1)
     # cmax = -cmin
     #
@@ -121,7 +175,7 @@ def show_geotiff():
 #    extent = [x[0], y[0], x[-1], y[-1]]
     mpbox.gui.map_widget["main_map"].add_layer_group("flood_map_layer_group")
 
-    bounds = [[dataset.bounds[0], dataset.bounds[2]], [dataset.bounds[1], dataset.bounds[3]]]
+    bounds = [[new_bounds[0], new_bounds[2]], [new_bounds[3], new_bounds[1]]]
 
 #    mpbox.gui.map_widget["main_map"].remove_layer("flood_map_layer", "flood_map_layer_group")
 

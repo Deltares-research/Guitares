@@ -92,7 +92,10 @@ export function addImageLayer(fileName, name, group, bounds) {
     map.addLayer({
         'id': idCounter.toString(),
         'source': idCounter.toString(),
-        'type': 'raster'
+        'type': 'raster',
+        'paint': {
+            'raster-resampling': 'nearest'
+        }
     });
 
     console.log("Added")
