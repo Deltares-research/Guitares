@@ -31,7 +31,7 @@ class VisualDelta:
         self.gui.setvar("visualdelta", "exposure_strings", ["Population", "Transport", "Critical Infrastructure", "Economy", "Other..."])
         self.gui.setvar("visualdelta", "adaptation", "Floodwall")
         self.gui.setvar("visualdelta", "adaptation_text", "Floodwall")
-        self.gui.setvar("visualdelta", "year", 2020)
+        self.gui.setvar("visualdelta", "year", 2022)
         self.gui.setvar("visualdelta", "slr", 0.)
         self.gui.setvar("visualdelta", "slr_string", "{} m ({} - {} m)".format(0.,0.,0.))
 
