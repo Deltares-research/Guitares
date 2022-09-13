@@ -4,6 +4,7 @@ from PyQt5 import QtWebEngineWidgets
 from PyQt5 import QtCore, QtWidgets, QtWebChannel
 import json
 import numpy as np
+import geojson
 # import threading
 # import http.server
 # import socketserver
@@ -71,6 +72,7 @@ class MapBox(QtWidgets.QWidget):
         self.map_moved = None
 
         self.layers = {}
+        self.id_counter = 0
 
         view = self.view = QtWebEngineWidgets.QWebEngineView(parent)
         channel = self.channel = QtWebChannel.QWebChannel()
@@ -104,8 +106,8 @@ class MapBox(QtWidgets.QWidget):
     @QtCore.pyqtSlot(str, str, str)
     def layerAdded(self, layer_name, layer_group_name, id):
         print("Layer " + layer_name + " added to group " + layer_group_name + " - ID = " + id)
-        layer = self.find_layer(layer_name, layer_group_name)
-        layer.id = id
+#        layer = self.find_layer(layer_name, layer_group_name)
+#        layer.id = id
 
     @QtCore.pyqtSlot(int, str)
     def polygonAdded(self, id, coords):
@@ -222,6 +224,9 @@ class MapBox(QtWidgets.QWidget):
                         layer_name=None,
                         layer_group_name=None):
 
+        self.id_counter += 1
+        id_string = str(self.id_counter)
+
         dataset = rasterio.open(image_file)
 
         src_crs = 'EPSG:4326'
@@ -276,11 +281,33 @@ class MapBox(QtWidgets.QWidget):
         bounds = [[new_bounds[0], new_bounds[2]], [new_bounds[3], new_bounds[1]]]
 
         layer = Layer(name=layer_name, type="image")
+        layer.id = id_string
         layer_group = self.find_layer_group(layer_group_name)
         layer_group[layer_name] = layer
         bounds_string = "[[" + str(bounds[0][0]) + "," + str(bounds[0][1]) + "],[" + str(bounds[1][0]) + "," + str(bounds[1][1]) + "]]"
-        js_string = "import('/main.js').then(module => {module.addImageLayer('" + overlay_file + "','" + layer_name + "','" + layer_group_name + "'," + bounds_string + ")});"
+#        js_string = "import('/main.js').then(module => {module.addImageLayer('" + overlay_file + "','" + layer_name + "','" + layer_group_name + "','" + id_string + "'," + bounds_string + ")});"
+        js_string = "import('/main.js').then(module => {module.addImageLayer('" + overlay_file + "','" + id_string + "'," + bounds_string + ")});"
         self.view.page().runJavaScript(js_string)
+
+    def add_marker_layer(self,
+                         collection,
+                         marker_file=None,
+                         layer_name=None,
+                         layer_group_name=None):
+
+        self.id_counter += 1
+        id_string = str(self.id_counter)
+
+        layer = Layer(name=layer_name, type="image")
+        layer.id = id_string
+        layer_group = self.find_layer_group(layer_group_name)
+        layer_group[layer_name] = layer
+        geojs = geojson.dumps(collection)
+        print(geojs)
+        js_string = "import('/main.js').then(module => {module.addMarkerLayer(" + geojs + ",'" + marker_file + "','" + id_string + "','"+ layer_name + "','" + layer_group_name + "')});"
+        print(js_string)
+        self.view.page().runJavaScript(js_string)
+
 
     def remove_layer(self, layer_name, layer_group_name):
         layer_group = self.find_layer_group(layer_group_name)
@@ -288,6 +315,7 @@ class MapBox(QtWidgets.QWidget):
             if layer_name in layer_group:
                 id = layer_group[layer_name].id
                 if id:
+                    print("Removing " + layer_name + " - id=" + id)
                     js_string = "import('/main.js').then(module => {module.removeLayer('" + id + "')});"
                     self.view.page().runJavaScript(js_string)
                 # Now remove layer from layer group

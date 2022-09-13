@@ -2,6 +2,7 @@ from visualdelta import visualdelta
 import pandas as pd
 import numpy as np
 import os
+from geojson import Feature, Point, FeatureCollection
 
 def add_option():
 
@@ -15,6 +16,7 @@ def change_scenario():
     calculate_slr()
     # Now update flood map
     update_flood_map()
+    update_tipping_points()
 
 def change_impact():
     # Get new value for impact
@@ -23,6 +25,7 @@ def change_impact():
     calculate_slr()
     # Now update flood map
     update_flood_map()
+    update_tipping_points()
 
 def change_exposure():
     # Get new value for exposure
@@ -31,6 +34,7 @@ def change_exposure():
     calculate_slr()
     # Now update flood map
     update_flood_map()
+    update_tipping_points()
 
 def change_year():
     # Get new value for year
@@ -39,6 +43,7 @@ def change_year():
     calculate_slr()
     # Now update flood map
     update_flood_map()
+    update_tipping_points()
 
 def change_year_slider():
     # This method is called while the slider is being moved
@@ -91,3 +96,36 @@ def update_flood_map():
                                                            layer_name=layer_name,
                                                            layer_group_name=layer_group_name)
 
+def update_tipping_points():
+
+    print("Updating tipping points ...")
+
+    # Add some markers
+
+    layer_group_name = "tipping_points"
+    # Add layer group (this only does something when there is no layer group with layer_group_name)
+    visualdelta.gui.map_widget["main_map"].add_layer_group(layer_group_name)
+
+    # Oosterscheldekering
+    layer_name = "oosterscheldekering"
+    # Remove old layer from layer group
+    visualdelta.gui.map_widget["main_map"].remove_layer(layer_name,
+                                                        layer_group_name)
+    if visualdelta.slr > 0.2:
+        marker = Feature(geometry=Point((3.700, 51.633)))
+        visualdelta.gui.map_widget["main_map"].add_marker_layer(FeatureCollection([marker]),
+                                                                marker_file="oosterschelde.png",
+                                                                layer_name=layer_name,
+                                                                layer_group_name=layer_group_name)
+
+    # Maeslantkering
+    layer_name = "maeslantkering"
+    # Remove old layer from layer group
+    visualdelta.gui.map_widget["main_map"].remove_layer(layer_name,
+                                                        layer_group_name)
+    if visualdelta.slr > 0.5:
+        marker = Feature(geometry=Point((4.164, 51.955)))
+        visualdelta.gui.map_widget["main_map"].add_marker_layer(FeatureCollection([marker]),
+                                                                marker_file="maeslant.png",
+                                                                layer_name=layer_name,
+                                                                layer_group_name=layer_group_name)
