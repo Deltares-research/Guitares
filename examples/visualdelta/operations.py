@@ -71,12 +71,12 @@ def update_flood_map():
 
     print("Updating flood map ...")
 
-    img_files = os.listdir('..\\floodmaps')
+    img_files = os.listdir(os.path.join(visualdelta.main_path,'floodmaps'))
     img_dict = {}
-    image_file = os.path.join('..\\floodmaps', img_files[0])
+    image_file = os.path.join(visualdelta.main_path,'floodmaps', img_files[0])
     for f in img_files:
         if float(f[19:23]) >= visualdelta.slr:
-            image_file = os.path.join('..\\floodmaps', f)
+            image_file = os.path.join(visualdelta.main_path,'floodmaps', f)
             break
 
     layer_name = "flood_map_layer"
