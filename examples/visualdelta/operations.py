@@ -94,7 +94,13 @@ def update_flood_map():
     # And now add the new image layer to the layer group
     visualdelta.gui.map_widget["main_map"].add_image_layer(image_file,
                                                            layer_name=layer_name,
-                                                           layer_group_name=layer_group_name)
+                                                           layer_group_name=layer_group_name,
+                                                           legend_title="Depth (m)",
+                                                           colormap="jet",
+                                                           cmin=0.2,
+                                                           cmax=2.0,
+                                                           cstep=0.2,
+                                                           decimals=1)
 
 def update_tipping_points():
 
