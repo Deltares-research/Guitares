@@ -166,8 +166,7 @@ class GUI:
 
                 elif element["style"] == "webpage":
                     from .pyqt5.webpage import WebPage
-                    pass
-#                    WebPage(element, parent)
+                    WebPage(element, parent)
 
                 if element["style"] == "slider":
                     from .pyqt5.slider import Slider
