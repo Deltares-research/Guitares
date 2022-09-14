@@ -20,6 +20,7 @@ import rasterio.features
 from rasterio.warp import calculate_default_transform, reproject, Resampling, transform_bounds
 from rasterio import MemoryFile
 
+from .colorbar import ColorBar
 from .widget_group import WidgetGroup
 #from .overlays import ImageOverlay
 
@@ -222,7 +223,13 @@ class MapBox(QtWidgets.QWidget):
     def add_image_layer(self,
                         image_file,
                         layer_name=None,
-                        layer_group_name=None):
+                        layer_group_name=None,
+                        legend_title="",
+                        cmin=None,
+                        cmax=None,
+                        cstep=None,
+                        decimals=None,
+                        colormap="jet"):
 
         self.id_counter += 1
         id_string = str(self.id_counter)
@@ -267,26 +274,34 @@ class MapBox(QtWidgets.QWidget):
         band1[isn] = np.nan
 
         band1 = np.flipud(band1)
-        cmin = np.nanmin(band1)
-        cmax = np.nanmax(band1)
+        cminimum = np.nanmin(band1)
+        cmaximum = np.nanmax(band1)
 
-        norm = matplotlib.colors.Normalize(vmin=cmin, vmax=cmax)
+        norm = matplotlib.colors.Normalize(vmin=cminimum, vmax=cmaximum)
         vnorm = norm(band1)
 
-        im = Image.fromarray(np.uint8(cm.gist_earth(vnorm) * 255))
+        cmap = cm.get_cmap(colormap)
+        im = Image.fromarray(np.uint8(cmap(vnorm) * 255))
 
         overlay_file = "overlay.png"
         im.save(os.path.join(self.server_path, overlay_file))
 
-        bounds = [[new_bounds[0], new_bounds[2]], [new_bounds[3], new_bounds[1]]]
-
+        # Make new layer
         layer = Layer(name=layer_name, type="image")
         layer.id = id_string
         layer_group = self.find_layer_group(layer_group_name)
         layer_group[layer_name] = layer
+
+        # Bounds
+        bounds = [[new_bounds[0], new_bounds[2]], [new_bounds[3], new_bounds[1]]]
         bounds_string = "[[" + str(bounds[0][0]) + "," + str(bounds[0][1]) + "],[" + str(bounds[1][0]) + "," + str(bounds[1][1]) + "]]"
-#        js_string = "import('/main.js').then(module => {module.addImageLayer('" + overlay_file + "','" + layer_name + "','" + layer_group_name + "','" + id_string + "'," + bounds_string + ")});"
-        js_string = "import('/main.js').then(module => {module.addImageLayer('" + overlay_file + "','" + id_string + "'," + bounds_string + ")});"
+
+        # Legend
+        clrbar = ColorBar(colormap=colormap, legend_title=legend_title)
+        clrbar.make(cmin, cmax, cstep=cstep, decimals=decimals)
+        clrmap_string = clrbar.to_json()
+
+        js_string = "import('/main.js').then(module => {module.addImageLayer('" + overlay_file + "','" + id_string + "'," + bounds_string + "," + clrmap_string + ")});"
         self.view.page().runJavaScript(js_string)
 
     def add_marker_layer(self,
@@ -303,9 +318,7 @@ class MapBox(QtWidgets.QWidget):
         layer_group = self.find_layer_group(layer_group_name)
         layer_group[layer_name] = layer
         geojs = geojson.dumps(collection)
-        print(geojs)
         js_string = "import('/main.js').then(module => {module.addMarkerLayer(" + geojs + ",'" + marker_file + "','" + id_string + "','"+ layer_name + "','" + layer_group_name + "')});"
-        print(js_string)
         self.view.page().runJavaScript(js_string)
 
 
