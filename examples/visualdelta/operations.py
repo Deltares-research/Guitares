@@ -2,6 +2,7 @@ from visualdelta import visualdelta
 import pandas as pd
 import numpy as np
 import os
+import glob
 from geojson import Feature, Point, FeatureCollection
 
 def add_option():
@@ -70,16 +71,13 @@ def update_flood_map():
 
     print("Updating flood map ...")
 
-    image_path = r"d:\temp\van_gundula"
-
-    if visualdelta.slr < 0.2:
-        image_file = "flood_withprot_slr=0.00m_rp=0100.tif"
-    elif visualdelta.slr < 0.5:
-        image_file = "flood_withprot_slr=0.50m_rp=0100.tif"
-    else:
-        image_file = "flood_withprot_slr=1.00m_rp=0100.tif"
-
-    image_file = os.path.join(image_path, image_file)
+    img_files = os.listdir(os.path.join(visualdelta.main_path,'floodmaps'))
+    img_dict = {}
+    image_file = os.path.join(visualdelta.main_path,'floodmaps', img_files[0])
+    for f in img_files:
+        if float(f[19:23]) >= visualdelta.slr:
+            image_file = os.path.join(visualdelta.main_path,'floodmaps', f)
+            break
 
     layer_name = "flood_map_layer"
     layer_group_name = "flood_map_layer_group"
