@@ -5,16 +5,11 @@ from PyQt5 import QtCore, QtWidgets, QtWebChannel
 import json
 import numpy as np
 import geojson
-# import threading
-# import http.server
-# import socketserver
-# from urllib.request import urlopen
-# from urllib.error import *
-
+from urllib.request import urlopen
+import time
 from PIL import Image
 import matplotlib
 from matplotlib import cm
-# from osgeo import gdal
 import rasterio
 import rasterio.features
 from rasterio.warp import calculate_default_transform, reproject, Resampling, transform_bounds
@@ -28,45 +23,19 @@ class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
     def javaScriptConsoleMessage(self, level, message, lineNumber, sourceID):
         print("javaScriptConsoleMessage: ", level, message, lineNumber, sourceID)
 
-
-# def create_server():
-#
-#     # Path where web server is running
-#     path = os.path.abspath(__file__)
-#     dir_path = os.path.dirname(path)
-#     dir_path = os.path.join(dir_path, "mapbox")
-#
-#     os.chdir(dir_path)
-#     PORT = 3000
-#     Handler = http.server.SimpleHTTPRequestHandler
-#     Handler.extensions_map['.js']     = 'text/javascript'
-#     Handler.extensions_map['.mjs']    = 'text/javascript'
-#     Handler.extensions_map['.css']    = 'text/css'
-#     Handler.extensions_map['.html']   = 'text/html'
-#     Handler.extensions_map['main.js'] = 'module'
-#     print("Server path : " + dir_path)
-#     with socketserver.TCPServer(("", PORT), Handler) as httpd:
-#         print("Serving at port", PORT)
-#         httpd.serve_forever()
-
 class MapBox(QtWidgets.QWidget):
 #class MapBox(WidgetGroup):
 
     def __init__(self, element, parent, server_path, server_port):
         super().__init__(parent)
 
-            # # Path where web server is running
-            # path = os.path.abspath(__file__)
-            # dir_path = os.path.dirname(path)
-            # dir_path = os.path.join(dir_path, "mapbox")
-            #
-            # # Check if something's already running on port 3000.
-            # try:
-            #     html = urlopen("http://localhost:3000/")
-            #     print("Found server running at port 3000 ...")
-            # except:
-            #     print("Starting http server ...")
-            # threading.Thread(target=create_server).start()
+        while True:
+            try:
+                html = urlopen("http://localhost:" + str(server_port) + "/")
+                print("Found server running at port 3000 ...")
+                break
+            except:
+                print("Waiting for server ...")
 
         self.server_path = server_path
 
@@ -95,18 +64,36 @@ class MapBox(QtWidgets.QWidget):
 
         self.layer_group = {}
 
+        # self.ready = False
+
+        # while not self.ready:
+        #     self.check_ready()
+        #     time.sleep(1)
+
+    # def check_ready(self):
+    #     print("Check for ready ...")
+    #     js_string = "import('/main.js').then(module => {module.checkReady();});"
+    #     self.view.page().runJavaScript(js_string)
+
     def set(self):
         pass
 
+    # @QtCore.pyqtSlot(str)
+    # def mapBoxReady(self, ready):
+    #     print(ready)
+    #     self.ready = True
+
     @QtCore.pyqtSlot(str)
     def mapMoved(self, coords):
-        print(coords)
+        pass
+#        print(coords)
 #        self.callback_module.map_moved(json.loads(coords))
 #        self.map_moved(json.loads(coords))
 
     @QtCore.pyqtSlot(str, str, str)
     def layerAdded(self, layer_name, layer_group_name, id):
-        print("Layer " + layer_name + " added to group " + layer_group_name + " - ID = " + id)
+        pass
+#        print("Layer " + layer_name + " added to group " + layer_group_name + " - ID = " + id)
 #        layer = self.find_layer(layer_name, layer_group_name)
 #        layer.id = id
 
@@ -211,14 +198,16 @@ class MapBox(QtWidgets.QWidget):
             extent[3]) + "],'" + srs + "','" + proj4 + "');});"
         self.view.page().runJavaScript(js_string)
 
-    def add_image_overlay(self, layer_name, file_name):
-        # js_string = "import('/main.js').then(module => {module.updateImageLayer('" + file_name + "', [" + str(
-        #     extent[0]) + "," + str(extent[1]) + "," + str(extent[2]) + "," + str(
-        #     extent[3]) + "],'" + srs + "','" + proj4 + "');});"
-#        overlay = ImageOverlay(file_name=image_file, file_type="tif")
-        js_string = "import('/main.js').then(module => {module.updateImageLayer('" + file_name + "')});"
-        print(js_string)
- #       self.view.page().runJavaScript(js_string)
+#     def add_image_overlay(self, layer_name, file_name):
+#         # js_string = "import('/main.js').then(module => {module.updateImageLayer('" + file_name + "', [" + str(
+#         #     extent[0]) + "," + str(extent[1]) + "," + str(extent[2]) + "," + str(
+#         #     extent[3]) + "],'" + srs + "','" + proj4 + "');});"
+# #        overlay = ImageOverlay(file_name=image_file, file_type="tif")
+#         js_string = "import('/main.js').then(module => {module.updateImageLayer('" + file_name + "')});"
+# #        print(js_string)
+#  #       self.view.page().runJavaScript(js_string)
+#         js_string = "import('/main.js').then(module => {module.checkReady();});"
+        self.view.page().runJavaScript(js_string)
 
     def add_image_layer(self,
                         image_file,

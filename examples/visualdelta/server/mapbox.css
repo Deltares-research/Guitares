@@ -2,7 +2,7 @@
 * Set rules for how the map overlays
 * (information box and legend) will be displayed
 * on the page. */
-.map-overlay {
+.overlay_legend {
   position: absolute;
   bottom: 0;
   right: 0;
@@ -12,24 +12,13 @@
   overflow: auto;
   border-radius: 3px;
   opacity: 0.9;
-}
-
-#overlay_legend {
   padding: 10px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   line-height: 18px;
   margin-bottom: 40px;
 }
 
-.legend-key {
-  display: inline-block;
-  border-radius: 20%;
-  width: 10px;
-  height: 10px;
-  margin-right: 5px;
-}
-
-.map-overlay i {
+.overlay_legend i {
   width: 20px;
   height: 15px;
   float: left;

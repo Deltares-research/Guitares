@@ -5,6 +5,37 @@ window:
   package: visualdelta
   module: operations
   variable_group: visualdelta
+menu:
+  - text: "File"
+    module: menu_file
+    menu:
+      - text: "Open"
+        method: open
+      - text: "Save"
+        method: save
+        separator: True
+      - text: "Exit"
+        method: exit
+  - text: "View"
+    module: menu_view
+    menu:
+      - text: "Flood Maps"
+        method: view_flood_maps
+        checkable: True
+      - text: "Tipping Points"
+        menu:
+        - text: "Barrier Closure"
+          checkable: True
+        - text: "Flooding"
+          checkable: True
+  - text: "Help"
+    module: menu_help
+    menu:
+      - text: "About the Visual Delta"
+        method: about_visual_delta
+        separator: True
+      - text: "About Deltares"
+        method: about_deltares
 element:
   - style: mapbox
     id: main_map
@@ -12,7 +43,7 @@ element:
       x: 20
       y: 120
       width: -20
-      height: -20
+      height: -40
     module: mapbox_map
   - style: panel
     title: Select...
