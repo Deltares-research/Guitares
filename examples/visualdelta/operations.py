@@ -116,7 +116,13 @@ def update_tipping_points():
     visualdelta.gui.map_widget["main_map"].remove_layer(layer_name,
                                                         layer_group_name)
     if visualdelta.slr > 0.2:
-        marker = Feature(geometry=Point((3.700, 51.633)))
+        properties = {}
+        properties = {}
+#        properties["hover_popup_text"] = "I'm the Oosterscheldekering!"
+        properties["hover_popup_text"]  = "<strong>I'm the Oosterscheldekering!</strong><iframe src=https://www.foxnews.com width=500 height=300></iframe>"
+        properties["hover_popup_width"] = 520
+
+        marker = Feature(geometry=Point((3.700, 51.633)), properties=properties)
         visualdelta.gui.map_widget["main_map"].add_marker_layer(FeatureCollection([marker]),
                                                                 marker_file="oosterschelde.png",
                                                                 layer_name=layer_name,
@@ -128,7 +134,9 @@ def update_tipping_points():
     visualdelta.gui.map_widget["main_map"].remove_layer(layer_name,
                                                         layer_group_name)
     if visualdelta.slr > 0.5:
-        marker = Feature(geometry=Point((4.164, 51.955)))
+        properties = {}
+        properties["hover_popup_text"] = "<strong>I'm the Maeslantkering!</strong><p>With this sea level rise, I will have to close very often ...</p>"
+        marker = Feature(geometry=Point((4.164, 51.955)), properties=properties)
         visualdelta.gui.map_widget["main_map"].add_marker_layer(FeatureCollection([marker]),
                                                                 marker_file="maeslant.png",
                                                                 layer_name=layer_name,

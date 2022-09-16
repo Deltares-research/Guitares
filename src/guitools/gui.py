@@ -1,6 +1,7 @@
 import os
 import yaml
 import importlib
+import time
 
 import http.server
 import socketserver
@@ -43,9 +44,11 @@ class GUI:
             except:
                 print("Starting http server ...")
 #                threading.Thread(target=run_server(server_path, server_port)).start()
-                threading.Thread(target=run_server).start()
+#                threading.Thread(target=run_server).start()
+                thr = threading.Thread(target=run_server, args=(server_path, server_port))
+                thr.start()
 
-
+            self.server_thread = thr
 
     def show_splash(self):
         if self.framework == "pyqt5" and self.splash_file:
@@ -61,7 +64,6 @@ class GUI:
               menu={},
               toolbar={},
               element=[]):
-
 
         if self.stylesheet:
             app.setStyleSheet(open(os.path.join(self.config_path, self.stylesheet), "r").read())
@@ -88,7 +90,10 @@ class GUI:
 #        self.main_window.resize_factor = 1.0
 
         # Add menu
-        
+        if self.config["menu"]:
+            from .pyqt5.menu import Menu
+            Menu(self.config["menu"], self.main_window)
+
         # Add toolbar
         
         # Add elements
@@ -100,7 +105,6 @@ class GUI:
 
 #        if self.framework=="pyqt5":        
 #            app.exec_()
-
 
     def add_elements(self, element_list, parent):
         
@@ -346,12 +350,7 @@ def yaml2dict(file_name):
     dct = yaml.load(file, Loader=yaml.FullLoader)
     return dct
 
-#def run_server(server_path, server_port):
-def run_server():
-
-    # server_path = "d:\\checkouts\\github\\GUITools\\examples\\visualdelta\\server"
-    server_path = r'C:\Users\winter_ga\PycharmProjects\ddb\GUITools\examples\visualdelta\server'
-    server_port = 3000
+def run_server(server_path, server_port):
 
     os.chdir(server_path)
     PORT = server_port

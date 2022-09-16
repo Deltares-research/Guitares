@@ -5,6 +5,7 @@ import mapboxgl from 'https://cdn.skypack.dev/mapbox-gl'
 
 let mapMoved;
 let layerAdded;
+let mapBoxReady;
 let layerName;
 let layerGroupName;
 let jsonString;
@@ -25,7 +26,7 @@ const map = new mapboxgl.Map({
 });
 
 map.on('moveend', () => {
-    console.log('A moveend event occurred.');
+//    console.log('A moveend event occurred.');
     onMoveEnd();
 });
 
@@ -54,8 +55,8 @@ new QWebChannel(qt.webChannelTransport, function (channel) {
 
     if(typeof MapBox != 'undefined') {
         mapMoved          = function() { MapBox.mapMoved(jsonString) };
-//        layerAdded        = function() { console.log("Added " + layerName); MapBox.layerAdded(layerName, layerGroupName, idCounter.toString()); };
         layerAdded        = function() { MapBox.layerAdded(layerID); };
+//        mapBoxReady       = function() { MapBox.mapBoxReady("okay"); };
     }
 
 });
@@ -73,11 +74,13 @@ function onMoveEnd(evt) {
     mapMoved();
 }
 
+//export function checkReady() {
+//	console.log("checking in js");
+//	mapBoxReady();
+//}
+
 //export function addImageLayer(fileName, name, group, id, bounds) {
 export function addImageLayer(fileName, id, bounds, colorbar) {
-
-//	console.log('Loading ' + fileName + ' - id=' + id);
-//	layerID = id;
 
     map.addSource(id, {
         'type': 'image',
@@ -90,7 +93,6 @@ export function addImageLayer(fileName, id, bounds, colorbar) {
         ]
     });
 
-
     map.addLayer({
         'id': id,
         'source': id,
@@ -100,11 +102,10 @@ export function addImageLayer(fileName, id, bounds, colorbar) {
         }
     });
 
-
     // Legend
     const legend     = document.createElement("div");
-    legend.id        = "overlay_legend";
-    legend.className = "map-overlay";
+    legend.id        = "legend" + id;
+    legend.className = "overlay_legend";
     var newSpan = document.createElement('span');
     newSpan.class = 'title';
     newSpan.innerHTML = '<b>' + colorbar["title"] + '</b>';
@@ -127,12 +128,13 @@ export function addImageLayer(fileName, id, bounds, colorbar) {
 }
 
 
-//export function addMarkerLayer(geojson, markerFile, name, group) {
 export function addMarkerLayer(geojson, markerFile, id) {
 
 	layerID = id;
 
-    map.removeImage('icons/' + markerFile);
+    if (map.hasImage(id)) {
+        map.removeImage(id);
+    }
 
     map.loadImage('icons/' + markerFile,
         (error, image) => {
@@ -162,6 +164,43 @@ export function addMarkerLayer(geojson, markerFile, id) {
                     'text-anchor': 'top'
                 }
             });
+
+            // Create a popup, but don't add it to the map yet.
+            const popup = new mapboxgl.Popup({
+                closeButton: false,
+                closeOnClick: false
+            });
+
+            map.on('mouseenter', id, (e) => {
+
+                // Change the cursor style as a UI indicator.
+                map.getCanvas().style.cursor = 'pointer';
+
+                // Copy coordinates array.
+                const coordinates = e.features[0].geometry.coordinates.slice();
+                var description   = e.features[0].properties.hover_popup_text;
+                if (e.features[0].properties.hasOwnProperty('hover_popup_width')) {
+					popup.setMaxWidth(e.features[0].properties.hover_popup_width);
+			    }
+
+                // Ensure that if the map is zoomed out such that multiple
+                // copies of the feature are visible, the popup appears
+                // over the copy being pointed to.
+                while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+                    coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+                }
+
+                // Populate the popup and set its coordinates
+                // based on the feature found.
+                popup.setLngLat(coordinates).setHTML(description).addTo(map);
+
+            });
+
+            map.on('mouseleave', id, () => {
+                map.getCanvas().style.cursor = '';
+                popup.remove();
+            });
+
         }
     );
 
@@ -172,15 +211,13 @@ export function addMarkerLayer(geojson, markerFile, id) {
 
 export function removeLayer(id) {
 	// Remove layer
-	console.log("Removing " + id + " ...");
 	var mapLayer = map.getLayer(id);
 	    if(typeof mapLayer !== 'undefined') {
 	      // Remove map layer & source.
 	      map.removeLayer(id).removeSource(id);
     }
-    var legend = document.getElementById("overlay_legend")
+    var legend = document.getElementById("legend" + id);
     if (legend) {
-		legend.remove();
+        legend.remove();
     }
-	console.log("Removed " + id + ".");
 }
