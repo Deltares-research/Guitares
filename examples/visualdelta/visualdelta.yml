@@ -1,7 +1,7 @@
 window:
   title: The Visual Delta
-  width: 650
-  height: 550
+  width: 1000
+  height: 650
   package: visualdelta
   module: operations
   variable_group: visualdelta

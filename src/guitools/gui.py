@@ -349,7 +349,8 @@ def yaml2dict(file_name):
 #def run_server(server_path, server_port):
 def run_server():
 
-    server_path = "d:\\checkouts\\github\\GUITools\\examples\\visualdelta\\server"
+    # server_path = "d:\\checkouts\\github\\GUITools\\examples\\visualdelta\\server"
+    server_path = r'C:\Users\winter_ga\PycharmProjects\ddb\GUITools\examples\visualdelta\server'
     server_port = 3000
 
     os.chdir(server_path)

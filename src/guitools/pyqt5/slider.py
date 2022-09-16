@@ -45,10 +45,10 @@ class Slider(WidgetGroup):
             label = QLabel(str(ticklabel), self.parent)
             self.widgets.append(label)
             fm = label.fontMetrics()
-            hlab = fm.size(0, self.element["text"]).height() + 15
-            wlab = fm.size(0, self.element["text"]).width() + 15
+            hlab = fm.size(0, self.element["text"]).height()
+            wlab = fm.size(0, self.element["text"]).width()
             label.setAlignment(Qt.AlignRight)
-            label.setGeometry(xlab-15, y0 + hlab, 30, 15)
+            label.setGeometry((xlab-wlab*2), y0 + hlab, (wlab*4), hlab)
             label.setStyleSheet("background: transparent; border: none")
 
         fcn = lambda: self.callback()
