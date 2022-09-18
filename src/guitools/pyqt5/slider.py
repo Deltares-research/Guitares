@@ -17,8 +17,8 @@ class Slider(WidgetGroup):
         # s = QSlider(parent)
         s = QSlider(Qt.Horizontal, parent=parent)
         # ToDO: Make minimum and maximum flexible
-        minimum = 2000
-        maximum = 2150
+        minimum = self.element["minimum"]
+        maximum = self.element["maximum"]
         interval = 10
         s.setMinimum(minimum)
         s.setMaximum(maximum)
@@ -45,10 +45,11 @@ class Slider(WidgetGroup):
             label = QLabel(str(ticklabel), self.parent)
             self.widgets.append(label)
             fm = label.fontMetrics()
-            hlab = fm.size(0, self.element["text"]).height()
-            wlab = fm.size(0, self.element["text"]).width()
-            label.setAlignment(Qt.AlignRight)
-            label.setGeometry((xlab-wlab*2), y0 + hlab, (wlab*4), hlab)
+            hlab = fm.height()
+            wlab = fm.width(str(ticklabel), label.fontInfo().pointSize())
+            label.setAlignment(Qt.AlignHCenter)
+            label.setAlignment(Qt.AlignTop)
+            label.setGeometry(xlab - ii*20, y0 + hgt, wlab, hlab)
             label.setStyleSheet("background: transparent; border: none")
 
         fcn = lambda: self.callback()

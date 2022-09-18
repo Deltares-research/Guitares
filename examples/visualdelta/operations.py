@@ -2,13 +2,8 @@ from visualdelta import visualdelta
 import pandas as pd
 import numpy as np
 import os
-import glob
-from geojson import Feature, Point, FeatureCollection
-
-def add_option():
-
-    # Update all GUI elements
-    visualdelta.gui.update()
+from tipping_points import update_tipping_points
+from maps import update_flood_map
 
 def change_scenario():
     # Get new value for ssp
@@ -67,77 +62,47 @@ def calculate_slr():
     # Update all GUI elements
     visualdelta.gui.update()
 
-def update_flood_map():
+def draw_polygon():
+    visualdelta.gui.map_widget["main_map"].draw_polygon("layer1",
+                                       create=add_polygon,
+                                       modify=modify_polygon)
 
-    print("Updating flood map ...")
+def add_polygon(polid, coords):
+    print("Polygon added")
+    print(polid)
+    print(coords)
 
-    img_files = os.listdir(os.path.join(visualdelta.main_path,'floodmaps'))
-    img_dict = {}
-    image_file = os.path.join(visualdelta.main_path,'floodmaps', img_files[0])
-    for f in img_files:
-        if float(f[19:23]) >= visualdelta.slr:
-            image_file = os.path.join(visualdelta.main_path,'floodmaps', f)
-            break
+def modify_polygon(polid, coords):
+    print("Polygon modified")
+    print(polid)
+    print(coords)
 
-    layer_name = "flood_map_layer"
-    layer_group_name = "flood_map_layer_group"
+def draw_polyline():
+    visualdelta.gui.map_widget["main_map"].draw_polyline("layer1",
+                                       create=add_polyline,
+                                       modify=modify_polyline)
 
-    # Add layer group (this only does something when there is no layer group with layer_group_name)
-    visualdelta.gui.map_widget["main_map"].add_layer_group(layer_group_name)
+def add_polyline(polid, coords):
+    print("Polyline added")
+    print("ID= " + str(polid))
+    print("Coords = " + str(coords))
 
-    # Remove old layer from layer group
-    visualdelta.gui.map_widget["main_map"].remove_layer(layer_name,
-                                                        layer_group_name)
+def modify_polyline(polid, coords):
+    print("Polyline modified")
+    print("ID= " + str(polid))
+    print("Coords = " + str(coords))
 
-    # And now add the new image layer to the layer group
-    visualdelta.gui.map_widget["main_map"].add_image_layer(image_file,
-                                                           layer_name=layer_name,
-                                                           layer_group_name=layer_group_name,
-                                                           legend_title="Depth (m)",
-                                                           colormap="jet",
-                                                           cmin=0.2,
-                                                           cmax=2.0,
-                                                           cstep=0.2,
-                                                           decimals=1)
+def draw_rectangle():
+    visualdelta.gui.map_widget["main_map"].draw_rectangle("layer1",
+                                             create=add_rectangle,
+                                             modify=modify_rectangle)
 
-def update_tipping_points():
+def add_rectangle(polid, coords):
+    print("Rectangle added")
+    print("ID= " + str(polid))
+    print("Coords = " + str(coords))
 
-    print("Updating tipping points ...")
-
-    # Add some markers
-
-    layer_group_name = "tipping_points"
-    # Add layer group (this only does something when there is no layer group with layer_group_name)
-    visualdelta.gui.map_widget["main_map"].add_layer_group(layer_group_name)
-
-    # Oosterscheldekering
-    layer_name = "oosterscheldekering"
-    # Remove old layer from layer group
-    visualdelta.gui.map_widget["main_map"].remove_layer(layer_name,
-                                                        layer_group_name)
-    if visualdelta.slr > 0.2:
-        properties = {}
-        properties = {}
-#        properties["hover_popup_text"] = "I'm the Oosterscheldekering!"
-        properties["hover_popup_text"]  = "<strong>I'm the Oosterscheldekering!</strong><iframe src=https://www.foxnews.com width=500 height=300></iframe>"
-        properties["hover_popup_width"] = 520
-
-        marker = Feature(geometry=Point((3.700, 51.633)), properties=properties)
-        visualdelta.gui.map_widget["main_map"].add_marker_layer(FeatureCollection([marker]),
-                                                                marker_file="oosterschelde.png",
-                                                                layer_name=layer_name,
-                                                                layer_group_name=layer_group_name)
-
-    # Maeslantkering
-    layer_name = "maeslantkering"
-    # Remove old layer from layer group
-    visualdelta.gui.map_widget["main_map"].remove_layer(layer_name,
-                                                        layer_group_name)
-    if visualdelta.slr > 0.5:
-        properties = {}
-        properties["hover_popup_text"] = "<strong>I'm the Maeslantkering!</strong><p>With this sea level rise, I will have to close very often ...</p>"
-        marker = Feature(geometry=Point((4.164, 51.955)), properties=properties)
-        visualdelta.gui.map_widget["main_map"].add_marker_layer(FeatureCollection([marker]),
-                                                                marker_file="maeslant.png",
-                                                                layer_name=layer_name,
-                                                                layer_group_name=layer_group_name)
+def modify_rectangle(polid, coords):
+    print("Rectangle modified")
+    print("ID= " + str(polid))
+    print("Coords = " + str(coords))
