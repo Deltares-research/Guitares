@@ -85,10 +85,22 @@ class MapBox(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(str)
     def mapMoved(self, coords):
-        pass
-#        print(coords)
+        print("map moved")
+        self.callback_module.map_moved(json.loads(coords))
+
+    @QtCore.pyqtSlot(str)
+    def polygonDrawn(self, coords):
+        print("A polygon was drawn! " + coords)
+        self.polygon_create_callback(coords)
+#        self.polygon_modify_callback
+
+    @QtCore.pyqtSlot(str)
+    def featureSelected(self, id):
+        print("The feature with ID " + id + " was selected")
+#        self.polygon_create_callback(coords)
+#        self.polygon_modify_callback
+
 #        self.callback_module.map_moved(json.loads(coords))
-#        self.map_moved(json.loads(coords))
 
     @QtCore.pyqtSlot(str, str, str)
     def layerAdded(self, layer_name, layer_group_name, id):
@@ -150,14 +162,17 @@ class MapBox(QtWidgets.QWidget):
         self.layer[layer_parent][layer_name]["properties"] = LayerProperties()
 
 
-    def draw_polygon(self, layer_name, create=None, modify=None):
-        self.new_polygon        = Polygon()
-        self.new_polygon.id     = None
-        self.new_polygon.create = create
-        self.new_polygon.modify = modify
-        self.new_polygon.layer  = layer_name
-        layer_group_name = "_base"
-        js_string = "import('/main.js').then(module => {module.drawPolygon('" + layer_group_name + "','" + layer_name + "');});"
+    def draw_polygon(self, layer_name, layer_group_name, create=None, modify=None):
+
+        print("Going to draw a polygon !")
+        # self.new_polygon        = Polygon()
+        # self.new_polygon.id     = None
+        # self.new_polygon.create = create
+        # self.new_polygon.modify = modify
+        # self.new_polygon.layer  = layer_name
+        # layer_group_name = "_base"
+        js_string = "import('/main.js').then(module => {module.drawPolygon();});"
+        # print(js_string)
         self.view.page().runJavaScript(js_string)
         self.polygon_create_callback = None
         self.polygon_modify_callback = None

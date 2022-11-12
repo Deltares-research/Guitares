@@ -3,6 +3,7 @@ window:
   width: 800
   height: 600
   module: operations
+  variable_group: mpbox
 element:
   - style: panel
     title: ""
@@ -12,54 +13,72 @@ element:
       width: -20
       height: 100
     element:
-    - style: pushbutton
-      text: Draw Rectangle
-      position:
-        x: 10
-        y: 70
-        width: 120
-        height: 20
-      method: draw_rectangle
-    - style: pushbutton
-      text: Draw Polyline
-      position:
-        x: 10
-        y: 40
-        width: 120
-        height: 20
-      method: draw_polyline
-    - style: pushbutton
-      text: Draw Polygon
+    - style: listbox
+      text: Layer Group
       position:
         x: 10
         y: 10
-        width: 120
-        height: 20
-      method: draw_polygon
+        width: 80
+        height: 80
+      method: select_layer_group
+      variable: layer_group
+      option_string:
+        variable: layer_group_names
+      option_value:
+        variable: layer_group_names
     - style: pushbutton
-      text: Import GeoTiFF
+      text: Add
+      position:
+        x: 100
+        y: 70
+        width: 40
+        height: 20
+      method: add_layer_group
+    - style: pushbutton
+      text: Delete
+      position:
+        x: 100
+        y: 45
+        width: 40
+        height: 20
+      method: delete_layer_group
+    - style: listbox
+      text: Layer
+      position:
+        x: 210
+        y: 10
+        width: 80
+        height: 80
+      method: select_layer
+      variable: layer
+      option_string:
+        variable: layer_names
+      option_value:
+        variable: layer_names
+    - style: pushbutton
+      text: Add
       position:
         x: 300
         y: 70
-        width: 120
+        width: 40
         height: 20
-      method: import_geotiff
+      method: add_layer
     - style: pushbutton
-      text: Show GeoTiFF
+      text: Delete
       position:
         x: 300
-        y: 40
-        width: 120
-        height: 20
-      method: show_geotiff
-    - style: pushbutton
-      text: Delete Layer
-      position:
-        x: 300
-        y: 10
-        width: 120
+        y: 45
+        width: 40
         height: 20
       method: delete_layer
+    - style: pushbutton
+      text: Add Polygon
+      position:
+        x: 500
+        y: 70
+        width: 120
+        height: 20
+      method: add_polygon
   - style: mapbox
     id: main_map
     position:

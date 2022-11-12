@@ -5,19 +5,17 @@ Created on Tue Jul  5 13:40:07 2022
 @author: ormondt
 """
 
-from guitools.gui import GUI
+import sys
+from PyQt5.QtWidgets import QApplication
+from PyQt5 import QtCore
+from mpbox import mpbox
 
-class MapBoxExample:
-    def __init__(self):
-#        gui_module = __import__(__name__)
-        self.gui = GUI(self,
-                       framework="pyqt5",
-                       config_file="mapbox_example.yml")
-#        self.map = self.gui.map_widget["main_map"]
+if __name__ == '__main__':
 
-    def initialize(self):
+    QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
+    app = QApplication(sys.argv)
 
-        # Define GUI variables
-        pass
+    # And build the GUI
+    mpbox.gui.build(app)
 
-mpbox = MapBoxExample()
+    app.exec_()

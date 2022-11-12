@@ -29,6 +29,7 @@ class GUI:
         self.splash      = None
         self.config      = {}
         self.variables   = {}
+        self.server_thread = None
         self.server_path = server_path
         self.server_port = server_port
 
@@ -36,19 +37,17 @@ class GUI:
             self.config_path = os.getcwd()
 
         if server_path:
-
+            # Need to run http server (e.g. for MapBox)
             # Check if something's already running on port 3000.
             try:
                 html = urlopen("http://localhost:" + str(server_port) + "/")
                 print("Found server running at port 3000 ...")
             except:
                 print("Starting http server ...")
-#                threading.Thread(target=run_server(server_path, server_port)).start()
-#                threading.Thread(target=run_server).start()
-                thr = threading.Thread(target=run_server, args=(server_path, server_port))
+                # Run http server in separate thread
+                # Use daemon=True to make sure the server stops after the application is finished
+                thr = threading.Thread(target=run_server, args=(server_path, server_port), daemon=True)
                 thr.start()
-
-            self.server_thread = thr
 
     def show_splash(self):
         if self.framework == "pyqt5" and self.splash_file:
@@ -153,6 +152,10 @@ class GUI:
                 elif element["style"] == "popupmenu":
                     from .pyqt5.popupmenu import PopupMenu
                     element["widget_group"] = PopupMenu(element, parent)
+
+                elif element["style"] == "listbox":
+                    from .pyqt5.listbox import ListBox
+                    element["widget_group"] = ListBox(element, parent)
 
                 elif element["style"] == "olmap":
                     from .pyqt5.olmap import OlMap
@@ -279,7 +282,25 @@ class GUI:
                     el["type"] = type(self.variables[group][name]["value"])
                 
                 # Special for popupmenus and listboxes
-                if el["style"] == "popupmenu":
+                if el["style"] == "popupmenu" or el["style"] == "listbox":
+
+                    if "select" not in el:
+                        # Either 'index' or 'item'
+                        el["select"] = "item"
+#                        raise Exception("Error! select not specified in element with style " + el["style"])
+                    if el["select"] == "item":
+                        # item
+                        # option_value and option_string must always be present
+                        if "option_string" not in el:
+                            raise Exception("Error! option_string not specified in element with style " + el["style"])
+                        if "option_value" not in el:
+                            raise Exception("Error! option_value not specified in element with style " + el["style"])
+                    else:
+                        # index
+                        # option_string must always be present
+                        # option_value is ignored
+                        if "option_string" not in el:
+                            raise Exception("Error! option_string not specified in element with style " + el["style"])
                     if type(el["option_value"]) == dict:
                         if "variable_group" not in el["option_value"]:
                             el["option_value"]["variable_group"] = el["variable_group"]
@@ -325,10 +346,12 @@ class GUI:
                     self.set_elements(element["element"], element["widget"])
             else:
                 # And set the values    
-                for el in element_list:
-                    if "widget_group" in el:
-                        el["widget_group"].set()
-        
+                # for el in element_list:
+                #     if "widget_group" in el:
+                #         el["widget_group"].set()
+                if "widget_group" in element:
+                    element["widget_group"].set()
+
     def setvar(self, group, name, value):
         if group not in self.variables:
             self.variables[group] = {}
@@ -351,7 +374,7 @@ def yaml2dict(file_name):
     return dct
 
 def run_server(server_path, server_port):
-
+#    global httpd
     os.chdir(server_path)
     PORT = server_port
     Handler = http.server.SimpleHTTPRequestHandler
