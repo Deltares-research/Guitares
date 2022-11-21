@@ -15,8 +15,6 @@ class Ra2ceGUI:
 
         self.main_path = os.path.dirname(os.path.abspath(__file__))
 
-#        path = os.path.abspath(__file__)
-#        dir_path = os.path.dirname(path)
         server_path = os.path.join(self.main_path, "server")
         self.server_path = server_path
 

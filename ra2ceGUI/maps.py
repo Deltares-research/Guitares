@@ -1,6 +1,7 @@
 from ra2ceGUI import Ra2ceGUI
 import os
 
+
 def update_flood_map():
     print("Updating flood map ...")
 

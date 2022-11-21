@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QWidget, QMainWindow
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QVBoxLayout
 
+
 class MainWindow(QMainWindow):
     def __init__(self, config):
         super().__init__()

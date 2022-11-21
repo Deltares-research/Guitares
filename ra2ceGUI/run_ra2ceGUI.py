@@ -1,5 +1,5 @@
 """
-Example visualdelta
+RA2CE GUI
 """
 
 import sys

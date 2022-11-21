@@ -17,7 +17,7 @@ mapboxgl.accessToken = 'pk.eyJ1IjoiZnJlZGVyaXF1ZTEyMyIsImEiOiJjbGFxcHBmYnAxbWdzM
 const map = new mapboxgl.Map({
   container: 'map', // container ID
   style: 'mapbox://styles/mapbox/streets-v11', // style URL
-  center: [84.27, 28.13], // starting position [lng, lat]
+  center: [-2.5, 52.0], // starting position [lng, lat]
   zoom: 5, // starting zoom
 //  projection: 'globe' // display the map as a 3D globe
   projection: 'mercator' // display the map as a 3D globe
