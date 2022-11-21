@@ -24,6 +24,7 @@ element:
       height: -40
     module: mapbox_map
   - style: panel
+    id: panel
     title: Menu
     position:
       x: 20
@@ -32,6 +33,7 @@ element:
       height: 100
     element:
     - style: pushbutton
+      id: select_floodmap
       text: Select flood map
       position:
         x: 20
@@ -41,27 +43,39 @@ element:
       tooltip: Select flood map
       method: selectFloodmap
     - style: pushbutton
+      id: validate_configuration
       text: Validate configuration
       position:
-        x: 230
+        x: 220
         y: 60
         width: 180
         height: 25
       tooltip: Validate RA2CE configuration
       method: validateRA2CEconfiguration
     - style: pushbutton
+      id: run_ra2ce
       text: Run RA2CE
       position:
-        x: 440
+        x: 420
         y: 60
         width: 180
         height: 25
       tooltip: Run RA2CE
       method: runRA2CE
     - style: edit
+      id: selected_floodmap
       position:
         x: 20
         y: 30
-        width: 200
+        width: 180
         height: 25
       variable: selected_floodmap
+    - style: edit
+      id: valid_config
+      position:
+        x: 220
+        y: 30
+        width: 180
+        height: 25
+      variable: valid_config
+

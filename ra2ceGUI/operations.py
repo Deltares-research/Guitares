@@ -1,17 +1,54 @@
 from ra2ceGUI import Ra2ceGUI
 from guitools.pyqt5.io import openFileNameDialog
+from ra2ce.ra2ce_handler import Ra2ceHandler
 
+from PyQt5.QtWidgets import QLabel
 from pathlib import Path
 
 
+def getRA2CEConfigFiles():
+    network_ini = Path(Ra2ceGUI.ra2ce_config['database']['path']).joinpath('network.ini')
+    analyses_ini = Path(Ra2ceGUI.ra2ce_config['database']['path']).joinpath('analyses.ini')
+
+    if network_ini.is_file() and analyses_ini.is_file():
+        return network_ini, analyses_ini
+    elif network_ini.is_file() and not analyses_ini.is_file():
+        return network_ini, None
+    elif not network_ini.is_file() and analyses_ini.is_file():
+        return None, analyses_ini
+    else:
+        print(f"Both the network and analyses ini files are not found here:\n{network_ini}\n{analyses_ini}")
+        return None, None
+
+
+def getRA2CEHandler():
+    _network_ini, _analyses_ini = getRA2CEConfigFiles()
+    Ra2ceGUI.ra2ceHandler = Ra2ceHandler(_network_ini, _analyses_ini)
+
+
 def validateRA2CEconfiguration():
-    print(Ra2ceGUI.selected_floodmap)
-    print(Path(Ra2ceGUI.selected_floodmap).is_file())
-    pass
+    var = "valid_config"
+    getRA2CEHandler()
+
+    if Ra2ceGUI.ra2ceHandler.input_config.is_valid_input():
+        Ra2ceGUI.valid_config = True
+        Ra2ceGUI.gui.setvar("ra2ceGUI", var, "Valid configuration")
+        Ra2ceGUI.gui.elements['valid_config']['widget_group'].change_background('green')
+    else:
+        Ra2ceGUI.valid_config = False
+        Ra2ceGUI.gui.setvar("ra2ceGUI", var, "Invalid configuration")
+        Ra2ceGUI.gui.elements['valid_config']['widget_group'].change_background('red')
+
+    # Update all GUI elements
+    Ra2ceGUI.gui.update()
 
 
 def runRA2CE():
-    pass
+    getRA2CEHandler()
+
+    Ra2ceGUI.ra2ceHandler.configure()
+    Ra2ceGUI.ra2ceHandler.run_analysis()
+    print("RA2CE successfully ran.")
 
 
 def selectFloodmap():

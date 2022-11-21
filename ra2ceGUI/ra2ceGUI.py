@@ -24,6 +24,9 @@ class Ra2ceGUI:
         server_path = os.path.join(self.main_path, "server")
         self.server_path = server_path
 
+        # Initialize a RA2CE handler
+        self.ra2ceHandler = None
+
         self.gui = GUI(self,
                        framework="pyqt5",
                        splash_file="ra2ceGUI.jpg",
@@ -36,9 +39,11 @@ class Ra2ceGUI:
     def initialize(self):
         # Define variables
         self.selected_floodmap = "Not yet selected"
+        self.valid_config = "Not yet configured"
 
         # Define GUI variables
         self.gui.setvar("ra2ceGUI", "selected_floodmap", self.selected_floodmap)
+        self.gui.setvar("ra2ceGUI", "valid_config", self.valid_config)
 
     def draw_polygon(self, layer_name, create=None, modify=None):
         self.new_polygon        = Polygon()
