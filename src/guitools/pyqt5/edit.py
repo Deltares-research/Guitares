@@ -4,8 +4,8 @@ from PyQt5 import QtCore
 
 from .widget_group import WidgetGroup
 
-class Edit(WidgetGroup):
 
+class Edit(WidgetGroup):
     def __init__(self, element, parent):
         super().__init__(element, parent)
 
@@ -20,24 +20,20 @@ class Edit(WidgetGroup):
 
         x0, y0, wdt, hgt = element["window"].get_position_from_string(self.element["position"], self.parent)
         b.setGeometry(x0, y0, wdt, hgt)
-        if self.element["text"]:
-            label = QLabel(self.element["text"], self.parent)
-            self.widgets.append(label)
-            fm = label.fontMetrics()
-            wlab = fm.size(0, self.element["text"]).width() + 15
-            label.setAlignment(QtCore.Qt.AlignRight)
-            label.setGeometry(x0 - wlab - 3, y0 + 5, wlab, hgt)
-            label.setStyleSheet("background: transparent; border: none")
-            if not element["enable"]:
-                label.setEnabled(False)
+        text = self.element["text"]
+        if not text:
+            text = ""
+        self.label = QLabel(text, self.parent)
+        self.widgets.append(self.label)
+        fm = self.label.fontMetrics()
+        wlab = fm.size(0, text).width() + 15
+        self.label.setAlignment(QtCore.Qt.AlignRight)
+        self.label.setGeometry(x0 - wlab - 3, y0 + 5, wlab, hgt)
+        self.label.setStyleSheet("background: transparent; border: none")
+        if not element["enable"]:
+            self.label.setEnabled(False)
 
-        fcn1 = lambda: self.first_callback()
-        b.editingFinished.connect(fcn1)
-        if self.element["module"] and "method" in self.element:
-            fcn = getattr(self.element["module"], self.element["method"])
-            self.callback = fcn
-            fcn2 = lambda: self.second_callback()
-            b.editingFinished.connect(fcn2)
+        self.connect(b)
 
     def set(self):
         if self.check_variables():
@@ -48,6 +44,15 @@ class Edit(WidgetGroup):
             self.widgets[0].setText(str(val))
             self.widgets[0].setStyleSheet("")
             self.set_dependencies()
+
+    def connect(self, b):
+        fcn1 = lambda: self.first_callback()
+        b.editingFinished.connect(fcn1)
+        if self.element["module"] and "method" in self.element:
+            fcn = getattr(self.element["module"], self.element["method"])
+            self.callback = fcn
+            fcn2 = lambda: self.second_callback()
+            b.editingFinished.connect(fcn2)
 
     def first_callback(self):
         self.okay = True
@@ -81,3 +86,7 @@ class Edit(WidgetGroup):
     def second_callback(self):
         if self.okay:
             self.callback()
+
+    def change_background(self, colour):
+        self.widgets[0].setStyleSheet(f'QWidget {{background-color: {colour};}}')
+        self.connect(self.widgets[0])

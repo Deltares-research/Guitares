@@ -6,6 +6,7 @@ Created on Tue Jul  5 13:40:07 2022
 """
 import os
 from pathlib import Path
+from shapely.geometry import Polygon
 
 from guitools.gui import GUI
 from ra2ce.io.readers.ini_file_reader import IniFileReader
@@ -44,33 +45,6 @@ class Ra2ceGUI:
         # Define GUI variables
         self.gui.setvar("ra2ceGUI", "selected_floodmap", self.selected_floodmap)
         self.gui.setvar("ra2ceGUI", "valid_config", self.valid_config)
-
-    def draw_polygon(self, layer_name, create=None, modify=None):
-        self.new_polygon        = Polygon()
-        self.new_polygon.id     = None
-        self.new_polygon.create = create
-        self.new_polygon.modify = modify
-        self.new_polygon.layer  = layer_name
-        layer_group_name = "_base"
-        js_string = "import('/main.js').then(module => {module.drawPolygon('" + layer_group_name + "','" + layer_name + "');});"
-        self.view.page().runJavaScript(js_string)
-        self.polygon_create_callback = None
-        self.polygon_modify_callback = None
-        if create:
-            self.polygon_create_callback = create
-        if modify:
-            self.polygon_modify_callback = modify
-
-    def draw_polyline(self, layer_name, create=None, modify=None):
-        layer_group_name = "_base"
-        js_string = "import('/main.js').then(module => {module.drawPolyline('" + layer_group_name + "','" + layer_name + "');});"
-        self.view.page().runJavaScript(js_string)
-        self.polyline_create_callback = None
-        self.polyline_modify_callback = None
-        if create:
-            self.polyline_create_callback = create
-        if modify:
-            self.polyline_modify_callback = modify
 
     def update_flood_map(self):
         layer_name = Path(self.selected_floodmap).name

@@ -31,6 +31,7 @@ class GUI:
         self.server_thread = None
         self.server_path = server_path
         self.server_port = server_port
+        self.elements = {}
 
         if not self.config_path:
             self.config_path = os.getcwd()
@@ -104,7 +105,7 @@ class GUI:
 #            app.exec_()
 
     def add_elements(self, element_list, parent):
-        
+        i = 1
         for element in element_list:
 
             if "window" not in element:
@@ -180,6 +181,12 @@ class GUI:
                 # And set the values    
                 if "widget_group" in element:
                     element["widget_group"].set()
+
+            if "id" in element:
+                self.elements[element['id']] = element
+            else:
+                self.elements[i] = element
+                i += 1
         
     def read_gui_config(self, path, file_name):
         

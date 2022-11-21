@@ -161,18 +161,14 @@ class MapBox(QtWidgets.QWidget):
         self.layer[layer_parent][layer_name] = {}
         self.layer[layer_parent][layer_name]["properties"] = LayerProperties()
 
-
-    def draw_polygon(self, layer_name, layer_group_name, create=None, modify=None):
-
-        print("Going to draw a polygon !")
-        # self.new_polygon        = Polygon()
-        # self.new_polygon.id     = None
-        # self.new_polygon.create = create
-        # self.new_polygon.modify = modify
-        # self.new_polygon.layer  = layer_name
-        # layer_group_name = "_base"
-        js_string = "import('/main.js').then(module => {module.drawPolygon();});"
-        # print(js_string)
+    def draw_polygon(self, layer_name, create=None, modify=None):
+        self.new_polygon = Polygon()
+        self.new_polygon.id = None
+        self.new_polygon.create = create
+        self.new_polygon.modify = modify
+        self.new_polygon.layer = layer_name
+        layer_group_name = "_base"
+        js_string = "import('/main.js').then(module => {module.drawPolygon('" + layer_group_name + "','" + layer_name + "');});"
         self.view.page().runJavaScript(js_string)
         self.polygon_create_callback = None
         self.polygon_modify_callback = None
@@ -325,7 +321,6 @@ class MapBox(QtWidgets.QWidget):
         js_string = "import('/main.js').then(module => {module.addMarkerLayer(" + geojs + ",'" + marker_file + "','" + id_string + "','"+ layer_name + "','" + layer_group_name + "')});"
         self.view.page().runJavaScript(js_string)
 
-
     def remove_layer(self, layer_name, layer_group_name):
         layer_group = self.find_layer_group(layer_group_name)
         if layer_group:
@@ -359,17 +354,23 @@ class MapBox(QtWidgets.QWidget):
         layer_group = tree_traverse(self.layer_group, layer_group_name)
         return layer_group[layer_name]
 
+
 class Polygon:
     def __init__(self):
         pass
+
     def plot(self):
         pass
+
     def delete(self):
         pass
+
     def add_to(self, layer):
         pass
+
     def set_color(self, color):
         pass
+
 
 class Layer:
     def __init__(self, name=None, type=None):
@@ -377,10 +378,13 @@ class Layer:
         self.id   = None
         self.type = type
         self.color = "k"
+
     def update(self):
         pass
+
     def remove(self):
         pass
+
     def add_to_group(self, layer_group_name):
         pass
 

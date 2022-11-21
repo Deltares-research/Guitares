@@ -14,12 +14,12 @@ let layerID = 'abc';
 
 console.log('Adding MapBox map ...')
 
-mapboxgl.accessToken = 'pk.eyJ1IjoibXZhbm9ybW9uZHQiLCJhIjoiY2w1cnkyMHM3MGh3aTNjbjAwajh0NHUyZiJ9.5h1GFWjmJGW5hAK2FFCVDQ';
+mapboxgl.accessToken = 'pk.eyJ1IjoiZnJlZGVyaXF1ZTEyMyIsImEiOiJjbGFxcHBmYnAxbWdzM3JvYmFkdTBscjJmIn0.PZlYCN_VXpiX90ik-8C3rw';
 
 const map = new mapboxgl.Map({
   container: 'map', // container ID
   style: 'mapbox://styles/mapbox/streets-v11', // style URL
-  center: [5.0, 52.0], // starting position [lng, lat]
+  center: [84.10, 28.39], // starting position [lng, lat]
   zoom: 6, // starting zoom
 //  projection: 'globe' // display the map as a 3D globe
   projection: 'mercator' // display the map as a 3D globe
@@ -35,6 +35,19 @@ map.scrollZoom.setWheelZoomRate(1 / 200);
 //  map.setFog({}); // Set the default atmosphere style
 //});
 
+// Add navigation controls
+map.addControl(new mapboxgl.NavigationControl());
+
+// Create a marker and update it's coordinates on click.
+var marker = new mapboxgl.Marker();
+
+function add_marker (event) {
+  var coordinates = event.lngLat;
+  console.log('Lng:', coordinates.lng, 'Lat:', coordinates.lat);
+  marker.setLngLat(coordinates).addTo(map);
+}
+
+map.on('click', add_marker);
 
 //export function updateImageLayer(overlayFile, extent, srs, proj4String) {
 //
