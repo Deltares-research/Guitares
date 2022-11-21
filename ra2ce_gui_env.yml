@@ -1,0 +1,17 @@
+name: ra2ce_gui
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - pip
+  - conda-forge::rasterio
+  - conda-forge::gdal
+  - conda-forge::geos
+  - conda-forge::fiona
+  - poetry
+  - mapbox
+  - pip:
+    - pyqt5
+    - pyyaml
+    - PyQtWebEngine
