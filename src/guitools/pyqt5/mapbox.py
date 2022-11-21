@@ -19,13 +19,13 @@ from .colorbar import ColorBar
 from .widget_group import WidgetGroup
 #from .overlays import ImageOverlay
 
+
 class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
     def javaScriptConsoleMessage(self, level, message, lineNumber, sourceID):
         print("javaScriptConsoleMessage: ", level, message, lineNumber, sourceID)
 
-class MapBox(QtWidgets.QWidget):
-#class MapBox(WidgetGroup):
 
+class MapBox(QtWidgets.QWidget):
     def __init__(self, element, parent, server_path, server_port):
         super().__init__(parent)
 

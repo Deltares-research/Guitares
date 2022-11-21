@@ -84,7 +84,6 @@ class GUI:
         if self.framework=="pyqt5":        
             from .pyqt5.main_window import MainWindow
 
-
         self.main_window = MainWindow(self.config)
 #        self.main_window.resize_factor = 1.0
 
@@ -320,8 +319,6 @@ class GUI:
                 for key, val in default.items():
                     if key not in el:
                         el[key] = val
-
-
 
     def update(self):
         # Update all elements

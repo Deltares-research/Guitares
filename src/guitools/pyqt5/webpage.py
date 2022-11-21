@@ -1,5 +1,3 @@
-import os
-import functools
 from PyQt5 import QtWebEngineWidgets
 from PyQt5 import QtCore, QtWidgets
 
@@ -24,4 +22,4 @@ class WebPage(QtWidgets.QWidget):
 
         element["widget"] = view
 
-#        self.callback_module = element["module"]
+        self.callback_module = element["module"]

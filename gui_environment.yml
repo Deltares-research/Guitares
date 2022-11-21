@@ -1,4 +1,4 @@
-name: gui_environment
+name: ra2ce_gui
 channels:
   - anaconda
   - conda-forge
@@ -6,7 +6,10 @@ channels:
 dependencies:
   - numpy
   - pandas
+  - matplotlib
+  - mapbox
   - pip
+  - pillow
   - python==3.9
   - rasterio
   - urllib3
