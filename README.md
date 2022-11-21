@@ -1,8 +1,24 @@
 # GUITools
-A set of Python scripts to build configurable GUIs with PyQt5
+A set of Python scripts to build configurable GUIs with PyQt5.
 
-conda install -c anaconda pyqt
-conda install -c anaconda yaml
-OR: not sure anymore which ...
-pip install pyyaml
-pip install PyQtWebEngine
+If running a development environment with Anaconda, the user may follow these steps in command line:
+::
+  conda env create -f gui_environment.yml
+::
+
+
+# RA2CE GUI
+The RA2CE GUI is an application of GUITools. 
+
+Installation
+---------------------------
+Please follow the instructions below to install the Python environment used for bothGUITools and RA2CE.
+
+If running a development environment with Anaconda, the user may follow these steps in command line:
+::
+  conda env create -f ra2ce_gui_env.yml
+  cd <path of the main RA2CE folder>
+  poetry install
+::
+
+
