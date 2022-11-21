@@ -27,7 +27,7 @@ QWidget
 	color: #fff;
 	selection-background-color: #b78620;
 	selection-color: #000;
-	font: 8pt;
+	font: 10pt;
 
 }
 
@@ -53,7 +53,7 @@ QMenuBar
 	background-color: qlineargradient(spread:repeat, x1:1, y1:0, x2:1, y2:1, stop:0 rgba(57, 57, 57, 255),stop:1 rgba(50, 50, 50, 255));
 	border: 1px solid #000;
 	color: #fff;
-	font: 9pt;
+	font: 10pt;
 
 }
 
@@ -90,7 +90,7 @@ QMenu
     border: 1px solid #222;
     padding: 4px;
     color: #fff;
-    font: 9pt;
+    font: 10pt;
 
 }
 
@@ -270,7 +270,7 @@ QPlainTextEdit
 	background-color: #131313;
 	color : #eee;
 	border: 1px solid #343434;
-	border-radius: 2px;
+	border-radius: 3px;
 	padding: 3px;
 	padding-left: 5px;
 
@@ -298,6 +298,7 @@ QTabWidget::pane
 	background-color: red;
 	border: 1px solid #666;
 	top: 1px;
+    padding: 3px;
 
 }
 

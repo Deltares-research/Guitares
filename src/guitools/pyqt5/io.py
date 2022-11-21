@@ -1,24 +1,26 @@
 # -*- coding: utf-8 -*-
 from PyQt5.QtWidgets import QFileDialog
+from typing import Union, Optional
 from pathlib import Path
 
 
-def openFileNameDialog():
+def openFileNameDialog(defaultOpenFolder: Union[str, Path]) -> Optional[str]:
     options = QFileDialog.Options()
     options |= QFileDialog.DontUseNativeDialog
     fileName, _ = QFileDialog.getOpenFileName(None, "QFileDialog.getOpenFileName()",
-                                              str(Path(Ra2ceGUI.ra2ce_config['database']['path']).joinpath('static', 'hazard')),
+                                              str(defaultOpenFolder),
                                               "All Files (*);;GeoTIFF files (*.tif)", options=options)
     if fileName:
         print(f"File selected: {fileName}")
-        Ra2ceGUI.selected_floodmap = fileName
-        Ra2ceGUI.gui.setvar("ra2ceGUI", "selected_floodmap", Path(fileName).name)
+        return fileName
+    else:
+        return None
 
 
 def openFileNamesDialog():
     options = QFileDialog.Options()
     options |= QFileDialog.DontUseNativeDialog
-    files, _ = QFileDialog.getOpenFileNames("QFileDialog.getOpenFileNames()", "",
+    files, _ = QFileDialog.getOpenFileNames("QFileDialog.getOpenFileNames()", "",  # Perhaps None must be added as first argument
                                             "All Files (*);;Python Files (*.py)", options=options)
     if files:
         print(files)
@@ -27,7 +29,7 @@ def openFileNamesDialog():
 def saveFileDialog():
     options = QFileDialog.Options()
     options |= QFileDialog.DontUseNativeDialog
-    fileName, _ = QFileDialog.getSaveFileName("QFileDialog.getSaveFileName()", "",
+    fileName, _ = QFileDialog.getSaveFileName("QFileDialog.getSaveFileName()", "",  # Perhaps None must be added as first argument
                                               "All Files (*);;Text Files (*.txt)", options=options)
     if fileName:
         print(fileName)

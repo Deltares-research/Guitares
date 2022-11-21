@@ -1,7 +1,6 @@
 import os
 import yaml
 import importlib
-import time
 
 import http.server
 import socketserver
@@ -356,7 +355,6 @@ class GUI:
             self.variables[group][name] = {}
         self.variables[group][name]["value"] = value
 
-
     def getvar(self, group, name):
         if group not in self.variables:
             print("Error! GUI variable group '" + group + "' not defined !")
@@ -369,6 +367,7 @@ def yaml2dict(file_name):
     file = open(file_name,"r")
     dct = yaml.load(file, Loader=yaml.FullLoader)
     return dct
+
 
 def run_server(server_path, server_port):
 #    global httpd

@@ -6,33 +6,11 @@ window:
   module: operations
   variable_group: ra2ceGUI
 menu:
-  - text: "File"
-    module: menu_file
-    menu:
-      - text: "Open"
-        method: open
-      - text: "Save"
-        method: save
-        separator: True
-      - text: "Exit"
-        method: exit
-  - text: "View"
-    module: menu_view
-    menu:
-      - text: "Flood Maps"
-        method: view_flood_maps
-        checkable: True
-      - text: "Tipping Points"
-        menu:
-        - text: "Barrier Closure"
-          checkable: True
-        - text: "Flooding"
-          checkable: True
   - text: "Help"
     module: menu_help
     menu:
-      - text: "About the Visual Delta"
-        method: about_visual_delta
+      - text: "About the RA2CE GUI"
+        method: about_ra2ce_gui
         separator: True
       - text: "About Deltares"
         method: about_deltares
@@ -46,96 +24,44 @@ element:
       height: -40
     module: mapbox_map
   - style: panel
-    title: Select...
+    title: Menu
     position:
       x: 20
       y: 10
       width: -20
       height: 100
     element:
-    - style: popupmenu
-      text: Scenario
+    - style: pushbutton
+      text: Select flood map
       position:
-        x: 50
+        x: 20
         y: 60
-        width: 100
-        height: 20
-      variable: ssp
-      option_value:
-        variable: ssp_values
-      option_string:
-        variable: ssp_strings
-      method: change_scenario
-    - style: popupmenu
-      text: Impact
-      position:
-        x: 50
-        y: 35
-        width: 100
-        height: 20
-      variable: impact
-      option_value:
-        variable: impact_values
-      option_string:
-        variable: impact_strings
-      method: change_impact
-    - style: popupmenu
-      text: Exposure
-      position:
-        x: 50
-        y: 10
-        width: 100
-        height: 20
-      variable: exposure
-      option_value:
-        variable: exposure_values
-      option_string:
-        variable: exposure_strings
-      method: change_exposure
+        width: 180
+        height: 25
+      tooltip: Select flood map
+      method: selectFloodmap
     - style: pushbutton
-      text: Dike
+      text: Validate configuration
       position:
-        x: 200
-        y: 10
-        width: 100
-        height: 20
-      icon: "adaptation_icons\\floodwall.jpg"
-      tooltip: Draw Polyline
+        x: 230
+        y: 60
+        width: 180
+        height: 25
+      tooltip: Validate RA2CE configuration
+      method: validateRA2CEconfiguration
     - style: pushbutton
-      text: Elevate
+      text: Run RA2CE
       position:
-        x: 200
-        y: 35
-        width: 100
-        height: 20
-      icon: "adaptation_icons\\elevate.jpg"
-      tooltip: Draw Polygon
-    - style: slider
-      position:
-        x: 600
-        y: 40
-        width: 300
-        height: 20
-      variable: year
-      minimum: 2000
-      maximum: 2150
-      slide_method: change_year_slider
-      method: change_year
+        x: 440
+        y: 60
+        width: 180
+        height: 25
+      tooltip: Run RA2CE
+      method: runRA2CE
     - style: edit
       position:
-        x: 600
-        y: 70
-        width: 30
-        height: 15
-      text: "Selected Year:"
-      variable: year
-      enable: False
-    - style: edit
-      position:
-        x: 850
-        y: 70
-        width: 50
-        height: 15
-      text: "Median SLR [m]:"  
-      variable: slr_string
-      enable: False
+        x: 20
+        y: 30
+        width: 200
+        height: 25
+      variable: selected_floodmap

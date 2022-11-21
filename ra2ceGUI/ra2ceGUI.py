@@ -5,8 +5,10 @@ Created on Tue Jul  5 13:40:07 2022
 @author: ormondt
 """
 import os
+from pathlib import Path
 
 from guitools.gui import GUI
+from ra2ce.io.readers.ini_file_reader import IniFileReader
 
 
 class Ra2ceGUI:
@@ -14,6 +16,10 @@ class Ra2ceGUI:
 #        gui_module = __import__(__name__)
 
         self.main_path = os.path.dirname(os.path.abspath(__file__))
+
+        # Read the additional ini file (for RA2CE)
+        self.ra2ce_ini = Path(self.main_path).joinpath('ra2ce.ini')
+        self.ra2ce_config = IniFileReader().read(self.ra2ce_ini)
 
         server_path = os.path.join(self.main_path, "server")
         self.server_path = server_path
@@ -29,30 +35,10 @@ class Ra2ceGUI:
 
     def initialize(self):
         # Define variables
-        self.ssp        = 245
-        self.impact     = "Flooding"
-        self.exposure   = "Population"
-        self.adaptation = "Floodwall"
-        self.year       = 2022
-        self.slr        = 0.0
+        self.selected_floodmap = "Not yet selected"
 
         # Define GUI variables
-        self.gui.setvar("ra2ceGUI", "ssp", self.ssp)
-        self.gui.setvar("ra2ceGUI", "ssp_values", [119, 126, 245, 370, 585])
-        self.gui.setvar("ra2ceGUI", "ssp_strings", ["SSP1-1.9", "SSP1-2.6", "SSP2-4.5", "SSP3-7.0", "SSP5-8.5"])
-        self.gui.setvar("ra2ceGUI", "impact", self.impact)
-        self.gui.setvar("ra2ceGUI", "impact_values", ["Flooding", "Erosion", "Salt Intrusion", "Drought", "Other..."])
-        self.gui.setvar("ra2ceGUI", "impact_strings", ["Flooding", "Erosion", "Salt Intrusion", "Drought", "Other..."])
-        self.gui.setvar("ra2ceGUI", "exposure", self.exposure)
-        self.gui.setvar("ra2ceGUI", "exposure_values", ["Population", "Transport", "Critical Infrastructure", "Economy", "Other..."])
-        self.gui.setvar("ra2ceGUI", "exposure_strings", ["Population", "Transport", "Critical Infrastructure", "Economy", "Other..."])
-        self.gui.setvar("ra2ceGUI", "adaptation", self.adaptation)
-        self.gui.setvar("ra2ceGUI", "adaptation_text", "Floodwall")
-        self.gui.setvar("ra2ceGUI", "year", self.year)
-        self.gui.setvar("ra2ceGUI", "slr", self.slr)
-        self.gui.setvar("ra2ceGUI", "slr_string", "{} m ({} - {} m)".format(0.,0.,0.))
-
-#        self.main_path = os.path.dirname(os.path.abspath(__file__))
+        self.gui.setvar("ra2ceGUI", "selected_floodmap", self.selected_floodmap)
 
     def draw_polygon(self, layer_name, create=None, modify=None):
         self.new_polygon        = Polygon()
@@ -80,6 +66,27 @@ class Ra2ceGUI:
             self.polyline_create_callback = create
         if modify:
             self.polyline_modify_callback = modify
+
+    def update_flood_map(self):
+        layer_name = Path(self.selected_floodmap).name
+        layer_group_name = "flood_map_layer_group"
+
+        # Add layer group (this only does something when there is no layer group with layer_group_name)
+        self.gui.map_widget["main_map"].add_layer_group(layer_group_name)
+
+        # Remove old layer from layer group
+        self.gui.map_widget["main_map"].remove_layer(layer_name, layer_group_name)
+
+        # And now add the new image layer to the layer group
+        self.gui.map_widget["main_map"].add_image_layer(Ra2ceGUI.selected_floodmap,
+                                                            layer_name=layer_name,
+                                                            layer_group_name=layer_group_name,
+                                                            legend_title="Depth (m)",
+                                                            colormap="jet",
+                                                            cmin=0.2,
+                                                            cmax=2.0,
+                                                            cstep=0.2,
+                                                            decimals=1)
 
 
 Ra2ceGUI = Ra2ceGUI()

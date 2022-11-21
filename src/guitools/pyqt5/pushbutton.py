@@ -6,7 +6,6 @@ from PyQt5.QtGui import QIcon
 from .widget_group import WidgetGroup
 
 class PushButton(WidgetGroup):
-
     def __init__(self, element, parent):
         super().__init__(element, parent)
 
