@@ -12,12 +12,12 @@ let idCounter = 0;
 
 console.log('Adding MapBox map ...')
 
-mapboxgl.accessToken = 'pk.eyJ1IjoibXZhbm9ybW9uZHQiLCJhIjoiY2w1cnkyMHM3MGh3aTNjbjAwajh0NHUyZiJ9.5h1GFWjmJGW5hAK2FFCVDQ';
+mapboxgl.accessToken = 'pk.eyJ1IjoiZnJlZGVyaXF1ZTEyMyIsImEiOiJjbGFxcHBmYnAxbWdzM3JvYmFkdTBscjJmIn0.PZlYCN_VXpiX90ik-8C3rw';
 
 const map = new mapboxgl.Map({
   container: 'map', // container ID
   style: 'mapbox://styles/mapbox/streets-v11', // style URL
-  center: [-2.5, 52.0], // starting position [lng, lat]
+  center: [84.27, 28.13], // starting position [lng, lat]
   zoom: 5, // starting zoom
 //  projection: 'globe' // display the map as a 3D globe
   projection: 'mercator' // display the map as a 3D globe
