@@ -21,7 +21,6 @@ class MapBoxExample:
         self.layer_names       = [] # only used in gui
         self.polygon_names     = [] # only used in gui
 
-
         self.gui = GUI(self,
                        framework="pyqt5",
                        config_file="mapbox_example.yml",

@@ -1,26 +1,27 @@
 //import mapboxgl from './assets/index.9e7ef0f8.js'; // or "const mapboxgl = require('mapbox-gl');"
-console.log('main.js ...')
+console.log('main.js ...');
 
 import mapboxgl from 'https://cdn.skypack.dev/mapbox-gl'
 //import mapboxMapboxGlDraw from 'https://cdn.skypack.dev/@mapbox/mapbox-gl-draw'
 
 let mapMoved;
 let layerAdded;
-let polygonDrawn;
-let featureSelected;
-let mapBoxReady;
+export let polygonDrawn;
+export let featureSelected;
 let layerName;
 let layerGroupName;
 let jsonString;
 let idCounter = 0;
 let layerID = 'abc';
 let featureId = '';
+let activeLayerId;
+let drawLayer = {};
 
 console.log('Adding MapBox map ...')
 
 mapboxgl.accessToken = 'pk.eyJ1IjoibXZhbm9ybW9uZHQiLCJhIjoiY2w1cnkyMHM3MGh3aTNjbjAwajh0NHUyZiJ9.5h1GFWjmJGW5hAK2FFCVDQ';
 
-const map = new mapboxgl.Map({
+export const map = new mapboxgl.Map({
   container: 'map', // container ID
   style: 'mapbox://styles/mapbox/streets-v11', // style URL
   center: [5.0, 52.0], // starting position [lng, lat]
@@ -34,17 +35,8 @@ map.on('moveend', () => {
     onMoveEnd();
 });
 
-console.log("Adding Mapbox draw")
-
-var draw = new MapboxDraw({displayControlsDefault: false});
-
+export const draw = new MapboxDraw({displayControlsDefault: false});
 map.addControl(draw, 'top-left');
-
-//var Draw = new mapboxMapboxGlDraw();
-
-// Map#addControl takes an optional second argument to set the position of the control.
-// If no position is specified the control defaults to `top-right`. See the docs
-// for more details: https://docs.mapbox.com/mapbox-gl-js/api/#map#addcontrol
 
 
 //function selectionChange(e) {
@@ -96,21 +88,13 @@ map.scrollZoom.setWheelZoomRate(1 / 200);
 new QWebChannel(qt.webChannelTransport, function (channel) {
 
     window.MapBox = channel.objects.MapBox;
-    console.log('wtf')
-    console.log(MapBox)
-    console.log(typeof MapBox)
-    console.log('wtf2')
-
 //    if (typeof MapBox != 'undefined') {
-        console.log('abcdefg')
-        mapMoved          = function() { MapBox.mapMoved(jsonString) };
-        layerAdded        = function() { MapBox.layerAdded(layerID); };
-        polygonDrawn      = function() { MapBox.polygonDrawn(jsonString);};
-        featureSelected   = function(id) { MapBox.featureSelected(id);};
-//        mapBoxReady       = function() { MapBox.mapBoxReady("okay"); };
+        mapMoved          = function() { MapBox.mapMoved(jsonString)};
+        layerAdded        = function() { MapBox.layerAdded(layerID)};
+        polygonDrawn      = function() { console.log(jsonString); console.log(featureId); MapBox.polygonDrawn(jsonString, featureId)};
+        featureSelected   = function(id) { MapBox.featureSelected(id)};
+//        mapBoxReady       = function() { MapBox.mapBoxReady("okay")};
 //    }
-    console.log('wtf3')
-
 });
 
 
@@ -123,61 +107,7 @@ function onMoveEnd(evt) {
     var bottomLeft = [se["lng"], se["lat"]];
     var topRight   = [nw["lng"], nw["lat"]];
     jsonString = JSON.stringify([bottomLeft, topRight]);
-//    draw.changeMode('draw_polygon');
-//    map.on('draw.selectionchange', polygonCreated);
-
     mapMoved();
-}
-
-function polygonCreated(e) {
-  console.log('polygon drawn')
-  var feature=e.features[0]
-  console.log(feature)
-  var id = feature["id"]
-  console.log(id)
-  const data = draw.getAll();
-  console.log(data.features.length)
-  console.log('mode = ' + draw.getMode())
-//  draw.changeMode('direct_select',{featureId: string});
-}
-
-function ccc(e) {
-console.log('create')
-  var feature=e.features[0]
-  console.log(feature)
-  jsonString = 'okay!'
-  polygonDrawn();
-  console.log('called polygondrawn')
-}
-
-function mmm(e) {
-console.log('modechange')
-//  var feature=e.features[0]
-//  console.log(feature)
-}
-
-function sss(e) {
-console.log('selectionchange')
-  var feature=e.features[0]
-  console.log(feature)
-  if (feature) {
-    var id = feature["id"]
-    console.log(id)
-    draw.changeMode('direct_select', {featureId: id});
-    featureSelected(id);
-}
-
-// Incoming functions
-export function drawPolygon() {
-  console.log("mode " + draw.getMode())
-  draw.changeMode('draw_polygon');
-//  map.on('draw.create', polygonCreated);
-
-  map.on('draw.create', ccc);
-  map.on('draw.modechange', mmm);
-  map.on('draw.selectionchange', sss);
-
-//  map.on('draw.selectionchange', polygonCreated);
 }
 
 //export function addImageLayer(fileName, name, group, id, bounds) {
@@ -322,3 +252,8 @@ export function removeLayer(id) {
         legend.remove();
     }
 }
+
+// export function checkMapBoxReady() {
+//  console.log("Checking ...")
+//  mapBoxReady();
+// }
