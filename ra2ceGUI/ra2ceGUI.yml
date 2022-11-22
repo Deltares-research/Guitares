@@ -7,7 +7,7 @@ window:
   variable_group: ra2ceGUI
 menu:
   - text: "Help"
-    module: menu_help
+    module: ra2ce_menu
     menu:
       - text: "About the RA2CE GUI"
         method: about_ra2ce_gui
@@ -33,48 +33,77 @@ element:
       height: 100
     element:
     - style: pushbutton
-      id: select_floodmap
-      text: Select flood map
+      id: load_roads
+      text: Load roads
       position:
         x: 20
         y: 60
-        width: 180
+        width: 140
         height: 25
-      tooltip: Select flood map
-      method: selectFloodmap
+      tooltip: Load roads
+      method: openRoads
+    - style: pushbutton
+      id: load_floodmap
+      text: Load flood map
+      position:
+        x: 170
+        y: 60
+        width: 140
+        height: 25
+      tooltip: Load flood map
+      method: loadFloodmap
     - style: pushbutton
       id: validate_configuration
       text: Validate configuration
       position:
-        x: 220
+        x: 320
         y: 60
-        width: 180
+        width: 140
         height: 25
       tooltip: Validate RA2CE configuration
       method: validateRA2CEconfiguration
     - style: pushbutton
+      id: select_road
+      text: Select road
+      position:
+        x: 470
+        y: 60
+        width: 140
+        height: 25
+      tooltip: Select a road segment
+      method: selectRoad
+    - style: pushbutton
       id: run_ra2ce
       text: Run RA2CE
       position:
-        x: 420
+        x: 710
         y: 60
-        width: 180
+        width: 140
         height: 25
       tooltip: Run RA2CE
       method: runRA2CE
     - style: edit
-      id: selected_floodmap
+      id: loaded_roads
       position:
         x: 20
         y: 30
-        width: 180
+        width: 140
         height: 25
-      variable: selected_floodmap
+      variable: loaded_roads
+    - style: edit
+      id: loaded_floodmap
+      position:
+        x: 170
+        y: 30
+        width: 140
+        height: 25
+      variable: loaded_floodmap
     - style: edit
       id: valid_config
       position:
-        x: 220
+        x: 320
         y: 30
-        width: 180
+        width: 140
         height: 25
       variable: valid_config
+

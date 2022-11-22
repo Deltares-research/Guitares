@@ -40,6 +40,7 @@ class MapBox(QtWidgets.QWidget):
         self.server_path = server_path
 
         self.map_moved = None
+        self.clicked_coords = None
 
         self.layers = {}
         self.id_counter = 0
@@ -85,7 +86,7 @@ class MapBox(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(str)
     def mapMoved(self, coords):
-        print("map moved")
+        # print("map moved")
         self.callback_module.map_moved(json.loads(coords))
 
     @QtCore.pyqtSlot(str)
@@ -104,10 +105,9 @@ class MapBox(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(str, str, str)
     def layerAdded(self, layer_name, layer_group_name, id):
-        pass
-#        print("Layer " + layer_name + " added to group " + layer_group_name + " - ID = " + id)
-#        layer = self.find_layer(layer_name, layer_group_name)
-#        layer.id = id
+        print("Layer " + layer_name + " added to group " + layer_group_name + " - ID = " + id)
+        # layer = self.find_layer(layer_name, layer_group_name)
+        # layer.id = id
 
     @QtCore.pyqtSlot(int, str)
     def polygonAdded(self, id, coords):
@@ -320,6 +320,29 @@ class MapBox(QtWidgets.QWidget):
         geojs = geojson.dumps(collection)
         js_string = "import('/main.js').then(module => {module.addMarkerLayer(" + geojs + ",'" + marker_file + "','" + id_string + "','"+ layer_name + "','" + layer_group_name + "')});"
         self.view.page().runJavaScript(js_string)
+
+    def add_line_geojson(self,
+                         geojson_file,
+                         layer_name=None,
+                         layer_group_name=None):
+
+        self.id_counter += 1
+        id_string = str(self.id_counter)
+
+        layer = Layer(name=layer_name, type="lines")
+        layer.id = id_string
+        layer_group = self.find_layer_group(layer_group_name)
+        layer_group[layer_name] = layer
+        with open(geojson_file) as data_file:
+            feature_collection = geojson.load(data_file)
+        fc_as_string = str(feature_collection)
+        js_string = "import('/main.js').then(module => {module.addLineGeojsonLayer(" + fc_as_string + ",'" + id_string + "','" + layer_name + "','" + layer_group_name + "')});"
+        self.view.page().runJavaScript(js_string)
+
+    @QtCore.pyqtSlot(str)
+    def coordsClicked(self, coords):
+        # print("Coords clicked")
+        self.callback_module.coords_clicked(json.loads(coords))
 
     def remove_layer(self, layer_name, layer_group_name):
         layer_group = self.find_layer_group(layer_group_name)

@@ -6,7 +6,6 @@ Created on Tue Jul  5 13:40:07 2022
 """
 import os
 from pathlib import Path
-from shapely.geometry import Polygon
 
 from guitools.gui import GUI
 from ra2ce.io.readers.ini_file_reader import IniFileReader
@@ -39,15 +38,19 @@ class Ra2ceGUI:
 
     def initialize(self):
         # Define variables
-        self.selected_floodmap = "Not yet selected"
+        self.loaded_floodmap = "Not yet selected"
+        self.loaded_roads = "Not yet selected"
         self.valid_config = "Not yet configured"
+        self.coords_clicked = None
 
         # Define GUI variables
-        self.gui.setvar("ra2ceGUI", "selected_floodmap", self.selected_floodmap)
+        self.gui.setvar("ra2ceGUI", "loaded_floodmap", self.loaded_floodmap)
+        self.gui.setvar("ra2ceGUI", "loaded_roads", self.loaded_roads)
         self.gui.setvar("ra2ceGUI", "valid_config", self.valid_config)
+        self.gui.setvar("ra2ceGUI", "coords_clicked", self.coords_clicked)
 
     def update_flood_map(self):
-        layer_name = Path(self.selected_floodmap).name
+        layer_name = Path(self.loaded_floodmap).name
         layer_group_name = "flood_map_layer_group"
 
         # Add layer group (this only does something when there is no layer group with layer_group_name)
@@ -57,7 +60,7 @@ class Ra2ceGUI:
         self.gui.map_widget["main_map"].remove_layer(layer_name, layer_group_name)
 
         # And now add the new image layer to the layer group
-        self.gui.map_widget["main_map"].add_image_layer(Ra2ceGUI.selected_floodmap,
+        self.gui.map_widget["main_map"].add_image_layer(Ra2ceGUI.loaded_floodmap,
                                                             layer_name=layer_name,
                                                             layer_group_name=layer_group_name,
                                                             legend_title="Depth (m)",
