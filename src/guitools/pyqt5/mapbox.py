@@ -6,6 +6,7 @@ import json
 import numpy as np
 import geojson
 from urllib.request import urlopen
+import urllib
 import time
 from PIL import Image
 import matplotlib
@@ -14,6 +15,7 @@ import rasterio
 import rasterio.features
 from rasterio.warp import calculate_default_transform, reproject, Resampling, transform_bounds
 from rasterio import MemoryFile
+from requests_html import HTMLSession
 
 from .colorbar import ColorBar
 from .widget_group import WidgetGroup
@@ -24,16 +26,26 @@ class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
         print("javaScriptConsoleMessage: ", level, message, lineNumber, sourceID)
 
 class MapBox(QtWidgets.QWidget):
-#class MapBox(WidgetGroup):
 
     def __init__(self, element, parent, server_path, server_port):
         super().__init__(parent)
 
         while True:
             try:
-                html = urlopen("http://localhost:" + str(server_port) + "/")
+
+                print("Finding server ...")
+
+                url = "http://localhost:" + str(server_port) + "/"
+                self.url = url
+
+                urllib.request.urlcleanup()
+                request = urllib.request.urlopen(url)
+                response = request.read().decode('utf-8')
+
                 print("Found server running at port 3000 ...")
+
                 break
+
             except:
                 print("Waiting for server ...")
 
@@ -45,18 +57,16 @@ class MapBox(QtWidgets.QWidget):
         self.id_counter = 0
 
         view = self.view = QtWebEngineWidgets.QWebEngineView(parent)
+#        view.loadFinished.connect(self._loadFinished)
         channel = self.channel = QtWebChannel.QWebChannel()
         view.page().profile().clearHttpCache()
         view.setGeometry(10, 10, 100, 100)
 
         page = WebEnginePage(view)
         view.setPage(page)
-
         view.page().setWebChannel(channel)
-
-        view.load(QtCore.QUrl('http://localhost:' + str(server_port) + '/'))
-
         channel.registerObject("MapBox", self)
+        view.load(QtCore.QUrl('http://localhost:' + str(server_port) + '/'))
 
         element["widget"] = view
 
@@ -64,15 +74,19 @@ class MapBox(QtWidgets.QWidget):
 
         self.layer_group = {}
 
-        # self.ready = False
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.reload)
+        self.timer.setSingleShot(True)
+        self.timer.start(1000)
 
-        # while not self.ready:
-        #     self.check_ready()
-        #     time.sleep(1)
+    def reload(self):
+        self.view.page().setWebChannel(self.channel)
+        self.channel.registerObject("MapBox", self)
+        self.view.load(QtCore.QUrl(self.url))
 
     # def check_ready(self):
     #     print("Check for ready ...")
-    #     js_string = "import('/main.js').then(module => {module.checkReady();});"
+    #     js_string = "import('/main.js').then(module => {module.checkMapBoxReady();});"
     #     self.view.page().runJavaScript(js_string)
 
     def set(self):
@@ -88,9 +102,9 @@ class MapBox(QtWidgets.QWidget):
         print("map moved")
         self.callback_module.map_moved(json.loads(coords))
 
-    @QtCore.pyqtSlot(str)
-    def polygonDrawn(self, coords):
-        print("A polygon was drawn! " + coords)
+    @QtCore.pyqtSlot(str, str)
+    def polygonDrawn(self, coords, feature_id):
+        print("A polygon (" + feature_id + ") with coords " + coords + " was drawn in layer ...")
         self.polygon_create_callback(coords)
 #        self.polygon_modify_callback
 
@@ -162,17 +176,20 @@ class MapBox(QtWidgets.QWidget):
         self.layer[layer_parent][layer_name]["properties"] = LayerProperties()
 
 
-    def draw_polygon(self, layer_name, layer_group_name, create=None, modify=None):
+    def draw_polygon(self, layer_id, create=None, modify=None):
 
         print("Going to draw a polygon !")
+        # First find if this layer already exists
+
         # self.new_polygon        = Polygon()
         # self.new_polygon.id     = None
         # self.new_polygon.create = create
         # self.new_polygon.modify = modify
         # self.new_polygon.layer  = layer_name
         # layer_group_name = "_base"
-        js_string = "import('/main.js').then(module => {module.drawPolygon();});"
-        # print(js_string)
+
+        js_string = "import('/draw.js').then(module => {module.drawPolygon(" + layer_id + ")});"
+        print(js_string)
         self.view.page().runJavaScript(js_string)
         self.polygon_create_callback = None
         self.polygon_modify_callback = None

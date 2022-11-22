@@ -2,12 +2,15 @@ import os
 import yaml
 import importlib
 import time
+import sys
 
 import http.server
 import socketserver
 from urllib.request import urlopen
 from urllib.error import *
 import threading
+from PyQt5.QtWidgets import QApplication
+from PyQt5 import QtCore
 
 
 class GUI:
@@ -58,11 +61,14 @@ class GUI:
         if self.splash:
             self.splash.close()
 
-    def build(self, app,
+    def build(self,
               window={},
               menu={},
               toolbar={},
               element=[]):
+
+        QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
+        app = QApplication(sys.argv)
 
         if self.stylesheet:
             app.setStyleSheet(open(os.path.join(self.config_path, self.stylesheet), "r").read())
@@ -101,6 +107,8 @@ class GUI:
 #            self.main_window.resize_function = lambda: gui.resize()
 #            self.main_window.statusBar().showMessage('Message in statusbar.')
         self.main_window.show()
+
+        app.exec_()
 
 #        if self.framework=="pyqt5":        
 #            app.exec_()
