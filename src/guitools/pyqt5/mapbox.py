@@ -15,7 +15,10 @@ import rasterio
 import rasterio.features
 from rasterio.warp import calculate_default_transform, reproject, Resampling, transform_bounds
 from rasterio import MemoryFile
-from requests_html import HTMLSession
+#from requests_html import HTMLSession
+import geopandas as gpd
+import pandas as pd
+import shapely
 
 from .colorbar import ColorBar
 from .widget_group import WidgetGroup
@@ -53,11 +56,9 @@ class MapBox(QtWidgets.QWidget):
 
         self.map_moved = None
 
-        self.layers = {}
         self.id_counter = 0
 
         view = self.view = QtWebEngineWidgets.QWebEngineView(parent)
-#        view.loadFinished.connect(self._loadFinished)
         channel = self.channel = QtWebChannel.QWebChannel()
         view.page().profile().clearHttpCache()
         view.setGeometry(10, 10, 100, 100)
@@ -72,7 +73,7 @@ class MapBox(QtWidgets.QWidget):
 
         self.callback_module = element["module"]
 
-        self.layer_group = {}
+        self.layer = {}
 
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.reload)
@@ -84,66 +85,34 @@ class MapBox(QtWidgets.QWidget):
         self.channel.registerObject("MapBox", self)
         self.view.load(QtCore.QUrl(self.url))
 
-    # def check_ready(self):
-    #     print("Check for ready ...")
-    #     js_string = "import('/main.js').then(module => {module.checkMapBoxReady();});"
-    #     self.view.page().runJavaScript(js_string)
-
     def set(self):
         pass
 
-    # @QtCore.pyqtSlot(str)
-    # def mapBoxReady(self, ready):
-    #     print(ready)
-    #     self.ready = True
-
     @QtCore.pyqtSlot(str)
     def mapMoved(self, coords):
-        print("map moved")
         self.callback_module.map_moved(json.loads(coords))
 
-    @QtCore.pyqtSlot(str, str)
-    def polygonDrawn(self, coords, feature_id):
-        print("A polygon (" + feature_id + ") with coords " + coords + " was drawn in layer ...")
-        self.polygon_create_callback(coords)
-#        self.polygon_modify_callback
+    @QtCore.pyqtSlot(str, str, str)
+    def polygonDrawn(self, coord_string, feature_id, layer_id):
+        self.active_layer.create_feature(json.loads(coord_string), feature_id, "polygon")
+
+    @QtCore.pyqtSlot(str, str, str)
+    def featureModified(self, coord_string, feature_id, layer_id):
+        coords = json.loads(coord_string)
+        self.active_layer.modify_feature(coords, feature_id, "polygon")
+
+    @QtCore.pyqtSlot(int, str)
+    def polylineAdded(self, id, coords):
+        if self.polyline_create_callback:
+            self.polyline_create_callback(id, coords)
 
     @QtCore.pyqtSlot(str)
-    def featureSelected(self, id):
-        print("The feature with ID " + id + " was selected")
-#        self.polygon_create_callback(coords)
-#        self.polygon_modify_callback
-
-#        self.callback_module.map_moved(json.loads(coords))
+    def featureSelected(self, feature_id):
+        self.active_layer.select_feature(feature_id)
 
     @QtCore.pyqtSlot(str, str, str)
     def layerAdded(self, layer_name, layer_group_name, id):
         pass
-#        print("Layer " + layer_name + " added to group " + layer_group_name + " - ID = " + id)
-#        layer = self.find_layer(layer_name, layer_group_name)
-#        layer.id = id
-
-    @QtCore.pyqtSlot(int, str)
-    def polygonAdded(self, id, coords):
-#        print("Polygon (id=" + str(id) + ") was added")
-#        print(coords)
-        # Call the create callback
-        if self.polygon_create_callback:
-            self.polygon_create_callback(id, coords)
-
-    @QtCore.pyqtSlot(int, str)
-    def polygonModified(self, id, coords):
-#        print("Polygon (id=" + str(id) + ") was changed")
-#        print(coords)
-        if self.polygon_modify_callback:
-            self.polygon_modify_callback(id, coords)
-
-    @QtCore.pyqtSlot(int, str)
-    def polylineAdded(self, id, coords):
-#        print("Polyline (id=" + str(id) + ") was added")
-#        print(coords)
-        if self.polyline_create_callback:
-            self.polyline_create_callback(id, coords)
 
     @QtCore.pyqtSlot(int, str)
     def polylineModified(self, id, coords):
@@ -167,36 +136,116 @@ class MapBox(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(int, str)
     def rectangleModified(self, id, coords):
-#        print("Rectangle (id=" + str(id) + ") was changed")
         if self.rectangle_modify_callback:
             self.rectangle_modify_callback(id, coords)
 
-    def add_layer(self, layer_name, layer_parent):
-        self.layer[layer_parent][layer_name] = {}
-        self.layer[layer_parent][layer_name]["properties"] = LayerProperties()
+    def add_layer(self, layer_id, type, create=None, modify=None, select=None):
+
+        # First add layer group
+        ids = layer_id.split(".")
+        lid = ids[-1]
+        ids = ids[:-1]
+        idstr  = ids[0]
+        for j, id in enumerate(ids):
+            if j>0:
+                idstr = idstr + "." + id
+        self.add_layer_group(idstr)
+
+        # Now add the layer
+        if type == "draw":
+            layer = DrawLayer(self, layer_id, create=create, modify=modify, select=select)
+
+        nids = len(ids)
+
+        if nids == 1:
+            self.layer[ids[0]][lid] = layer
+        elif nids == 2:
+            self.layer[ids[0]][ids[1]][lid] = layer
+        elif nids == 3:
+            self.layer[ids[0]][ids[1]][ids[2]][lid] = layer
+        elif nids == 4:
+            self.layer[ids[0]][ids[1]][ids[2]][ids[3]][lid] = layer
+        elif nids == 5:
+            self.layer[ids[0]][ids[1]][ids[2]][ids[3]][ids[4]][lid] = layer
+
+        return layer
+
+    def delete_layer(self, layer_id):
+
+        layer = self.find_layer_by_id(layer_id)
+
+        if layer:
+
+            layer.clear()
+
+            # First add layer group
+            ids = layer_id.split(".")
+            lid = ids[-1]
+            ids = ids[:-1]
+            nids = len(ids)
+
+            if nids == 1:
+                self.layer[ids[0]].pop(lid)
+            elif nids == 2:
+                self.layer[ids[0]][ids[1]].pop(lid)
+            elif nids == 3:
+                self.layer[ids[0]][ids[1]][ids[2]].pop(lid)
+            elif nids == 4:
+                self.layer[ids[0]][ids[1]][ids[2]][ids[3]].pop(lid)
+            elif nids == 5:
+                self.layer[ids[0]][ids[1]][ids[2]][ids[3]][ids[4]].pop(lid)
 
 
-    def draw_polygon(self, layer_id, create=None, modify=None):
+    def activate_layer(self, layer_id):
+        layer = self.find_layer_by_id(layer_id)
+        if layer:
+            layer.activate()
+        else:
+            print("Error! No layer found with id " + layer_id)
 
-        print("Going to draw a polygon !")
-        # First find if this layer already exists
+    def deactivate_layer(self, layer_id):
+        layer = self.find_layer_by_id(layer_id)
+        if layer:
+            layer.deactivate()
+        else:
+            print("Error! No layer found with id " + layer_id)
 
-        # self.new_polygon        = Polygon()
-        # self.new_polygon.id     = None
-        # self.new_polygon.create = create
-        # self.new_polygon.modify = modify
-        # self.new_polygon.layer  = layer_name
-        # layer_group_name = "_base"
 
-        js_string = "import('/draw.js').then(module => {module.drawPolygon(" + layer_id + ")});"
-        print(js_string)
-        self.view.page().runJavaScript(js_string)
-        self.polygon_create_callback = None
-        self.polygon_modify_callback = None
-        if create:
-            self.polygon_create_callback = create
-        if modify:
-            self.polygon_modify_callback = modify
+    def add_layer_group(self, layer_group_id):
+        ids = layer_group_id.split(".")
+        id = ids[0]
+        if ids[0] not in self.layer:
+            self.layer[ids[0]] = {"_id": id}
+        if len(ids)>1:
+            id = id + "." + ids[1]
+            if ids[1] not in self.layer[ids[0]]:
+                self.layer[ids[0]][ids[1]] = {"_id": id}
+        if len(ids)>2:
+            id = id + "." + ids[2]
+            if ids[2] not in self.layer[ids[0]][ids[1]]:
+                self.layer[ids[0]][ids[1]][ids2[2]] = {"_id": id}
+        if len(ids)>3:
+            id = id + "." + ids[3]
+            if ids[3] not in self.layer[ids[0]][ids[1]][ids[2]]:
+                self.layer[ids[0]][ids[1]][ids2[2]][ids[3]] = {"_id": id}
+        if len(ids)>4:
+            id = id + "." + ids[4]
+            if ids[3] not in self.layer[ids[0]][ids[1]][ids[2]][ids[3]]:
+                self.layer[ids[0]][ids[1]][ids2[2]][ids[3]][ids[4]] = {"_id": id}
+
+    def find_layer_by_id(self, id):
+        layer_list = self.list_layers()
+        for layer in layer_list:
+            if layer.id == id:
+                return layer
+        return None
+
+    def draw_polygon(self, layer_id):
+        layer = self.find_layer_by_id(layer_id)
+        if layer:
+            layer.draw_polygon()
+        else:
+            print("Error! No layer found with id " + layer_id)
 
     def draw_polyline(self, layer_name, create=None, modify=None):
         layer_group_name = "_base"
@@ -333,7 +382,6 @@ class MapBox(QtWidgets.QWidget):
 
         self.id_counter += 1
         id_string = str(self.id_counter)
-
         layer = Layer(name=layer_name, type="image")
         layer.id = id_string
         layer_group = self.find_layer_group(layer_group_name)
@@ -359,52 +407,155 @@ class MapBox(QtWidgets.QWidget):
     #     js_string = "import('/main.js').then(module => {module.showImageLayer()});"
     #     self.view.page().runJavaScript(js_string)
 
-    def add_layer_group(self, name, parent=None):
-        if parent:
-            parent_layer = self.find_layer_group(parent)
-            if parent_layer:
-                parent_layer[name] = {}
-        else:
-            if name not in self.layer_group:
-                self.layer_group[name] = {}
+    # def add_layer_group(self, name, parent=None):
+    #     if parent:
+    #         parent_layer = self.find_layer_group(parent)
+    #         if parent_layer:
+    #             parent_layer[name] = {}
+    #     else:
+    #         if name not in self.layer_group:
+    #             self.layer_group[name] = {}
 
-    def find_layer_group(self, name):
-        layer_group = tree_traverse(self.layer_group, name)
-        return layer_group
+    # def find_layer_group(self, name):
+    #     layer_group = tree_traverse(self.layer_group, name)
+    #     return layer_group
 
-    def find_layer(self, layer_name, layer_group_name):
-        layer_group = tree_traverse(self.layer_group, layer_group_name)
-        return layer_group[layer_name]
+    # def find_layer(self, layer_name, layer_group_name):
+    #     layer_group = tree_traverse(self.layer_group, layer_group_name)
+    #     return layer_group[layer_name]
 
-class Polygon:
-    def __init__(self):
-        pass
-    def plot(self):
-        pass
-    def delete(self):
-        pass
-    def add_to(self, layer):
-        pass
-    def set_color(self, color):
-        pass
+    # def find_layer(self, layer_id):
+    #     layer_group = tree_traverse(self.layer_group, layer_group_name)
+    #     return layer_group[layer_name]
+
+    def list_layers(self, layer_type="all", layer_list=None, layer_tree=None):
+        if not layer_list:
+            layer_list = []
+        # List all layers
+        if not layer_tree:
+            layer_tree = self.layer
+        for key in layer_tree:
+            item = layer_tree[key]
+            if type(item) == str:
+                # Must be the id
+                pass
+            elif type(item) == dict:
+                # Must be a layer group
+                layer_list = self.list_layers(layer_type=layer_type,
+                                              layer_list=layer_list,
+                                              layer_tree=item)
+            else:
+                # An actual layer !
+                if layer_type == "all" or item.type == layer_type:
+                    layer_list.append(item)
+        return layer_list
 
 class Layer:
-    def __init__(self, name=None, type=None):
-        self.name = name
-        self.id   = None
-        self.type = type
-        self.color = "k"
+    def __init__(self, mapbox, id):
+        self.mapbox = mapbox
+        self.id     = id
+        self.type   = None
+
     def update(self):
         pass
+
     def remove(self):
         pass
+
     def add_to_group(self, layer_group_name):
         pass
 
+class DrawLayer(Layer):
+    def __init__(self, mapbox, id, create=None, modify=None, select=None):
+        super().__init__(mapbox, id)
+        self.active = False
+        self.type   = "draw"
+        self.gdf    = gpd.GeoDataFrame()
+        self.create_callback = create
+        self.modify_callback = modify
+        self.select_callback = select
 
-def tree_traverse(tree, key):
-    if key in tree:
-        return tree[key]
-    for v in filter(dict.__instancecheck__, tree.values()):
-        if (found := tree_traverse(v, key)) is not None:
-            return found
+    def activate(self):
+
+        # De-activate all other draw layers
+        draw_layers = self.mapbox.list_layers(layer_type="draw")
+        for layer in draw_layers:
+            # Only de-activate other layers that are currently active
+            if layer.active and layer.id is not self.id:
+                layer.deactivate()
+
+        # And activate the current draw layer
+        if not self.active:
+            self.active = True
+            # First clear existing features in mapbox draw layer
+
+            # And now add drawing features
+            for index, row in self.gdf.iterrows():
+                geom = row["geometry"]
+                feature_id = row["id"]
+                # Remove feature from draw layer
+                js_string = "import('/draw.js').then(module => {module.deleteInactiveFeature('" + feature_id + "')});"
+                self.mapbox.view.page().runJavaScript(js_string)
+                # Add feature as geojson layer
+                gjsn = geojson.Polygon(geom.exterior.coords)
+                gjsn["coordinates"] = [gjsn["coordinates"]]
+                js_string = "import('/draw.js').then(module => {module.addActiveFeature('" + feature_id + "'," + json.dumps(gjsn) + ")});"
+                self.mapbox.view.page().runJavaScript(js_string)
+
+
+    def deactivate(self):
+        self.active = False
+        # Loop through draw features
+        for index, row in self.gdf.iterrows():
+            geom = row["geometry"]
+            feature_id = row["id"]
+            # Remove feature from draw layer
+            js_string = "import('/draw.js').then(module => {module.deleteActiveFeature('" + feature_id + "')});"
+            self.mapbox.view.page().runJavaScript(js_string)
+            # Add feature as geojson layer
+            gjsn = geojson.Polygon(geom.exterior.coords)
+            gjsn["coordinates"] = [gjsn["coordinates"]]
+            js_string = "import('/draw.js').then(module => {module.addInactiveFeature('" + feature_id + "'," + json.dumps(gjsn) + ")});"
+            self.mapbox.view.page().runJavaScript(js_string)
+
+    def draw_polygon(self):
+        # Activate this draw layer (all the other draw layers are automatically de-activated)
+        self.mapbox.active_layer = self
+        self.activate()
+        js_string = "import('/draw.js').then(module => {module.drawPolygon(" + self.id + ")});"
+        self.mapbox.view.page().runJavaScript(js_string)
+
+    def create_feature(self, coords, feature_id, feature_type):
+        if feature_type == "polygon":
+            geom = shapely.geometry.Polygon(coords[0])
+        feature = gpd.GeoDataFrame(data=[feature_id], columns=["id"], crs='epsg:4326', geometry=[geom])
+        self.gdf = pd.concat([self.gdf, feature])
+        if self.create_callback:
+            self.create_callback(feature)
+
+    def modify_feature(self, coords, feature_id, feature_type):
+        if feature_type == "polygon":
+            geom = shapely.geometry.Polygon(coords[0])
+        feature = gpd.GeoDataFrame(data=[feature_id], columns=["id"], crs='epsg:4326', geometry=[geom])
+        for index, row in self.gdf.iterrows():
+            feature_id = row["id"]
+            if row["id"] == feature_id:
+                row["geometry"] = geom
+                break
+        if self.modify_callback:
+            self.modify_callback(feature)
+
+    def select_feature(self, feature_id):
+        if self.select_callback:
+            self.select_callback(feature_id)
+
+    def clear(self):
+        self.active = False
+        # Loop through draw features
+        for index, row in self.gdf.iterrows():
+            feature_id = row["id"]
+            # Remove feature from draw layer
+            js_string = "import('/draw.js').then(module => {module.deleteActiveFeature('" + feature_id + "')});"
+            self.mapbox.view.page().runJavaScript(js_string)
+            js_string = "import('/draw.js').then(module => {module.deleteInactiveFeature('" + feature_id + "')});"
+            self.mapbox.view.page().runJavaScript(js_string)

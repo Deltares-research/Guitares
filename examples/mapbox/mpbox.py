@@ -8,6 +8,12 @@ Created on Tue Jul  5 13:40:07 2022
 import os
 from guitools.gui import GUI
 
+# class Polygon:
+#     def __init__(self):
+#         self.name       = None
+#         self.feature_id = None
+#         self.coords     = None
+
 class MapBoxExample:
     def __init__(self):
 
@@ -34,8 +40,10 @@ class MapBoxExample:
 
         self.gui.setvar("mpbox", "layer", "")
         self.gui.setvar("mpbox", "layer_names", self.layer_names)
+        self.gui.setvar("mpbox", "active_layer_id", "")
 
         self.gui.setvar("mpbox", "polygon", 0)
         self.gui.setvar("mpbox", "layer_string", self.polygon_names)
+
 
 mpbox = MapBoxExample()

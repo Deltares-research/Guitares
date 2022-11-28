@@ -24,6 +24,7 @@ def add_layer_group():
     mpbox.gui.setvar("mpbox", "layer_group", mpbox.layer_group_names[-1])
     mpbox.gui.update()
 
+    mpbox.gui.map_widget["main_map"].add_layer_group(name)
 
 def delete_layer_group():
     layer_group = mpbox.gui.getvar("mpbox", "layer_group")
@@ -51,30 +52,74 @@ def select_layer_group():
     mpbox.gui.setvar("mpbox", "layer", layer)
     mpbox.gui.update()
 
+    layer_group = mpbox.gui.getvar("mpbox", "layer_group")
+    layer       = mpbox.gui.getvar("mpbox", "layer")
+    layer_id    = layer_group + "." + layer
+    mpbox.gui.setvar("mpbox", "active_layer_id", layer_id)
+    mpbox.gui.map_widget["main_map"].activate_layer(layer_id)
 
-def add_layer():
+
+def add_draw_layer():
     layer_group = mpbox.gui.getvar("mpbox", "layer_group")
     name = str(random.randint(0, 1000))
     mpbox.layer_groups[layer_group]["layer"][name] = {}
+    mpbox.layer_groups[layer_group]["layer"][name]["polygon"] = []
     mpbox.layer_names = list(mpbox.layer_groups[layer_group]["layer"].keys())
     mpbox.gui.setvar("mpbox", "layer_names", mpbox.layer_names)
     mpbox.gui.setvar("mpbox", "layer", mpbox.layer_names[-1])
+    layer_id = layer_group + "." + name
+    mpbox.gui.setvar("mpbox", "active_layer_id", layer_id)
+    mpbox.gui.update()
+    mpbox.gui.map_widget["main_map"].add_layer(layer_id, "draw",
+                                               create=polygon_created,
+                                               modify=polygon_modified)
+
+def add_image_layer():
+    layer_group = mpbox.gui.getvar("mpbox", "layer_group")
+    name = str(random.randint(0, 1000))
+    mpbox.layer_groups[layer_group]["layer"][name] = {}
+    mpbox.layer_groups[layer_group]["layer"][name]["polygon"] = []
+    mpbox.layer_names = list(mpbox.layer_groups[layer_group]["layer"].keys())
+    mpbox.gui.setvar("mpbox", "layer_names", mpbox.layer_names)
+    mpbox.gui.setvar("mpbox", "layer", mpbox.layer_names[-1])
+    layer_id = layer_group + "." + name
+    mpbox.gui.setvar("mpbox", "active_layer_id", layer_id)
     mpbox.gui.update()
 
+    mpbox.gui.map_widget["main_map"].add_layer(layer_id, "image",
+                                               create=polygon_created,
+                                               modify=polygon_modified)
 
-def add_drawing_layer():
-    pass
-
-
-def add_normal_layer():
-    pass
 
 
 def delete_layer():
-    print("Deleting layer ...")
+    layer_group = mpbox.gui.getvar("mpbox", "layer_group")
+    layer       = mpbox.gui.getvar("mpbox", "layer")
+    if layer:
+        layer_id    = layer_group + "." + layer
+        mpbox.gui.map_widget["main_map"].delete_layer(layer_id)
+        mpbox.layer_groups[layer_group]["layer"].pop(layer)
+        mpbox.layer_names = list(mpbox.layer_groups[layer_group]["layer"].keys())
+        mpbox.gui.setvar("mpbox", "layer_names", mpbox.layer_names)
+        if mpbox.layer_names:
+            mpbox.gui.setvar("mpbox", "layer", mpbox.layer_names[-1])
+            mpbox.gui.setvar("mpbox", "active_layer_id", layer_id)
+        else:
+            mpbox.gui.setvar("mpbox", "layer", "")
+            mpbox.gui.setvar("mpbox", "active_layer_id", "")
+        mpbox.gui.update()
+
+        layer       = mpbox.gui.getvar("mpbox", "layer")
+        layer_id    = layer_group + "." + layer
+        mpbox.gui.map_widget["main_map"].activate_layer(layer_id)
+
 
 def select_layer():
-    pass
+    layer_group = mpbox.gui.getvar("mpbox", "layer_group")
+    layer       = mpbox.gui.getvar("mpbox", "layer")
+    layer_id    = layer_group + "." + layer
+    mpbox.gui.setvar("mpbox", "active_layer_id", layer_id)
+    mpbox.gui.map_widget["main_map"].activate_layer(layer_id)
 
 
 def add_polygon():
@@ -82,12 +127,33 @@ def add_polygon():
     layer_group = mpbox.gui.getvar("mpbox", "layer_group")
     layer       = mpbox.gui.getvar("mpbox", "layer")
     layer_id = layer_group + "." + layer
-    mpbox.gui.map_widget["main_map"].draw_polygon(layer_id, create=polygon_created)
+    mpbox.gui.map_widget["main_map"].draw_polygon(layer_id)
 
 
-def polygon_created(coords):
-    print(coords)
+def polygon_created(feature):
+#    print("Polygon created")
+    layer_group = mpbox.gui.getvar("mpbox", "layer_group")
+    layer_name  = mpbox.gui.getvar("mpbox", "layer")
+    layer = mpbox.layer_groups[layer_group]["layer"][layer_name]
+    layer["polygon"].append(feature)
 
+def polygon_modified(feature):
+#    print("Polygon modified")
+    feature_id = feature["id"][0]
+    layer_group = mpbox.gui.getvar("mpbox", "layer_group")
+    layer_name  = mpbox.gui.getvar("mpbox", "layer")
+    layer = mpbox.layer_groups[layer_group]["layer"][layer_name]
+    for pol in layer["polygon"]:
+        if pol["id"][0] == feature_id:
+            pol["geometry"] = feature["geometry"]
+            break
+
+def import_image():
+    # Draw polygon was clicked
+    layer_group = mpbox.gui.getvar("mpbox", "layer_group")
+    layer       = mpbox.gui.getvar("mpbox", "layer")
+    layer_id    = layer_group + "." + layer
+    mpbox.gui.map_widget["main_map"].draw_polygon(layer_id)
 
 def delete_polygon():
     pass

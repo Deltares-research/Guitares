@@ -8,12 +8,13 @@ let mapMoved;
 let layerAdded;
 export let polygonDrawn;
 export let featureSelected;
+export let featureModified;
 let layerName;
 let layerGroupName;
-let jsonString;
+export let jsonString;
 let idCounter = 0;
 let layerID = 'abc';
-let featureId = '';
+export let featureId = '';
 let activeLayerId;
 let drawLayer = {};
 
@@ -38,34 +39,6 @@ map.on('moveend', () => {
 export const draw = new MapboxDraw({displayControlsDefault: false});
 map.addControl(draw, 'top-left');
 
-
-//function selectionChange(e) {
-//  console.log('selection changed')
-//  console.log('mode = ' + draw.getMode())
-//}
-
-//map.on('draw.selectionchange', selectionChange);
-
-
-
-//map.on('load', function() {
-//  // ALL YOUR APPLICATION CODE
-//});
-
-//  draw.changeMode('draw_polygon');
-//  console.log('mode2=' + draw.getMode())
-//  draw.changeMode('direct_select');
-
-//  if (data.features.length > 0) {
-//   console.log(data.features.length)
-//    }
-//  else {
-//    if (e.type !== 'draw.delete') {
-//      alert('Click the map to draw a polygon.');
-//    }
-//}
-
-
 map.scrollZoom.setWheelZoomRate(1 / 200);
 //map.on('style.load', () => {
 //  map.setFog({}); // Set the default atmosphere style
@@ -87,14 +60,14 @@ map.scrollZoom.setWheelZoomRate(1 / 200);
 
 new QWebChannel(qt.webChannelTransport, function (channel) {
 
-    window.MapBox = channel.objects.MapBox;
-//    if (typeof MapBox != 'undefined') {
-        mapMoved          = function() { MapBox.mapMoved(jsonString)};
-        layerAdded        = function() { MapBox.layerAdded(layerID)};
-        polygonDrawn      = function() { console.log(jsonString); console.log(featureId); MapBox.polygonDrawn(jsonString, featureId)};
-        featureSelected   = function(id) { MapBox.featureSelected(id)};
-//        mapBoxReady       = function() { MapBox.mapBoxReady("okay")};
-//    }
+  window.MapBox = channel.objects.MapBox;
+  if (typeof MapBox != 'undefined') {
+    mapMoved          = function() { MapBox.mapMoved(jsonString)};
+    layerAdded        = function() { MapBox.layerAdded(layerID)};
+    polygonDrawn      = function(coordString, featureId) { MapBox.polygonDrawn(coordString, featureId, "layer_id")};
+    featureModified   = function(coordString, featureId) { MapBox.featureModified(coordString, featureId, "layer_id")};
+    featureSelected   = function(id) { MapBox.featureSelected(id)};
+  }
 });
 
 
@@ -110,7 +83,6 @@ function onMoveEnd(evt) {
     mapMoved();
 }
 
-//export function addImageLayer(fileName, name, group, id, bounds) {
 export function addImageLayer(fileName, id, bounds, colorbar) {
 
     map.addSource(id, {
@@ -239,7 +211,6 @@ export function addMarkerLayer(geojson, markerFile, id) {
 
 }
 
-
 export function removeLayer(id) {
 	// Remove layer
 	var mapLayer = map.getLayer(id);
@@ -252,8 +223,3 @@ export function removeLayer(id) {
         legend.remove();
     }
 }
-
-// export function checkMapBoxReady() {
-//  console.log("Checking ...")
-//  mapBoxReady();
-// }

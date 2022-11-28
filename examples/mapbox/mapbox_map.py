@@ -7,4 +7,5 @@ Created on Tue Jul  5 13:40:07 2022
 
 
 def map_moved(coords):
-    print("Map move to :" + str(coords))
+    pass
+#    print("Map move to :" + str(coords))
