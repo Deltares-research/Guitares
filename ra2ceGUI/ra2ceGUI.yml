@@ -3,7 +3,7 @@ window:
   width: 1100
   height: 650
   package: ra2ceGUI
-  module: operations
+  module: operations.operations
   variable_group: ra2ceGUI
 menu:
   - text: "Help"
@@ -32,7 +32,7 @@ element:
       width: -20
       height: 100
     element:
-    - style: pushbutton
+    - style: popupmenu
       id: load_roads
       text: Load roads
       position:
@@ -40,6 +40,11 @@ element:
         y: 60
         width: 140
         height: 25
+      variable: loaded_roads
+      option_value:
+        variable: loaded_roads_values
+      option_string:
+        variable: loaded_roads_strings
       tooltip: Load roads
       method: openRoads
     - style: pushbutton
@@ -61,6 +66,7 @@ element:
         width: 140
         height: 25
       tooltip: Validate RA2CE configuration
+      module: operations.ra2ce.validate_ra2ce_configuration
       method: validateRA2CEconfiguration
     - style: pushbutton
       id: select_road
@@ -81,15 +87,18 @@ element:
         width: 140
         height: 25
       tooltip: Run RA2CE
+      module: operations.ra2ce.run_ra2ce
       method: runRA2CE
     - style: edit
-      id: loaded_roads
+      id: threshold_road_disruption
+      text: Threshold road disruption [m]
       position:
         x: 20
         y: 30
         width: 140
         height: 25
-      variable: loaded_roads
+      variable: threshold_road_disruption
+      tooltip: Input a road disruption threshold in meters
     - style: edit
       id: loaded_floodmap
       position:

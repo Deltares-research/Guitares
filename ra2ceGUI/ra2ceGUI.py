@@ -39,13 +39,21 @@ class Ra2ceGUI:
     def initialize(self):
         # Define variables
         self.loaded_floodmap = "Not yet selected"
-        self.loaded_roads = "Not yet selected"
+        self.loaded_roads_values = ["markets_residential", "warehouses_shelters", "shelters_hospitals"]
+        self.loaded_roads_strings = ["Markets -> Residential homes", "Food warehouses -> Shelters", "Shelters -> Hospitals"]
+        self.map_roads_values_strings = dict(zip(self.loaded_roads_values, self.loaded_roads_strings))
+        self.loaded_roads = self.loaded_roads_values[0]
+        self.loaded_roads_string = self.loaded_roads_strings[0]
         self.valid_config = "Not yet configured"
         self.coords_clicked = None
 
         # Define GUI variables
         self.gui.setvar("ra2ceGUI", "loaded_floodmap", self.loaded_floodmap)
         self.gui.setvar("ra2ceGUI", "loaded_roads", self.loaded_roads)
+        self.gui.setvar("ra2ceGUI", "loaded_roads_string", self.loaded_roads_string)
+        self.gui.setvar("ra2ceGUI", "loaded_roads_values", self.loaded_roads_values)
+        self.gui.setvar("ra2ceGUI", "loaded_roads_strings", self.loaded_roads_strings)
+        self.gui.setvar("ra2ceGUI", "threshold_road_disruption", 0.)  # 0 as default value?
         self.gui.setvar("ra2ceGUI", "valid_config", self.valid_config)
         self.gui.setvar("ra2ceGUI", "coords_clicked", self.coords_clicked)
 

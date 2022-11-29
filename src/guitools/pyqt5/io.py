@@ -9,7 +9,7 @@ def openFileNameDialog(defaultOpenFolder: Union[str, Path]) -> Optional[str]:
     options |= QFileDialog.DontUseNativeDialog
     fileName, _ = QFileDialog.getOpenFileName(None, "QFileDialog.getOpenFileName()",
                                               str(defaultOpenFolder),
-                                              "All Files (*);;GeoTIFF files (*.tif)", options=options)
+                                              "All Files (*);;GeoTIFF files (*.tif)", options=options)  #TODO: add the file options as argument
     if fileName:
         print(f"File selected: {fileName}")
         return fileName
