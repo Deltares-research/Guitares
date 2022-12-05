@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-from operations.ra2ce.ra2ce_utils import getRA2CEHandler
 from ra2ceGUI import Ra2ceGUI
 
 
 def validateRA2CEconfiguration():
+    assert Ra2ceGUI.ra2ceHandler
+
     var = "valid_config"
-    getRA2CEHandler()
 
     if Ra2ceGUI.ra2ceHandler.input_config.is_valid_input():
         Ra2ceGUI.valid_config = True

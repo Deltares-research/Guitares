@@ -39,15 +39,20 @@ class Ra2ceGUI:
     def initialize(self):
         # Define variables
         self.loaded_floodmap = "Not yet selected"
-        self.loaded_roads_values = ["markets_residential", "warehouses_shelters", "shelters_hospitals"]
-        self.loaded_roads_strings = ["Markets -> Residential homes", "Food warehouses -> Shelters", "Shelters -> Hospitals"]
+        _loaded_roads_values = Ra2ceGUI.ra2ce_config['origins_destinations']['list_od_pairs'].strip().split(',')
+        self.loaded_roads_values = [Path(Ra2ceGUI.ra2ce_config['database']['path']).joinpath('static',
+                                                                                     'network',
+                                                                                     f"{lrv}.p") for lrv in _loaded_roads_values]
+        self.loaded_roads_strings = [f"{n.split('_')[0].capitalize()} -> {n.split('_')[1].capitalize()}" for n in _loaded_roads_values]
         self.map_roads_values_strings = dict(zip(self.loaded_roads_values, self.loaded_roads_strings))
         self.loaded_roads = self.loaded_roads_values[0]
         self.loaded_roads_string = self.loaded_roads_strings[0]
         self.valid_config = "Not yet configured"
         self.coords_clicked = None
+        self.run_name = "Choose a name for this run"
 
         # Define GUI variables
+        self.gui.setvar("ra2ceGUI", "run_name", self.run_name)
         self.gui.setvar("ra2ceGUI", "loaded_floodmap", self.loaded_floodmap)
         self.gui.setvar("ra2ceGUI", "loaded_roads", self.loaded_roads)
         self.gui.setvar("ra2ceGUI", "loaded_roads_string", self.loaded_roads_string)

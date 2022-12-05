@@ -32,12 +32,22 @@ element:
       width: -20
       height: 100
     element:
+    - style: edit
+      id: run_name
+      text: Run name
+      position:
+        x: 100
+        y: 65
+        width: 140
+        height: 25
+      variable: run_name
+      tooltip: Insert a name for the current run
     - style: popupmenu
       id: load_roads
       text: Load roads
       position:
-        x: 20
-        y: 60
+        x: 100
+        y: 35
         width: 140
         height: 25
       variable: loaded_roads
@@ -48,21 +58,32 @@ element:
       tooltip: Load roads
       method: openRoads
     - style: pushbutton
-      id: load_floodmap
-      text: Load flood map
+      id: select_floodmap
+      text: Select flood map
       position:
-        x: 170
-        y: 60
+        x: 250
+        y: 65
         width: 140
         height: 25
-      tooltip: Load flood map
-      method: loadFloodmap
+      tooltip: Select flood map
+      method: selectFloodmap
+    - style: pushbutton
+      id: update_configuration
+      text: Update configuration
+      position:
+        x: 400
+        y: 65
+        width: 140
+        height: 25
+      tooltip: Update RA2CE configuration
+      module: operations.ra2ce.modify_ra2ce_configuration
+      method: modifyRA2CEconfiguration
     - style: pushbutton
       id: validate_configuration
       text: Validate configuration
       position:
-        x: 320
-        y: 60
+        x: 400
+        y: 35
         width: 140
         height: 25
       tooltip: Validate RA2CE configuration
@@ -72,8 +93,8 @@ element:
       id: select_road
       text: Select road
       position:
-        x: 470
-        y: 60
+        x: 550
+        y: 65
         width: 140
         height: 25
       tooltip: Select a road segment
@@ -82,8 +103,8 @@ element:
       id: run_ra2ce
       text: Run RA2CE
       position:
-        x: 710
-        y: 60
+        x: 790
+        y: 65
         width: 140
         height: 25
       tooltip: Run RA2CE
@@ -91,10 +112,10 @@ element:
       method: runRA2CE
     - style: edit
       id: threshold_road_disruption
-      text: Threshold road disruption [m]
+      text: Threshold [m]
       position:
-        x: 20
-        y: 30
+        x: 100
+        y: 5
         width: 140
         height: 25
       variable: threshold_road_disruption
@@ -102,16 +123,16 @@ element:
     - style: edit
       id: loaded_floodmap
       position:
-        x: 170
-        y: 30
+        x: 250
+        y: 35
         width: 140
         height: 25
       variable: loaded_floodmap
     - style: edit
       id: valid_config
       position:
-        x: 320
-        y: 30
+        x: 400
+        y: 5
         width: 140
         height: 25
       variable: valid_config

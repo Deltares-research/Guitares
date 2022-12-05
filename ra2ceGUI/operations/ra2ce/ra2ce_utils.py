@@ -2,13 +2,8 @@
 from ra2ce.ra2ce_handler import Ra2ceHandler
 from ra2ceGUI import Ra2ceGUI
 
-from pathlib import Path
 
-
-def getRA2CEConfigFiles():
-    network_ini = Path(Ra2ceGUI.ra2ce_config['database']['path']).joinpath('network.ini')
-    analyses_ini = Path(Ra2ceGUI.ra2ce_config['database']['path']).joinpath('analyses.ini')
-
+def getRA2CEConfigFiles(network_ini, analyses_ini):
     if network_ini.is_file() and analyses_ini.is_file():
         return network_ini, analyses_ini
     elif network_ini.is_file() and not analyses_ini.is_file():
@@ -20,6 +15,5 @@ def getRA2CEConfigFiles():
         return None, None
 
 
-def getRA2CEHandler():
-    _network_ini, _analyses_ini = getRA2CEConfigFiles()
-    Ra2ceGUI.ra2ceHandler = Ra2ceHandler(_network_ini, _analyses_ini)
+def getRA2CEHandler(network_ini, analyses_ini):
+    Ra2ceGUI.ra2ceHandler = Ra2ceHandler(network_ini, analyses_ini)

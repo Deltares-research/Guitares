@@ -35,8 +35,9 @@ def openRoads():
         Ra2ceGUI.gui.update()
 
 
-def loadFloodmap():
-    Ra2ceGUI.loaded_floodmap = openFileNameDialog(Path(Ra2ceGUI.ra2ce_config['database']['path']).joinpath('static', 'hazard'))
+def selectFloodmap():
+    Ra2ceGUI.loaded_floodmap = openFileNameDialog(Path(Ra2ceGUI.ra2ce_config['database']['path']).joinpath('static', 'hazard'),
+                                                  fileTypes=["GeoTIFF files (*.tif)"])
     if Ra2ceGUI.loaded_floodmap:
         Ra2ceGUI.update_flood_map()
         Ra2ceGUI.gui.setvar("ra2ceGUI", "loaded_floodmap", Path(Ra2ceGUI.loaded_floodmap).name)

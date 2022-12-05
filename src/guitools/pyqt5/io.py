@@ -4,12 +4,12 @@ from typing import Union, Optional
 from pathlib import Path
 
 
-def openFileNameDialog(defaultOpenFolder: Union[str, Path]) -> Optional[str]:
+def openFileNameDialog(defaultOpenFolder: Union[str, Path], fileTypes: list) -> Optional[str]:
     options = QFileDialog.Options()
     options |= QFileDialog.DontUseNativeDialog
     fileName, _ = QFileDialog.getOpenFileName(None, "QFileDialog.getOpenFileName()",
                                               str(defaultOpenFolder),
-                                              "All Files (*);;GeoTIFF files (*.tif)", options=options)  #TODO: add the file options as argument
+                                              ";;".join(fileTypes), options=options)  #TODO: add the file options as argument
     if fileName:
         print(f"File selected: {fileName}")
         return fileName
