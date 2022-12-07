@@ -5,6 +5,9 @@ from guitools.pyqt5.io import openFolderNameDialog
 from pathlib import Path
 import shutil
 
+# class RunManager:
+#     def __init__(self):
+
 
 def checkFileExists(file_path: Path) -> bool:
     if file_path.is_file():
@@ -31,6 +34,8 @@ def createNewRunFolders():
         Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'static', 'network').mkdir(
             parents=True, exist_ok=False)
         Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'static', 'hazard').mkdir(
+            parents=True, exist_ok=False)
+        Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'static', 'output_graph').mkdir(
             parents=True, exist_ok=False)
 
         # Copy the ini files

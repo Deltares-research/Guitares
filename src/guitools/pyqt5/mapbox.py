@@ -230,7 +230,7 @@ class MapBox(QtWidgets.QWidget):
                         cstep=None,
                         decimals=None,
                         colormap="jet"):
-
+        # TODO: kijk naar dit stukje
         self.id_counter += 1
         id_string = str(self.id_counter)
 
@@ -275,7 +275,7 @@ class MapBox(QtWidgets.QWidget):
 
         band1 = np.flipud(band1)
         cminimum = np.nanmin(band1)
-        cmaximum = np.nanmax(band1)
+        cmaximum = 2 #np.nanmax(band1)
 
         norm = matplotlib.colors.Normalize(vmin=cminimum, vmax=cmaximum)
         vnorm = norm(band1)

@@ -42,9 +42,8 @@ class Ra2ceGUI:
         # Define variables
         self.loaded_floodmap = "Not yet selected"
         _loaded_roads_values = Ra2ceGUI.ra2ce_config['origins_destinations']['list_od_pairs'].strip().split(',')
-        self.loaded_roads_values = [Path(Ra2ceGUI.ra2ce_config['database']['path']).joinpath('static',
-                                                                                     'network',
-                                                                                     f"{lrv}.p") for lrv in _loaded_roads_values]
+        self.loaded_roads_values = [Ra2ceGUI.ra2ce_config['base_data']['path'].joinpath('network',
+                                                                                        f"{lrv}.p") for lrv in _loaded_roads_values]
         self.loaded_roads_strings = [f"{n.split('_')[0].capitalize()} -> {n.split('_')[1].capitalize()}" for n in _loaded_roads_values]
         self.map_roads_values_strings = dict(zip(self.loaded_roads_values, self.loaded_roads_strings))
         self.loaded_roads = self.loaded_roads_values[0]
@@ -66,6 +65,29 @@ class Ra2ceGUI:
         self.gui.setvar("ra2ceGUI", "valid_config", self.valid_config)
         self.gui.setvar("ra2ceGUI", "coords_clicked", self.coords_clicked)
         self.gui.setvar("ra2ceGUI", "edited_flood_depth", self.edited_flood_depth)
+
+    def valid_input(self):
+        _original_value = "Choose a name"
+        if isinstance(self.loaded_floodmap, str):
+            self.gui.setvar("ra2ceGUI", "valid_config", "Select a flood map")
+            self.gui.update()
+            return False
+
+        if self.loaded_floodmap.is_file() and self.gui.getvar("ra2ceGUI",
+                                                              "run_name") != _original_value:
+            return True
+        else:
+            if not self.loaded_floodmap.is_file() and self.gui.getvar("ra2ceGUI",
+                                                                      "run_name") != _original_value:
+                self.gui.setvar("ra2ceGUI", "valid_config", "Select a flood map")
+            elif self.loaded_floodmap.is_file() and self.gui.getvar("ra2ceGUI",
+                                                                    "run_name") == _original_value:
+                self.gui.setvar("ra2ceGUI", "valid_config", "Provide a run name")
+            elif not self.loaded_floodmap.is_file() and self.gui.getvar("ra2ceGUI",
+                                                                        "run_name") == _original_value:
+                self.gui.setvar("ra2ceGUI", "valid_config", "Provide a run name")
+            self.gui.update()
+            return False
 
     def show_roads(self):
         # Find the layer group
@@ -100,24 +122,6 @@ class Ra2ceGUI:
                                                             cstep=0.2,
                                                             decimals=1)
 
-    def valid_input(self):
-        _original_value = "Choose a name"
-        if self.loaded_floodmap.is_file() and self.gui.getvar("ra2ceGUI",
-                                                              "run_name") != _original_value:
-            return True
-        else:
-            if not self.loaded_floodmap.is_file() and self.gui.getvar("ra2ceGUI",
-                                                                      "run_name") != _original_value:
-                self.gui.setvar("ra2ceGUI", "valid_config", "Select a flood map")
-            elif self.loaded_floodmap.is_file() and self.gui.getvar("ra2ceGUI",
-                                                                    "run_name") == _original_value:
-                self.gui.setvar("ra2ceGUI", "valid_config", "Provide a run name")
-            elif not self.loaded_floodmap.is_file() and self.gui.getvar("ra2ceGUI",
-                                                                        "run_name") == _original_value:
-                self.gui.setvar("ra2ceGUI", "valid_config", "Provide a run name")
-            self.gui.update()
-            return False
-
     def update_network_config(self):
         # Update the Network ini configurations
         # Project
@@ -125,15 +129,16 @@ class Ra2ceGUI:
                                                                                                        "run_name")
 
         # Network
-        self.ra2ceHandler.input_config.network_config.config_data['network']['source'] = 'pickle'
-        self.ra2ceHandler.input_config.network_config.config_data['network']['primary_file'] = self.loaded_roads
+        self.ra2ceHandler.input_config.network_config.config_data['network']['source'] = 'shapefile'
+        self.ra2ceHandler.input_config.network_config.config_data['network']['primary_file'] = self.loaded_roads.stem + '.shp'
+        self.ra2ceHandler.input_config.network_config.config_data['network']['file_id'] = self.ra2ce_config['network']['id_name']
 
         # Origins and destinations
         self.ra2ceHandler.input_config.network_config.config_data['origins_destinations']['origins'] = [
-            Path(self.ra2ce_config['database']['path']).joinpath('static', 'network',
+            Path(self.ra2ce_config['base_data']['path']).joinpath('network',
                                                                  f"{self.loaded_roads.stem.split('_')[0]}.shp")]
         self.ra2ceHandler.input_config.network_config.config_data['origins_destinations']['destinations'] = [
-            Path(self.ra2ce_config['database']['path']).joinpath('static', 'network',
+            Path(self.ra2ce_config['base_data']['path']).joinpath('network',
                                                                  f"{self.loaded_roads.stem.split('_')[1]}.shp")]
         self.ra2ceHandler.input_config.network_config.config_data['origins_destinations'][
             'origins_names'] = f"{self.loaded_roads.stem.split('_')[0]}"
@@ -146,7 +151,7 @@ class Ra2ceGUI:
 
         # Hazard
         self.ra2ceHandler.input_config.network_config.config_data['hazard']['hazard_map'] = [
-            Path(self.loaded_floodmap)]
+            self.loaded_floodmap]
         self.ra2ceHandler.input_config.network_config.config_data['hazard']['aggregate_wl'] = \
             self.ra2ce_config['hazard']['zonal_stats']
         self.ra2ceHandler.input_config.network_config.config_data['hazard']['hazard_crs'] = \

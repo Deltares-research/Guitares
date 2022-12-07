@@ -162,6 +162,7 @@ element:
         width: 140
         height: 25
       variable: loaded_floodmap
+      enable: False
     - style: edit
       id: valid_config
       position:
@@ -170,6 +171,7 @@ element:
         width: 140
         height: 25
       variable: valid_config
+      enable: False
     - style: edit
       id: edit_flood_depth
       text:  

@@ -28,7 +28,7 @@ class Edit(WidgetGroup):
         fm = self.label.fontMetrics()
         wlab = fm.size(0, text).width() + 15
         self.label.setAlignment(QtCore.Qt.AlignRight)
-        self.label.setGeometry(x0 - wlab - 3, y0 + 5, wlab, hgt)
+        self.label.setGeometry(x0 - wlab - 3, y0 + 5, wlab, hgt)  # x0 - wlab - 3, y0 + 5, wlab, hgt
         self.label.setStyleSheet("background: transparent; border: none")
         if not element["enable"]:
             self.label.setEnabled(False)

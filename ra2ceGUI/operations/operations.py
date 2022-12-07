@@ -52,9 +52,7 @@ def showRoads():
 
 def openRoads():
     # Get the selected path
-    Ra2ceGUI.loaded_roads = Ra2ceGUI.current_project.joinpath('static',
-                                                              'network',
-                                                              f"{Ra2ceGUI.gui.getvar('ra2ceGUI', 'loaded_roads')}.p")
+    Ra2ceGUI.loaded_roads = Ra2ceGUI.gui.getvar('ra2ceGUI', 'loaded_roads')
 
     if Ra2ceGUI.loaded_roads:
         # Update the text to show underneath the button
