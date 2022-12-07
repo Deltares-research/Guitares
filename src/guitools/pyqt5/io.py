@@ -9,10 +9,24 @@ def openFileNameDialog(defaultOpenFolder: Union[str, Path], fileTypes: list) -> 
     options |= QFileDialog.DontUseNativeDialog
     fileName, _ = QFileDialog.getOpenFileName(None, "QFileDialog.getOpenFileName()",
                                               str(defaultOpenFolder),
-                                              ";;".join(fileTypes), options=options)  #TODO: add the file options as argument
+                                              ";;".join(fileTypes), options=options)
     if fileName:
         print(f"File selected: {fileName}")
         return fileName
+    else:
+        return None
+
+
+def openFolderNameDialog(defaultOpenFolder: Union[str, Path]):
+    options = QFileDialog.Options()
+    options |= QFileDialog.DontUseNativeDialog
+    folderName = QFileDialog.getExistingDirectory(None, caption='Select Directory',
+                                                  directory=str(defaultOpenFolder),
+                                                  options=options)
+
+    if folderName:
+        print(f"Folder selected: {folderName}")
+        return folderName
     else:
         return None
 

@@ -42,12 +42,36 @@ element:
         height: 25
       variable: run_name
       tooltip: Insert a name for the current run
-    - style: popupmenu
-      id: load_roads
-      text: Load roads
+      module: operations.ra2ce.run_manager
+      method: getRunName
+    - style: pushbutton
+      id: create_run_folders
+      text: Create new run
       position:
         x: 100
         y: 35
+        width: 140
+        height: 25
+      tooltip: Create a new run
+      module: operations.ra2ce.run_manager
+      method: createNewRunFolders
+    - style: pushbutton
+      id: get_previous_run
+      text: Select previous run
+      position:
+        x: 100
+        y: 5
+        width: 140
+        height: 25
+      tooltip: Select a previous run
+      module: operations.ra2ce.run_manager
+      method: selectPreviousRun
+    - style: popupmenu
+      id: load_roads
+      text:  
+      position:
+        x: 250
+        y: 65
         width: 140
         height: 25
       variable: loaded_roads
@@ -61,7 +85,7 @@ element:
       id: select_floodmap
       text: Select flood map
       position:
-        x: 250
+        x: 400
         y: 65
         width: 140
         height: 25
@@ -71,7 +95,7 @@ element:
       id: update_configuration
       text: Update configuration
       position:
-        x: 400
+        x: 550
         y: 65
         width: 140
         height: 25
@@ -82,7 +106,7 @@ element:
       id: validate_configuration
       text: Validate configuration
       position:
-        x: 400
+        x: 550
         y: 35
         width: 140
         height: 25
@@ -90,11 +114,21 @@ element:
       module: operations.ra2ce.validate_ra2ce_configuration
       method: validateRA2CEconfiguration
     - style: pushbutton
+      id: show_roads
+      text: Show roads
+      position:
+        x: 700
+        y: 65
+        width: 140
+        height: 25
+      tooltip: Show the roads
+      method: showRoads
+    - style: pushbutton
       id: select_road
       text: Select road
       position:
-        x: 550
-        y: 65
+        x: 700
+        y: 5
         width: 140
         height: 25
       tooltip: Select a road segment
@@ -103,7 +137,7 @@ element:
       id: run_ra2ce
       text: Run RA2CE
       position:
-        x: 790
+        x: -60
         y: 65
         width: 140
         height: 25
@@ -112,10 +146,10 @@ element:
       method: runRA2CE
     - style: edit
       id: threshold_road_disruption
-      text: Threshold [m]
+      text:  
       position:
-        x: 100
-        y: 5
+        x: 250
+        y: 35
         width: 140
         height: 25
       variable: threshold_road_disruption
@@ -123,7 +157,7 @@ element:
     - style: edit
       id: loaded_floodmap
       position:
-        x: 250
+        x: 400
         y: 35
         width: 140
         height: 25
@@ -131,9 +165,19 @@ element:
     - style: edit
       id: valid_config
       position:
-        x: 400
+        x: 550
         y: 5
         width: 140
         height: 25
       variable: valid_config
+    - style: edit
+      id: edit_flood_depth
+      text:  
+      position:
+        x: 700
+        y: 35
+        width: 140
+        height: 25
+      variable: edited_flood_depth
+      tooltip: Edit the flood depth of the selected road segment
 
