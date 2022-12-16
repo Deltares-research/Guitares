@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Jul  5 13:40:07 2022
-
-@author: ormondt
-"""
-import os
+import os, sys
 from pathlib import Path
 
 from guitools.gui import GUI
@@ -13,9 +8,11 @@ from ra2ce.io.readers.ini_file_reader import IniFileReader
 
 class Ra2ceGUI:
     def __init__(self):
-#        gui_module = __import__(__name__)
-
-        self.main_path = os.path.dirname(os.path.abspath(__file__))
+        # Determine if application is a script file or frozen exe and set the main path
+        if getattr(sys, 'frozen', False):
+            self.main_path = Path(sys.executable).resolve().parent  # When running from the executable
+        elif __file__:
+            self.main_path = Path(__file__).resolve().parent  # When running from script
 
         # Read the additional ini file (for RA2CE) and convert the paths to pathlib Paths
         self.ra2ce_ini = Path(self.main_path).joinpath('ra2ce.ini')
@@ -41,13 +38,6 @@ class Ra2ceGUI:
     def initialize(self):
         # Define variables
         self.loaded_floodmap = "Not yet selected"
-        _loaded_roads_values = Ra2ceGUI.ra2ce_config['origins_destinations']['list_od_pairs'].strip().split(',')
-        self.loaded_roads_values = [Ra2ceGUI.ra2ce_config['base_data']['path'].joinpath('network',
-                                                                                        f"{lrv}.p") for lrv in _loaded_roads_values]
-        self.loaded_roads_strings = [f"{n.split('_')[0].capitalize()} -> {n.split('_')[1].capitalize()}" for n in _loaded_roads_values]
-        self.map_roads_values_strings = dict(zip(self.loaded_roads_values, self.loaded_roads_strings))
-        self.loaded_roads = self.loaded_roads_values[0]
-        self.loaded_roads_string = self.loaded_roads_strings[0]
         self.valid_config = "Not yet configured"
         self.coords_clicked = None
         self.run_name = "Choose a name"
@@ -57,10 +47,6 @@ class Ra2ceGUI:
         # Define GUI variables
         self.gui.setvar("ra2ceGUI", "run_name", self.run_name)
         self.gui.setvar("ra2ceGUI", "loaded_floodmap", self.loaded_floodmap)
-        self.gui.setvar("ra2ceGUI", "loaded_roads", self.loaded_roads)
-        self.gui.setvar("ra2ceGUI", "loaded_roads_string", self.loaded_roads_string)
-        self.gui.setvar("ra2ceGUI", "loaded_roads_values", self.loaded_roads_values)
-        self.gui.setvar("ra2ceGUI", "loaded_roads_strings", self.loaded_roads_strings)
         self.gui.setvar("ra2ceGUI", "threshold_road_disruption", 0.)  # 0 as default value?
         self.gui.setvar("ra2ceGUI", "valid_config", self.valid_config)
         self.gui.setvar("ra2ceGUI", "coords_clicked", self.coords_clicked)
@@ -129,7 +115,7 @@ class Ra2ceGUI:
                                                                                                        "run_name")
 
         # Network
-        self.ra2ceHandler.input_config.network_config.config_data['network']['source'] = 'shapefile'
+        self.ra2ceHandler.input_config.network_config.config_data['network']['source'] = 'pickle'
         self.ra2ceHandler.input_config.network_config.config_data['network']['primary_file'] = self.loaded_roads.stem + '.shp'
         self.ra2ceHandler.input_config.network_config.config_data['network']['file_id'] = self.ra2ce_config['network']['id_name']
 
@@ -148,6 +134,8 @@ class Ra2ceGUI:
             'id_name_origin_destination'] = self.ra2ce_config['origins_destinations']['id_name_origin_destination']
         self.ra2ceHandler.input_config.network_config.config_data['origins_destinations'][
             'origin_count'] = self.ra2ce_config['origins_destinations']['origin_count']
+        self.ra2ceHandler.input_config.network_config.config_data['origins_destinations'][
+            'categories'] = self.ra2ce_config['origins_destinations']['categories']
 
         # Hazard
         self.ra2ceHandler.input_config.network_config.config_data['hazard']['hazard_map'] = [
@@ -168,8 +156,21 @@ class Ra2ceGUI:
             if 'aggregate_wl' in self.ra2ceHandler.input_config.analysis_config.config_data['indirect'][i]:
                 self.ra2ceHandler.input_config.analysis_config.config_data['indirect'][i]['aggregate_wl'] = \
                     self.ra2ce_config['hazard']['zonal_stats']
+            if 'threshold' in self.ra2ceHandler.input_config.analysis_config.config_data['indirect'][i]:
                 self.ra2ceHandler.input_config.analysis_config.config_data['indirect'][i][
                     'threshold'] = self.gui.getvar("ra2ceGUI", "threshold_road_disruption")
+            if 'name' in self.ra2ceHandler.input_config.analysis_config.config_data['indirect'][i]:
+                self.ra2ceHandler.input_config.analysis_config.config_data['indirect'][i][
+                    'name'] = self.gui.getvar("ra2ceGUI", "run_name")
+            if 'weighing' in self.ra2ceHandler.input_config.analysis_config.config_data['indirect'][i]:
+                self.ra2ceHandler.input_config.analysis_config.config_data['indirect'][i][
+                    'weighing'] = self.ra2ce_config['analyses']['weighing']
+            if 'save_shp' in self.ra2ceHandler.input_config.analysis_config.config_data['indirect'][i]:
+                self.ra2ceHandler.input_config.analysis_config.config_data['indirect'][i][
+                    'weighing'] = self.ra2ce_config['analyses']['save_shp']
+            if 'save_csv' in self.ra2ceHandler.input_config.analysis_config.config_data['indirect'][i]:
+                self.ra2ceHandler.input_config.analysis_config.config_data['indirect'][i][
+                    'weighing'] = self.ra2ce_config['analyses']['save_csv']
 
 
 Ra2ceGUI = Ra2ceGUI()
