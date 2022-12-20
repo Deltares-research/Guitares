@@ -2,7 +2,7 @@
 import os, sys
 from pathlib import Path
 
-from guitools.gui import GUI
+from src.guitools.gui import GUI
 from ra2ce.io.readers.ini_file_reader import IniFileReader
 
 

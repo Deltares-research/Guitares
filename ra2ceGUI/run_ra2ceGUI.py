@@ -4,14 +4,18 @@ RA2CE GUI
 
 import sys
 from PyQt5.QtWidgets import QApplication
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtGui
 
 from ra2ceGUI import Ra2ceGUI
+
 
 if __name__ == '__main__':
 
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     app = QApplication(sys.argv)
+
+    # Set the icon
+    app.setWindowIcon(QtGui.QIcon('icons/deltares.ico'))
 
     # Show the splash screen
     Ra2ceGUI.gui.show_splash()

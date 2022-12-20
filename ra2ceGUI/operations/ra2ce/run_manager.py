@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from ra2ceGUI import Ra2ceGUI
-from guitools.pyqt5.io import openFolderNameDialog
+from src.guitools.pyqt5.io import openFolderNameDialog
+from PyQt5.QtWidgets import QMessageBox
 
 from pathlib import Path
 import shutil
@@ -25,7 +26,9 @@ def createNewRunFolders():
     # Look what directories are already made. If the directory already exists, display a message.
     list_dir_names = [d.stem for d in Ra2ceGUI.ra2ce_config['database']['path'].glob('*') if d.is_dir()]
     if Ra2ceGUI.run_name in list_dir_names:
-        print("Run name already used, choose another name (DISPLAY MESSAGE!)")
+        Ra2ceGUI.gui.elements['run_name']['widget_group'].widgets[0].setStyleSheet(f'QWidget {{color: red;}}')
+        Ra2ceGUI.gui.update()
+        print("Run name already used, please choose another name.")
     else:
         print(f"Create new run folders for '{Ra2ceGUI.run_name}'")
         Ra2ceGUI.current_project = Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name)

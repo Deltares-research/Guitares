@@ -230,7 +230,6 @@ class MapBox(QtWidgets.QWidget):
                         cstep=None,
                         decimals=None,
                         colormap="jet"):
-        # TODO: kijk naar dit stukje
         self.id_counter += 1
         id_string = str(self.id_counter)
 

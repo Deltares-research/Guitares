@@ -3,7 +3,7 @@ window:
   width: 1100
   height: 650
   package: ra2ceGUI
-  module: operations.operations
+  module: operations
   variable_group: ra2ceGUI
 menu:
   - text: "Help"
@@ -41,9 +41,7 @@ element:
         width: 140
         height: 25
       variable: run_name
-      tooltip: Insert a name for the current run
-      module: operations.ra2ce.run_manager
-      method: getRunName
+      tooltip: The current run name
     - style: pushbutton
       id: create_run_folders
       text: Create new run
@@ -66,21 +64,6 @@ element:
       tooltip: Select a previous run
       module: operations.ra2ce.run_manager
       method: selectPreviousRun
-    - style: popupmenu
-      id: load_roads
-      text:  
-      position:
-        x: 250
-        y: 65
-        width: 140
-        height: 25
-      variable: loaded_roads
-      option_value:
-        variable: loaded_roads_values
-      option_string:
-        variable: loaded_roads_strings
-      tooltip: Load roads
-      method: openRoads
     - style: pushbutton
       id: select_floodmap
       text: Select flood map
@@ -146,10 +129,10 @@ element:
       method: runRA2CE
     - style: edit
       id: threshold_road_disruption
-      text:  
+      text: Disruption threshold [m]
       position:
-        x: 250
-        y: 35
+        x: 400
+        y: 5
         width: 140
         height: 25
       variable: threshold_road_disruption
@@ -182,4 +165,15 @@ element:
         height: 25
       variable: edited_flood_depth
       tooltip: Edit the flood depth of the selected road segment
+    - style: pushbutton
+      id: get_summary_results
+      text: Summary results
+      position:
+        x: -60
+        y: 5
+        width: 140
+        height: 25
+      tooltip: Get summary results
+      module: operations.ra2ce.summary_results
+      method: getSummaryResults
 

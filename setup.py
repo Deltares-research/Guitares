@@ -1,5 +1,4 @@
-import os
-from setuptools import setup, find_packages
+from setuptools import setup
 
 setup(
     name = "deltares_guitools",
@@ -10,6 +9,6 @@ setup(
     license = "MIT",
     keywords = "deltares gui",
     url = "https://pypi.org/project/deltares-guitools",
-    package_dir={'': 'src'},
+    package_dir={'': 'src', 'ra2ceGUI': 'ra2ceGUI'},
     long_description='none'
 )
