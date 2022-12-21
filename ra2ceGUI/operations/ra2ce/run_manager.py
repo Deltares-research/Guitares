@@ -21,6 +21,8 @@ def getRunName():
     Ra2ceGUI.run_name = Ra2ceGUI.gui.getvar("ra2ceGUI", "run_name")
     print(f"Run name set to '{Ra2ceGUI.run_name}'")
 
+    createNewRunFolders()
+
 
 def createNewRunFolders():
     # Look what directories are already made. If the directory already exists, display a message.
@@ -29,6 +31,9 @@ def createNewRunFolders():
         Ra2ceGUI.gui.elements['run_name']['widget_group'].widgets[0].setStyleSheet(f'QWidget {{color: red;}}')
         Ra2ceGUI.gui.update()
         print("Run name already used, please choose another name.")
+
+        # TODO: weghalen?
+        Ra2ceGUI.current_project = Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name)
     else:
         print(f"Create new run folders for '{Ra2ceGUI.run_name}'")
         Ra2ceGUI.current_project = Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name)

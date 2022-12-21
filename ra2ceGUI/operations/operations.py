@@ -12,7 +12,7 @@ def selectRoad():
     Ra2ceGUI.edited_flood_depth = Ra2ceGUI.gui.getvar("ra2ceGUI", "edited_flood_depth")
     print(f'Flood depth input: {Ra2ceGUI.edited_flood_depth}')
 
-    # Ra2ceGUI.ra2ceHandler = Ra2ceHandler(_network_ini, _analyses_ini)
+    assert Ra2ceGUI.ra2ceHandler
     Ra2ceGUI.ra2ceHandler.configure()
 
     get_graphs = ['base_graph_hazard', 'origins_destinations_graph']
@@ -40,8 +40,8 @@ def selectRoad():
         Ra2ceGUI.graph.edges[closest_u_v_k[0], closest_u_v_k[1], closest_u_v_k[2]]['F_EV1_ma'] = Ra2ceGUI.edited_flood_depth
 
         # Highlight the selected road in yellow in the interface
-        # id_name = Ra2ceGUI.ra2ce_config["network"]["id_name"]
-        # Ra2ceGUI.graph.edges[closest_u_v_k[0], closest_u_v_k[1], closest_u_v_k[2]][id_name]
+        to_highlight = Ra2ceGUI.graph.edges[closest_u_v_k[0], closest_u_v_k[1], closest_u_v_k[2]]["geometry"]
+        Ra2ceGUI.highlight_road(to_highlight, 'Road network', 'selected_road')
 
         # TODO do this always immediately or only after someone is done editing?
         from ra2ce.io.writers.multi_graph_network_exporter import MultiGraphNetworkExporter

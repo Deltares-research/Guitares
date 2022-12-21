@@ -23,6 +23,13 @@ class Ra2ceGUI:
         server_path = os.path.join(self.main_path, "server")
         self.server_path = server_path
 
+        # Get the base data paths
+        self.base_graph = self.ra2ce_config['base_data']['path'] / 'network' / 'base_graph.p'
+        self.base_network = self.ra2ce_config['base_data']['path'] / 'network' / 'base_network.feather'
+        self.origins_destinations_graph = self.ra2ce_config['base_data']['path'] / 'network' / 'origins_destinations_graph.p'
+        self.origin_destination_table = self.ra2ce_config['base_data']['path'] / 'network' / 'origin_destination_table.feather'
+        self.validate_base_data()
+
         # Initialize a RA2CE handler
         self.ra2ceHandler = None
 
@@ -51,6 +58,13 @@ class Ra2ceGUI:
         self.gui.setvar("ra2ceGUI", "valid_config", self.valid_config)
         self.gui.setvar("ra2ceGUI", "coords_clicked", self.coords_clicked)
         self.gui.setvar("ra2ceGUI", "edited_flood_depth", self.edited_flood_depth)
+
+    def validate_base_data(self):
+        required_base_data = [self.base_graph, self.base_network,
+                              self.origins_destinations_graph, self.origin_destination_table]
+        for base_data in required_base_data:
+            if not base_data.is_file():
+                print(f"Warning: {str(base_data)} cannot be found!")
 
     def valid_input(self):
         _original_value = "Choose a name"
@@ -84,6 +98,13 @@ class Ra2ceGUI:
         # Add the road network to the map
         path_roads = self.ra2ce_config['base_data']['path'].joinpath('network', self.ra2ce_config['network']['geojson'])
         self.gui.elements['main_map']['widget_group'].add_line_geojson(path_roads,
+                                                                       'red',
+                                                                       layer_name,
+                                                                       layer_group)
+
+    def highlight_road(self, roads, layer_name, layer_group):
+        self.gui.elements['main_map']['widget_group'].add_line_geojson(roads,
+                                                                       'yellow',
                                                                        layer_name,
                                                                        layer_group)
 
@@ -116,20 +137,20 @@ class Ra2ceGUI:
 
         # Network
         self.ra2ceHandler.input_config.network_config.config_data['network']['source'] = 'pickle'
-        self.ra2ceHandler.input_config.network_config.config_data['network']['primary_file'] = self.loaded_roads.stem + '.shp'
+        self.ra2ceHandler.input_config.network_config.config_data['network']['primary_file'] = self.ra2ce_config['network']['shp']
         self.ra2ceHandler.input_config.network_config.config_data['network']['file_id'] = self.ra2ce_config['network']['id_name']
 
         # Origins and destinations
         self.ra2ceHandler.input_config.network_config.config_data['origins_destinations']['origins'] = [
             Path(self.ra2ce_config['base_data']['path']).joinpath('network',
-                                                                 f"{self.loaded_roads.stem.split('_')[0]}.shp")]
+                                                                  self.ra2ce_config['origins_destinations']['origins'])]
         self.ra2ceHandler.input_config.network_config.config_data['origins_destinations']['destinations'] = [
             Path(self.ra2ce_config['base_data']['path']).joinpath('network',
-                                                                 f"{self.loaded_roads.stem.split('_')[1]}.shp")]
+                                                                  self.ra2ce_config['origins_destinations']['destinations'])]
         self.ra2ceHandler.input_config.network_config.config_data['origins_destinations'][
-            'origins_names'] = f"{self.loaded_roads.stem.split('_')[0]}"
+            'origins_names'] = self.ra2ce_config['origins_destinations']['origins_names']
         self.ra2ceHandler.input_config.network_config.config_data['origins_destinations'][
-            'destinations_names'] = f"{self.loaded_roads.stem.split('_')[1]}"
+            'destinations_names'] = self.ra2ce_config['origins_destinations']['destinations_names']
         self.ra2ceHandler.input_config.network_config.config_data['origins_destinations'][
             'id_name_origin_destination'] = self.ra2ce_config['origins_destinations']['id_name_origin_destination']
         self.ra2ceHandler.input_config.network_config.config_data['origins_destinations'][

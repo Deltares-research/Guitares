@@ -3,7 +3,7 @@ window:
   width: 1100
   height: 650
   package: ra2ceGUI
-  module: operations
+  module: operations.operations
   variable_group: ra2ceGUI
 menu:
   - text: "Help"
@@ -42,28 +42,8 @@ element:
         height: 25
       variable: run_name
       tooltip: The current run name
-    - style: pushbutton
-      id: create_run_folders
-      text: Create new run
-      position:
-        x: 100
-        y: 35
-        width: 140
-        height: 25
-      tooltip: Create a new run
       module: operations.ra2ce.run_manager
-      method: createNewRunFolders
-    - style: pushbutton
-      id: get_previous_run
-      text: Select previous run
-      position:
-        x: 100
-        y: 5
-        width: 140
-        height: 25
-      tooltip: Select a previous run
-      module: operations.ra2ce.run_manager
-      method: selectPreviousRun
+      method: getRunName
     - style: pushbutton
       id: select_floodmap
       text: Select flood map

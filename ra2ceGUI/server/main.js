@@ -13,6 +13,7 @@ let coordsClicked;
 let coords;
 let idCounter = 0;
 let layerID = 'abc';
+let color;
 
 console.log('Adding MapBox map ...')
 
@@ -78,7 +79,7 @@ function add_marker (event) {
 map.on('click', add_marker);
 
 
-export function addLineGeojsonLayer (geojson, id, layerName, layerGroupName) {
+export function addLineGeojsonLayer (geojson, id, layerName, layerGroupName, color) {
   // Show the lines as GeoJSON
     map.addSource(layerName, {
         type: 'geojson',
@@ -95,11 +96,11 @@ export function addLineGeojsonLayer (geojson, id, layerName, layerGroupName) {
         },
         'paint': {
             'line-width': 2,
-            'line-color': 'red'
+            'line-color': color
         }
     });
 
-    layerAdded(layerName, layerGroupName, id)
+    layerAdded(layerName, layerGroupName, id);
 }
 
 

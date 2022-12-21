@@ -1,12 +1,11 @@
 import os
-import functools
 from PyQt5 import QtWebEngineWidgets
 from PyQt5 import QtCore, QtWidgets, QtWebChannel
 import json
 import numpy as np
 import geojson
 from urllib.request import urlopen
-import time
+from pathlib import Path
 from PIL import Image
 import matplotlib
 from matplotlib import cm
@@ -14,6 +13,9 @@ import rasterio
 import rasterio.features
 from rasterio.warp import calculate_default_transform, reproject, Resampling, transform_bounds
 from rasterio import MemoryFile
+from typing import Union
+import geopandas as gpd
+from shapely.geometry import LineString
 
 from .colorbar import ColorBar
 from .widget_group import WidgetGroup
@@ -320,10 +322,21 @@ class MapBox(QtWidgets.QWidget):
         js_string = "import('/main.js').then(module => {module.addMarkerLayer(" + geojs + ",'" + marker_file + "','" + id_string + "','"+ layer_name + "','" + layer_group_name + "')});"
         self.view.page().runJavaScript(js_string)
 
+    @staticmethod
+    def load_geojson_from(geojson_input: Union[str, Path, LineString]):
+        if Path(geojson_input).is_file():
+            with open(geojson_input) as data_file:
+                feature_collection = geojson.load(data_file)
+                feature_collection = str(feature_collection)
+        else:
+            feature_collection = gpd.GeoSeries([geojson_input]).to_json()
+        return feature_collection
+
     def add_line_geojson(self,
-                         geojson_file,
+                         geojson_input: Union[str, Path],
+                         color: str,
                          layer_name=None,
-                         layer_group_name=None):
+                         layer_group_name=None,):
 
         self.id_counter += 1
         id_string = str(self.id_counter)
@@ -332,10 +345,8 @@ class MapBox(QtWidgets.QWidget):
         layer.id = id_string
         layer_group = self.find_layer_group(layer_group_name)
         layer_group[layer_name] = layer
-        with open(geojson_file) as data_file:
-            feature_collection = geojson.load(data_file)
-        fc_as_string = str(feature_collection)
-        js_string = "import('/main.js').then(module => {module.addLineGeojsonLayer(" + fc_as_string + ",'" + id_string + "','" + layer_name + "','" + layer_group_name + "')});"
+        feature_collection_string = self.load_geojson_from(geojson_input)
+        js_string = "import('/main.js').then(module => {module.addLineGeojsonLayer(" + feature_collection_string + ",'" + id_string + "','" + layer_name + "','" + layer_group_name + "','" + color + "')});"
         self.view.page().runJavaScript(js_string)
 
     @QtCore.pyqtSlot(str)
