@@ -5,7 +5,7 @@ import json
 import numpy as np
 import geojson
 from urllib.request import urlopen
-from pathlib import Path
+import urllib
 from PIL import Image
 import matplotlib
 from matplotlib import cm
@@ -16,6 +16,7 @@ from rasterio import MemoryFile
 from typing import Union
 import geopandas as gpd
 from shapely.geometry import LineString
+from pathlib import Path
 
 from .colorbar import ColorBar
 from .widget_group import WidgetGroup
@@ -33,7 +34,16 @@ class MapBox(QtWidgets.QWidget):
 
         while True:
             try:
-                html = urlopen("http://localhost:" + str(server_port) + "/")
+
+                print("Finding server ...")
+
+                url = "http://localhost:" + str(server_port) + "/"
+                self.url = url
+
+                urllib.request.urlcleanup()
+                request = urllib.request.urlopen(url)
+                response = request.read().decode('utf-8')
+
                 print("Found server running at port 3000 ...")
                 break
             except:
@@ -54,12 +64,9 @@ class MapBox(QtWidgets.QWidget):
 
         page = WebEnginePage(view)
         view.setPage(page)
-
         view.page().setWebChannel(channel)
-
-        view.load(QtCore.QUrl('http://localhost:' + str(server_port) + '/'))
-
         channel.registerObject("MapBox", self)
+        view.load(QtCore.QUrl('http://localhost:' + str(server_port) + '/'))
 
         element["widget"] = view
 
@@ -67,71 +74,44 @@ class MapBox(QtWidgets.QWidget):
 
         self.layer_group = {}
 
-        # self.ready = False
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.reload)
+        self.timer.setSingleShot(True)
+        self.timer.start(1000)
 
-        # while not self.ready:
-        #     self.check_ready()
-        #     time.sleep(1)
-
-    # def check_ready(self):
-    #     print("Check for ready ...")
-    #     js_string = "import('/main.js').then(module => {module.checkReady();});"
-    #     self.view.page().runJavaScript(js_string)
+    def reload(self):
+        self.view.page().setWebChannel(self.channel)
+        self.channel.registerObject("MapBox", self)
+        self.view.load(QtCore.QUrl(self.url))
 
     def set(self):
         pass
 
-    # @QtCore.pyqtSlot(str)
-    # def mapBoxReady(self, ready):
-    #     print(ready)
-    #     self.ready = True
-
     @QtCore.pyqtSlot(str)
     def mapMoved(self, coords):
-        # print("map moved")
         self.callback_module.map_moved(json.loads(coords))
 
-    @QtCore.pyqtSlot(str)
-    def polygonDrawn(self, coords):
-        print("A polygon was drawn! " + coords)
-        self.polygon_create_callback(coords)
-#        self.polygon_modify_callback
-
-    @QtCore.pyqtSlot(str)
-    def featureSelected(self, id):
-        print("The feature with ID " + id + " was selected")
-#        self.polygon_create_callback(coords)
-#        self.polygon_modify_callback
-
-#        self.callback_module.map_moved(json.loads(coords))
+    @QtCore.pyqtSlot(str, str, str)
+    def polygonDrawn(self, coord_string, feature_id, layer_id):
+        self.active_layer.create_feature(json.loads(coord_string), feature_id, "polygon")
 
     @QtCore.pyqtSlot(str, str, str)
-    def layerAdded(self, layer_name, layer_group_name, id):
-        print("Layer " + layer_name + " added to group " + layer_group_name + " - ID = " + id)
-        # layer = self.find_layer(layer_name, layer_group_name)
-        # layer.id = id
-
-    @QtCore.pyqtSlot(int, str)
-    def polygonAdded(self, id, coords):
-#        print("Polygon (id=" + str(id) + ") was added")
-#        print(coords)
-        # Call the create callback
-        if self.polygon_create_callback:
-            self.polygon_create_callback(id, coords)
-
-    @QtCore.pyqtSlot(int, str)
-    def polygonModified(self, id, coords):
-#        print("Polygon (id=" + str(id) + ") was changed")
-#        print(coords)
-        if self.polygon_modify_callback:
-            self.polygon_modify_callback(id, coords)
+    def featureModified(self, coord_string, feature_id, layer_id):
+        coords = json.loads(coord_string)
+        self.active_layer.modify_feature(coords, feature_id, "polygon")
 
     @QtCore.pyqtSlot(int, str)
     def polylineAdded(self, id, coords):
-#        print("Polyline (id=" + str(id) + ") was added")
-#        print(coords)
         if self.polyline_create_callback:
             self.polyline_create_callback(id, coords)
+
+    @QtCore.pyqtSlot(str)
+    def featureSelected(self, feature_id):
+        self.active_layer.select_feature(feature_id)
+
+    @QtCore.pyqtSlot(str, str, str)
+    def layerAdded(self, layer_name, layer_group_name, id):
+        pass
 
     @QtCore.pyqtSlot(int, str)
     def polylineModified(self, id, coords):
@@ -155,29 +135,116 @@ class MapBox(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(int, str)
     def rectangleModified(self, id, coords):
-#        print("Rectangle (id=" + str(id) + ") was changed")
         if self.rectangle_modify_callback:
             self.rectangle_modify_callback(id, coords)
 
-    def add_layer(self, layer_name, layer_parent):
-        self.layer[layer_parent][layer_name] = {}
-        self.layer[layer_parent][layer_name]["properties"] = LayerProperties()
+    def add_layer(self, layer_id, type, create=None, modify=None, select=None):
 
-    def draw_polygon(self, layer_name, create=None, modify=None):
-        self.new_polygon = Polygon()
-        self.new_polygon.id = None
-        self.new_polygon.create = create
-        self.new_polygon.modify = modify
-        self.new_polygon.layer = layer_name
-        layer_group_name = "_base"
-        js_string = "import('/main.js').then(module => {module.drawPolygon('" + layer_group_name + "','" + layer_name + "');});"
-        self.view.page().runJavaScript(js_string)
-        self.polygon_create_callback = None
-        self.polygon_modify_callback = None
-        if create:
-            self.polygon_create_callback = create
-        if modify:
-            self.polygon_modify_callback = modify
+        # First add layer group
+        ids = layer_id.split(".")
+        lid = ids[-1]
+        ids = ids[:-1]
+        idstr = ids[0]
+        for j, id in enumerate(ids):
+            if j>0:
+                idstr = idstr + "." + id
+        self.add_layer_group(idstr)
+
+        # Now add the layer
+        if type == "draw":
+            layer = DrawLayer(self, layer_id, create=create, modify=modify, select=select)
+
+        nids = len(ids)
+
+        if nids == 1:
+            self.layer[ids[0]][lid] = layer
+        elif nids == 2:
+            self.layer[ids[0]][ids[1]][lid] = layer
+        elif nids == 3:
+            self.layer[ids[0]][ids[1]][ids[2]][lid] = layer
+        elif nids == 4:
+            self.layer[ids[0]][ids[1]][ids[2]][ids[3]][lid] = layer
+        elif nids == 5:
+            self.layer[ids[0]][ids[1]][ids[2]][ids[3]][ids[4]][lid] = layer
+
+        return layer
+
+    def delete_layer(self, layer_id):
+
+        layer = self.find_layer_by_id(layer_id)
+
+        if layer:
+
+            layer.clear()
+
+            # First add layer group
+            ids = layer_id.split(".")
+            lid = ids[-1]
+            ids = ids[:-1]
+            nids = len(ids)
+
+            if nids == 1:
+                self.layer[ids[0]].pop(lid)
+            elif nids == 2:
+                self.layer[ids[0]][ids[1]].pop(lid)
+            elif nids == 3:
+                self.layer[ids[0]][ids[1]][ids[2]].pop(lid)
+            elif nids == 4:
+                self.layer[ids[0]][ids[1]][ids[2]][ids[3]].pop(lid)
+            elif nids == 5:
+                self.layer[ids[0]][ids[1]][ids[2]][ids[3]][ids[4]].pop(lid)
+
+
+    def activate_layer(self, layer_id):
+        layer = self.find_layer_by_id(layer_id)
+        if layer:
+            layer.activate()
+        else:
+            print("Error! No layer found with id " + layer_id)
+
+    def deactivate_layer(self, layer_id):
+        layer = self.find_layer_by_id(layer_id)
+        if layer:
+            layer.deactivate()
+        else:
+            print("Error! No layer found with id " + layer_id)
+
+
+    def add_layer_group(self, layer_group_id):
+        ids = layer_group_id.split(".")
+        id = ids[0]
+        if ids[0] not in self.layer:
+            self.layer[ids[0]] = {"_id": id}
+        if len(ids)>1:
+            id = id + "." + ids[1]
+            if ids[1] not in self.layer[ids[0]]:
+                self.layer[ids[0]][ids[1]] = {"_id": id}
+        if len(ids)>2:
+            id = id + "." + ids[2]
+            if ids[2] not in self.layer[ids[0]][ids[1]]:
+                self.layer[ids[0]][ids[1]][ids2[2]] = {"_id": id}
+        if len(ids)>3:
+            id = id + "." + ids[3]
+            if ids[3] not in self.layer[ids[0]][ids[1]][ids[2]]:
+                self.layer[ids[0]][ids[1]][ids2[2]][ids[3]] = {"_id": id}
+        if len(ids)>4:
+            id = id + "." + ids[4]
+            if ids[3] not in self.layer[ids[0]][ids[1]][ids[2]][ids[3]]:
+                self.layer[ids[0]][ids[1]][ids2[2]][ids[3]][ids[4]] = {"_id": id}
+
+    def find_layer_by_id(self, id):
+        layer_list = self.list_layers()
+        for layer in layer_list:
+            if layer.id == id:
+                return layer
+        return None
+
+    def draw_polygon(self, layer_id):
+        layer = self.find_layer_by_id(layer_id)
+        if layer:
+            layer.draw_polygon()
+        else:
+            print("Error! No layer found with id " + layer_id)
 
     def draw_polyline(self, layer_name, create=None, modify=None):
         layer_group_name = "_base"
@@ -235,8 +302,6 @@ class MapBox(QtWidgets.QWidget):
         self.id_counter += 1
         id_string = str(self.id_counter)
 
-        dataset = rasterio.open(image_file)
-
         src_crs = 'EPSG:4326'
         dst_crs = 'EPSG:3857'
 
@@ -250,7 +315,6 @@ class MapBox(QtWidgets.QWidget):
                 'width': width,
                 'height': height
             })
-            bnds = src.bounds
 
             mem_file = MemoryFile()
             with mem_file.open(**kwargs) as dst:
@@ -271,12 +335,13 @@ class MapBox(QtWidgets.QWidget):
                                       dst.bounds[1],
                                       dst.bounds[2],
                                       dst.bounds[3])
+        band1 = band1.astype(np.float32)
         isn = np.where(band1 < 0.001)
         band1[isn] = np.nan
 
         band1 = np.flipud(band1)
         cminimum = np.nanmin(band1)
-        cmaximum = 2 #np.nanmax(band1)
+        cmaximum = 2 #  np.nanmax(band1)
 
         norm = matplotlib.colors.Normalize(vmin=cminimum, vmax=cmaximum)
         vnorm = norm(band1)
@@ -324,11 +389,12 @@ class MapBox(QtWidgets.QWidget):
 
     @staticmethod
     def load_geojson_from(geojson_input: Union[str, Path, LineString]):
-        if Path(geojson_input).is_file():
-            with open(geojson_input) as data_file:
-                feature_collection = geojson.load(data_file)
-                feature_collection = str(feature_collection)
-        else:
+        if isinstance(geojson_input, (Path, str)):
+            if Path(geojson_input).is_file():
+                with open(geojson_input) as data_file:
+                    feature_collection = geojson.load(data_file)
+                    feature_collection = str(feature_collection)
+        elif isinstance(geojson_input, LineString):
             feature_collection = gpd.GeoSeries([geojson_input]).to_json()
         return feature_collection
 

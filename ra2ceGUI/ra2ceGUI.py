@@ -98,13 +98,14 @@ class Ra2ceGUI:
         # Add the road network to the map
         path_roads = self.ra2ce_config['base_data']['path'].joinpath('network', self.ra2ce_config['network']['geojson'])
         self.gui.elements['main_map']['widget_group'].add_line_geojson(path_roads,
-                                                                       'red',
+                                                                       'orange',
                                                                        layer_name,
                                                                        layer_group)
 
     def highlight_road(self, roads, layer_name, layer_group):
+        self.gui.elements['main_map']['widget_group'].add_layer_group(layer_group)
         self.gui.elements['main_map']['widget_group'].add_line_geojson(roads,
-                                                                       'yellow',
+                                                                       'red',
                                                                        layer_name,
                                                                        layer_group)
 
@@ -156,7 +157,7 @@ class Ra2ceGUI:
         self.ra2ceHandler.input_config.network_config.config_data['origins_destinations'][
             'origin_count'] = self.ra2ce_config['origins_destinations']['origin_count']
         self.ra2ceHandler.input_config.network_config.config_data['origins_destinations'][
-            'categories'] = self.ra2ce_config['origins_destinations']['categories']
+            'category'] = self.ra2ce_config['origins_destinations']['category']
 
         # Hazard
         self.ra2ceHandler.input_config.network_config.config_data['hazard']['hazard_map'] = [

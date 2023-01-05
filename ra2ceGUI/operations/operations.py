@@ -1,6 +1,7 @@
 from ra2ceGUI import Ra2ceGUI
 from src.guitools.pyqt5.io import openFileNameDialog
 
+import numpy as np
 from pathlib import Path
 
 
@@ -12,10 +13,15 @@ def selectRoad():
     Ra2ceGUI.edited_flood_depth = Ra2ceGUI.gui.getvar("ra2ceGUI", "edited_flood_depth")
     print(f'Flood depth input: {Ra2ceGUI.edited_flood_depth}')
 
-    assert Ra2ceGUI.ra2ceHandler
+    try:
+        assert Ra2ceGUI.ra2ceHandler
+    except AssertionError:
+        print("Ra2ce handler not yet initiated!")
+        return
+
     Ra2ceGUI.ra2ceHandler.configure()
 
-    get_graphs = ['base_graph_hazard', 'origins_destinations_graph']
+    get_graphs = ['origins_destinations_graph']
     for g in get_graphs:
         Ra2ceGUI.graph = Ra2ceGUI.ra2ceHandler.input_config.network_config.graphs[g]
 
@@ -26,7 +32,6 @@ def selectRoad():
             inverse_vertices_dict.update(
                 {p: (line[0], line[1], line[2]) for p in set(list(line[-1]["geometry"].coords))})
 
-        import numpy as np
         # create list of all points to search in
         all_vertices = np.array([p for p in list(inverse_vertices_dict.keys())])
 

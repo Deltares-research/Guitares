@@ -11,12 +11,12 @@ let layerGroupName;
 let jsonString;
 let coordsClicked;
 let coords;
-let idCounter = 0;
 let layerID = 'abc';
 let color;
 
 console.log('Adding MapBox map ...')
 
+// TODO: Read the mapbox access token from the file
 mapboxgl.accessToken = 'pk.eyJ1IjoiZnJlZGVyaXF1ZTEyMyIsImEiOiJjbGFxcHBmYnAxbWdzM3JvYmFkdTBscjJmIn0.PZlYCN_VXpiX90ik-8C3rw';
 
 const map = new mapboxgl.Map({
@@ -81,7 +81,7 @@ map.on('click', add_marker);
 
 export function addLineGeojsonLayer (geojson, id, layerName, layerGroupName, color) {
   // Show the lines as GeoJSON
-    map.addSource(layerName, {
+    map.addSource(id, {
         type: 'geojson',
         data: geojson
     });
@@ -89,7 +89,7 @@ export function addLineGeojsonLayer (geojson, id, layerName, layerGroupName, col
     map.addLayer({
         'id': id,
         'type': 'line',
-        'source': layerName,
+        'source': id,
         'layout': {
             'line-join': 'round',
             'line-cap': 'round'
