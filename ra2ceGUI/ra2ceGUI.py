@@ -24,11 +24,10 @@ class Ra2ceGUI:
         self.server_path = server_path
 
         # Get the base data paths
-        self.base_graph = self.ra2ce_config['base_data']['path'] / 'network' / 'base_graph.p'
-        self.base_network = self.ra2ce_config['base_data']['path'] / 'network' / 'base_network.feather'
         self.origins_destinations_graph = self.ra2ce_config['base_data']['path'] / 'network' / 'origins_destinations_graph.p'
         self.origin_destination_table = self.ra2ce_config['base_data']['path'] / 'network' / 'origin_destination_table.feather'
-        self.validate_base_data()
+        self.building_footprints = self.ra2ce_config['base_data']['path'] / 'building_footprints' / 'building_footprints_terai.shp'
+        self.validate_base_data(required_base_data=[self.origins_destinations_graph, self.origin_destination_table, self.building_footprints])
 
         # Initialize a RA2CE handler
         self.ra2ceHandler = None
@@ -50,18 +49,23 @@ class Ra2ceGUI:
         self.run_name = "Choose a name"
         self.edited_flood_depth = 0.
         self.current_project = Path()
+        self.floodmap_overlay_feedback = "Not yet executed"
+        self.analyse_feedback = "Not yet analyzed"
+        self.modification_feedback = "No road selected"
 
         # Define GUI variables
         self.gui.setvar("ra2ceGUI", "run_name", self.run_name)
         self.gui.setvar("ra2ceGUI", "loaded_floodmap", self.loaded_floodmap)
-        self.gui.setvar("ra2ceGUI", "threshold_road_disruption", 0.)  # 0 as default value?
+        self.gui.setvar("ra2ceGUI", "threshold_road_disruption", 0.001)  # 0.01 as default value!
         self.gui.setvar("ra2ceGUI", "valid_config", self.valid_config)
         self.gui.setvar("ra2ceGUI", "coords_clicked", self.coords_clicked)
         self.gui.setvar("ra2ceGUI", "edited_flood_depth", self.edited_flood_depth)
+        self.gui.setvar("ra2ceGUI", "floodmap_overlay_feedback", self.floodmap_overlay_feedback)
+        self.gui.setvar("ra2ceGUI", "analyse_feedback", self.analyse_feedback)
+        self.gui.setvar("ra2ceGUI", "modification_feedback", self.modification_feedback)
 
-    def validate_base_data(self):
-        required_base_data = [self.base_graph, self.base_network,
-                              self.origins_destinations_graph, self.origin_destination_table]
+    @staticmethod
+    def validate_base_data(required_base_data):
         for base_data in required_base_data:
             if not base_data.is_file():
                 print(f"Warning: {str(base_data)} cannot be found!")
@@ -124,11 +128,12 @@ class Ra2ceGUI:
                                                             layer_name=layer_name,
                                                             layer_group_name=layer_group_name,
                                                             legend_title="Depth (m)",
-                                                            colormap="jet",
-                                                            cmin=0.2,
-                                                            cmax=2.0,
-                                                            cstep=0.2,
-                                                            decimals=1)
+                                                            colormap="Blues",
+                                                            cmin=0,
+                                                            cmax=1,
+                                                            cstep=1,
+                                                            decimals=0,
+                                                            scale="discrete")
 
     def update_network_config(self):
         # Update the Network ini configurations

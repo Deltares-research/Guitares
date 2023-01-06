@@ -2,10 +2,24 @@
 from ra2ceGUI import Ra2ceGUI
 
 
+def analyzeFeedback(text):
+    Ra2ceGUI.analyse_feedback = text
+    Ra2ceGUI.gui.setvar("ra2ceGUI", "analyse_feedback", Ra2ceGUI.analyse_feedback)
+
+    # Update all GUI elements
+    Ra2ceGUI.gui.update()
+
+
 def runRA2CE():
     try:
         assert Ra2ceGUI.ra2ceHandler
     except AssertionError:
+        return
+
+    try:
+        assert Ra2ceGUI.floodmap_overlay_feedback == "Overlay done"
+    except AssertionError:
+        analyzeFeedback("Overlay flood map")
         return
 
     try:

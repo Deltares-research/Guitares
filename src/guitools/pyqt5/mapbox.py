@@ -19,7 +19,7 @@ from shapely.geometry import LineString
 from pathlib import Path
 
 from .colorbar import ColorBar
-from .widget_group import WidgetGroup
+# from .widget_group import WidgetGroup
 #from .overlays import ImageOverlay
 
 
@@ -298,7 +298,8 @@ class MapBox(QtWidgets.QWidget):
                         cmax=None,
                         cstep=None,
                         decimals=None,
-                        colormap="jet"):
+                        colormap="jet",
+                        scale="linear"):
         self.id_counter += 1
         id_string = str(self.id_counter)
 
@@ -315,6 +316,7 @@ class MapBox(QtWidgets.QWidget):
                 'width': width,
                 'height': height
             })
+            no_data_value = src.nodata
 
             mem_file = MemoryFile()
             with mem_file.open(**kwargs) as dst:
@@ -336,15 +338,20 @@ class MapBox(QtWidgets.QWidget):
                                       dst.bounds[2],
                                       dst.bounds[3])
         band1 = band1.astype(np.float32)
-        isn = np.where(band1 < 0.001)
-        band1[isn] = np.nan
+        isnull = np.where(band1 == no_data_value)
+        band1[isnull] = np.nan
+        iszero = np.where(band1 < 0.001)
+        band1[iszero] = np.nan
 
         band1 = np.flipud(band1)
         cminimum = np.nanmin(band1)
-        cmaximum = 2 #  np.nanmax(band1)
+        cmaximum = np.nanmax(band1)
 
-        norm = matplotlib.colors.Normalize(vmin=cminimum, vmax=cmaximum)
-        vnorm = norm(band1)
+        if scale == "linear":
+            norm = matplotlib.colors.Normalize(vmin=cminimum, vmax=cmaximum)
+            vnorm = norm(band1)
+        elif scale == "discrete":
+            vnorm = band1
 
         cmap = cm.get_cmap(colormap)
         im = Image.fromarray(np.uint8(cmap(vnorm) * 255))
@@ -363,7 +370,7 @@ class MapBox(QtWidgets.QWidget):
         bounds_string = "[[" + str(bounds[0][0]) + "," + str(bounds[0][1]) + "],[" + str(bounds[1][0]) + "," + str(bounds[1][1]) + "]]"
 
         # Legend
-        clrbar = ColorBar(colormap=colormap, legend_title=legend_title)
+        clrbar = ColorBar(colormap=colormap, legend_title=legend_title, scale=scale)
         clrbar.make(cmin, cmax, cstep=cstep, decimals=decimals)
         clrmap_string = clrbar.to_json()
 

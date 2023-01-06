@@ -76,7 +76,28 @@ class ColorBar:
 
             if reverse:
                 self.contour.reverse()
+        elif self.scale == "discrete":
+            if not cstep:
+                cstep = (cmax - cmax) / 10
 
+            nsteps = round((cmax - cmin) / cstep + 1)
+
+            for i in range(nsteps):
+                # Interpolate
+                step = cmin + i * cstep
+
+                if step == 0:
+                    continue
+
+                rgb = clmap.get_rgb(step)
+
+                contour = {}
+                contour["string"] = str(step)
+                contour["value"] = step
+                contour["rgb"] = rgb
+                contour["hex"] = rgb2hex(tuple(rgb))
+
+                self.contour.append(contour)
 
     def to_json(self):
         jsn = {}
