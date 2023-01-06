@@ -88,8 +88,8 @@ element:
     - style: edit
       id: loaded_floodmap
       position:
-        x: 30
-        y: 33
+        x: 180
+        y: 63
         width: 130
         height: 22
       variable: loaded_floodmap
@@ -99,7 +99,7 @@ element:
       text: Show roads
       position:
         x: 30
-        y: 5
+        y: 33
         width: 130
         height: 22
       tooltip: Show the roads
@@ -113,22 +113,12 @@ element:
         height: 22
       variable: valid_config
       enable: False
-    - style: edit
-      id: threshold_road_disruption
-      text:
-      position:
-        x: 180
-        y: 63
-        width: 130
-        height: 22
-      variable: threshold_road_disruption
-      tooltip: Input a road disruption threshold in meters
     - style: pushbutton
       id: validate_configuration
       text: Validate configuration
       position:
-        x: 180
-        y: 33
+        x: 30
+        y: 5
         width: 130
         height: 22
       tooltip: Validate RA2CE configuration
@@ -144,10 +134,21 @@ element:
       height: 100
     element:
     - style: pushbutton
+      id: hazard_overlay
+      text: Flood map overlay
+      position:
+        x: 10
+        y: 63
+        width: 130
+        height: 22
+      tooltip: Flood map overlay
+      module: operations.ra2ce.flood_map_overlay
+      method: floodMapOverlay
+    - style: pushbutton
       id: run_ra2ce
       text: Analyze
       position:
-        x: 10
+        x: 160
         y: 63
         width: 130
         height: 22
@@ -158,7 +159,7 @@ element:
       id: get_summary_results
       text: Summary results
       position:
-        x: 10
+        x: 160
         y: 33
         width: 130
         height: 22

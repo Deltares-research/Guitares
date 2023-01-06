@@ -26,7 +26,7 @@ class Edit(WidgetGroup):
         self.label = QLabel(text, self.parent)
         self.widgets.append(self.label)
         fm = self.label.fontMetrics()
-        wlab = fm.size(0, text).width() + 15
+        wlab = fm.size(0, text).width() + 15  #15
         self.label.setAlignment(QtCore.Qt.AlignRight)
         self.label.setGeometry(x0 - wlab - 3, y0 + 5, wlab, hgt)  # x0 - wlab - 3, y0 + 5, wlab, hgt
         self.label.setStyleSheet("background: transparent; border: none")
