@@ -6,7 +6,7 @@ dependencies:
   - python=3.9
   - pip
   - conda-forge::rasterio
-  - conda-forge::gdal=3.5.2
+  - conda-forge::gdal=3.5.1
   - conda-forge::geos
   - conda-forge::fiona
   - poetry
