@@ -21,7 +21,6 @@ hidden_imports = ['pandas',
           'operations.ra2ce.summary_results',
           'operations.ra2ce.run_ra2ce',
           'operations.ra2ce.validate_ra2ce_configuration',
-          'operations.ra2ce.modify_ra2ce_configuration',
           'operations.ra2ce.run_manager'
 		  ]
 
