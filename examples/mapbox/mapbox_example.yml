@@ -94,7 +94,7 @@ element:
         y: 45
         width: 120
         height: 20
-      method: import_image
+      method: set_image
   - style: mapbox
     id: main_map
     position:

@@ -86,10 +86,21 @@ def add_image_layer():
     mpbox.gui.setvar("mpbox", "active_layer_id", layer_id)
     mpbox.gui.update()
 
-    mpbox.gui.map_widget["main_map"].add_layer(layer_id, "image",
-                                               create=polygon_created,
-                                               modify=polygon_modified)
+    mpbox.gui.map_widget["main_map"].add_layer(layer_id, "image")
 
+def set_image():
+    layer_group = mpbox.gui.getvar("mpbox", "layer_group")
+    layer_name  = mpbox.gui.getvar("mpbox", "layer")
+    layer_id    = layer_group + "." + layer_name
+    image_file = "c:\\work\\checkouts\\git\\GUITools\\examples\\visualdelta\\floodmaps\\flood_withprot_slr=1.25m_rp=0100.tif"
+    mpbox.gui.map_widget["main_map"].set_image(layer_id,
+                  image_file=image_file,
+                  legend_title="",
+                  cmin=0.0,
+                  cmax=2.0,
+                  cstep=0.1,
+                  decimals=1,
+                  colormap="jet")
 
 
 def delete_layer():
@@ -148,12 +159,6 @@ def polygon_modified(feature):
             pol["geometry"] = feature["geometry"]
             break
 
-def import_image():
-    # Draw polygon was clicked
-    layer_group = mpbox.gui.getvar("mpbox", "layer_group")
-    layer       = mpbox.gui.getvar("mpbox", "layer")
-    layer_id    = layer_group + "." + layer
-    mpbox.gui.map_widget["main_map"].draw_polygon(layer_id)
 
 def delete_polygon():
     pass

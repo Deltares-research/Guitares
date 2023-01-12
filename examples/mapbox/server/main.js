@@ -223,3 +223,16 @@ export function removeLayer(id) {
         legend.remove();
     }
 }
+
+export function removeImageLayer(id) {
+	// Remove layer
+	var mapLayer = map.getLayer(id);
+    if(typeof mapLayer !== 'undefined') {
+	  // Remove map layer & source.
+	  map.removeLayer(id).removeSource(id);
+    }
+    var legend = document.getElementById("legend" + id);
+    if (legend) {
+        legend.remove();
+    }
+}
