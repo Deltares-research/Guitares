@@ -144,7 +144,7 @@ element:
         height: 22
       tooltip: Flood map overlay
       module: operations.ra2ce.flood_map_overlay
-      method: floodMapOverlay
+      method: FloodMapOverlay
     - style: edit
       id: feedback_flood_map_overlay
       position:
