@@ -168,6 +168,8 @@ class Ra2ceGUI:
             'origin_count'] = self.ra2ce_config['origins_destinations']['origin_count']
         self.ra2ceHandler.input_config.network_config.config_data['origins_destinations'][
             'category'] = self.ra2ce_config['origins_destinations']['category']
+        self.ra2ceHandler.input_config.network_config.config_data['origins_destinations'][
+            'origin_out_fraction'] = 1
 
         # Hazard
         self.ra2ceHandler.input_config.network_config.config_data['hazard']['hazard_map'] = [
@@ -184,6 +186,12 @@ class Ra2ceGUI:
                                                                                                         "run_name")
 
         # Analyses
+        try:
+            assert 'indirect' in self.ra2ceHandler.input_config.analysis_config.config_data
+        except AssertionError as e:
+            print(e)
+            return
+
         for i in range(len(self.ra2ceHandler.input_config.analysis_config.config_data['indirect'])):
             if 'aggregate_wl' in self.ra2ceHandler.input_config.analysis_config.config_data['indirect'][i]:
                 self.ra2ceHandler.input_config.analysis_config.config_data['indirect'][i]['aggregate_wl'] = \
