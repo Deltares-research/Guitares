@@ -67,10 +67,11 @@ class PopupMenu(WidgetGroup):
 
             getvar = self.element["getvar"]
             val = getvar(self.element["variable_group"], self.element["variable"])
-            if self.element["option_value"]:
-                index = self.element["option_value"].index(val)
-                self.widgets[0].setCurrentIndex(index)
-            self.set_dependencies()
+            if val:
+                if self.element["option_value"]:
+                    index = self.element["option_value"].index(val)
+                    self.widgets[0].setCurrentIndex(index)
+                self.set_dependencies()
 
     def callback(self):
         if self.check_variables():

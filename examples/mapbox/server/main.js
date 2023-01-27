@@ -1,10 +1,13 @@
 //import mapboxgl from './assets/index.9e7ef0f8.js'; // or "const mapboxgl = require('mapbox-gl');"
-console.log('main.js ...');
+//console.log('main.js ...');
 
-import mapboxgl from 'https://cdn.skypack.dev/mapbox-gl'
+import mapboxgl from 'https://cdn.skypack.dev/mapbox-gl';
+//import deckGl from 'https://cdn.skypack.dev/deck.gl';
 //import mapboxMapboxGlDraw from 'https://cdn.skypack.dev/@mapbox/mapbox-gl-draw'
 
+let mapReady;
 let mapMoved;
+let getMapExtent;
 let layerAdded;
 export let polygonDrawn;
 export let featureSelected;
@@ -25,8 +28,8 @@ mapboxgl.accessToken = 'pk.eyJ1IjoibXZhbm9ybW9uZHQiLCJhIjoiY2w1cnkyMHM3MGh3aTNjb
 export const map = new mapboxgl.Map({
   container: 'map', // container ID
   style: 'mapbox://styles/mapbox/streets-v11', // style URL
-  center: [5.0, 52.0], // starting position [lng, lat]
-  zoom: 6, // starting zoom
+  center: [0.0, 0.0], // starting position [lng, lat]
+  zoom: 2, // starting zoom
 //  projection: 'globe' // display the map as a 3D globe
   projection: 'mercator' // display the map as a 3D globe
 });
@@ -36,10 +39,41 @@ map.on('moveend', () => {
     onMoveEnd();
 });
 
+
+
 export const draw = new MapboxDraw({displayControlsDefault: false});
 map.addControl(draw, 'top-left');
 
 map.scrollZoom.setWheelZoomRate(1 / 200);
+
+new QWebChannel(qt.webChannelTransport, function (channel) {
+
+  window.MapBox = channel.objects.MapBox;
+  if (typeof MapBox != 'undefined') {
+    mapReady          = function() { MapBox.mapReady(jsonString)};
+    mapMoved          = function() { MapBox.mapMoved(jsonString)};
+    layerAdded        = function() { MapBox.layerAdded(layerID)};
+    polygonDrawn      = function(coordString, featureId) { MapBox.polygonDrawn(coordString, featureId, "layer_id")};
+    featureModified   = function(coordString, featureId) { MapBox.featureModified(coordString, featureId, "layer_id")};
+    featureSelected   = function(id) { MapBox.featureSelected(id)};
+    getMapExtent      = function() { MapBox.getMapExtent(jsonString)};
+  }
+});
+
+map.on('load', () => {
+    mapLoaded();
+});
+
+function mapLoaded(evt) {
+  var extent = map.getBounds();
+  var sw = extent.getSouthWest();
+  var ne = extent.getNorthEast();
+  var bottomLeft = [sw["lng"], sw["lat"]];
+  var topRight   = [ne["lng"], ne["lat"]];
+  jsonString = JSON.stringify([bottomLeft, topRight]);
+  mapReady();
+}
+
 //map.on('style.load', () => {
 //  map.setFog({}); // Set the default atmosphere style
 //});
@@ -58,27 +92,16 @@ map.scrollZoom.setWheelZoomRate(1 / 200);
 //    imageLayer.setOpacity(0.5);
 //}
 
-new QWebChannel(qt.webChannelTransport, function (channel) {
-
-  window.MapBox = channel.objects.MapBox;
-  if (typeof MapBox != 'undefined') {
-    mapMoved          = function() { MapBox.mapMoved(jsonString)};
-    layerAdded        = function() { MapBox.layerAdded(layerID)};
-    polygonDrawn      = function(coordString, featureId) { MapBox.polygonDrawn(coordString, featureId, "layer_id")};
-    featureModified   = function(coordString, featureId) { MapBox.featureModified(coordString, featureId, "layer_id")};
-    featureSelected   = function(id) { MapBox.featureSelected(id)};
-  }
-});
 
 
 function onMoveEnd(evt) {
 	// Called after moving map ended
 	// Get new map extents
     var extent = map.getBounds();
-    var se = extent.getSouthEast();
-    var nw = extent.getNorthWest();
-    var bottomLeft = [se["lng"], se["lat"]];
-    var topRight   = [nw["lng"], nw["lat"]];
+    var sw = extent.getSouthWest();
+    var ne = extent.getNorthEast();
+    var bottomLeft = [sw["lng"], sw["lat"]];
+    var topRight   = [ne["lng"], ne["lat"]];
     jsonString = JSON.stringify([bottomLeft, topRight]);
     mapMoved();
 }
@@ -105,6 +128,10 @@ export function addImageLayer(fileName, id, bounds, colorbar) {
         }
     });
 
+    map.setPaintProperty(id,
+      'raster-opacity',0.5
+    );
+
     // Legend
     const legend     = document.createElement("div");
     legend.id        = "legend" + id;
@@ -127,6 +154,46 @@ export function addImageLayer(fileName, id, bounds, colorbar) {
     document.body.appendChild(legend);
 
     layerAdded();
+
+}
+
+export function updateImageLayer(fileName, id, bounds, colorbar) {
+
+    map.getSource(id).updateImage({
+        'url': fileName,
+        'coordinates': [
+        [bounds[0][0], bounds[1][1]],
+        [bounds[0][1], bounds[1][1]],
+        [bounds[0][1], bounds[1][0]],
+        [bounds[0][0], bounds[1][0]]
+        ]
+    });
+
+    // Legend
+    var legend = document.getElementById("legend" + id);
+    if (legend) {
+        legend.remove();
+    }
+    var legend     = document.createElement("div");
+    legend.id        = "legend" + id;
+    legend.className = "overlay_legend";
+    var newSpan = document.createElement('span');
+    newSpan.class = 'title';
+    newSpan.innerHTML = '<b>' + colorbar["title"] + '</b>';
+    legend.appendChild(newSpan);
+    legend.appendChild(document.createElement("br"));
+    for (let i = 0; i < colorbar["contour"].length; i++) {
+    let cnt = colorbar["contour"][i]
+        var newI = document.createElement('i');
+        newI.setAttribute('style','background:' + cnt["color"]);
+        legend.appendChild(newI);
+        var newSpan = document.createElement('span');
+        newSpan.innerHTML = cnt["text"];
+        legend.appendChild(newSpan);
+        legend.appendChild(document.createElement("br"));
+    }
+    document.body.appendChild(legend);
+
 
 }
 
@@ -235,4 +302,34 @@ export function removeImageLayer(id) {
     if (legend) {
         legend.remove();
     }
+}
+
+export function getExtent() {
+	// Called after moving map ended
+	// Get new map extents
+    var extent = map.getBounds();
+    var sw = extent.getSouthWest();
+    var ne = extent.getNorthEast();
+    var bottomLeft = [sw["lng"], sw["lat"]];
+    var topRight   = [ne["lng"], ne["lat"]];
+    jsonString = JSON.stringify([bottomLeft, topRight]);
+    getMapExtent();
+}
+
+export function setCenter(lon, lat) {
+	// Called after moving map ended
+	// Get new map extents
+	map.setCenter([lon, lat]);
+}
+
+export function setZoom(zoom) {
+	// Called after moving map ended
+	// Get new map extents
+	map.setZoom(zoom);
+}
+
+export function jumpTo(lon, lat, zoom) {
+	// Called after moving map ended
+	// Get new map extents
+	map.jumpTo({center: [lon, lat], zoom: zoom});
 }

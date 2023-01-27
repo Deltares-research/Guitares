@@ -27,12 +27,17 @@ class DateEdit(WidgetGroup):
 
         fcn = lambda: self.callback()
         b.editingFinished.connect(fcn)
-        if self.module and "method" in self.element:
-            fcn = getattr(self.module, self.element["method"])
-            b.editingFinished.connect(fcn)
+        if self.element["module"] and "method" in self.element:
+            fcn = getattr(self.element["module"], self.element["method"])
+            self.callback = fcn
+            fcn2 = lambda: self.second_callback()
+            b.editingFinished.connect(fcn2)
+
+
 
     def set(self):
         if self.check_variables():
+            getvar = self.element["getvar"]
             group = self.element["variable_group"]
             name  = self.element["variable"]
             val   = getvar(group, name)
@@ -41,7 +46,7 @@ class DateEdit(WidgetGroup):
             self.widgets[0].setDateTime(qtDate)
             self.set_dependencies()
 
-    def callback(self):
+    def fist_callback(self):
         if self.check_variables():
 
             newval = self.widgets[0].dateTime().toPyDateTime()
@@ -52,3 +57,7 @@ class DateEdit(WidgetGroup):
             group = self.element["variable_group"]
             name  = self.element["variable"]
             setvar(group, name, newval)
+
+    def second_callback(self):
+        if self.okay:
+            self.callback()

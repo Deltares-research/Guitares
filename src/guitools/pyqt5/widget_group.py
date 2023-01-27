@@ -19,146 +19,150 @@ class WidgetGroup:
 
             for dep in self.element["dependency"]:
 
-                if dep["checkfor"] == "all":
-                    okay = True
-                    for check in dep["check"]:
-                        getvar = self.element["getvar"]
-                        name  = check["variable"]
-                        group = check["variable_group"]
-                        value = getvar(group, name)
-                        if type(check["value"]) == dict:
-                            check_value = getvar(check["value"]["variable_group"], check["value"]["variable"])
+                try:
+
+                    if dep["checkfor"] == "all":
+                        okay = True
+                        for check in dep["check"]:
+                            getvar = self.element["getvar"]
+                            name  = check["variable"]
+                            group = check["variable_group"]
+                            value = getvar(group, name)
+                            if type(check["value"]) == dict:
+                                check_value = getvar(check["value"]["variable_group"], check["value"]["variable"])
+                            else:
+                                check_value = check["value"]
+                                if type(value) == int:
+                                    check_value = int(check_value)
+                                elif type(value) == float:
+                                    check_value = float(check_value)
+
+                            if self.check_variables(name=name, group=group):
+                                if check["operator"] == "eq":
+                                    if value != check_value:
+                                        okay = False
+                                        break
+                                elif check["operator"] == "ne":
+                                    if value == check_value:
+                                        okay = False
+                                        break
+                                elif check["operator"] == "gt":
+                                    if value <= check_value:
+                                        okay = False
+                                        break
+                                elif check["operator"] == "ge":
+                                    if value < check_value:
+                                        okay = False
+                                        break
+                                elif check["operator"] == "lt":
+                                    if value >= check_value:
+                                        okay = False
+                                        break
+                                elif check["operator"] == "le":
+                                    if value > check_value:
+                                        okay = False
+                                        break
+
+                    elif dep["checkfor"] == "any":
+                        okay = False
+                        for check in dep["check"]:
+                            getvar = self.element["getvar"]
+                            name  = check["variable"]
+                            group = check["variable_group"]
+                            value = getvar(group, name)
+                            if type(check["value"]) == dict:
+                                check_value = getvar(check["value"]["variable_group"], check["value"]["variable"])
+                            else:
+                                check_value = check["value"]
+                                if type(value) == int:
+                                    check_value = int(check_value)
+                                elif type(value) == float:
+                                    check_value = float(check_value)
+
+                            if self.check_variables(name=name, group=group):
+                                if check["operator"] == "eq":
+                                    if value == check_value:
+                                        okay = True
+                                        break
+                                elif check["operator"] == "ne":
+                                    if value != check_value:
+                                        okay = True
+                                        break
+                                elif check["operator"] == "gt":
+                                    if value > check_value:
+                                        okay = True
+                                        break
+                                elif check["operator"] == "ge":
+                                    if value >= check_value:
+                                        okay = True
+                                        break
+                                elif check["operator"] == "lt":
+                                    if value < check_value:
+                                        okay = True
+                                        break
+                                elif check["operator"] == "le":
+                                    if value <= check_value:
+                                        okay = True
+                                        break
+
+                    elif dep["checkfor"] == "none":
+                        okay = True
+                        for check in dep["check"]:
+                            getvar = self.element["getvar"]
+                            name  = check["variable"]
+                            group = check["variable_group"]
+                            value = getvar(group, name)
+                            if type(check["value"]) == dict:
+                                check_value = getvar(check["value"]["variable_group"], check["value"]["variable"])
+                            else:
+                                check_value = check["value"]
+                                if type(value) == int:
+                                    check_value = int(check_value)
+                                elif type(value) == float:
+                                    check_value = float(check_value)
+                            if self.check_variables(name=name, group=group):
+                                if check["operator"] == "eq":
+                                    if value == check_value:
+                                        okay = False
+                                        break
+                                elif check["operator"] == "ne":
+                                    if value != check_value:
+                                        okay = False
+                                        break
+                                elif check["operator"] == "gt":
+                                    if value > check_value:
+                                        okay = False
+                                        break
+                                elif check["operator"] == "ge":
+                                    if value >= check_value:
+                                        okay = False
+                                        break
+                                elif check["operator"] == "lt":
+                                    if value < check_value:
+                                        okay = False
+                                        break
+                                elif check["operator"] == "le":
+                                    if value <= check_value:
+                                        okay = False
+                                        break
+
+                    if dep["action"] == "visible":
+                        if okay:
+                            for w in self.widgets:
+                                w.setVisible(True)
                         else:
-                            check_value = check["value"]
-                            if type(value) == int:
-                                check_value = int(check_value)
-                            elif type(value) == float:
-                                check_value = float(check_value)
-
-                        if self.check_variables(name=name, group=group):
-                            if check["operator"] == "eq":
-                                if value != check_value:
-                                    okay = False
-                                    break
-                            elif check["operator"] == "ne":
-                                if value == check_value:
-                                    okay = False
-                                    break
-                            elif check["operator"] == "gt":
-                                if value <= check_value:
-                                    okay = False
-                                    break
-                            elif check["operator"] == "ge":
-                                if value < check_value:
-                                    okay = False
-                                    break
-                            elif check["operator"] == "lt":
-                                if value >= check_value:
-                                    okay = False
-                                    break
-                            elif check["operator"] == "le":
-                                if value > check_value:
-                                    okay = False
-                                    break
-
-                elif dep["checkfor"] == "any":
-                    okay = False
-                    for check in dep["check"]:
-                        getvar = self.element["getvar"]
-                        name  = check["variable"]
-                        group = check["variable_group"]
-                        value = getvar(group, name)
-                        if type(check["value"]) == dict:
-                            check_value = getvar(check["value"]["variable_group"], check["value"]["variable"])
+                            for w in self.widgets:
+                                w.setVisible(False)
+                    elif dep["action"] == "enable":
+                        if okay:
+                            for w in self.widgets:
+                                w.setEnabled(True)
+                                w.setStyleSheet("")
                         else:
-                            check_value = check["value"]
-                            if type(value) == int:
-                                check_value = int(check_value)
-                            elif type(value) == float:
-                                check_value = float(check_value)
-
-                        if self.check_variables(name=name, group=group):
-                            if check["operator"] == "eq":
-                                if value == check_value:
-                                    okay = True
-                                    break
-                            elif check["operator"] == "ne":
-                                if value != check_value:
-                                    okay = True
-                                    break
-                            elif check["operator"] == "gt":
-                                if value > check_value:
-                                    okay = True
-                                    break
-                            elif check["operator"] == "ge":
-                                if value >= check_value:
-                                    okay = True
-                                    break
-                            elif check["operator"] == "lt":
-                                if value < check_value:
-                                    okay = True
-                                    break
-                            elif check["operator"] == "le":
-                                if value <= check_value:
-                                    okay = True
-                                    break
-
-                elif dep["checkfor"] == "none":
-                    okay = True
-                    for check in dep["check"]:
-                        getvar = self.element["getvar"]
-                        name  = check["variable"]
-                        group = check["variable_group"]
-                        value = getvar(group, name)
-                        if type(check["value"]) == dict:
-                            check_value = getvar(check["value"]["variable_group"], check["value"]["variable"])
-                        else:
-                            check_value = check["value"]
-                            if type(value) == int:
-                                check_value = int(check_value)
-                            elif type(value) == float:
-                                check_value = float(check_value)
-                        if self.check_variables(name=name, group=group):
-                            if check["operator"] == "eq":
-                                if value == check_value:
-                                    okay = False
-                                    break
-                            elif check["operator"] == "ne":
-                                if value != check_value:
-                                    okay = False
-                                    break
-                            elif check["operator"] == "gt":
-                                if value > check_value:
-                                    okay = False
-                                    break
-                            elif check["operator"] == "ge":
-                                if value >= check_value:
-                                    okay = False
-                                    break
-                            elif check["operator"] == "lt":
-                                if value < check_value:
-                                    okay = False
-                                    break
-                            elif check["operator"] == "le":
-                                if value <= check_value:
-                                    okay = False
-                                    break
-
-                if dep["action"] == "visible":
-                    if okay:
-                        for w in self.widgets:
-                            w.setVisible(True)
-                    else:
-                        for w in self.widgets:
-                            w.setVisible(False)
-                elif dep["action"] == "enable":
-                    if okay:
-                        for w in self.widgets:
-                            w.setEnabled(True)
-                            w.setStyleSheet("")
-                    else:
-                        for w in self.widgets:
-                            w.setEnabled(False)
+                            for w in self.widgets:
+                                w.setEnabled(False)
+                except:
+                    print("Error setting dependcy!!!")
 
     def check_variables(self, group=None, name=None):
 

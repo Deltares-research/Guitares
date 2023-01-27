@@ -18,8 +18,11 @@ class PushButton(WidgetGroup):
 
         if element["module"] :
             if "method" in element:
-                fcn = getattr(element["module"] , element["method"])
-                b.clicked.connect(fcn)
+                try:
+                    fcn = getattr(element["module"] , element["method"])
+                    b.clicked.connect(fcn)
+                except:
+                    print("ERROR! Method " + element["method"] + " not found!")
             else:
                 print("No method found in element !")
         if "icon" in element.keys():

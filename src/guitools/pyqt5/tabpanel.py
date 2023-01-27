@@ -30,13 +30,15 @@ class TabPanel:
 
             # Place tab in GUI
             widget = QWidget()
-            widget.setGeometry(0.0, 0.0, wdt, hgt - 20.0 * self.main_window.resize_factor - 2.0)
+            x0, y0, wdt, hgt = element["window"].get_position_from_string(element["position"], parent)
+            widget.setGeometry(x0, y0, wdt, hgt)
+#            widget.setGeometry(0, 0, wdt, int(hgt - 20.0 * self.main_window.resize_factor - 2.0))
             tab["widget"] = widget
             tab_panel.addTab(widget, tab["string"])
 
     def tab_selected(self, tabs, indx):
-        self.main_window.active_tab = tabs[indx]
-        self.main_window.update_active_tab()
+#        self.main_window.active_tab = tabs[indx]
+#        self.main_window.update_active_tab()
         if tabs[indx]["module"]:
             try:
                 tabs[indx]["module"].select()

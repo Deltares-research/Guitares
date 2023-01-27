@@ -45,8 +45,11 @@ class ListBox(WidgetGroup):
 #        b.currentItemChanged.connect(fcn)
         b.clicked.connect(fcn)
         if self.element["module"] and "method" in self.element:
-            fcn = getattr(self.element["module"], self.element["method"])
-            b.clicked.connect(fcn)
+            if hasattr(self.element["module"], self.element["method"]):
+                fcn = getattr(self.element["module"], self.element["method"])
+                b.clicked.connect(fcn)
+            else:
+                print("Error!. Listbox method " + self.element["method"] + " does not exist.")
 
     def set(self):
 
@@ -95,18 +98,16 @@ class ListBox(WidgetGroup):
         if self.check_variables():
 
             index = self.widgets[0].currentRow()
-
-            if type(self.element["option_value"]) == dict:
-                getvar = self.element["getvar"]
-                name = self.element["option_value"]["variable"]
-                group = self.element["option_value"]["variable_group"]
-                vals = getvar(group, name)
-                if not vals:
-                    vals = [""]
-            else:
-                vals = self.element["option_value"]
-
             if self.element["select"] == "item":
+                if type(self.element["option_value"]) == dict:
+                    getvar = self.element["getvar"]
+                    name = self.element["option_value"]["variable"]
+                    group = self.element["option_value"]["variable_group"]
+                    vals = getvar(group, name)
+                    if not vals:
+                        vals = [""]
+                else:
+                    vals = self.element["option_value"]
                 newval = vals[index]
             else:
                 newval = index

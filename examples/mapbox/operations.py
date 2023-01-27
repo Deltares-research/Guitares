@@ -86,21 +86,45 @@ def add_image_layer():
     mpbox.gui.setvar("mpbox", "active_layer_id", layer_id)
     mpbox.gui.update()
 
-    mpbox.gui.map_widget["main_map"].add_layer(layer_id, "image")
+    mpbox.gui.map_widget["main_map"].add_layer(layer_id, "raster")
+
+
+def add_deck_geojson_layer():
+    layer_group = mpbox.gui.getvar("mpbox", "layer_group")
+    name = str(random.randint(0, 1000))
+    mpbox.layer_groups[layer_group]["layer"][name] = {}
+    mpbox.layer_names = list(mpbox.layer_groups[layer_group]["layer"].keys())
+    mpbox.gui.setvar("mpbox", "layer_names", mpbox.layer_names)
+    mpbox.gui.setvar("mpbox", "layer", mpbox.layer_names[-1])
+    layer_id = layer_group + "." + name
+    mpbox.gui.setvar("mpbox", "active_layer_id", layer_id)
+    mpbox.gui.update()
+
+    mp = mpbox.gui.map_widget["main_map"]
+#    layer = mp.add_layer(layer_id, "deckgeojson", data=None)
+    layer = mp.add_layer(layer_id, "deckgeojson", data="c:/work/temp/gridabc.geojson")
+#    layer = mp.add_layer(layer_id, "deckgeojson", data=mpbox.gridjsontxt)
+
+#    layer.set_data("grid.geojson")
+    layer = mp.find_layer_by_id(layer_id)
+
 
 def set_image():
     layer_group = mpbox.gui.getvar("mpbox", "layer_group")
     layer_name  = mpbox.gui.getvar("mpbox", "layer")
     layer_id    = layer_group + "." + layer_name
+
+    mp = mpbox.gui.map_widget["main_map"]
+    layer = mp.find_layer_by_id(layer_id)
     image_file = "c:\\work\\checkouts\\git\\GUITools\\examples\\visualdelta\\floodmaps\\flood_withprot_slr=1.25m_rp=0100.tif"
-    mpbox.gui.map_widget["main_map"].set_image(layer_id,
-                  image_file=image_file,
-                  legend_title="",
-                  cmin=0.0,
-                  cmax=2.0,
-                  cstep=0.1,
-                  decimals=1,
-                  colormap="jet")
+
+    layer.set_data(image_file=image_file,
+                   legend_title="",
+                   cmin=0.0,
+                   cmax=2.0,
+                   cstep=0.1,
+                   decimals=1,
+                   colormap="jet")
 
 
 def delete_layer():
@@ -135,10 +159,12 @@ def select_layer():
 
 def add_polygon():
     # Draw polygon was clicked
+    mp = mpbox.gui.map_widget["main_map"]
     layer_group = mpbox.gui.getvar("mpbox", "layer_group")
-    layer       = mpbox.gui.getvar("mpbox", "layer")
-    layer_id = layer_group + "." + layer
-    mpbox.gui.map_widget["main_map"].draw_polygon(layer_id)
+    layer_name  = mpbox.gui.getvar("mpbox", "layer")
+
+    layer = mp.layer[layer_group][layer_name]
+    layer.draw_polygon()
 
 
 def polygon_created(feature):

@@ -18,6 +18,8 @@ class Edit(WidgetGroup):
         if not element["enable"]:
             b.setEnabled(False)
 
+        b.setVisible(True)
+
         x0, y0, wdt, hgt = element["window"].get_position_from_string(self.element["position"], self.parent)
         b.setGeometry(x0, y0, wdt, hgt)
         if self.element["text"]:

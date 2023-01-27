@@ -40,7 +40,7 @@ class ColorBar:
 
         if self.scale == "linear":
             if not cstep:
-                cstep = (cmax - cmax) / 10
+                cstep = (cmax - cmin) / 20
 
             nsteps = round((cmax - cmin) / cstep + 2)
 
@@ -53,20 +53,32 @@ class ColorBar:
                 rgb = clmap.get_rgb(z)
 
                 if decimals:
-                    zl = np.around(zl, decimals)
                     zu = np.around(zu, decimals)
+                    zl = np.around(zl, decimals)
+
+                zustr = str(zu)
+                zlstr = str(zl)
+
+                if decimals==0:
+                    zustr = str(int(zu))
+                    zlstr = str(int(zl))
+                elif decimals is not None:
+                    zustr = str(np.around(zu, decimals))
+                    zlstr = str(np.around(zl, decimals))
 
                 contour = {}
                 if i == 0:
-                    contour["string"] = "< " + str(cmin)
+#                    contour["string"] = "< " + str(cmin)
+                    contour["string"] = "< " + zustr
                     contour["lower_value"] = -1.0e6
                     contour["upper_value"] = zu
                 elif i == nsteps - 1:
-                    contour["string"] = "> " + str(cmax)
+#                    contour["string"] = "> " + str(cmax)
+                    contour["string"] = "> " + zlstr
                     contour["lower_value"] = zl
                     contour["upper_value"] = 1.0e6
                 else:
-                    contour["string"] = str(zl) + " - " + str(zu)
+                    contour["string"] = zlstr + " - " + zustr
                     contour["lower_value"] = zl
                     contour["upper_value"] = zu
                 contour["rgb"] = rgb

@@ -9,7 +9,7 @@ class MainWindow(QMainWindow):
 #        QApplication.instance()
         screen = QApplication.primaryScreen()
         if screen.size().width()>2500:
-            self.resize_factor = 2.0
+            self.resize_factor = 1.4
         elif screen.size().width()>1200:
             self.resize_factor = 1.4
         else:
@@ -57,7 +57,7 @@ class MainWindow(QMainWindow):
                 tab_panel.setGeometry(x0, y0, wdt, hgt)
                 for tab in element["tab"]:
                     widget = tab["widget"]
-                    widget.setGeometry(0, 0, wdt, int(hgt - 20 * self.resize_factor - 2))
+                    widget.setGeometry(0, 0, wdt, int(hgt - 20 * self.resize_factor))
                     # And resize elements in this tab
                     if tab["element"]:
                         self.resize_elements(tab["element"], widget)
@@ -69,13 +69,14 @@ class MainWindow(QMainWindow):
                 element["widget"].setGeometry(x0, y0, wdt, hgt)
             elif element["style"] == "mapbox":
                 x0, y0, wdt, hgt = self.get_position_from_string(element["position"], parent)
-#                element["widget"].view.setGeometry(x0, y0, wdt, hgt)
                 element["widget"].setGeometry(x0, y0, wdt, hgt)
             elif element["style"] == "webpage":
                 x0, y0, wdt, hgt = self.get_position_from_string(element["position"], parent)
                 element["widget"].setGeometry(x0, y0, wdt, hgt)
 
     def get_position_from_string(self, position, parent):
+
+#        self.resize_factor = 1.0
 
         x0 = position["x"] * self.resize_factor
         y0 = position["y"] * self.resize_factor
@@ -99,7 +100,7 @@ class MainWindow(QMainWindow):
                 y0 = parent.geometry().height() - (y0 + hgt)
             else:
                 y0 = - hgt
-                hgt = parent.geometry().height() - position["y"]* self.resize_factor + hgt
+                hgt = parent.geometry().height() - position["y"] * self.resize_factor + hgt
         else:
             if hgt>0:
                 y0 = parent.geometry().width() - hgt
@@ -113,3 +114,8 @@ class MainWindow(QMainWindow):
         hgt = int(hgt)
 
         return x0, y0, wdt, hgt
+
+    def update_active_tab(self):
+#        element = self.gui.active_tab["element"]
+#        self.set_elements(element)
+        pass

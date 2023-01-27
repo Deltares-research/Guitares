@@ -72,6 +72,14 @@ element:
         height: 20
       method: add_image_layer
     - style: pushbutton
+      text: Add GeoJson Layer
+      position:
+        x: 390
+        y: 45
+        width: 80
+        height: 20
+      method: add_deck_geojson_layer
+    - style: pushbutton
       text: Delete
       position:
         x: 300

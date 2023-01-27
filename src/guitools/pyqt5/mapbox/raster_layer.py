@@ -1,0 +1,215 @@
+import os
+from PIL import Image
+import matplotlib
+from matplotlib import cm
+import matplotlib.pyplot as plt
+import rasterio
+import rasterio.features
+from rasterio.warp import calculate_default_transform, reproject, Resampling, transform_bounds
+from rasterio import MemoryFile
+from rasterio.transform import Affine
+import geopandas as gpd
+import pandas as pd
+import shapely
+#import matplotlib.pyplot as plt
+from matplotlib.colors import LightSource
+import numpy as np
+
+from .colorbar import ColorBar
+
+from .layer import Layer
+
+class RasterLayer(Layer):
+    def __init__(self, mapbox, id, map_id):
+        super().__init__(mapbox, id, map_id)
+        self.active = False
+        self.type   = "raster"
+        self.new    = True
+
+    def activate(self):
+        self.active = True
+
+    def deactivate(self):
+        self.active = False
+
+
+    def clear(self):
+        self.active = False
+        js_string = "import('/js/main.js').then(module => {module.removeLayer('" + self.map_id + "')});"
+        self.mapbox.view.page().runJavaScript(js_string)
+
+    def update(self):
+        print("Updating image layer")
+
+    def set_data(self,
+                 x=None,
+                 y=None,
+                 z=None,
+                 image_file=None,
+                 legend_title="",
+                 cmin=None,
+                 cmax=None,
+                 cstep=None,
+                 decimals=None,
+                 crs=None,
+                 colormap=None):
+
+        cmap = colormap
+
+        if not crs:
+            src_crs = "EPSG:4326"
+        else:
+            src_crs = "EPSG:" + crs.epsg
+
+        # Web Mercator
+        dst_crs = 'EPSG:3857'
+
+        if image_file:
+
+            with rasterio.open(image_file) as src:
+                transform, width, height = calculate_default_transform(
+                    src.crs, dst_crs, src.width, src.height, *src.bounds)
+                kwargs = src.meta.copy()
+                kwargs.update({
+                    'crs': dst_crs,
+                    'transform': transform,
+                    'width': width,
+                    'height': height
+                })
+                bnds = src.bounds
+
+                mem_file = MemoryFile()
+                with mem_file.open(**kwargs) as dst:
+                    for i in range(1, src.count + 1):
+                        reproject(
+                            source=rasterio.band(src, i),
+                            destination=rasterio.band(dst, i),
+                            src_transform=src.transform,
+                            src_crs=src.crs,
+                            dst_transform=transform,
+                            dst_crs=dst_crs,
+                            resampling=Resampling.nearest)
+
+                    band1 = dst.read(1)
+
+            new_bounds = transform_bounds(dst_crs, src_crs,
+                                          dst.bounds[0],
+                                          dst.bounds[1],
+                                          dst.bounds[2],
+                                          dst.bounds[3])
+            isn = np.where(band1 < 0.001)
+            band1[isn] = np.nan
+
+            band1 = np.flipud(band1)
+            cminimum = np.nanmin(band1)
+            cmaximum = np.nanmax(band1)
+
+            norm = matplotlib.colors.Normalize(vmin=cminimum, vmax=cmaximum)
+            vnorm = norm(band1)
+
+            cmap = cm.get_cmap(colormap)
+            im = Image.fromarray(np.uint8(cmap(vnorm) * 255))
+
+            overlay_file = "overlay.png"
+            im.save(os.path.join(self.mapbox.server_path, overlay_file))
+
+            # Bounds
+            bounds = [[new_bounds[0], new_bounds[2]], [new_bounds[3], new_bounds[1]]]
+            bounds_string = "[[" + str(bounds[0][0]) + "," + str(bounds[0][1]) + "],[" + str(bounds[1][0]) + "," + str(bounds[1][1]) + "]]"
+
+        else:
+
+            cmin = np.nanmin(z)
+            cmax = -cmin
+
+            ls = LightSource(azdeg=315, altdeg=30)
+
+#            cmap = settings.color_map_earth
+#            cmap = matplotlib.pyplot.get_cmap('gist_earth')
+            dx = (x[1] - x[0]) / 2
+            dy = (y[1] - y[0]) / 2
+            rgb = ls.shade(np.flipud(z), cmap,
+                           vmin=cmin,
+                           vmax=cmax,
+                           dx=dx * 50000,
+                           dy=dy * 50000,
+                           vert_exag=10.0,
+                           blend_mode="soft")
+            rgb = rgb[:, :, 0:3] * 255
+            rgb = rgb.astype(np.uint8)
+
+
+            # First create rasterio image
+            res = (x[-1] - x[0]) / (x.size - 1)
+            transform = Affine.translation(x[0] - res / 2, y[-1] + res / 2) * Affine.scale(res, -res)
+            mem_file1 = MemoryFile()
+            src = rasterio.open(
+                mem_file1,
+                'w',
+                driver='GTiff',
+                height=y.size,
+                width=x.size,
+                count=3,
+                dtype=rgb.dtype,
+                crs=src_crs,
+                transform=transform,
+            )
+            src.write(rgb[:,:,0], 1)
+            src.write(rgb[:,:,1], 2)
+            src.write(rgb[:,:,2], 3)
+
+            # Let's convert it to web mercator
+            transform, width, height = calculate_default_transform(
+                src.crs, dst_crs, src.width, src.height, *src.bounds)
+            kwargs = src.meta.copy()
+            kwargs.update({
+                'crs': dst_crs,
+                'transform': transform,
+                'width': width,
+                'height': height
+            })
+            bnds = src.bounds
+
+            mem_file2 = MemoryFile()
+            with mem_file2.open(**kwargs) as dst:
+                for i in range(1, src.count + 1):
+                    reproject(
+                        source=rasterio.band(src, i),
+                        destination=rasterio.band(dst, i),
+                        src_transform=src.transform,
+                        src_crs=src.crs,
+                        dst_transform=transform,
+                        dst_crs=dst_crs,
+                        resampling=Resampling.nearest)
+
+                bounds = transform_bounds(dst_crs, src_crs,
+                                          dst.bounds[0],
+                                          dst.bounds[1],
+                                          dst.bounds[2],
+                                          dst.bounds[3])
+
+                rgb = np.empty([dst.height, dst.width, 3], dtype=np.uint8)
+                rgb[:,:,0] = dst.read(1)
+                rgb[:,:,1] = dst.read(2)
+                rgb[:,:,2] = dst.read(3)
+                im = Image.fromarray(rgb, "RGB")
+
+                overlay_file = "overlay.png"
+                im.save(os.path.join(self.mapbox.server_path, "overlay.png"))
+
+                # Bounds
+                bounds_string = "[[" + str(bounds[0]) + "," + str(bounds[2]) + "],[" + str(bounds[1]) + "," + str(bounds[3]) + "]]"
+
+        # Legend
+        clrbar = ColorBar(colormap=colormap, legend_title=legend_title)
+        clrbar.make(cmin, cmax, cstep=cstep, decimals=decimals)
+        clrmap_string = clrbar.to_json()
+
+        if self.new:
+            js_string = "import('./js/image_layer.js').then(module => {module.addLayer('" + overlay_file + "','" + self.map_id + "'," + bounds_string + "," + clrmap_string + ")});"
+            self.mapbox.view.page().runJavaScript(js_string)
+        else:
+            js_string = "import('./js/image_layer.js').then(module => {module.updateLayer('" + overlay_file + "','" + self.map_id + "'," + bounds_string + "," + clrmap_string + ")});"
+            self.mapbox.view.page().runJavaScript(js_string)
+
+        self.new = False
