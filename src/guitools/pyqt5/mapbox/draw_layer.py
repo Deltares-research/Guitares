@@ -1,167 +1,167 @@
+import math
 import geopandas as gpd
 import pandas as pd
 import json
 import geojson
 import shapely
-from PyQt5 import QtCore
+import matplotlib.colors as mcolors
 
 from .layer import Layer, list_layers
+#from .mapbox import JavascriptString
+
 
 class DrawLayer(Layer):
-    def __init__(self, mapbox, id, map_id, create=None, modify=None, select=None):
+    def __init__(self, mapbox, id, map_id, create=None, modify=None, select=None,
+                 polygon_line_color="dodgerblue",
+                 polygon_line_width=2,
+                 polygon_line_style="-",
+                 polygon_line_opacity=1.0,
+                 polygon_fill_color="dodgerblue",
+                 polygon_fill_opacity=0.5,
+                 polyline_line_color="limegreen",
+                 polyline_line_width=2,
+                 polyline_line_style="-",
+                 polyline_line_opacity=1.0,
+                 circle_line_color="black",
+                 circle_line_opacity=1.0,
+                 circle_fill_color="orangered",
+                 circle_fill_opacity=0.5,
+                 circle_radius=4):
+
         super().__init__(mapbox, id, map_id)
+
         self.active = False
         self.type   = "draw"
+        self.mode   = "active" # Draw layers can have three modes: active, inactive, invisible
         self.gdf    = gpd.GeoDataFrame()
         self.create_callback = create
         self.modify_callback = modify
         self.select_callback = select
 
-    def activate(self):
+        # Get Hex values for colors
+        self.paint_props = {}
+        self.paint_props["polygon_line_color"]    = mcolors.to_hex(polygon_line_color)
+        self.paint_props["polygon_line_width"]    = polygon_line_width
+        self.paint_props["polygon_line_style"]    = polygon_line_style
+        self.paint_props["polygon_line_opacity"]  = polygon_line_opacity
+        self.paint_props["polygon_fill_color"]    = mcolors.to_hex(polygon_fill_color)
+        self.paint_props["polygon_fill_opacity"]  = polygon_fill_opacity
+        self.paint_props["polyline_line_color"]   = mcolors.to_hex(polyline_line_color)
+        self.paint_props["polyline_line_width"]   = polyline_line_width
+        self.paint_props["polyline_line_style"]   = polyline_line_style
+        self.paint_props["polyline_line_opacity"] = polyline_line_opacity
+        self.paint_props["circle_line_color"]     = mcolors.to_hex(circle_line_color)
+        self.paint_props["circle_line_opacity"]   = circle_line_opacity
+        self.paint_props["circle_fill_color"]     = mcolors.to_hex(circle_fill_color)
+        self.paint_props["circle_fill_opacity"]   = circle_fill_opacity
+        self.paint_props["circle_radius"]         = circle_radius
 
-        # De-activate all other draw layers
-        draw_layers = list_layers(self.mapbox.layer, layer_type="draw")
-        for layer in draw_layers:
-            # Only de-activate other layers that are currently active
-            if layer.active and layer.map_id is not self.map_id:
-                layer.deactivate()
+        # Add this layer
+        self.mapbox.runjs("./js/draw.js", "addLayer", arglist=[self.map_id, "invisible", self.paint_props])
 
-        # And activate the current draw layer
-        if not self.active:
-            self.active = True
-            # First clear existing features in mapbox draw layer
+    def set_mode(self, mode):
+        self.mode = mode
+        self.mapbox.runjs("./js/draw.js", "setLayerMode", arglist=[self.map_id, mode])
 
-            # And now add drawing features
-            for index, row in self.gdf.iterrows():
-                geom = row["geometry"]
-                feature_id = row["id"]
-                # Remove feature from draw layer
-                js_string = "import('./js/draw.js').then(module => {module.deleteInactiveFeature('" + feature_id + "')});"
-                self.mapbox.view.page().runJavaScript(js_string)
-                # Add feature as geojson layer
-                gjsn = geojson.Polygon(geom.exterior.coords)
-                gjsn["coordinates"] = [gjsn["coordinates"]]
-                js_string = "import('./js/draw.js').then(module => {module.addActiveFeature('" + feature_id + "'," + json.dumps(gjsn) + ")});"
-                self.mapbox.view.page().runJavaScript(js_string)
+    def set_visibility(self, true_or_false):
+        if true_or_false:
+            if self.mode == "invisible":
+                # Make layer inactive
+                self.set_mode("inactive")
+        else:
+            # Make layer invisible
+            self.set_mode("invisible")
 
-
-    def deactivate(self):
-        self.active = False
-        # Loop through draw features
-        for index, row in self.gdf.iterrows():
-            geom = row["geometry"]
-            feature_id = row["id"]
-            # Remove feature from draw layer
-            js_string = "import('./js/draw.js').then(module => {module.deleteActiveFeature('" + feature_id + "')});"
-            self.mapbox.view.page().runJavaScript(js_string)
-            # Add feature as geojson layer
-            gjsn = geojson.Polygon(geom.exterior.coords)
-            gjsn["coordinates"] = [gjsn["coordinates"]]
-            js_string = "import('./js/draw.js').then(module => {module.addInactiveFeature('" + feature_id + "'," + json.dumps(gjsn) + ")});"
-            self.mapbox.view.page().runJavaScript(js_string)
-
-    def add_feature(self, feature_id, geometry):
-        self.active = False
-        # Loop through draw features
-        fstring = json.dumps(geometry)
-        js_string = "import('./js/draw.js').then(module => {module.addInactiveFeature('" + feature_id + "'," + fstring + ")});"
-        self.mapbox.view.page().runJavaScript(js_string)
-        #
-        # for index, row in self.gdf.iterrows():
-        #     geom = row["geometry"]
-        #     feature_id = row["id"]
-        #     # Remove feature from draw layer
-        #     js_string = "import('/draw.js').then(module => {module.deleteActiveFeature('" + feature_id + "')});"
-        #     self.mapbox.view.page().runJavaScript(js_string)
-        #     # Add feature as geojson layer
-        #     gjsn = geojson.Polygon(geom.exterior.coords)
-        #     gjsn["coordinates"] = [gjsn["coordinates"]]
-        #     js_string = "import('/draw.js').then(module => {module.addInactiveFeature('" + feature_id + "'," + json.dumps(gjsn) + ")});"
-        #     self.mapbox.view.page().runJavaScript(js_string)
+    def add_feature(self, feature_id, shape, geometry):
+        self.mapbox.runjs("./js/draw.js", "addFeature", arglist=[feature_id, shape, geometry, self.map_id])
 
     def draw_polygon(self):
-        # Activate this draw layer (all the other draw layers are automatically de-activated)
         self.mapbox.active_draw_layer = self
-        self.activate()
-        js_string = "import('./js/draw.js').then(module => {module.drawPolygon('" + self.map_id + "')});"
-        self.mapbox.view.page().runJavaScript(js_string)
+        self.mapbox.runjs("./js/draw.js", "drawPolygon", arglist=[self.map_id])
 
-    def feature_drawn(self, coords, feature_id, feature_type):
-        if feature_type == "polygon":
+    def draw_polyline(self):
+        self.mapbox.active_draw_layer = self
+        self.mapbox.runjs("./js/draw.js", "drawPolyline", arglist=[self.map_id])
+
+    def draw_rectangle(self):
+        self.mapbox.active_draw_layer = self
+        self.mapbox.runjs("./js/draw.js", "drawRectangle", arglist=[self.map_id])
+
+    def feature_drawn(self, coords, feature_id, feature_shape):
+        if feature_shape== "polygon":
             geom = shapely.geometry.Polygon(coords[0])
-        gdf = gpd.GeoDataFrame(data=[feature_id], columns=["id"], crs='epsg:4326', geometry=[geom])
-        self.gdf = pd.concat([self.gdf, gdf])
+            gdf = gpd.GeoDataFrame(data=[[feature_id, feature_shape]], columns=["id", "shape"], crs='epsg:4326', geometry=[geom])
+        if feature_shape == "polyline":
+            geom = shapely.geometry.LineString(coords)
+            gdf = gpd.GeoDataFrame(data=[[feature_id, feature_shape]], columns=["id", "shape"], crs='epsg:4326', geometry=[geom])
+        if feature_shape == "rectangle":
+            geom = shapely.geometry.Polygon(coords[0])
+            x0, y0, dx, dy, rotation = get_rectangle_geometry(geom)
+            gdf = gpd.GeoDataFrame(data=[[feature_id, feature_shape, x0, y0, dx, dy, rotation]], columns=["id", "shape", "x0", "y0", "dx", "dy", "rotation"], crs='epsg:4326', geometry=[geom])
+        self.gdf = pd.concat([self.gdf, gdf], ignore_index=True)
         if self.create_callback:
-            self.create_callback(gdf)
+            self.create_callback(gdf, feature_shape, feature_id)
 
-    def feature_modified(self, coords, feature_id, feature_type):
-        if feature_type == "polygon":
+    def feature_modified(self, coords, feature_id, feature_shape):
+        if feature_shape == "polygon":
             geom = shapely.geometry.Polygon(coords[0])
-        gdf = gpd.GeoDataFrame(data=[feature_id], columns=["id"], crs='epsg:4326', geometry=[geom])
+            gdf = gpd.GeoDataFrame(data=[[feature_id, feature_shape]], columns=["id", "shape"], crs='epsg:4326', geometry=[geom])
+        if feature_shape == "polyline":
+            geom = shapely.geometry.LineString(coords)
+            gdf = gpd.GeoDataFrame(data=[[feature_id, feature_shape]], columns=["id", "shape"], crs='epsg:4326', geometry=[geom])
+        if feature_shape == "rectangle":
+            geom = shapely.geometry.Polygon(coords[0])
+            x0, y0, dx, dy, rotation = get_rectangle_geometry(geom)
+            gdf = gpd.GeoDataFrame(data=[[feature_id, feature_shape, x0, y0, dx, dy, rotation]], columns=["id", "shape", "x0", "y0", "dx", "dy", "rotation"], crs='epsg:4326', geometry=[geom])
         for index, row in self.gdf.iterrows():
-            feature_id = row["id"]
             if row["id"] == feature_id:
-                row["geometry"] = geom
+                self.gdf.at[index, "geometry"] = geom
                 break
         if self.modify_callback:
-            self.modify_callback(gdf)
+            self.modify_callback(gdf, feature_shape, feature_id)
 
     def feature_selected(self, feature_id):
         if self.select_callback:
             self.select_callback(feature_id)
 
     def activate_feature(self, feature_id):
-        js_string = "import('./js/draw.js').then(module => {module.activateFeature('" + feature_id + "')});"
-        self.mapbox.view.page().runJavaScript(js_string)
+        if self.mode is not "active":
+            self.mode = "active"
+            self.mapbox.runjs("./js/draw.js", "setLayerMode", arglist=[self.map_id, mode])
+        self.mapbox.runjs("./js/draw.js", "activateFeature", arglist=[feature_id])
 
     def delete_feature(self, feature_id):
-        js_string = "import('./js/draw.js').then(module => {module.deleteActiveFeature('" + feature_id + "')});"
-        self.mapbox.view.page().runJavaScript(js_string)
+        if feature_id: # Could also be None
+            # Remove from gdf
+            for index, row in self.gdf.iterrows():
+                if row["id"] == feature_id:
+                    self.gdf = self.gdf.drop(index)
+                    break
+            self.mapbox.runjs("./js/draw.js", "deleteFeature", arglist=[feature_id])
 
     def clear(self):
         self.active = False
+        # Empty GeoDataFrame
+        self.gdf    = gpd.GeoDataFrame()
         # Loop through draw features
         for index, row in self.gdf.iterrows():
             feature_id = row["id"]
             # Remove feature from draw layer
-            js_string = "import('./js/draw.js').then(module => {module.deleteActiveFeature('" + feature_id + "')});"
-            self.mapbox.view.page().runJavaScript(js_string)
-            js_string = "import('./js/draw.js').then(module => {module.deleteInactiveFeature('" + feature_id + "')});"
-            self.mapbox.view.page().runJavaScript(js_string)
+            self.mapbox.runjs("./js/draw.js", "deleteFeature", arglist=[feature_id])
 
-#     @QtCore.pyqtSlot(str, str, str)
-#     def polygonDrawn(self, coord_string, feature_id, layer_id):
-# #        self.active_layer.create_feature(json.loads(coord_string), feature_id, "polygon")
-#         coords = json.loads(coord_string)
-#         geometry = shapely.geometry.Polygon(coords[0])
-#         gdf = gpd.GeoDataFrame(data=[feature_id], columns=["id"], crs='epsg:4326', geometry=[geometry])
-#         self.gdf = pd.concat([self.gdf, gdf])
-#         if self.create_callback:
-#             self.create_callback(gdf)
+    def get_gdf(self, id=None):
+        if id:
+            for index, row in self.gdf.iterrows():
+                if row["id"] == id:
+                    return self.gdf[index]
+        else:
+            return self.gdf
 
-
-    # def draw_polyline(self, layer_name, create=None, modify=None):
-    #     layer_group_name = "_base"
-    #     js_string = "import('/main.js').then(module => {module.drawPolyline('" + layer_group_name + "','" + layer_name + "');});"
-    #     self.view.page().runJavaScript(js_string)
-    #     self.polyline_create_callback = None
-    #     self.polyline_modify_callback = None
-    #     if create:
-    #         self.polyline_create_callback = create
-    #     if modify:
-    #         self.polyline_modify_callback = modify
-    #
-    # def draw_point(self, layer_group_name, layer_name):
-    #     js_string = "import('/main.js').then(module => {module.drawPoint('" + layer_group_name + "','" + layer_name + "');});"
-    #     self.view.page().runJavaScript(js_string)
-    #
-    # def draw_rectangle(self, layer_name, create=None, modify=None):
-    #     layer_group_name = "_base"
-    #     js_string = "import('/main.js').then(module => {module.drawRectangle('" + layer_group_name + "','" + layer_name + "');});"
-    #     self.view.page().runJavaScript(js_string)
-    #     self.rectangle_create_callback = None
-    #     self.rectangle_modify_callback = None
-    #     if create:
-    #         self.rectangle_create_callback = create
-    #     if modify:
-    #         self.rectangle_modify_callback = modify
+def get_rectangle_geometry(geom):
+    xx, yy = geom.exterior.coords.xy
+    x0 = xx[0]
+    y0 = yy[0]
+    dx = xx[1] - xx[0]
+    dy = yy[2] - yy[1]
+    rotation = math.atan2(yy[1] - yy[0], xx[1] - xx[0])
+    return x0, y0, dx, dy, rotation

@@ -25,6 +25,7 @@ class RasterLayer(Layer):
         self.active = False
         self.type   = "raster"
         self.new    = True
+        self.file_name = map_id + ".png"
 
     def activate(self):
         self.active = True
@@ -110,7 +111,7 @@ class RasterLayer(Layer):
             cmap = cm.get_cmap(colormap)
             im = Image.fromarray(np.uint8(cmap(vnorm) * 255))
 
-            overlay_file = "overlay.png"
+            overlay_file = "./overlays/" + self.file_name
             im.save(os.path.join(self.mapbox.server_path, overlay_file))
 
             # Bounds
@@ -194,8 +195,8 @@ class RasterLayer(Layer):
                 rgb[:,:,2] = dst.read(3)
                 im = Image.fromarray(rgb, "RGB")
 
-                overlay_file = "overlay.png"
-                im.save(os.path.join(self.mapbox.server_path, "overlay.png"))
+                overlay_file = "./overlays/" + self.file_name
+                im.save(os.path.join(self.mapbox.server_path, "overlays", self.file_name))
 
                 # Bounds
                 bounds_string = "[[" + str(bounds[0]) + "," + str(bounds[2]) + "],[" + str(bounds[1]) + "," + str(bounds[3]) + "]]"
@@ -206,10 +207,10 @@ class RasterLayer(Layer):
         clrmap_string = clrbar.to_json()
 
         if self.new:
-            js_string = "import('./js/image_layer.js').then(module => {module.addLayer('" + overlay_file + "','" + self.map_id + "'," + bounds_string + "," + clrmap_string + ")});"
+            js_string = "import('/js/image_layer.js').then(module => {module.addLayer('" + overlay_file + "','" + self.map_id + "'," + bounds_string + "," + clrmap_string + ")});"
             self.mapbox.view.page().runJavaScript(js_string)
         else:
-            js_string = "import('./js/image_layer.js').then(module => {module.updateLayer('" + overlay_file + "','" + self.map_id + "'," + bounds_string + "," + clrmap_string + ")});"
+            js_string = "import('/js/image_layer.js').then(module => {module.updateLayer('" + overlay_file + "','" + self.map_id + "'," + bounds_string + "," + clrmap_string + ")});"
             self.mapbox.view.page().runJavaScript(js_string)
 
         self.new = False

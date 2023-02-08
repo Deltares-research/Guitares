@@ -1,3 +1,27 @@
 [build-system]
 requires = ["setuptools>=42"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "guitools"
+authors = [
+    {name = "Maarten van Ormondt", email = "maarten.vanormondt@deltares-usa.us"},
+]
+requires-python = ">=3.10"
+dependencies = [
+    "geopandas >=0.8",
+    "numpy",
+    "pandas",
+    "pyproj",
+    "rasterio",
+    "shapely",
+    "numpy",
+    "json",
+    "geojson",
+    "Pillow",
+    "matplotlib",
+    "pyyaml",
+    "pyqt5",
+    "pyqtwebengine",
+]
+dynamic = ["version"]

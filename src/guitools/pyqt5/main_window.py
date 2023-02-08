@@ -2,6 +2,8 @@ from PyQt5.QtWidgets import QWidget, QMainWindow
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QVBoxLayout
 
+from guitools.gui import resize_elements
+
 class MainWindow(QMainWindow):
     def __init__(self, config):
         super().__init__()
@@ -26,8 +28,10 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(widget)
         self.central_widget = widget
 
+        self.active_tab = None
+
     def resizeEvent(self, event):
-        self.resize_elements(self.config["element"], self.central_widget)
+        resize_elements(self.config["element"], self.central_widget, self.resize_factor)
 
     def closeEvent(self,event):
         QApplication.quit()        
@@ -49,73 +53,79 @@ class MainWindow(QMainWindow):
     def add_toolbar(self):
         pass
 
-    def resize_elements(self, element_list, parent):
-        for element in element_list:
-            if element["style"] == "tabpanel":
-                tab_panel = element["widget"]
-                x0, y0, wdt, hgt = self.get_position_from_string(element["position"], parent)
-                tab_panel.setGeometry(x0, y0, wdt, hgt)
-                for tab in element["tab"]:
-                    widget = tab["widget"]
-                    widget.setGeometry(0, 0, wdt, int(hgt - 20 * self.resize_factor))
-                    # And resize elements in this tab
-                    if tab["element"]:
-                        self.resize_elements(tab["element"], widget)
-            elif element["style"] == "panel":
-                x0, y0, wdt, hgt = self.get_position_from_string(element["position"], parent)
-                element["widget"].setGeometry(x0, y0, wdt, hgt)
-            elif element["style"] == "olmap":
-                x0, y0, wdt, hgt = self.get_position_from_string(element["position"], parent)
-                element["widget"].setGeometry(x0, y0, wdt, hgt)
-            elif element["style"] == "mapbox":
-                x0, y0, wdt, hgt = self.get_position_from_string(element["position"], parent)
-                element["widget"].setGeometry(x0, y0, wdt, hgt)
-            elif element["style"] == "webpage":
-                x0, y0, wdt, hgt = self.get_position_from_string(element["position"], parent)
-                element["widget"].setGeometry(x0, y0, wdt, hgt)
-
-    def get_position_from_string(self, position, parent):
-
-#        self.resize_factor = 1.0
-
-        x0 = position["x"] * self.resize_factor
-        y0 = position["y"] * self.resize_factor
-        wdt = position["width"] * self.resize_factor
-        hgt = position["height"] * self.resize_factor
-
-        if x0>0:
-            if wdt>0:
-                pass
-            else:
-                wdt = parent.geometry().width() - x0 + wdt
-        else:
-            if wdt>0:
-                x0 = parent.geometry().width() - wdt
-            else:
-                x0 = parent.geometry().width() + x0
-                wdt = parent.geometry().width() - x0 + wdt
-
-        if y0>0:
-            if hgt>0:
-                y0 = parent.geometry().height() - (y0 + hgt)
-            else:
-                y0 = - hgt
-                hgt = parent.geometry().height() - position["y"] * self.resize_factor + hgt
-        else:
-            if hgt>0:
-                y0 = parent.geometry().width() - hgt
-            else:
-                hgt = - y0 - hgt
-                y0 = parent.geometry().width() - (y0 + hgt)
-
-        x0 = int(x0)
-        y0 = int(y0)
-        wdt = int(wdt)
-        hgt = int(hgt)
-
-        return x0, y0, wdt, hgt
+#     def resize_elements(self, element_list, parent):
+#         for element in element_list:
+#             if element["style"] == "tabpanel":
+#                 tab_panel = element["widget"]
+#                 x0, y0, wdt, hgt = self.get_position_from_string(element["position"], parent)
+#                 tab_panel.setGeometry(x0, y0, wdt, hgt)
+#                 for tab in element["tab"]:
+#                     widget = tab["widget"]
+#                     widget.setGeometry(0, 0, wdt, int(hgt - 20 * self.resize_factor))
+#                     # And resize elements in this tab
+#                     if tab["element"]:
+#                         self.resize_elements(tab["element"], widget)
+#             elif element["style"] == "panel":
+#                 x0, y0, wdt, hgt = self.get_position_from_string(element["position"], parent)
+#                 element["widget"].setGeometry(x0, y0, wdt, hgt)
+#             elif element["style"] == "olmap":
+#                 x0, y0, wdt, hgt = self.get_position_from_string(element["position"], parent)
+#                 element["widget"].setGeometry(x0, y0, wdt, hgt)
+#             elif element["style"] == "mapbox":
+#                 x0, y0, wdt, hgt = self.get_position_from_string(element["position"], parent)
+#                 element["widget"].setGeometry(x0, y0, wdt, hgt)
+#             elif element["style"] == "webpage":
+#                 x0, y0, wdt, hgt = self.get_position_from_string(element["position"], parent)
+#                 element["widget"].setGeometry(x0, y0, wdt, hgt)
+#             # else:
+#             #     # Should do this but it also means changing the position of label widgets ... Too much work for now.
+#             #     x0, y0, wdt, hgt = self.get_position_from_string(element["position"], parent)
+#             #     if "widget" in element:
+#             #         element["widget"].setGeometry(x0, y0, wdt, hgt)
+#
+#     def get_position_from_string(self, position, parent):
+#
+# #        self.resize_factor = 1.0
+#
+#         x0 = position["x"] * self.resize_factor
+#         y0 = position["y"] * self.resize_factor
+#         wdt = position["width"] * self.resize_factor
+#         hgt = position["height"] * self.resize_factor
+#
+#         if x0>0:
+#             if wdt>0:
+#                 pass
+#             else:
+#                 wdt = parent.geometry().width() - x0 + wdt
+#         else:
+#             if wdt>0:
+#                 x0 = parent.geometry().width() - wdt
+#             else:
+#                 x0 = parent.geometry().width() + x0
+#                 wdt = parent.geometry().width() - x0 + wdt
+#
+#         if y0>0:
+#             if hgt>0:
+#                 y0 = parent.geometry().height() - (y0 + hgt)
+#             else:
+#                 y0 = - hgt
+#                 hgt = parent.geometry().height() - position["y"] * self.resize_factor + hgt
+#         else:
+#             if hgt>0:
+#                 y0 = parent.geometry().width() - hgt
+#             else:
+#                 hgt = - y0 - hgt
+#                 y0 = parent.geometry().width() - (y0 + hgt)
+#
+#         x0 = int(x0)
+#         y0 = int(y0)
+#         wdt = int(wdt)
+#         hgt = int(hgt)
+#
+#         return x0, y0, wdt, hgt
 
     def update_active_tab(self):
 #        element = self.gui.active_tab["element"]
 #        self.set_elements(element)
+        print("Another call to update_active_tab!!!")
         pass

@@ -1,5 +1,3 @@
-#from gui import getvar, setvar, variables
-
 class WidgetGroup:
 
     def __init__(self, element, parent):

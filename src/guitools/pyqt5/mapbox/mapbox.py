@@ -4,8 +4,9 @@ from PyQt5 import QtCore, QtWidgets, QtWebChannel
 import json
 from urllib.request import urlopen
 import urllib
+from geopandas import GeoDataFrame
 
-from .layer import Layer, list_layers
+from .layer import Layer, list_layers, find_layer_by_id
 
 class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
     def javaScriptConsoleMessage(self, level, message, lineNumber, sourceID):
@@ -16,24 +17,29 @@ class MapBox(QtWidgets.QWidget):
     def __init__(self, element, parent, server_path, server_port):
         super().__init__(parent)
 
-        while True:
-            try:
+        url = "http://localhost:" + str(server_port) + "/"
+        self.url = url
 
-                print("Finding server ...")
+        # while True:
+        #     try:
+        #
+        #         print("Finding server ...")
+        #
+        #         url = "http://localhost:" + str(server_port) + "/"
+        #         self.url = url
+        #
+        #         urllib.request.urlcleanup()
+        #         request = urllib.request.urlopen(url)
+        #         response = request.read().decode('utf-8')
+        #
+        #         print("Found server running at port 3000 ...")
+        #
+        #         break
+        #
+        #     except:
+        #         print("Waiting for server ...")
 
-                url = "http://localhost:" + str(server_port) + "/"
-                self.url = url
-
-                urllib.request.urlcleanup()
-                request = urllib.request.urlopen(url)
-                response = request.read().decode('utf-8')
-
-                print("Found server running at port 3000 ...")
-
-                break
-
-            except:
-                print("Waiting for server ...")
+        self.ready = False
 
         self.server_path = server_path
 
@@ -69,7 +75,7 @@ class MapBox(QtWidgets.QWidget):
         self.timer.start(1000)
 
     def reload(self):
-#        print("Reloading ...")
+        print("Reloading ...")
         self.view.page().setWebChannel(self.channel)
         self.channel.registerObject("MapBox", self)
         self.view.load(QtCore.QUrl(self.url))
@@ -80,8 +86,21 @@ class MapBox(QtWidgets.QWidget):
     @QtCore.pyqtSlot(str)
     def mapReady(self, coords):
         coords = json.loads(coords)
+        self.ready = True
         self.map_extent = coords
-        self.callback_module.map_ready()
+        if hasattr(self.callback_module, "map_ready"):
+            self.callback_module.map_ready()
+
+    @QtCore.pyqtSlot(str)
+    def mouseMoved(self, coords):
+        coords = json.loads(coords)
+        self.map_extent = coords
+        # Loop through layers to update each
+        layers = list_layers(self.layer)
+        for layer in layers:
+            layer.update()
+        if hasattr(self.callback_module, "map_moved"):
+            self.callback_module.map_moved(coords)
 
     @QtCore.pyqtSlot(str)
     def mapMoved(self, coords):
@@ -91,12 +110,21 @@ class MapBox(QtWidgets.QWidget):
         layers = list_layers(self.layer)
         for layer in layers:
             layer.update()
-        self.callback_module.map_moved(coords)
+        if hasattr(self.callback_module, "map_moved"):
+            self.callback_module.map_moved(coords)
 
     @QtCore.pyqtSlot(str)
     def getMapExtent(self, coords):
         coords = json.loads(coords)
         self.map_extent = coords
+
+    @QtCore.pyqtSlot(str, str)
+#    def featureClicked2(self, layer_id, feature_props):
+    def featureClicked(self, layer_id, feature_props):
+        # Find layer by ID
+        layer = find_layer_by_id(layer_id, self.layer)
+        if hasattr(layer, "select_callback"):
+            layer.select_callback(json.loads(feature_props))
 
     @QtCore.pyqtSlot(str, str, str)
     def featureDrawn(self, coord_string, feature_id, feature_type):
@@ -106,55 +134,28 @@ class MapBox(QtWidgets.QWidget):
     def featureModified(self, coord_string, feature_id, feature_type):
         self.active_draw_layer.feature_modified(json.loads(coord_string), feature_id, feature_type)
 
-    # @QtCore.pyqtSlot(int, str)
-    # def polylineAdded(self, id, coords):
-    #     if self.polyline_create_callback:
-    #         self.polyline_create_callback(id, coords)
-
     @QtCore.pyqtSlot(str)
     def featureSelected(self, feature_id):
         self.active_draw_layer.feature_selected(feature_id)
 
-#     @QtCore.pyqtSlot(int, str)
-#     def polylineModified(self, id, coords):
-# #        print("Polyline (id=" + str(id) + ") was changed")
-#         if self.polyline_modify_callback:
-#             self.polyline_modify_callback(id, coords)
-
-    @QtCore.pyqtSlot(int, str)
-    def pointAdded(self, id, coords):
-        print("Point (id=" + str(id) + ") was added")
-
-    @QtCore.pyqtSlot(int, str)
-    def pointModified(self, id, coords):
-        print("Point (id=" + str(id) + ") was changed")
-
-    @QtCore.pyqtSlot(int, str)
-    def rectangleAdded(self, id, coords):
-#        print("Rectngle (id=" + str(id) + ") was added")
-        if self.rectangle_create_callback:
-            self.rectangle_create_callback(id, coords)
-
-    @QtCore.pyqtSlot(int, str)
-    def rectangleModified(self, id, coords):
-        if self.rectangle_modify_callback:
-            self.rectangle_modify_callback(id, coords)
-
     def get_extent(self):
-        js_string = "import('./js/main.js').then(module => {module.getExtent()});"
+        js_string = "import('/js/main.js').then(module => {module.getExtent()});"
         self.view.page().runJavaScript(js_string)
 
     def set_center(self, lon, lat):
-        js_string = "import('./js/main.js').then(module => {module.setCenter(" + str(lon) + "," + str(lat) + ");});"
-        self.view.page().runJavaScript(js_string)
+        self.runjs("/js/main.js", "setCenter", arglist=[lon, lat])
 
     def set_zoom(self, zoom):
-        js_string = "import('./js/main.js').then(module => {module.setZoom(" + str(zoom) + ");});"
-        self.view.page().runJavaScript(js_string)
+        self.runjs("/js/main.js", "setZoom",  arglist=[zoom])
 
     def jump_to(self, lon, lat, zoom):
-        js_string = "import('./js/main.js').then(module => {module.jumpTo(" + str(lon) + "," + str(lat) + "," + str(zoom) + ");});"
-        self.view.page().runJavaScript(js_string)
+        self.runjs("/js/main.js", "jumpTo",  arglist=[lon, lat, zoom])
+
+    def fly_to(self, lon, lat, zoom):
+        self.runjs("/js/main.js", "flyTo",  arglist=[lon, lat, zoom])
+
+    def set_mouse_default(self):
+        self.runjs("/js/draw.js", "setMouseDefault",  arglist=[])
 
     def add_layer(self, layer_id):
         # Adds a container layer
@@ -169,13 +170,29 @@ class MapBox(QtWidgets.QWidget):
         # Return a list with all layers
         return list_layers(self.layer)
 
-    # def delete_layer(self, layer_id):
-    #     if layer_id in self.layer:
-    #         self.layer[layer_id].delete()
-
-    # def find_layer_by_id(self, id):
-    #     layer_list = self.list_layers()
-    #     for layer in layer_list:
-    #         if layer.id == id:
-    #             return layer
-    #     return None
+    def runjs(self, module, function, arglist=None):
+        if not arglist:
+            arglist = []
+        string = "import('" + module + "').then(module => {module." + function + "("
+        for iarg, arg in enumerate(arglist):
+            if isinstance(arg, int):
+                string = string + str(arg)
+            elif isinstance(arg, float):
+                string = string + str(arg)
+            elif isinstance(arg, dict):
+                string = string + json.dumps(arg)
+            elif isinstance(arg, list):
+                string = string + "[]"
+            elif isinstance(arg, bool):
+                if arg:
+                    string = string + "true"
+                else:
+                    string = string + "false"
+            elif isinstance(arg, GeoDataFrame):
+                string = string + arg.to_json()
+            else:
+                string = string + "'" + arg + "'"
+            if iarg<len(arglist) - 1:
+                string = string + ","
+        string = string + ")});"
+        self.view.page().runJavaScript(string)

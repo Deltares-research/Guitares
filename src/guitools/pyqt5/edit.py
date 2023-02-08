@@ -4,6 +4,8 @@ from PyQt5 import QtCore
 
 from .widget_group import WidgetGroup
 
+from guitools.gui import get_position_from_string
+
 class Edit(WidgetGroup):
 
     def __init__(self, element, parent):
@@ -20,7 +22,8 @@ class Edit(WidgetGroup):
 
         b.setVisible(True)
 
-        x0, y0, wdt, hgt = element["window"].get_position_from_string(self.element["position"], self.parent)
+        x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, element["window"].resize_factor)
+
         b.setGeometry(x0, y0, wdt, hgt)
         if self.element["text"]:
             label = QLabel(self.element["text"], self.parent)

@@ -19,7 +19,8 @@ class ImageLayer(Layer):
         self.mapbox.view.page().runJavaScript(js_string)
 
     def update(self):
-        print("Updating image layer")
+#        print("Updating image layer")
+        pass
 
     def set_image(self,
                   image_file=None,
@@ -30,7 +31,6 @@ class ImageLayer(Layer):
                   decimals=None,
                   colormap="jet"):
 
-#        self.id_counter += 1
         id_string = self.id
 
         dataset = rasterio.open(image_file)

@@ -2,16 +2,17 @@ import os
 import yaml
 import importlib
 import time
+import sched
 import sys
+import copy
 
 import http.server
 import socketserver
 from urllib.request import urlopen
 from urllib.error import *
 import threading
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QDialog
 from PyQt5 import QtCore
-
 
 class GUI:
     def __init__(self, module,
@@ -38,6 +39,8 @@ class GUI:
 
         if not self.config_path:
             self.config_path = os.getcwd()
+
+        self.popup_data = None
 
         if server_path:
             # Need to run http server (e.g. for MapBox)
@@ -73,24 +76,25 @@ class GUI:
         if self.stylesheet:
             app.setStyleSheet(open(os.path.join(self.config_path, self.stylesheet), "r").read())
 
-        self.map_widget = {}
-        
         if self.config_file:
-            self.config["window"] = window
-            self.config["menu"] = menu
-            self.config["toolbar"] = toolbar
-            self.config["element"] = element
-            # Read element file
-            self.read_gui_config(self.config_path, self.config_file)
+            self.config = read_gui_config(self.config_path, self.config_file)
+        # if self.config_file:
+        #     self.config["window"] = window
+        #     self.config["menu"] = menu
+        #     self.config["toolbar"] = toolbar
+        #     self.config["element"] = element
+        #     # Read element file
+        #     self.read_gui_config(self.config_path, self.config_file)
 
-        self.set_missing_config_values()
 
         # Add main window
         if self.framework=="pyqt5":        
             from .pyqt5.main_window import MainWindow
 
-
         self.main_window = MainWindow(self.config)
+
+        set_missing_config_values(self.config, self.variables, self.getvar, self.setvar)
+
 #        self.main_window.resize_factor = 1.0
 
         # Add menu
@@ -99,208 +103,28 @@ class GUI:
             Menu(self.config["menu"], self.main_window)
 
         # Add toolbar
-        
-        # Add elements
-        self.add_elements(self.config["element"], self.main_window)
+        # TODO
 
+        # Add elements
+        add_elements(self.config["element"], self.main_window, self.main_window, self.server_path, self.server_port)
+
+        # Set elements
         self.update()
                     
 #            self.main_window.resize_function = lambda: gui.resize()
-#            self.main_window.statusBar().showMessage('Message in statusbar.')
+        self.main_window.statusBar().showMessage('Message in statusbar.')
+
         self.main_window.show()
-
         self.module.on_build()
-
         app.exec_()
-
-#        if self.framework=="pyqt5":        
-#            app.exec_()
-
-    def add_elements(self, element_list, parent):
-        
-        for element in element_list:
-
-            if "text" in element:
-                if element["text"]=="Number of breakpoints":
-                    shite=1
-            if "window" not in element:
-                element["window"] = self.main_window
-
-            if element["style"] == "tabpanel":
-
-                from .pyqt5.tabpanel import TabPanel
-                TabPanel(element, parent)
-
-                for tab in element["tab"]:
-                    # And now add the elements in this tab
-                    if tab["element"]:
-                        self.add_elements(tab["element"],
-                                          tab["widget"])
-
-            elif element["style"] == "panel":
-
-                # Add frame
-                from .pyqt5.frame import Frame
-                Frame(element, parent)
-                element["widget"].setVisible(True)
-
-                # And now add the elements in this frame
-                if "element" in element:
-                    self.add_elements(element["element"],
-                                      element["widget"])
-
-            else:
-
-                # Add push-buttons etc.
-                if element["style"] == "pushbutton":
-                    from .pyqt5.pushbutton import PushButton
-                    element["widget_group"] = PushButton(element, parent)
-
-                elif element["style"] == "edit":
-                    from .pyqt5.edit import Edit
-                    element["widget_group"] = Edit(element, parent)
-
-                elif element["style"] == "datetimeedit":
-                    from .pyqt5.date_edit import DateEdit
-                    element["widget_group"] = DateEdit(element, parent)
-
-                elif element["style"] == "popupmenu":
-                    from .pyqt5.popupmenu import PopupMenu
-                    element["widget_group"] = PopupMenu(element, parent)
-
-                elif element["style"] == "listbox":
-                    from .pyqt5.listbox import ListBox
-                    element["widget_group"] = ListBox(element, parent)
-
-                elif element["style"] == "olmap":
-                    from .pyqt5.olmap import OlMap
-                    element["widget_group"] = OlMap(element, parent)
-                    self.map_widget[element["id"]] = element["widget_group"]
-
-                elif element["style"] == "mapbox":
-                    from .pyqt5.mapbox.mapbox import MapBox
-#                    self.olmap[element["id"]] = MapBox(element, parent)
-                    element["widget_group"] = MapBox(element,
-                                                     parent,
-                                                     self.server_path,
-                                                     self.server_port)
-                    self.map_widget[element["id"]] = element["widget_group"]
-
-                elif element["style"] == "webpage":
-                    from .pyqt5.webpage import WebPage
-                    WebPage(element, parent)
-
-                elif element["style"] == "slider":
-                    from .pyqt5.slider import Slider
-                    element["widget_group"] = Slider(element, parent)
-
-                else:
-                    print("Element style " + element["style"] + " not recognized!")
-
-                # And set the values    
-                if "widget_group" in element:
-                    if hasattr(element["widget_group"], "widgets"):
-                        for wdgt in element["widget_group"].widgets:
-                            wdgt.setVisible(True)
-#                    element["widget_group"].set()
-
-
-    def read_gui_config(self, path, file_name):
-        
-        d = yaml2dict(os.path.join(path, file_name))
-        
-        if "window" in d:           
-            self.config["window"]  = d["window"]
-        if "menu" in d:           
-            self.config["menu"]    = d["menu"]
-        if "toolbar" in d:           
-            self.config["toolbar"] = d["toolbar"]
-        if "element" in d:
-            # Recursively read elements 
-            self.config["element"] = self.read_gui_elements(path, file_name)
-    
-    def read_gui_elements(self, path, file_name):
-        # Return just the elements    
-        d = yaml2dict(os.path.join(path, file_name))
-        element = d["element"]
-        for el in d["element"]:
-            if el["style"] == "tabpanel":
-                # Loop through tabs
-                for tab in el["tab"]:
-                    if "element" in tab:
-                        if type(tab["element"]) == str:
-                            # Must be a file
-                            tab["element"] = self.read_gui_elements(path, tab["element"])
-                    else:
-                        tab["element"] = []
-                        
-        return element
-    
-    def set_missing_config_values(self):
-    
-        # Window
-        if "width" not in self.config["window"]:
-            self.config["window"]["width"] = 800
-        if "height" not in self.config["window"]:
-            self.config["window"]["height"] = 800
-        if "title" not in self.config["window"]:
-            self.config["window"]["title"] = ""
-        if "module" not in self.config["window"]:
-            self.config["window"]["module"] = None
-        if "variable_group" not in self.config["window"]:
-            self.config["window"]["variable_group"] = "_main"
-
-        # Menu
-            
-        # Toolbar    
-    
-        # Elements
-        if self.config["window"]["module"]:
-            callback_module = importlib.import_module(self.config["window"]["module"])
-        else:
-            callback_module = None
-        main_module = self.module
-
-        set_missing_element_values(self.config["element"],
-                                   self.config["window"]["variable_group"],
-                                   callback_module,
-                                   self.variables,
-                                   self.getvar,
-                                   self.setvar,
-                                   main_module)
-
-        set_missing_menu_values(self.config["menu"],
-                                callback_module)
-
 
     def update(self):
         # Update all elements
-        self.set_elements(self.config["element"], self.main_window)
+        set_elements(self.config["element"])
 
-    def update_tab(self, tab):
+    def update_tab(self):
         # Update all elements in tab
-        self.set_elements(self.config["element"], tab)
-        
-    def set_elements(self, element_list, parent):
-        
-        for element in element_list:
-
-            if element["style"] == "tabpanel":
-                for tab in element["tab"]:
-                    # And now add the elements in this tab
-                    if tab["element"]:
-                        self.set_elements(tab["element"], tab["widget"])
-            elif element["style"] == "panel":
-                # And now add the elements in this frame
-                if "element" in element:
-                    self.set_elements(element["element"], element["widget"])
-            else:
-                # And set the values    
-                # for el in element_list:
-                #     if "widget_group" in el:
-                #         el["widget_group"].set()
-                if "widget_group" in element:
-                    element["widget_group"].set()
+        set_elements(self.main_window.active_tab["element"])
 
     def setvar(self, group, name, value):
         if group not in self.variables:
@@ -308,7 +132,6 @@ class GUI:
         if name not in self.variables[group]:
             self.variables[group][name] = {}
         self.variables[group][name]["value"] = value
-
 
     def getvar(self, group, name):
         if group not in self.variables:
@@ -319,7 +142,78 @@ class GUI:
             return None
         return self.variables[group][name]["value"]
 
-def set_missing_element_values(element, parent_group, parent_module, variables, getvar, setvar, main_module):
+    def popup(self, config, data, modal=True):
+        from .pyqt5.popup_window import PopupWindow
+        self.popup_data = copy.copy(data)
+        p = PopupWindow(config, self, modal=modal)
+        if p.result() == 1:
+            data = self.popup_data
+        return data
+
+def read_gui_config(path, file_name):
+    d = yaml2dict(os.path.join(path, file_name))
+    config = {}
+    config["window"]  = {}
+    config["menu"]    = {}
+    config["toolbar"] = {}
+    config["element"] = []
+    if "window" in d:
+        config["window"]  = d["window"]
+    if "menu" in d:
+        config["menu"]    = d["menu"]
+    if "toolbar" in d:
+        config["toolbar"] = d["toolbar"]
+    if "element" in d:
+        # Recursively read elements
+        config["element"] = read_gui_elements(path, file_name)
+    return config
+
+def read_gui_elements(path, file_name):
+    # Return just the elements
+    d = yaml2dict(os.path.join(path, file_name))
+    element = d["element"]
+    for el in d["element"]:
+        if el["style"] == "tabpanel":
+            # Loop through tabs
+            for tab in el["tab"]:
+                if "element" in tab:
+                    if type(tab["element"]) == str:
+                        # Must be a file
+                        tab["element"] = read_gui_elements(path, tab["element"])
+                else:
+                    tab["element"] = []
+    return element
+
+def set_missing_config_values(config, variables, getvar, setvar):
+    if "window" not in config:
+        config["window"] = {}
+    # Window
+    if "width" not in config["window"]:
+        config["window"]["width"] = 800
+    if "height" not in config["window"]:
+        config["window"]["height"] = 800
+    if "title" not in config["window"]:
+        config["window"]["title"] = ""
+    if "module" not in config["window"]:
+        config["window"]["module"] = None
+    if "variable_group" not in config["window"]:
+        config["window"]["variable_group"] = "_main"
+    # Menu
+    # Toolbar
+    # Elements
+    if config["window"]["module"]:
+        callback_module = importlib.import_module(config["window"]["module"])
+    else:
+        callback_module = None
+    set_missing_element_values(config["element"],
+                               config["window"]["variable_group"],
+                               callback_module,
+                               variables,
+                               getvar,
+                               setvar)
+    set_missing_menu_values(config["menu"], callback_module)
+
+def set_missing_element_values(element, parent_group, parent_module, variables, getvar, setvar):
     for el in element:
         if "variable_group" not in el:
             el["variable_group"] = parent_group
@@ -344,8 +238,7 @@ def set_missing_element_values(element, parent_group, parent_module, variables, 
                                            tab["module"],
                                            variables,
                                            getvar,
-                                           setvar,
-                                           main_module)
+                                           setvar)
         elif el["style"] == "panel":
             if "title" not in el:
                 el["title"] = ""
@@ -355,9 +248,7 @@ def set_missing_element_values(element, parent_group, parent_module, variables, 
                                            el["module"],
                                            variables,
                                            getvar,
-                                           setvar,
-                                           main_module)
-
+                                           setvar)
         else:
 
             # Setvar and getvar methods
@@ -422,7 +313,6 @@ def set_missing_element_values(element, parent_group, parent_module, variables, 
                 if key not in el:
                     el[key] = val
 
-
 def set_missing_menu_values(menu_list, parent_module):
     if isinstance(menu_list, dict):
         # End node
@@ -458,6 +348,203 @@ def set_missing_menu_values(menu_list, parent_module):
                     set_missing_menu_values(sub_menu,
                                             menu["module"])
 
+def add_elements(element_list, parent, main_window, server_path, server_port):
+
+    for element in element_list:
+
+        if "window" not in element:
+            element["window"] = main_window
+
+        if element["style"] == "tabpanel":
+
+            from .pyqt5.tabpanel import TabPanel
+            TabPanel(element, parent)
+            element["widget"].setVisible(True)
+
+            for tab in element["tab"]:
+                # And now add the elements in this tab
+                if tab["element"]:
+                    add_elements(tab["element"],
+                                 tab["widget"],
+                                 main_window,
+                                 server_path,
+                                 server_port)
+
+        elif element["style"] == "panel":
+
+            # Add frame
+            from .pyqt5.frame import Frame
+            Frame(element, parent)
+            element["widget"].setVisible(True)
+
+            # And now add the elements in this frame
+            if "element" in element:
+                add_elements(element["element"],
+                             element["widget"],
+                             main_window,
+                             server_path,
+                             server_port)
+
+        else:
+
+            # Add push-buttons etc.
+            if element["style"] == "pushbutton":
+                from .pyqt5.pushbutton import PushButton
+                element["widget_group"] = PushButton(element, parent)
+
+            elif element["style"] == "edit":
+                from .pyqt5.edit import Edit
+                element["widget_group"] = Edit(element, parent)
+
+            elif element["style"] == "datetimeedit":
+                from .pyqt5.date_edit import DateEdit
+                element["widget_group"] = DateEdit(element, parent)
+
+            elif element["style"] == "popupmenu":
+                from .pyqt5.popupmenu import PopupMenu
+                element["widget_group"] = PopupMenu(element, parent)
+
+            elif element["style"] == "listbox":
+                from .pyqt5.listbox import ListBox
+                element["widget_group"] = ListBox(element, parent)
+
+            elif element["style"] == "olmap":
+                from .pyqt5.olmap import OlMap
+                element["widget_group"] = OlMap(element, parent)
+                self.map_widget[element["id"]] = element["widget_group"]
+
+            elif element["style"] == "mapbox":
+                from .pyqt5.mapbox.mapbox import MapBox
+                element["widget_group"] = MapBox(element,
+                                                 parent,
+                                                 server_path,
+                                                 server_port)
+
+            elif element["style"] == "webpage":
+                from .pyqt5.webpage import WebPage
+                WebPage(element, parent)
+
+            elif element["style"] == "slider":
+                from .pyqt5.slider import Slider
+                element["widget_group"] = Slider(element, parent)
+
+            else:
+                print("Element style " + element["style"] + " not recognized!")
+
+            # And set the values
+            if "widget_group" in element:
+                if hasattr(element["widget_group"], "widgets"):
+                    for wdgt in element["widget_group"].widgets:
+                        wdgt.setVisible(True)
+
+def set_elements(element_list):
+    for element in element_list:
+        if element["style"] == "tabpanel":
+            for tab in element["tab"]:
+                # And now add the elements in this tab
+                if tab["element"]:
+                    set_elements(tab["element"])
+        elif element["style"] == "panel":
+            # And now set the elements in this frame
+            if "element" in element:
+                set_elements(element["element"])
+        else:
+            # And set the values
+            if "widget_group" in element:
+                element["widget_group"].set()
+
+def find_element_by_id(element, element_id):
+    element_found = None
+    for el in element:
+        if el["style"] == "tabpanel":
+            for tab in el["tab"]:
+                # Look for elements in this tab
+                if tab["element"]:
+                    element_found = find_element_by_id(tab["element"], element_id)
+                    if element_found:
+                        return element_found
+        elif el["style"] == "panel":
+            # Look for elements in this frame this frame
+            if "element" in el:
+                element_found = find_element_by_id(el["element"], element_id)
+                if element_found:
+                    return element_found
+        else:
+            if "id" in el:
+                if el["id"] == element_id:
+                    return el
+    return None
+
+
+def resize_elements(element_list, parent, resize_factor):
+    for element in element_list:
+        if element["style"] == "tabpanel":
+            tab_panel = element["widget"]
+            x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, resize_factor)
+            tab_panel.setGeometry(x0, y0, wdt, hgt)
+            for tab in element["tab"]:
+                widget = tab["widget"]
+                widget.setGeometry(0, 0, wdt, int(hgt - 20 * resize_factor))
+                # And resize elements in this tab
+                if tab["element"]:
+                    resize_elements(tab["element"], widget, resize_factor)
+        elif element["style"] == "panel":
+            x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, resize_factor)
+            element["widget"].setGeometry(x0, y0, wdt, hgt)
+        elif element["style"] == "olmap":
+            x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, resize_factor)
+            element["widget"].setGeometry(x0, y0, wdt, hgt)
+        elif element["style"] == "mapbox":
+            x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, resize_factor)
+            element["widget"].setGeometry(x0, y0, wdt, hgt)
+        elif element["style"] == "webpage":
+            x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, resize_factor)
+            element["widget"].setGeometry(x0, y0, wdt, hgt)
+        # else:
+        #     # Should do this but it also means changing the position of label widgets ... Too much work for now.
+        #     x0, y0, wdt, hgt = self.get_position_from_string(element["position"], parent)
+        #     if "widget" in element:
+        #         element["widget"].setGeometry(x0, y0, wdt, hgt)
+
+def get_position_from_string(position, parent, resize_factor):
+
+    x0 = position["x"] * resize_factor
+    y0 = position["y"] * resize_factor
+    wdt = position["width"] * resize_factor
+    hgt = position["height"] * resize_factor
+
+    if x0>0:
+        if wdt>0:
+            pass
+        else:
+            wdt = parent.geometry().width() - x0 + wdt
+    else:
+        if wdt>0:
+            x0 = parent.geometry().width() - wdt + x0
+        else:
+            x0 = parent.geometry().width() + x0
+            wdt = parent.geometry().width() - x0 + wdt
+
+    if y0>0:
+        if hgt>0:
+            y0 = parent.geometry().height() - (y0 + hgt)
+        else:
+            y0 = - hgt
+            hgt = parent.geometry().height() - position["y"] * resize_factor + hgt
+    else:
+        if hgt>0:
+            y0 = parent.geometry().width() - hgt
+        else:
+            hgt = - y0 - hgt
+            y0 = parent.geometry().width() - (y0 + hgt)
+
+    x0 = int(x0)
+    y0 = int(y0)
+    wdt = int(wdt)
+    hgt = int(hgt)
+
+    return x0, y0, wdt, hgt
+
 
 def yaml2dict(file_name):
     file = open(file_name,"r")
@@ -465,7 +552,6 @@ def yaml2dict(file_name):
     return dct
 
 def run_server(server_path, server_port):
-#    global httpd
     os.chdir(server_path)
     PORT = server_port
     Handler = http.server.SimpleHTTPRequestHandler
@@ -473,8 +559,9 @@ def run_server(server_path, server_port):
     Handler.extensions_map['.mjs']    = 'text/javascript'
     Handler.extensions_map['.css']    = 'text/css'
     Handler.extensions_map['.html']   = 'text/html'
-    Handler.extensions_map['main.js'] = 'module'
+    Handler.extensions_map['.json']   = 'application/json'
     print("Server path : " + server_path)
     with socketserver.TCPServer(("", PORT), Handler) as httpd:
         print("Serving at port", PORT)
         httpd.serve_forever()
+

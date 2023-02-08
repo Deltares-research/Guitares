@@ -4,7 +4,7 @@ from PyQt5 import QtCore
 
 from .widget_group import WidgetGroup
 
-#from gui import getvar, setvar
+from guitools.gui import get_position_from_string
 
 class PopupMenu(WidgetGroup):
 
@@ -39,7 +39,8 @@ class PopupMenu(WidgetGroup):
             #     name  = self.element["option_value"]["variable"]
             #     v = variables[self.element["option_value"]]
 
-        x0, y0, wdt, hgt = element["window"].get_position_from_string(self.element["position"], self.parent)
+        x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, element["window"].resize_factor)
+
         b.setGeometry(x0, y0, wdt, hgt)
         if element["text"]:
             label = QLabel(self.element["text"], self.parent)

@@ -21,11 +21,16 @@ class Layer:
         self.parent.layer.pop(self.id)
 
     def delete_from_map(self):
-        js_string = "import('/main.js').then(module => {module.removeLayer('" + self.map_id + "')});"
-        self.view.page().runJavaScript(js_string)
+        self.mapbox.runjs("/js/main.js", "removeLayer", arglist=[self.map_id])
 
     def clear(self):
         pass
+
+    def get(self, layer_id):
+        if layer_id in self.layer:
+            return self.layer[layer_id]
+        else:
+            return None
 
     def add_layer(self, layer_id):
         # Add containing layer
@@ -34,14 +39,16 @@ class Layer:
         self.layer[layer_id].parent = self
         return self.layer[layer_id]
 
-    def add_draw_layer(self, layer_id, create=None, modify=None, select=None, data=None):
+    def add_draw_layer(self, layer_id, **kwargs):
+
         from .draw_layer import DrawLayer
         if self.type != "container":
             print("Error! Can not add draw layer to layer of type : " + self.type)
             return None
         map_id = self.map_id + "." + layer_id
-        self.layer[layer_id] = DrawLayer(self.mapbox, layer_id, map_id, create=create, modify=modify, select=select)
-        self.layer[layer_id].parent = self
+        if layer_id not in self.layer:
+            self.layer[layer_id] = DrawLayer(self.mapbox, layer_id, map_id, **kwargs)
+            self.layer[layer_id].parent = self
         return self.layer[layer_id]
 
     def add_raster_layer(self, layer_id, data=None):
@@ -50,19 +57,66 @@ class Layer:
         if self.type != "container":
             print("Error! Can not add raster layer to layer of type : " + self.type)
             return None
-        self.layer[layer_id] = RasterLayer(self.mapbox, layer_id, map_id)
-        self.layer[layer_id].parent = self
+        if layer_id not in self.layer:
+            self.layer[layer_id] = RasterLayer(self.mapbox, layer_id, map_id)
+            self.layer[layer_id].parent = self
         return self.layer[layer_id]
 
-    def add_deck_geojson_layer(self, layer_id, data=None):
+    def add_geojson_layer(self, layer_id, **kwargs):
+        from .geojson_layer import GeoJSONLayer
+        map_id = self.map_id + "." + layer_id
+        if self.type != "container":
+            print("Error! Can not add geojson_layer to layer of type : " + self.type)
+            return None
+        if layer_id not in self.layer:
+            self.layer[layer_id] = GeoJSONLayer(self.mapbox, layer_id, map_id, **kwargs)
+            self.layer[layer_id].parent = self
+        return self.layer[layer_id]
+
+    def add_deck_geojson_layer(self, layer_id, data=None, file_name=None):
         from .deck_geojson_layer import DeckGeoJSONLayer
         map_id = self.map_id + "." + layer_id
         if self.type != "container":
             print("Error! Can not add deck_geojson_layer to layer of type : " + self.type)
             return None
-        self.layer[layer_id] = DeckGeoJSONLayer(self.mapbox, layer_id, map_id, data=data)
-        self.layer[layer_id].parent = self
+        if layer_id not in self.layer:
+            self.layer[layer_id] = DeckGeoJSONLayer(self.mapbox, layer_id, map_id, data=data, file_name=file_name)
+            self.layer[layer_id].parent = self
         return self.layer[layer_id]
+
+    def show(self):
+        self.set_visibility(True)
+
+    def hide(self):
+        self.set_visibility(False)
+
+    def set_visibility(self, true_or_false):
+        # Make a list of all layers
+        if self.layer:
+            # Container layer
+            layers = list_layers(self.layer)
+            for layer in layers:
+                layer.set_visibility(true_or_false)
+        else:
+            if true_or_false:
+                self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id])
+            else:
+                self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id])
+
+    def set_mode(self, mode):
+        # Make a list of all layers
+        if self.layer:
+            # Container layer
+            layers = list_layers(self.layer)
+            for layer in layers:
+                layer.set_mode(mode)
+        else:
+            if mode == "active" or mode == "inactive":
+                js_string = "import('./js/main.js').then(module => {module.showLayer('" + self.map_id + "')});"
+            else:
+                js_string = "import('./js/main.js').then(module => {module.hideLayer('" + self.map_id + "')});"
+            self.mapbox.view.page().runJavaScript(js_string)
+
 
 def list_layers(layer_dict, layer_type="all", layer_list=None):
     if not layer_list:
@@ -81,6 +135,11 @@ def list_layers(layer_dict, layer_type="all", layer_list=None):
                                      layer_type=layer_type)
     return layer_list
 
+def find_layer_by_id(layer_id, layer_dict, layer_type="all", layer_list=None):
+    layer_list = list_layers(layer_dict)
+    for layer in layer_list:
+        if layer.map_id == layer_id:
+            return layer
 
     #     # Now add the layer
     #     if type == "draw":

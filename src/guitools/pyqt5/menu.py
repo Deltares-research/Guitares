@@ -45,7 +45,7 @@ class Menu:
     #         menu_item["widget"] = f
 
     def menu_item_selected(self, callback, option):
-        try:
-            callback(option)
-        except:
-            print("Callback for menu item does not exist !")
+#        try:
+        callback(option)
+        # except:
+        #     print("Callback for menu item does not exist !")

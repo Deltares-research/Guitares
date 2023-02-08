@@ -2,7 +2,6 @@ from PyQt5.QtWidgets import QSlider, QLabel, QStyle, QStyleOptionSlider
 from PyQt5.QtCore import Qt, QRect, QPoint
 from PyQt5.QtGui import QPainter
 from PyQt5 import QtWidgets
-import numpy as np
 
 from .widget_group import WidgetGroup
 

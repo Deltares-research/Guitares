@@ -2,6 +2,7 @@ import importlib
 from PyQt5.QtWidgets import QWidget, QFrame, QLabel
 from PyQt5 import QtCore
 
+from guitools.gui import get_position_from_string
 
 class Frame:
 
@@ -13,7 +14,7 @@ class Frame:
         element["widget"] = frame
         element["parent"] = parent
 
-        x0, y0, wdt, hgt = element["window"].get_position_from_string(element["position"], parent)
+        x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, element["window"].resize_factor)
 
         frame.setGeometry(x0, y0, wdt, hgt)
         frame.setFrameShape(QFrame.StyledPanel)

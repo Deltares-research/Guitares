@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QLabel
 from PyQt5 import QtCore
 
 from .widget_group import WidgetGroup
+from guitools.gui import get_position_from_string
 
 class DateEdit(WidgetGroup):
 
@@ -14,7 +15,7 @@ class DateEdit(WidgetGroup):
 
         b.setCalendarPopup(True)
         b.setDisplayFormat("yyyy-MM-dd hh:mm:ss")
-        x0, y0, wdt, hgt = element["window"].get_position_from_string(self.element["position"], self.parent)
+        x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, element["window"].resize_factor)
         b.setGeometry(x0, y0, wdt, hgt)
         if element["text"]:
             label = QLabel(self.element["text"], self.parent)
