@@ -4,8 +4,8 @@ import pandas as pd
 import geopandas as gpd
 from shapely.geometry import box
 from rasterstats import point_query
-import networkx as nx
 
+from src.guitools.pyqt5.spinner import Spinner
 from ra2ceGUI import Ra2ceGUI
 from ra2ce.io.readers.graph_pickle_reader import GraphPickleReader
 from ra2ce.io.writers.network_exporter_factory import NetworkExporterFactory
@@ -59,22 +59,30 @@ class FloodMapOverlay:
         Ra2ceGUI.result = pd.merge(flooded_ppl, non_flooded_ppl, how='outer', on="VIL_NAME")
         Ra2ceGUI.result.to_csv(Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'output', 'people_flooded.csv'))
 
-
     def overlay(self):
+        Ra2ceGUI.gui.elements["spinner"].start()
+
         path_od_hazard_graph = Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'static', 'output_graph', 'origins_destinations_graph_hazard.p')
         if path_od_hazard_graph.is_file():
-            print("A hazard overlay was already done previously. Please create a new project.")
-            # self.floodMapOverlayFeedback("Create a new project")
-            # return
+            print("A hazard overlay was already done previously. If you want to do a new hazard overlay, please create a new project.")
+            self.floodMapOverlayFeedback("Overlay done")
+            Ra2ceGUI.gui.elements["spinner"].stop()
+            return
 
         try:
             assert Ra2ceGUI.ra2ceHandler
             self.floodMapOverlayFeedback("First validate configuration")
         except AssertionError:
+            Ra2ceGUI.gui.elements["spinner"].stop()
             return
 
         # Clip the origins to the extent of the hazard map
         clip_origins(self.floodmap_extent)
+
+        if Ra2ceGUI.floodmap_overlay_feedback == "No origins in extent":
+            self.floodMapOverlayFeedback("No origins in extent")
+            Ra2ceGUI.gui.elements["spinner"].stop()
+            return
 
         try:
             Ra2ceGUI.ra2ceHandler.input_config.network_config.configure_hazard()
@@ -82,6 +90,8 @@ class FloodMapOverlay:
             self.floodMapOverlayFeedback("Overlay done")
         except BaseException as e:
             print(e)
+
+        Ra2ceGUI.gui.elements["spinner"].stop()
 
 
 def clip_origins(clip_extent: rasterio.coords.BoundingBox):
@@ -107,14 +117,22 @@ def clip_origins(clip_extent: rasterio.coords.BoundingBox):
     # Load the graph, remove the origin nodes outside of the extent and
     od_graph = GraphPickleReader().read(od_graph_path)
     od_graph = remove_nodes_within_extent(od_graph, clip_extent_box, origin_name_, destination_name_)
-    NetworkExporterFactory().export(od_graph, 'origins_destinations_graph',
-                                    od_graph_path.parent,
-                                    'pickle')
+
+    if od_graph:
+        NetworkExporterFactory().export(od_graph, 'origins_destinations_graph',
+                                        od_graph_path.parent,
+                                        'pickle')
+    else:
+        Ra2ceGUI.floodmap_overlay_feedback = "No origins in extent"
 
     # Load the OD table and split it into origins and destinations
     od_table_ = gpd.read_feather(od_table_path)
     od_table_ = filter_od_table_within_extent(od_table_, clip_extent)
-    od_table_.to_feather(od_table_path, index=False)
+
+    if not od_table_.empty:
+        od_table_.to_feather(od_table_path, index=False)
+    else:
+        Ra2ceGUI.floodmap_overlay_feedback = "No origins in extent"
 
 
 def remove_nodes_within_extent(g, extent, origin_name, destination_name):
@@ -138,7 +156,9 @@ def remove_nodes_within_extent(g, extent, origin_name, destination_name):
             od_id = g.nodes[node]["od_id"]
             g.nodes[node]["od_id"] = ",".join([od for od in od_id.split(",") if destination_name not in od])
 
-    return g
+        return g
+    else:
+        return None
 
 
 def filter_od_table_within_extent(od_table, extent):
@@ -148,6 +168,9 @@ def filter_od_table_within_extent(od_table, extent):
     # Filter only the origins on the extent of the flood map
     xmin, ymin, xmax, ymax = extent
     od_table_origins = od_table_origins.cx[xmin:xmax, ymin:ymax]
+
+    if od_table_origins.empty:
+        return gpd.GeoDataFrame()
 
     # Create again one table from the origins and destinations
     od_table = gpd.GeoDataFrame(pd.concat([od_table_origins, od_table_destinations], ignore_index=True))

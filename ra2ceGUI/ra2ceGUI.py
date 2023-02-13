@@ -57,6 +57,7 @@ class Ra2ceGUI:
         self.floodmap_overlay_feedback = "Not yet executed"
         self.analyse_feedback = "Not yet analyzed"
         self.modification_feedback = "No road selected"
+        self.previous_floodmap = ""
 
         # Define GUI variables
         self.gui.setvar("ra2ceGUI", "run_name", self.run_name)
@@ -125,10 +126,7 @@ class Ra2ceGUI:
         # Add layer group (this only does something when there is no layer group with layer_group_name)
         self.gui.map_widget["main_map"].add_layer_group(layer_group_name)
 
-        # Remove old layer from layer group
-        self.gui.map_widget["main_map"].remove_layer(layer_name, layer_group_name)
-
-        # And now add the new image layer to the layer group
+        # Add the new image layer to the layer group
         self.gui.map_widget["main_map"].add_image_layer(Ra2ceGUI.loaded_floodmap,
                                                             layer_name=layer_name,
                                                             layer_group_name=layer_group_name,
@@ -207,10 +205,10 @@ class Ra2ceGUI:
                     'weighing'] = self.ra2ce_config['analyses']['weighing']
             if 'save_shp' in self.ra2ceHandler.input_config.analysis_config.config_data['indirect'][i]:
                 self.ra2ceHandler.input_config.analysis_config.config_data['indirect'][i][
-                    'weighing'] = self.ra2ce_config['analyses']['save_shp']
+                    'save_shp'] = self.ra2ce_config['analyses']['save_shp']
             if 'save_csv' in self.ra2ceHandler.input_config.analysis_config.config_data['indirect'][i]:
                 self.ra2ceHandler.input_config.analysis_config.config_data['indirect'][i][
-                    'weighing'] = self.ra2ce_config['analyses']['save_csv']
+                    'save_csv'] = self.ra2ce_config['analyses']['save_csv']
 
 
 Ra2ceGUI = Ra2ceGUI()

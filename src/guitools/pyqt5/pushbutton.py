@@ -1,8 +1,5 @@
 from PyQt5.QtWidgets import QPushButton
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QMessageBox
-#from PyQt5.QtWidgets import QLabel
-#from PyQt5 import QtCore
 
 from .widget_group import WidgetGroup
 

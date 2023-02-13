@@ -23,9 +23,9 @@ def runRA2CE():
         return
 
     try:
-        # Ra2ceGUI.ra2ceHandler.input_config.network_config.configure_network()
         Ra2ceGUI.ra2ceHandler.input_config.analysis_config.configure()
         Ra2ceGUI.ra2ceHandler.run_analysis()
+        analyzeFeedback("Analysis finished")
         print("RA2CE successfully ran.")
     except BaseException as e:
         print(e)

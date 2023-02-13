@@ -101,13 +101,32 @@ export function addLineGeojsonLayer (geojson, id, layerName, layerGroupName, col
     });
 
     layerAdded(layerName, layerGroupName, id);
-}
+};
 
 
-//export function checkReady() {
-//	console.log("checking in js");
-//	mapBoxReady();
-//}
+export function addLineGeojsonLayerColorByProperty (geojson, id, layerName, layerGroupName, color) {
+  // Show the lines as GeoJSON
+    map.addSource(id, {
+        type: 'geojson',
+        data: geojson
+    });
+
+    map.addLayer({
+        'id': id,
+        'type': 'line',
+        'source': id,
+        'layout': {
+            'line-join': 'round',
+            'line-cap': 'round'
+        },
+        'paint': {
+            'line-width': 2,
+            'line-color': color
+        }
+    });
+
+    layerAdded(layerName, layerGroupName, id);
+};
 
 
 export function addImageLayer(fileName, id, bounds, colorbar) {
@@ -157,15 +176,15 @@ export function addImageLayer(fileName, id, bounds, colorbar) {
 
 }
 
-//export function removeLayer(id) {
-//	// Remove layer
-//	var mapLayer = map.getLayer(id);
-//	    if(typeof mapLayer !== 'undefined') {
-//	      // Remove map layer & source.
-//	      map.removeLayer(id).removeSource(id);
-//    }
-//    var legend = document.getElementById("legend" + id);
-//    if (legend) {
-//        legend.remove();
-//    }
-//}
+export function removeLayer(id) {
+	// Remove layer
+	var mapLayer = map.getLayer(id);
+	    if(typeof mapLayer !== 'undefined') {
+	      // Remove map layer & source.
+	      map.removeLayer(id).removeSource(id);
+    }
+    var legend = document.getElementById("legend" + id);
+    if (legend) {
+        legend.remove();
+    }
+}

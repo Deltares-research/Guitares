@@ -409,7 +409,8 @@ class MapBox(QtWidgets.QWidget):
                          geojson_input: Union[str, Path],
                          color: str,
                          layer_name=None,
-                         layer_group_name=None,):
+                         layer_group_name=None,
+                         color_by=None):
 
         self.id_counter += 1
         id_string = str(self.id_counter)
@@ -419,7 +420,12 @@ class MapBox(QtWidgets.QWidget):
         layer_group = self.find_layer_group(layer_group_name)
         layer_group[layer_name] = layer
         feature_collection_string = self.load_geojson_from(geojson_input)
-        js_string = "import('/main.js').then(module => {module.addLineGeojsonLayer(" + feature_collection_string + ",'" + id_string + "','" + layer_name + "','" + layer_group_name + "','" + color + "')});"
+
+        if color_by:
+            js_string = "import('/main.js').then(module => {module.addLineGeojsonLayerColorByProperty(" + feature_collection_string + ",'" + id_string + "','" + layer_name + "','" + layer_group_name + "','" + color + "')});"
+        else:
+            js_string = "import('/main.js').then(module => {module.addLineGeojsonLayer(" + feature_collection_string + ",'" + id_string + "','" + layer_name + "','" + layer_group_name + "','" + color + "')});"
+
         self.view.page().runJavaScript(js_string)
 
     @QtCore.pyqtSlot(str)
@@ -430,14 +436,12 @@ class MapBox(QtWidgets.QWidget):
     def remove_layer(self, layer_name, layer_group_name):
         layer_group = self.find_layer_group(layer_group_name)
         if layer_group:
-            if layer_name in layer_group:
-                id = layer_group[layer_name].id
+            if layer_group_name == layer_group.name:
+                id = layer_group.id
                 if id:
                     print("Removing " + layer_name + " - id=" + id)
                     js_string = "import('/main.js').then(module => {module.removeLayer('" + id + "')});"
                     self.view.page().runJavaScript(js_string)
-                # Now remove layer from layer group
-                layer_group.pop(layer_name)
 
     # def show_image_layer(self):
     #     js_string = "import('/main.js').then(module => {module.showImageLayer()});"

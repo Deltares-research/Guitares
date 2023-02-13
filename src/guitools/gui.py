@@ -187,6 +187,10 @@ class GUI:
             else:
                 self.elements[i] = element
                 i += 1
+
+        # Import the spinner
+        from .pyqt5.spinner import Spinner
+        self.elements["spinner"] = Spinner("spinner", parent)
         
     def read_gui_config(self, path, file_name):
         

@@ -1,8 +1,17 @@
 from ra2ceGUI import Ra2ceGUI
 from src.guitools.pyqt5.io import openFileNameDialog
+from ra2ce.io.readers.graph_pickle_reader import GraphPickleReader
 
 import numpy as np
 from pathlib import Path
+
+
+def roadModificationFeedback(text):
+    Ra2ceGUI.modification_feedback = text
+    Ra2ceGUI.gui.setvar("ra2ceGUI", "modification_feedback", Ra2ceGUI.modification_feedback)
+
+    # Update all GUI elements
+    Ra2ceGUI.gui.update()
 
 
 def selectRoad():
@@ -16,14 +25,12 @@ def selectRoad():
     try:
         assert Ra2ceGUI.ra2ceHandler
     except AssertionError:
-        print("Ra2ce handler not yet initiated!")
+        roadModificationFeedback("Overlay flood map first")
         return
 
-    Ra2ceGUI.ra2ceHandler.configure()
-
-    get_graphs = ['origins_destinations_graph']
-    for g in get_graphs:
-        Ra2ceGUI.graph = Ra2ceGUI.ra2ceHandler.input_config.network_config.graphs[g]
+    path_od_hazard_graph = Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'static', 'output_graph', 'origins_destinations_graph_hazard.p')
+    if path_od_hazard_graph.is_file():
+        Ra2ceGUI.graph = GraphPickleReader().read(path_od_hazard_graph)
 
         # create dictionary of the roads geometries
         edge_list = [e for e in Ra2ceGUI.graph.edges.data(keys=True) if "geometry" in e[-1]]
@@ -56,16 +63,28 @@ def selectRoad():
 
 
 def showRoads():
+    Ra2ceGUI.gui.elements["spinner"].start()
+
     Ra2ceGUI.show_roads()
+
+    Ra2ceGUI.gui.elements["spinner"].stop()
 
 
 def selectFloodmap():
     _loaded_floodmap = openFileNameDialog(Ra2ceGUI.current_project.joinpath('static', 'hazard'),
                                           fileTypes=["GeoTIFF files (*.tif)"])
+
+    if Ra2ceGUI.previous_floodmap:
+        Ra2ceGUI.gui.map_widget["main_map"].remove_layer("flood_map_layer_group", Ra2ceGUI.previous_floodmap)
+
     if _loaded_floodmap:
+        Ra2ceGUI.gui.elements["spinner"].start()
+
         Ra2ceGUI.loaded_floodmap = Path(_loaded_floodmap)
         Ra2ceGUI.update_flood_map()
+        Ra2ceGUI.previous_floodmap = Ra2ceGUI.loaded_floodmap.name
         Ra2ceGUI.gui.setvar("ra2ceGUI", "loaded_floodmap", Path(Ra2ceGUI.loaded_floodmap).name)
 
         # Update all GUI elements
         Ra2ceGUI.gui.update()
+        Ra2ceGUI.gui.elements["spinner"].stop()
