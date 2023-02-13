@@ -5,15 +5,6 @@ window:
   package: ra2ceGUI
   module: operations.operations
   variable_group: ra2ceGUI
-menu:
-  - text: "Help"
-    module: ra2ce_menu
-    menu:
-      - text: "About the RA2CE GUI"
-        method: about_ra2ce_gui
-        separator: True
-      - text: "About Deltares"
-        method: about_deltares
 element:
   - style: mapbox
     id: main_map

@@ -4,6 +4,7 @@ import pandas as pd
 import geopandas as gpd
 from shapely.geometry import box
 from rasterstats import point_query
+import osmnx
 
 from src.guitools.pyqt5.spinner import Spinner
 from ra2ceGUI import Ra2ceGUI
@@ -59,12 +60,27 @@ class FloodMapOverlay:
         Ra2ceGUI.result = pd.merge(flooded_ppl, non_flooded_ppl, how='outer', on="VIL_NAME")
         Ra2ceGUI.result.to_csv(Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'output', 'people_flooded.csv'))
 
+    def color_roads(self, graph_path):
+        g = GraphPickleReader().read(graph_path)
+        edges = osmnx.graph_to_gdfs(g, edges=True, nodes=False, node_geometry=False)
+        edges = edges[["EV1_ma", "geometry"]]
+        edges["EV1_ma"] = edges["EV1_ma"].fillna(0)
+        edges = edges.to_json()
+
+        layer_group = 'Road network'
+        layer_name = 'roads_overlay'
+        Ra2ceGUI.gui.elements['main_map']['widget_group'].add_line_geojson(edges,
+                                                                           layer_name=layer_name,
+                                                                           layer_group_name=layer_group,
+                                                                           color_by=True)
+
     def overlay(self):
         Ra2ceGUI.gui.elements["spinner"].start()
 
         path_od_hazard_graph = Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'static', 'output_graph', 'origins_destinations_graph_hazard.p')
         if path_od_hazard_graph.is_file():
             print("A hazard overlay was already done previously. If you want to do a new hazard overlay, please create a new project.")
+            self.color_roads(path_od_hazard_graph)
             self.floodMapOverlayFeedback("Overlay done")
             Ra2ceGUI.gui.elements["spinner"].stop()
             return
@@ -87,6 +103,7 @@ class FloodMapOverlay:
         try:
             Ra2ceGUI.ra2ceHandler.input_config.network_config.configure_hazard()
             self.floodmap_overlay_building_footprints()
+            self.color_roads(path_od_hazard_graph)
             self.floodMapOverlayFeedback("Overlay done")
         except BaseException as e:
             print(e)

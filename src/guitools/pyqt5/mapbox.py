@@ -19,8 +19,6 @@ from shapely.geometry import LineString
 from pathlib import Path
 
 from .colorbar import ColorBar
-# from .widget_group import WidgetGroup
-#from .overlays import ImageOverlay
 
 
 class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
@@ -407,10 +405,10 @@ class MapBox(QtWidgets.QWidget):
 
     def add_line_geojson(self,
                          geojson_input: Union[str, Path],
-                         color: str,
-                         layer_name=None,
-                         layer_group_name=None,
-                         color_by=None):
+                         color: str = None,
+                         layer_name: str = None,
+                         layer_group_name: str = None,
+                         color_by: bool = False):
 
         self.id_counter += 1
         id_string = str(self.id_counter)
@@ -418,11 +416,17 @@ class MapBox(QtWidgets.QWidget):
         layer = Layer(name=layer_name, type="lines")
         layer.id = id_string
         layer_group = self.find_layer_group(layer_group_name)
+        if not layer_group == layer_group:
+            self.add_layer_group(layer_group_name)
         layer_group[layer_name] = layer
-        feature_collection_string = self.load_geojson_from(geojson_input)
+
+        if Path(geojson_input).is_file():
+            feature_collection_string = self.load_geojson_from(geojson_input)
+        else:
+            feature_collection_string = geojson_input
 
         if color_by:
-            js_string = "import('/main.js').then(module => {module.addLineGeojsonLayerColorByProperty(" + feature_collection_string + ",'" + id_string + "','" + layer_name + "','" + layer_group_name + "','" + color + "')});"
+            js_string = "import('/main.js').then(module => {module.addLineGeojsonLayerColorByProperty(" + feature_collection_string + ",'" + id_string + "','" + layer_name + "','" + layer_group_name + "')});"
         else:
             js_string = "import('/main.js').then(module => {module.addLineGeojsonLayer(" + feature_collection_string + ",'" + id_string + "','" + layer_name + "','" + layer_group_name + "','" + color + "')});"
 

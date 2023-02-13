@@ -3,6 +3,7 @@ from src.guitools.pyqt5.io import openFileNameDialog
 from ra2ce.io.readers.graph_pickle_reader import GraphPickleReader
 
 import numpy as np
+import osmnx
 from pathlib import Path
 
 
@@ -57,9 +58,19 @@ def selectRoad():
 
         # TODO do this always immediately or only after someone is done editing?
         from ra2ce.io.writers.multi_graph_network_exporter import MultiGraphNetworkExporter
-        exporter = MultiGraphNetworkExporter(basename=g, export_types=["pickle"])
+        exporter = MultiGraphNetworkExporter(basename='origins_destinations_graph_hazard', export_types=["pickle"])
         exporter.export_to_pickle(Ra2ceGUI.ra2ceHandler.input_config.analysis_config.config_data["static"].joinpath("output_graph"),
                                   Ra2ceGUI.graph)
+
+        edges = osmnx.graph_to_gdfs(Ra2ceGUI.graph, edges=True)
+        edges = edges.to_json()
+
+        layer_group = 'Road network'
+        layer_name = 'roads_overlay'
+        Ra2ceGUI.gui.elements['main_map']['widget_group'].add_line_geojson(edges,
+                                                                           layer_name=layer_name,
+                                                                           layer_group_name=layer_group,
+                                                                           color_by=True)
 
 
 def showRoads():

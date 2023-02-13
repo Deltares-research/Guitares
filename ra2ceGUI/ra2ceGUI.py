@@ -108,16 +108,16 @@ class Ra2ceGUI:
         # Add the road network to the map
         path_roads = self.ra2ce_config['base_data']['path'].joinpath('network', self.ra2ce_config['network']['geojson'])
         self.gui.elements['main_map']['widget_group'].add_line_geojson(path_roads,
-                                                                       'orange',
-                                                                       layer_name,
-                                                                       layer_group)
+                                                                       color='orange',
+                                                                       layer_name=layer_name,
+                                                                       layer_group_name=layer_group)
 
     def highlight_road(self, roads, layer_name, layer_group):
         self.gui.elements['main_map']['widget_group'].add_layer_group(layer_group)
         self.gui.elements['main_map']['widget_group'].add_line_geojson(roads,
-                                                                       'red',
-                                                                       layer_name,
-                                                                       layer_group)
+                                                                       color='red',
+                                                                       layer_name=layer_name,
+                                                                       layer_group_name=layer_group)
 
     def update_flood_map(self):
         layer_name = Path(self.loaded_floodmap).name

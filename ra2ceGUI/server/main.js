@@ -104,7 +104,7 @@ export function addLineGeojsonLayer (geojson, id, layerName, layerGroupName, col
 };
 
 
-export function addLineGeojsonLayerColorByProperty (geojson, id, layerName, layerGroupName, color) {
+export function addLineGeojsonLayerColorByProperty (geojson, id, layerName, layerGroupName) {
   // Show the lines as GeoJSON
     map.addSource(id, {
         type: 'geojson',
@@ -121,8 +121,15 @@ export function addLineGeojsonLayerColorByProperty (geojson, id, layerName, laye
         },
         'paint': {
             'line-width': 2,
-            'line-color': color
-        }
+            'line-color':  [
+              "match",
+              ["get", "EV1_MA"],
+              0,
+              "orange",
+              1,
+              "darkblue",
+            ]
+        },
     });
 
     layerAdded(layerName, layerGroupName, id);
