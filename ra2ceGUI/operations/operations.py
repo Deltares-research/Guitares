@@ -123,9 +123,11 @@ def selectFloodmap():
 
     if _loaded_floodmap:
         # Ra2ceGUI.gui.elements["spinner"].start()
-
+        try:
+            Ra2ceGUI.update_flood_map()
+        except:
+            print("Memory error")
         Ra2ceGUI.loaded_floodmap = Path(_loaded_floodmap)
-        Ra2ceGUI.update_flood_map()
         Ra2ceGUI.previous_floodmap = Ra2ceGUI.loaded_floodmap.name
         Ra2ceGUI.gui.setvar("ra2ceGUI", "loaded_floodmap", Path(Ra2ceGUI.loaded_floodmap).name)
 

@@ -31,7 +31,8 @@ class Ra2ceGUI:
                                              'path'] / 'building_footprints' / 'building_footprints.feather'
         self.villages = self.ra2ce_config['base_data']['path'] / 'network' / 'villages.shp'
         self.validate_base_data(required_base_data=[self.origins_destinations_graph, self.origin_destination_table,
-                                                    self.building_footprints, self.villages])
+                                                    self.building_footprints_geoms, self.building_footprints_data,
+                                                    self.villages])
 
         # Create a variable for the results
         self.result = None

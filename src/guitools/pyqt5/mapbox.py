@@ -337,9 +337,8 @@ class MapBox(QtWidgets.QWidget):
                                       dst.bounds[3])
         band1 = band1.astype(np.float32)
         isnull = np.where(band1 == no_data_value)
-        band1[isnull] = np.nan
-        iszero = np.where(band1 < 0.001)
-        band1[iszero] = np.nan
+        band1[isnull] = 0
+        band1 = band1.astype(np.uint8)
 
         band1 = np.flipud(band1)
         cminimum = np.nanmin(band1)
