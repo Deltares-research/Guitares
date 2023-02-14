@@ -185,26 +185,36 @@ element:
       width: -20
       height: 100
     element:
+    - style: edit
+      id: flood_depth_input
+      text:
+      position:
+        x: 30
+        y: 33
+        width: 60
+        height: 22
+      variable: edited_flood_depth
+      tooltip: Flood depth of the selected road segment
+    - style: pushbutton
+      id: edit_flood_depth
+      text: Edit
+      position:
+        x: 100
+        y: 33
+        width: 60
+        height: 22
+      method: modifyFloodDepth
+      tooltip: Edit the flood depth of the selected road segment
     - style: pushbutton
       id: select_road
       text: Select road
       position:
         x: 30
-        y: 33
+        y: 63
         width: 130
         height: 22
       tooltip: Select a road segment
       method: selectRoad
-    - style: edit
-      id: edit_flood_depth
-      text:
-      position:
-        x: 30
-        y: 63
-        width: 130
-        height: 22
-      variable: edited_flood_depth
-      tooltip: Edit the flood depth of the selected road segment
     - style: edit
       id: feedback_modify
       position:

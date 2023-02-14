@@ -123,11 +123,12 @@ export function addLineGeojsonLayerColorByProperty (geojson, id, layerName, laye
             'line-width': 2,
             'line-color':  [
               "match",
-              ["get", "EV1_MA"],
+              ["get", "EV1_ma"],
               0,
               "orange",
               1,
-              "darkblue",
+              "#08316c",
+              "white"
             ]
         },
     });

@@ -399,6 +399,8 @@ class MapBox(QtWidgets.QWidget):
                 with open(geojson_input) as data_file:
                     feature_collection = geojson.load(data_file)
                     feature_collection = str(feature_collection)
+            else:
+                feature_collection = geojson_input
         elif isinstance(geojson_input, LineString):
             feature_collection = gpd.GeoSeries([geojson_input]).to_json()
         return feature_collection
@@ -416,14 +418,12 @@ class MapBox(QtWidgets.QWidget):
         layer = Layer(name=layer_name, type="lines")
         layer.id = id_string
         layer_group = self.find_layer_group(layer_group_name)
-        if not layer_group == layer_group:
+        if not layer_group:
             self.add_layer_group(layer_group_name)
+            layer_group = self.find_layer_group(layer_group_name)
         layer_group[layer_name] = layer
 
-        if Path(geojson_input).is_file():
-            feature_collection_string = self.load_geojson_from(geojson_input)
-        else:
-            feature_collection_string = geojson_input
+        feature_collection_string = self.load_geojson_from(geojson_input)
 
         if color_by:
             js_string = "import('/main.js').then(module => {module.addLineGeojsonLayerColorByProperty(" + feature_collection_string + ",'" + id_string + "','" + layer_name + "','" + layer_group_name + "')});"
@@ -437,10 +437,25 @@ class MapBox(QtWidgets.QWidget):
         # print("Coords clicked")
         self.callback_module.coords_clicked(json.loads(coords))
 
-    def remove_layer(self, layer_name, layer_group_name):
+    def remove_raster_layer(self, layer_name, layer_group_name):
         layer_group = self.find_layer_group(layer_group_name)
         if layer_group:
             if layer_group_name == layer_group.name:
+                id = layer_group.id
+                if id:
+                    print("Removing " + layer_name + " - id=" + id)
+                    js_string = "import('/main.js').then(module => {module.removeLayer('" + id + "')});"
+                    self.view.page().runJavaScript(js_string)
+
+    def remove_geojson_layer(self, layer_name, layer_group_name):
+        layer_group = self.find_layer_group(layer_group_name)
+        if layer_group:
+            try:
+                existing_layer_group_name = layer_group[layer_name].name
+            except TypeError:
+                existing_layer_group_name = layer_group.name
+
+            if layer_group_name == existing_layer_group_name:
                 id = layer_group.id
                 if id:
                     print("Removing " + layer_name + " - id=" + id)

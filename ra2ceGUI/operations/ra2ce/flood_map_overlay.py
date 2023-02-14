@@ -6,7 +6,7 @@ from shapely.geometry import box
 from rasterstats import point_query
 import osmnx
 
-from src.guitools.pyqt5.spinner import Spinner
+# from src.guitools.pyqt5.spinner import Spinner
 from ra2ceGUI import Ra2ceGUI
 from ra2ce.io.readers.graph_pickle_reader import GraphPickleReader
 from ra2ce.io.writers.network_exporter_factory import NetworkExporterFactory
@@ -15,6 +15,7 @@ from ra2ce.io.writers.network_exporter_factory import NetworkExporterFactory
 class FloodMapOverlay:
     def __init__(self):
         self.floodmap_extent = self.get_floodmap_extent()
+        Ra2ceGUI.floodmap_extent = self.floodmap_extent
         self.overlay()
 
     @staticmethod
@@ -44,10 +45,8 @@ class FloodMapOverlay:
         return flood_stats.apply(lambda x: x[0] if x[0] else 0)
 
     def floodmap_overlay_building_footprints(self):
-        building_footprints_within_hazard_extent = gpd.read_file(Ra2ceGUI.building_footprints, bbox=self.floodmap_extent)
-
-        # Get the centroids / representative points within the building footprints
-        building_footprints_within_hazard_extent.geometry = building_footprints_within_hazard_extent.representative_point()
+        # Get the building footprints with the centroids / representative points within
+        building_footprints_within_hazard_extent = gpd.read_feather(Ra2ceGUI.building_footprints_geoms, bbox=self.floodmap_extent)
 
         # Update the GeoDataFrame with the flood map data
         building_footprints_within_hazard_extent["flooded"] = self.hazard_overlay(building_footprints_within_hazard_extent)
@@ -65,6 +64,11 @@ class FloodMapOverlay:
         edges = osmnx.graph_to_gdfs(g, edges=True, nodes=False, node_geometry=False)
         edges = edges[["EV1_ma", "geometry"]]
         edges["EV1_ma"] = edges["EV1_ma"].fillna(0)
+
+        # Filter only the origins on the extent of the flood map
+        xmin, ymin, xmax, ymax = self.floodmap_extent
+        edges = edges.cx[xmin:xmax, ymin:ymax]
+
         edges = edges.to_json()
 
         layer_group = 'Road network'
@@ -75,21 +79,21 @@ class FloodMapOverlay:
                                                                            color_by=True)
 
     def overlay(self):
-        Ra2ceGUI.gui.elements["spinner"].start()
+        # Ra2ceGUI.gui.elements["spinner"].start()
 
         path_od_hazard_graph = Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'static', 'output_graph', 'origins_destinations_graph_hazard.p')
         if path_od_hazard_graph.is_file():
             print("A hazard overlay was already done previously. If you want to do a new hazard overlay, please create a new project.")
             self.color_roads(path_od_hazard_graph)
             self.floodMapOverlayFeedback("Overlay done")
-            Ra2ceGUI.gui.elements["spinner"].stop()
+            # Ra2ceGUI.gui.elements["spinner"].stop()
             return
 
         try:
             assert Ra2ceGUI.ra2ceHandler
             self.floodMapOverlayFeedback("First validate configuration")
         except AssertionError:
-            Ra2ceGUI.gui.elements["spinner"].stop()
+            # Ra2ceGUI.gui.elements["spinner"].stop()
             return
 
         # Clip the origins to the extent of the hazard map
@@ -108,7 +112,7 @@ class FloodMapOverlay:
         except BaseException as e:
             print(e)
 
-        Ra2ceGUI.gui.elements["spinner"].stop()
+        # Ra2ceGUI.gui.elements["spinner"].stop()
 
 
 def clip_origins(clip_extent: rasterio.coords.BoundingBox):

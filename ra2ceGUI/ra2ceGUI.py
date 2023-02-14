@@ -26,7 +26,9 @@ class Ra2ceGUI:
         # Get the base data paths
         self.origins_destinations_graph = self.ra2ce_config['base_data']['path'] / 'network' / 'origins_destinations_graph.p'
         self.origin_destination_table = self.ra2ce_config['base_data']['path'] / 'network' / 'origin_destination_table.feather'
-        self.building_footprints = self.ra2ce_config['base_data']['path'] / 'building_footprints' / 'building_footprints_terai.gpkg'
+        self.building_footprints_geoms = self.ra2ce_config['base_data']['path'] / 'building_footprints' / 'building_footprints_geoms.feather'
+        self.building_footprints_data = self.ra2ce_config['base_data'][
+                                             'path'] / 'building_footprints' / 'building_footprints.feather'
         self.villages = self.ra2ce_config['base_data']['path'] / 'network' / 'villages.shp'
         self.validate_base_data(required_base_data=[self.origins_destinations_graph, self.origin_destination_table,
                                                     self.building_footprints, self.villages])
@@ -52,12 +54,15 @@ class Ra2ceGUI:
         self.valid_config = "Not yet configured"
         self.coords_clicked = None
         self.run_name = "Choose a name"
-        self.edited_flood_depth = 0.
+        self.edited_flood_depth = 0
         self.current_project = Path()
         self.floodmap_overlay_feedback = "Not yet executed"
         self.analyse_feedback = "Not yet analyzed"
         self.modification_feedback = "No road selected"
         self.previous_floodmap = ""
+        self.closest_u_v_k = tuple()
+        self.graph = None
+        self.floodmap_extent = None
 
         # Define GUI variables
         self.gui.setvar("ra2ceGUI", "run_name", self.run_name)
@@ -118,6 +123,9 @@ class Ra2ceGUI:
                                                                        color='red',
                                                                        layer_name=layer_name,
                                                                        layer_group_name=layer_group)
+
+    def remove_highlighted_road(self, layer_name, layer_group):
+        self.gui.elements['main_map']['widget_group'].remove_geojson_layer(layer_name, layer_group)
 
     def update_flood_map(self):
         layer_name = Path(self.loaded_floodmap).name

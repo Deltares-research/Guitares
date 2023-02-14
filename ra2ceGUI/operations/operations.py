@@ -15,13 +15,59 @@ def roadModificationFeedback(text):
     Ra2ceGUI.gui.update()
 
 
+def color_roads():
+    edges = osmnx.graph_to_gdfs(Ra2ceGUI.graph, edges=True, nodes=False, node_geometry=False)
+    edges = edges[["EV1_ma", "geometry"]]
+    edges["EV1_ma"] = edges["EV1_ma"].fillna(0)
+
+    # Filter only the origins on the extent of the flood map
+    xmin, ymin, xmax, ymax = Ra2ceGUI.floodmap_extent
+    edges = edges.cx[xmin:xmax, ymin:ymax]
+
+    edges = edges.to_json()
+
+    Ra2ceGUI.remove_highlighted_road('Road network', 'selected_road')
+
+    # Remove the previous roads
+    Ra2ceGUI.gui.elements['main_map']['widget_group'].remove_geojson_layer('Road network', 'roads_overlay')
+
+    layer_group = 'Road network'
+    layer_name = 'roads_overlay'
+    Ra2ceGUI.gui.elements['main_map']['widget_group'].add_line_geojson(edges,
+                                                                       layer_name=layer_name,
+                                                                       layer_group_name=layer_group,
+                                                                       color_by=True)
+
+
+def modifyFloodDepth():
+    Ra2ceGUI.edited_flood_depth = Ra2ceGUI.gui.getvar("ra2ceGUI", "edited_flood_depth")
+    print(f'Flood depth input: {Ra2ceGUI.edited_flood_depth}')
+
+    Ra2ceGUI.graph.edges[Ra2ceGUI.closest_u_v_k[0], Ra2ceGUI.closest_u_v_k[1], Ra2ceGUI.closest_u_v_k[2]]['F_EV1_ma'] = Ra2ceGUI.edited_flood_depth
+
+    # TODO do this always immediately or only after someone is done editing?
+    from ra2ce.io.writers.multi_graph_network_exporter import MultiGraphNetworkExporter
+
+    exporter = MultiGraphNetworkExporter(basename='origins_destinations_graph_hazard', export_types=["pickle"])
+    exporter.export_to_pickle(
+        Ra2ceGUI.ra2ceHandler.input_config.analysis_config.config_data["static"].joinpath("output_graph"),
+        Ra2ceGUI.graph)
+
+    color_roads()
+
+    # Remove the marker from the map after the road has been edited
+
+    roadModificationFeedback("Road data updated")
+
+
 def selectRoad():
     coords = Ra2ceGUI.gui.getvar("ra2ceGUI", "coords_clicked")
 
-    # Remove the marker from the map after the road has been selected
-
-    Ra2ceGUI.edited_flood_depth = Ra2ceGUI.gui.getvar("ra2ceGUI", "edited_flood_depth")
-    print(f'Flood depth input: {Ra2ceGUI.edited_flood_depth}')
+    try:
+        assert coords
+    except AssertionError:
+        roadModificationFeedback("Select a road")
+        return
 
     try:
         assert Ra2ceGUI.ra2ceHandler
@@ -31,7 +77,8 @@ def selectRoad():
 
     path_od_hazard_graph = Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'static', 'output_graph', 'origins_destinations_graph_hazard.p')
     if path_od_hazard_graph.is_file():
-        Ra2ceGUI.graph = GraphPickleReader().read(path_od_hazard_graph)
+        if not Ra2ceGUI.graph:
+            Ra2ceGUI.graph = GraphPickleReader().read(path_od_hazard_graph)
 
         # create dictionary of the roads geometries
         edge_list = [e for e in Ra2ceGUI.graph.edges.data(keys=True) if "geometry" in e[-1]]
@@ -50,35 +97,21 @@ def selectRoad():
 
         closest_node_on_road = closest_node(np.array((coords['lng'], coords['lat'])), all_vertices)
         closest_u_v_k = inverse_vertices_dict[(closest_node_on_road[0], closest_node_on_road[1])]
-        Ra2ceGUI.graph.edges[closest_u_v_k[0], closest_u_v_k[1], closest_u_v_k[2]]['F_EV1_ma'] = Ra2ceGUI.edited_flood_depth
+        Ra2ceGUI.closest_u_v_k = closest_u_v_k
 
         # Highlight the selected road in yellow in the interface
         to_highlight = Ra2ceGUI.graph.edges[closest_u_v_k[0], closest_u_v_k[1], closest_u_v_k[2]]["geometry"]
         Ra2ceGUI.highlight_road(to_highlight, 'Road network', 'selected_road')
 
-        # TODO do this always immediately or only after someone is done editing?
-        from ra2ce.io.writers.multi_graph_network_exporter import MultiGraphNetworkExporter
-        exporter = MultiGraphNetworkExporter(basename='origins_destinations_graph_hazard', export_types=["pickle"])
-        exporter.export_to_pickle(Ra2ceGUI.ra2ceHandler.input_config.analysis_config.config_data["static"].joinpath("output_graph"),
-                                  Ra2ceGUI.graph)
-
-        edges = osmnx.graph_to_gdfs(Ra2ceGUI.graph, edges=True)
-        edges = edges.to_json()
-
-        layer_group = 'Road network'
-        layer_name = 'roads_overlay'
-        Ra2ceGUI.gui.elements['main_map']['widget_group'].add_line_geojson(edges,
-                                                                           layer_name=layer_name,
-                                                                           layer_group_name=layer_group,
-                                                                           color_by=True)
+        roadModificationFeedback("Road selected")
 
 
 def showRoads():
-    Ra2ceGUI.gui.elements["spinner"].start()
+    # Ra2ceGUI.gui.elements["spinner"].start()
 
     Ra2ceGUI.show_roads()
 
-    Ra2ceGUI.gui.elements["spinner"].stop()
+    # Ra2ceGUI.gui.elements["spinner"].stop()
 
 
 def selectFloodmap():
@@ -86,10 +119,10 @@ def selectFloodmap():
                                           fileTypes=["GeoTIFF files (*.tif)"])
 
     if Ra2ceGUI.previous_floodmap:
-        Ra2ceGUI.gui.map_widget["main_map"].remove_layer("flood_map_layer_group", Ra2ceGUI.previous_floodmap)
+        Ra2ceGUI.gui.map_widget["main_map"].remove_raster_layer("flood_map_layer_group", Ra2ceGUI.previous_floodmap)
 
     if _loaded_floodmap:
-        Ra2ceGUI.gui.elements["spinner"].start()
+        # Ra2ceGUI.gui.elements["spinner"].start()
 
         Ra2ceGUI.loaded_floodmap = Path(_loaded_floodmap)
         Ra2ceGUI.update_flood_map()
@@ -98,4 +131,4 @@ def selectFloodmap():
 
         # Update all GUI elements
         Ra2ceGUI.gui.update()
-        Ra2ceGUI.gui.elements["spinner"].stop()
+        # Ra2ceGUI.gui.elements["spinner"].stop()
