@@ -1,0 +1,9 @@
+element:
+  - style: pushbutton
+    text: Add Marker
+    position:
+      x: 20
+      y: 100
+      width: 80
+      height: 20
+    method: add_marker

@@ -3,15 +3,16 @@ from PyQt5.QtCore import Qt, QRect, QPoint
 from PyQt5.QtGui import QPainter
 from PyQt5 import QtWidgets
 
-from .widget_group import WidgetGroup
+from .widget import Widget
+from guitools.gui import get_position_from_string
 
 
 # from gui import getvar, setvar
 
-class Slider(WidgetGroup):
+class Slider(Widget):
 
-    def __init__(self, element, parent):
-        super().__init__(element, parent)
+    def __init__(self, element, parent, gui):
+        super().__init__(element, parent, gui)
 
         # s = QSlider(parent)
         s = QSlider(Qt.Horizontal, parent=parent)
@@ -26,7 +27,8 @@ class Slider(WidgetGroup):
         s.setTickPosition(QSlider.TicksBelow)
         self.widgets.append(s)
 
-        x0, y0, wdt, hgt = element["window"].get_position_from_string(self.element["position"], self.parent)
+        x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, self.gui.resize_factor)
+
         s.setGeometry(x0, y0, wdt, hgt)
         if element["text"]:
             label = QLabel(self.element["text"], self.parent)
@@ -51,37 +53,52 @@ class Slider(WidgetGroup):
             label.setGeometry(xlab - ii*20, y0 + hgt, wlab, hlab)
             label.setStyleSheet("background: transparent; border: none")
 
-        fcn = lambda: self.callback()
-        s.valueChanged.connect(fcn)
+#        fcn = lambda: self.first_callback()
+#        s.valueChanged.connect(fcn)
+        value_changed_callback = lambda: self.first_callback()
+        s.valueChanged.connect(value_changed_callback)
+
         if self.element["module"] and "slide_method" in self.element:
-            fcn = getattr(self.element["module"], self.element["slide_method"])
-            s.valueChanged.connect(fcn)
+            # Called when the slider is moved
+            self.slide_callback = getattr(self.element["module"], self.element["slide_method"])
+        else:
+            self.slide_callback = None
 
         if self.element["module"] and "method" in self.element:
-            fcn = getattr(self.element["module"], self.element["method"])
-            s.sliderReleased.connect(fcn)
+            # Called when the slider is released
+            self.callback = getattr(self.element["module"], self.element["method"])
+            slider_released_callback = lambda: self.second_callback()
+            s.sliderReleased.connect(slider_released_callback)
 
     def set(self):
         if self.check_variables():
-            getvar = self.element["getvar"]
             group = self.element["variable_group"]
             name = self.element["variable"]
-            val = getvar(group, name)
+            val = self.gui.getvar(group, name)
             self.widgets[0].setValue(val)
             self.set_dependencies()
 
-    def callback(self):
+    def first_callback(self):
         self.okay = True
         if self.check_variables():
-            newval = self.widgets[0].value()
-
+            val = self.widgets[0].value()
             # Update value in variable dict
             if self.okay:
-                setvar = self.element["setvar"]
                 group = self.element["variable_group"]
                 name = self.element["variable"]
-                setvar(group, name, newval)
-                self.widgets[0].setValue(newval)
+                self.gui.setvar(group, name, val)
+                self.widgets[0].setValue(val)
+                if self.slide_callback:
+                    self.slide_callback(val, self)
+
+    def second_callback(self):
+        if self.okay and self.widgets[0].isEnabled():
+            group = self.element["variable_group"]
+            name  = self.element["variable"]
+            val   = self.gui.getvar(group, name)
+            self.callback(val, self)
+            # Update GUI
+            self.gui.update()
 
 # class LabeledSlider(WidgetGroup):
 #     def __init__(self, element, parent):

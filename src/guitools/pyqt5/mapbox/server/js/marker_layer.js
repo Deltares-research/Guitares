@@ -11,7 +11,7 @@ export function addMarkerLayer(geojson, markerFile, id) {
     map.loadImage('icons/' + markerFile,
         (error, image) => {
             if (error) throw error;
-            map.addImage(id, image);
+            map.addImage('custom-marker', image);
 
             // Add a GeoJSON source with 2 points
             map.addSource(id, {
@@ -25,7 +25,7 @@ export function addMarkerLayer(geojson, markerFile, id) {
                 'type': 'symbol',
                 'source': id,
                 'layout': {
-                    'icon-image': id,
+                    'icon-image': 'custom-marker',
                     'icon-size': 0.5,
                     'text-field': ['get', 'title'],
                     'text-font': [

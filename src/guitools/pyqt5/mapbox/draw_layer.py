@@ -11,7 +11,11 @@ from .layer import Layer, list_layers
 
 
 class DrawLayer(Layer):
-    def __init__(self, mapbox, id, map_id, create=None, modify=None, select=None,
+    def __init__(self, mapbox, id, map_id,
+                 shape="polygon",
+                 create=None,
+                 modify=None,
+                 select=None,
                  polygon_line_color="dodgerblue",
                  polygon_line_width=2,
                  polygon_line_style="-",
@@ -32,6 +36,7 @@ class DrawLayer(Layer):
 
         self.active = False
         self.type   = "draw"
+        self.shape  = shape
         self.mode   = "active" # Draw layers can have three modes: active, inactive, invisible
         self.gdf    = gpd.GeoDataFrame()
         self.create_callback = create
@@ -75,57 +80,105 @@ class DrawLayer(Layer):
     def add_feature(self, feature_id, shape, geometry):
         self.mapbox.runjs("./js/draw.js", "addFeature", arglist=[feature_id, shape, geometry, self.map_id])
 
-    def draw_polygon(self):
+    def draw(self):
         self.mapbox.active_draw_layer = self
-        self.mapbox.runjs("./js/draw.js", "drawPolygon", arglist=[self.map_id])
+        if self.shape == "polygon":
+            self.mapbox.runjs("./js/draw.js", "drawPolygon", arglist=[self.map_id])
+        elif self.shape == "polyline":
+            self.mapbox.runjs("./js/draw.js", "drawPolyline", arglist=[self.map_id])
+        elif self.shape == "rectangle":
+            self.mapbox.runjs("./js/draw.js", "drawRectangle", arglist=[self.map_id])
 
-    def draw_polyline(self):
-        self.mapbox.active_draw_layer = self
-        self.mapbox.runjs("./js/draw.js", "drawPolyline", arglist=[self.map_id])
+    # def draw_polygon(self):
+    #     self.mapbox.active_draw_layer = self
+    #     self.mapbox.runjs("./js/draw.js", "drawPolygon", arglist=[self.map_id])
+    #
+    # def draw_polyline(self):
+    #     self.mapbox.active_draw_layer = self
+    #     self.mapbox.runjs("./js/draw.js", "drawPolyline", arglist=[self.map_id])
+    #
+    # def draw_rectangle(self):
+    #     self.mapbox.active_draw_layer = self
+    #     self.mapbox.runjs("./js/draw.js", "drawRectangle", arglist=[self.map_id])
 
-    def draw_rectangle(self):
-        self.mapbox.active_draw_layer = self
-        self.mapbox.runjs("./js/draw.js", "drawRectangle", arglist=[self.map_id])
+    # def feature_drawn(self, coords, feature_id, feature_shape):
+    #     if feature_shape == "polygon":
+    #         geom = shapely.geometry.Polygon(coords[0])
+    #         gdf = gpd.GeoDataFrame(data=[[feature_id, feature_shape]], columns=["id", "shape"], crs='epsg:4326', geometry=[geom])
+    #     if feature_shape == "polyline":
+    #         geom = shapely.geometry.LineString(coords)
+    #         gdf = gpd.GeoDataFrame(data=[[feature_id, feature_shape]], columns=["id", "shape"], crs='epsg:4326', geometry=[geom])
+    #     if feature_shape == "rectangle":
+    #         geom = shapely.geometry.Polygon(coords[0])
+    #         x0, y0, dx, dy, rotation = get_rectangle_geometry(geom)
+    #         gdf = gpd.GeoDataFrame(data=[[feature_id, feature_shape, x0, y0, dx, dy, rotation]], columns=["id", "shape", "x0", "y0", "dx", "dy", "rotation"], crs='epsg:4326', geometry=[geom])
+    #     self.gdf = pd.concat([self.gdf, gdf], ignore_index=True)
+    #     if self.create_callback:
+    #         self.create_callback(gdf, feature_shape, feature_id)
 
-    def feature_drawn(self, coords, feature_id, feature_shape):
-        if feature_shape== "polygon":
-            geom = shapely.geometry.Polygon(coords[0])
-            gdf = gpd.GeoDataFrame(data=[[feature_id, feature_shape]], columns=["id", "shape"], crs='epsg:4326', geometry=[geom])
-        if feature_shape == "polyline":
-            geom = shapely.geometry.LineString(coords)
-            gdf = gpd.GeoDataFrame(data=[[feature_id, feature_shape]], columns=["id", "shape"], crs='epsg:4326', geometry=[geom])
-        if feature_shape == "rectangle":
-            geom = shapely.geometry.Polygon(coords[0])
-            x0, y0, dx, dy, rotation = get_rectangle_geometry(geom)
-            gdf = gpd.GeoDataFrame(data=[[feature_id, feature_shape, x0, y0, dx, dy, rotation]], columns=["id", "shape", "x0", "y0", "dx", "dy", "rotation"], crs='epsg:4326', geometry=[geom])
-        self.gdf = pd.concat([self.gdf, gdf], ignore_index=True)
+    def feature_drawn(self, feature_collection, feature_id):
+        for feature in feature_collection["features"]:
+            feature["properties"]["id"] = feature["id"]
+        gdf = gpd.GeoDataFrame.from_features(feature_collection)
+        feature_index = None
+        if len(gdf)>0:
+            indx = gdf.index[gdf["id"]==feature_id].tolist()
+            if indx:
+                feature_index = indx[0]
+        if feature_index is None:
+            print("Could not find feature ...")
+            return
         if self.create_callback:
-            self.create_callback(gdf, feature_shape, feature_id)
+            self.create_callback(gdf, feature_index, feature_id)
 
-    def feature_modified(self, coords, feature_id, feature_shape):
-        if feature_shape == "polygon":
-            geom = shapely.geometry.Polygon(coords[0])
-            gdf = gpd.GeoDataFrame(data=[[feature_id, feature_shape]], columns=["id", "shape"], crs='epsg:4326', geometry=[geom])
-        if feature_shape == "polyline":
-            geom = shapely.geometry.LineString(coords)
-            gdf = gpd.GeoDataFrame(data=[[feature_id, feature_shape]], columns=["id", "shape"], crs='epsg:4326', geometry=[geom])
-        if feature_shape == "rectangle":
-            geom = shapely.geometry.Polygon(coords[0])
-            x0, y0, dx, dy, rotation = get_rectangle_geometry(geom)
-            gdf = gpd.GeoDataFrame(data=[[feature_id, feature_shape, x0, y0, dx, dy, rotation]], columns=["id", "shape", "x0", "y0", "dx", "dy", "rotation"], crs='epsg:4326', geometry=[geom])
-        for index, row in self.gdf.iterrows():
-            if row["id"] == feature_id:
-                self.gdf.at[index, "geometry"] = geom
-                break
+    def feature_modified(self, feature_collection, feature_id):
+        for feature in feature_collection["features"]:
+            feature["properties"]["id"] = feature["id"]
+        gdf = gpd.GeoDataFrame.from_features(feature_collection)
+        feature_index = None
+        if len(gdf)>0:
+            indx = gdf.index[gdf["id"]==feature_id].tolist()
+            if indx:
+                feature_index = indx[0]
+        if feature_index is None:
+            print("Could not find feature ...")
+            return
         if self.modify_callback:
-            self.modify_callback(gdf, feature_shape, feature_id)
+            self.modify_callback(gdf, feature_index, feature_id)
+        # if feature_shape == "polygon":
+        #     geom = shapely.geometry.Polygon(coords[0])
+        #     gdf = gpd.GeoDataFrame(data=[[feature_id, feature_shape]], columns=["id", "shape"], crs='epsg:4326', geometry=[geom])
+        # if feature_shape == "polyline":
+        #     geom = shapely.geometry.LineString(coords)
+        #     gdf = gpd.GeoDataFrame(data=[[feature_id, feature_shape]], columns=["id", "shape"], crs='epsg:4326', geometry=[geom])
+        # if feature_shape == "rectangle":
+        #     geom = shapely.geometry.Polygon(coords[0])
+        #     x0, y0, dx, dy, rotation = get_rectangle_geometry(geom)
+        #     gdf = gpd.GeoDataFrame(data=[[feature_id, feature_shape, x0, y0, dx, dy, rotation]], columns=["id", "shape", "x0", "y0", "dx", "dy", "rotation"], crs='epsg:4326', geometry=[geom])
+        # for index, row in self.gdf.iterrows():
+        #     if row["id"] == feature_id:
+        #         self.gdf.at[index, "geometry"] = geom
+        #         break
+        # if self.modify_callback:
+        #     self.modify_callback(gdf, feature_shape, feature_id)
 
-    def feature_selected(self, feature_id):
+    def feature_selected(self, feature_collection, feature_id):
+        for feature in feature_collection["features"]:
+            feature["properties"]["id"] = feature["id"]
+        gdf = gpd.GeoDataFrame.from_features(feature_collection)
+        feature_index = None
+        if len(gdf)>0:
+            indx = gdf.index[gdf["id"]==feature_id].tolist()
+            if indx:
+                feature_index = indx[0]
+        if feature_index is None:
+            print("Could not find feature ...")
+            return
         if self.select_callback:
-            self.select_callback(feature_id)
+            self.select_callback(feature_index)
 
     def activate_feature(self, feature_id):
-        if self.mode is not "active":
+        if self.mode != "active":
             self.mode = "active"
             self.mapbox.runjs("./js/draw.js", "setLayerMode", arglist=[self.map_id, mode])
         self.mapbox.runjs("./js/draw.js", "activateFeature", arglist=[feature_id])

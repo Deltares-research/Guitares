@@ -2,20 +2,20 @@ from PyQt5.QtWidgets import QDateTimeEdit
 from PyQt5.QtWidgets import QLabel
 from PyQt5 import QtCore
 
-from .widget_group import WidgetGroup
+from .widget import Widget
 from guitools.gui import get_position_from_string
 
-class DateEdit(WidgetGroup):
+class DateEdit(Widget):
 
-    def __init__(self, element, parent):
-        super().__init__(element, parent)
+    def __init__(self, element, parent, gui):
+        super().__init__(element, parent, gui)
 
         b = QDateTimeEdit(parent)
         self.widgets.append(b)
 
         b.setCalendarPopup(True)
         b.setDisplayFormat("yyyy-MM-dd hh:mm:ss")
-        x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, element["window"].resize_factor)
+        x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, self.gui.resize_factor)
         b.setGeometry(x0, y0, wdt, hgt)
         if element["text"]:
             label = QLabel(self.element["text"], self.parent)
@@ -29,23 +29,21 @@ class DateEdit(WidgetGroup):
         fcn = lambda: self.callback()
         b.editingFinished.connect(fcn)
         if self.element["module"] and "method" in self.element:
-            fcn = getattr(self.element["module"], self.element["method"])
-            self.callback = fcn
+            self.callback = getattr(self.element["module"], self.element["method"])
             fcn2 = lambda: self.second_callback()
             b.editingFinished.connect(fcn2)
 
 
-
     def set(self):
         if self.check_variables():
-            getvar = self.element["getvar"]
             group = self.element["variable_group"]
             name  = self.element["variable"]
-            val   = getvar(group, name)
+            val   = self.gui.getvar(group, name)
             dtstr = val.strftime("%Y-%m-%d %H:%M:%S")
             qtDate = QtCore.QDateTime.fromString(dtstr, 'yyyy-MM-dd hh:mm:ss')
             self.widgets[0].setDateTime(qtDate)
             self.set_dependencies()
+
 
     def fist_callback(self):
         if self.check_variables():
@@ -57,8 +55,13 @@ class DateEdit(WidgetGroup):
             # Update value in variable dict
             group = self.element["variable_group"]
             name  = self.element["variable"]
-            setvar(group, name, newval)
+            self.gui.setvar(group, name, newval)
 
     def second_callback(self):
-        if self.okay:
-            self.callback()
+        if self.okay and self.widgets[0].isEnabled():
+            group = self.element["variable_group"]
+            name  = self.element["variable"]
+            val   = self.gui.getvar(group, name)
+            self.callback(val, self)
+            # Update GUI
+            self.gui.update()

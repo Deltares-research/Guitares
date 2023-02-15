@@ -1,10 +1,10 @@
-class WidgetGroup:
+class Widget:
+    def __init__(self, element, parent, gui):
 
-    def __init__(self, element, parent):
-
-        self.widgets       = []
         self.element       = element # Is this necessary?
-        self.parent        = parent  # Is this necessary?
+        self.parent        = parent
+        self.gui           = gui
+        self.widgets       = []
         self.okay          = True
 
     def delete(self):
@@ -19,10 +19,12 @@ class WidgetGroup:
 
                 try:
 
+                    getvar = self.element["widget"].gui.getvar
+
                     if dep["checkfor"] == "all":
                         okay = True
                         for check in dep["check"]:
-                            getvar = self.element["getvar"]
+#                            getvar = self.element["getvar"]
                             name  = check["variable"]
                             group = check["variable_group"]
                             value = getvar(group, name)
@@ -64,7 +66,7 @@ class WidgetGroup:
                     elif dep["checkfor"] == "any":
                         okay = False
                         for check in dep["check"]:
-                            getvar = self.element["getvar"]
+#                            getvar = self.element["getvar"]
                             name  = check["variable"]
                             group = check["variable_group"]
                             value = getvar(group, name)
@@ -106,7 +108,7 @@ class WidgetGroup:
                     elif dep["checkfor"] == "none":
                         okay = True
                         for check in dep["check"]:
-                            getvar = self.element["getvar"]
+#                            getvar = self.element["getvar"]
                             name  = check["variable"]
                             group = check["variable_group"]
                             value = getvar(group, name)
@@ -160,7 +162,7 @@ class WidgetGroup:
                             for w in self.widgets:
                                 w.setEnabled(False)
                 except:
-                    print("Error setting dependcy!!!")
+                    print("Error setting dependency !!!")
 
     def check_variables(self, group=None, name=None):
 

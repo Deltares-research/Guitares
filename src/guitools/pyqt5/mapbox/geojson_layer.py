@@ -15,19 +15,29 @@ class GeoJSONLayer(Layer):
                  selection_type="single",
                  fill_color="red",
                  fill_opacity=0.75,
-                 line_width=1):
+                 line_color="black",
+                 line_width=1,
+                 circle_radius=5):
         super().__init__(mapbox, id, map_id)
         self.active = False
         self.type   = "geojson"
         self.select_callback = select
 
-        fill_color = mcolors.to_hex(fill_color)
+        if fill_color != "transparent":
+            fill_color = mcolors.to_hex(fill_color)
+        if line_color != "transparent":
+            line_color = mcolors.to_hex(line_color)
 
         if isinstance(data, GeoDataFrame):
             # Data is GeoDataFrame
             if file_name:
+#                xxx = data.to_json()
                 with open(os.path.join(self.mapbox.server_path, "overlays", file_name), "w") as f:
-                    f.write(data.to_json())
+                    if "timeseries" in data:
+                        f.write(data.drop(columns=["timeseries"]).to_crs(4326).to_json())
+                    else:
+                        f.write(data.to_crs(4326).to_json())
+
                 data = "./overlays/" + file_name
             else:
                 data = data.to_json()
@@ -40,6 +50,25 @@ class GeoJSONLayer(Layer):
                                                                                              fill_opacity,
                                                                                              line_width,
                                                                                              selection_type])
+
+        elif type == "marker_selector":
+            self.mapbox.runjs("./js/geojson_layer_marker_selector.js", "addLayer", arglist=[self.map_id,
+                                                                                            data,
+                                                                                            fill_color,
+                                                                                            fill_opacity,
+                                                                                            line_width,
+                                                                                            circle_radius,
+                                                                                            selection_type])
+        elif type == "circle":
+            self.mapbox.runjs("./js/geojson_layer_circle.js", "addLayer", arglist=[self.map_id,
+                                                                                   data,
+                                                                                   fill_color,
+                                                                                   fill_opacity,
+                                                                                   line_color,
+                                                                                   line_width,
+                                                                                   circle_radius,
+                                                                                   selection_type])
+
         else:
             self.mapbox.runjs("./js/geojson_layer_polygon_selector.js", "addLayer", arglist=[self.map_id, data])
 

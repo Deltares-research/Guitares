@@ -3,34 +3,38 @@ from PyQt5.QtGui import QIcon
 #from PyQt5.QtWidgets import QLabel
 #from PyQt5 import QtCore
 
-from .widget_group import WidgetGroup
+from .widget import Widget
 from guitools.gui import get_position_from_string
 
-class PushButton(WidgetGroup):
+class PushButton(Widget):
 
-    def __init__(self, element, parent):
-        super().__init__(element, parent)
+    def __init__(self, element, parent, gui):
+        super().__init__(element, parent, gui)
 
         b = QPushButton(element["text"], parent)
         self.widgets.append(b)
 
-        x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, element["window"].resize_factor)
+        x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, self.gui.resize_factor)
 
         b.setGeometry(x0, y0, wdt, hgt)
 
         if hasattr(element["method"], '__call__'):
             # Callback function is already defined as method
             b.clicked.connect(element["method"])
+            b.clicked.connect(self.gui.update)
         else:
             if element["module"] :
                 if "method" in element:
                     try:
-                        fcn = getattr(element["module"] , element["method"])
+                        self.callback = getattr(element["module"] , element["method"])
+                        fcn = lambda: self.second_callback()
                         b.clicked.connect(fcn)
                     except:
                         print("ERROR! Method " + element["method"] + " not found!")
                 else:
                     print("No method found in element !")
+        b.clicked.connect(self.gui.update)
+
         if "icon" in element.keys():
             b.setIcon(QIcon(element["icon"]))
         if "tooltip" in element.keys():
@@ -40,6 +44,7 @@ class PushButton(WidgetGroup):
     def set(self):
         self.set_dependencies()
 
-    def callback(self):
-        # Callback already set
-        pass
+    def second_callback(self):
+        self.callback(self)
+        # Update GUI
+        self.gui.update()

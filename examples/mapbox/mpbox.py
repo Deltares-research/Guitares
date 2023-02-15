@@ -6,9 +6,12 @@ Created on Tue Jul  5 13:40:07 2022
 """
 
 import os
-from guitools.gui import GUI
+import geopandas as gpd
 
-from mapbox_initialize import initialize
+from guitools.gui import GUI
+from guitools.gui import find_element_by_id
+
+
 
 class MapBoxExample:
     def __init__(self):
@@ -22,11 +25,48 @@ class MapBoxExample:
                        config_path=self.main_path,
                        server_path=self.server_path,
                        server_port=3000,
-                       stylesheet="Combinear.qss")
+                       stylesheet="Combinear.qss",
+                       copy_mapbox_server_folder=True)
 
-        initialize(self)
+        # Define variables
+        self.polygons  = gpd.GeoDataFrame()
+        self.polylines = gpd.GeoDataFrame()
+        self.markers   = gpd.GeoDataFrame()
+
+        # Define GUI variables
+        self.gui.setvar("mpbox", "polygon_names", [])
+        self.gui.setvar("mpbox", "polygon_index", 0)
+        self.gui.setvar("mpbox", "nr_polygons", 0)
+        self.gui.setvar("mpbox", "polyline_names", [])
+        self.gui.setvar("mpbox", "polyline_index", 0)
+        self.gui.setvar("mpbox", "nr_polylines", 0)
+
 
     def on_build(self):
+        # Executed after the GUI has been built up (optional)
         pass
+
+    def on_map_ready(self):
+        # Executed after the MapBox map has been loaded
+
+        # Find the map widget
+        element = find_element_by_id(self.gui.config["element"], "map")
+        self.map = element["widget"]
+
+        # Add container layer to the map
+        layer = self.map.add_layer("main")
+
+        # Add the draw layers
+        from draw import add_draw_layers
+        add_draw_layers()
+
+        # Add the draw layers
+        from markers import add_marker_layer
+        add_marker_layer()
+
+        # Set map view to 55 Columbia Ave in Cranston, RI
+        self.map.fly_to(-71.39322, 41.77692, 13)
+
+
 
 mpbox = MapBoxExample()

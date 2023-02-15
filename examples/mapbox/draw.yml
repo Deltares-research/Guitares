@@ -1,0 +1,73 @@
+element:
+  - style: listbox
+    position:
+      x: 10
+      y: 10
+      width: 80
+      height: 110
+    text: Polygons
+    text_position: above
+    method: select_polygon
+    variable: polygon_index
+    select: index
+    option_string:
+      variable: polygon_names
+  - style: pushbutton
+    text: Draw Polygon
+    position:
+      x: 100
+      y: 100
+      width: 80
+      height: 20
+    method: draw_polygon
+  - style: pushbutton
+    text: Delete Polygon
+    position:
+      x: 100
+      y: 75
+      width: 80
+      height: 20
+    method: delete_polygon
+    dependency:
+    - action: enable
+      checkfor: all
+      check:
+      - variable: nr_polygons
+        operator: gt
+        value: 0
+  - style: listbox
+    position:
+      x: 210
+      y: 10
+      width: 80
+      height: 110
+    text: Polylines
+    text_position: above
+    method: select_polyline
+    variable: polyline_index
+    select: index
+    option_string:
+      variable: polyline_names
+  - style: pushbutton
+    text: Draw Polyline
+    position:
+      x: 300
+      y: 100
+      width: 80
+      height: 20
+    method: draw_polyline
+  - style: pushbutton
+    text: Delete Polyline
+    position:
+      x: 300
+      y: 75
+      width: 80
+      height: 20
+    method: delete_polyline
+    dependency:
+    - action: enable
+      checkfor: all
+      check:
+      - variable: nr_polylines
+        operator: gt
+        value: 0

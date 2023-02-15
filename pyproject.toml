@@ -16,7 +16,6 @@ dependencies = [
     "rasterio",
     "shapely",
     "numpy",
-    "json",
     "geojson",
     "Pillow",
     "matplotlib",

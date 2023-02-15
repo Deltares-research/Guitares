@@ -22,7 +22,10 @@ class PopupWindow(QDialog):
             config = read_gui_config(dir_name, file_name)
 
         # Set missing values
-        set_missing_config_values(config, gui.variables, gui.getvar, gui.setvar)
+#        set_missing_config_values(config, gui.variables, gui.getvar, gui.setvar)
+        self.config = config
+
+        set_missing_config_values(self.config, gui)
 
         screen = QApplication.primaryScreen()
         if screen.size().width() > 2500:
@@ -31,8 +34,6 @@ class PopupWindow(QDialog):
             self.resize_factor = 1.4
         else:
             self.resize_factor = 1.0
-
-        self.config = config
 
         # Set position
         self.setWindowTitle(self.config["window"]["title"])
@@ -54,7 +55,7 @@ class PopupWindow(QDialog):
         self.config["element"].append(cancel)
         self.config["element"].append(ok)
 
-        add_elements(self.config["element"], self, self, gui.server_path, gui.server_port)
+        add_elements(self.config["element"], self, gui)
 
         gui.popup_config = self.config
 

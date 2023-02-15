@@ -7,7 +7,6 @@ import os
 class Splash:
 
     def __init__(self, splash_file, seconds=20.0):
-
         # Splash screen
         QSplashScreen(QPixmap(splash_file))
         self.splash = QSplashScreen(QPixmap(splash_file))

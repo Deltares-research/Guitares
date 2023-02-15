@@ -12,17 +12,17 @@ export function addLayer(id, data) {
     data: data
   });
 
-//  map.addLayer({
-//    'id': 'circle_' + id,
-//    'type': 'circle',
-//    'source': id,
-//    'paint': {
-//      'circle-radius': 4,
-//      'circle-stroke-width': 2,
-//      'circle-color': 'red',
-//      'circle-stroke-color': 'white'
-//    }
-//  });
+  map.addLayer({
+    'id': 'circle_' + id,
+    'type': 'circle',
+    'source': id,
+    'paint': {
+      'circle-radius': 4,
+      'circle-stroke-width': 2,
+      'circle-color': 'red',
+      'circle-stroke-color': 'white'
+    }
+  });
 
   map.addLayer({
     'id': lineId,

@@ -40,7 +40,6 @@ class Layer:
         return self.layer[layer_id]
 
     def add_draw_layer(self, layer_id, **kwargs):
-
         from .draw_layer import DrawLayer
         if self.type != "container":
             print("Error! Can not add draw layer to layer of type : " + self.type)
@@ -73,14 +72,14 @@ class Layer:
             self.layer[layer_id].parent = self
         return self.layer[layer_id]
 
-    def add_deck_geojson_layer(self, layer_id, data=None, file_name=None):
+    def add_deck_geojson_layer(self, layer_id, **kwargs):
         from .deck_geojson_layer import DeckGeoJSONLayer
         map_id = self.map_id + "." + layer_id
         if self.type != "container":
             print("Error! Can not add deck_geojson_layer to layer of type : " + self.type)
             return None
         if layer_id not in self.layer:
-            self.layer[layer_id] = DeckGeoJSONLayer(self.mapbox, layer_id, map_id, data=data, file_name=file_name)
+            self.layer[layer_id] = DeckGeoJSONLayer(self.mapbox, layer_id, map_id, **kwargs)
             self.layer[layer_id].parent = self
         return self.layer[layer_id]
 

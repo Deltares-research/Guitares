@@ -5,3 +5,4 @@ __pycache__
 .idea
 deltares_guitools.egg-info
 /examples/visualdelta/server/overlay.png
+/examples/mapbox/server

@@ -112,14 +112,16 @@ function polygonCreated(e) {
     draw.setFeatureProperty(id, key, value);
   }
   addToFeatureList(id, 'polygon', activeLayerId);
-  featureDrawn(coordString, id, 'polygon');
+  var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
+  featureDrawn(JSON.stringify(featureCollection), id);
 }
 
 function polygonUpdated(e) {
   var feature=e.features[0];
   var id = feature["id"];
   var coordString = JSON.stringify(feature.geometry.coordinates);
-  featureModified(coordString, id, 'polygon');
+  var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
+  featureModified(JSON.stringify(featureCollection), id);
 }
 
 function polygonSelectionChanged(e) {
@@ -128,7 +130,9 @@ function polygonSelectionChanged(e) {
     // Determine what sort of shape this is
     var id = feature["id"];
     activateDirectSelectMode(id);
-    featureSelected(id);
+    activeLayerId        = getFeatureProps(id).layerId;
+    var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
+    featureSelected(JSON.stringify(featureCollection), id);
   }
 }
 
@@ -153,14 +157,16 @@ function polylineCreated(e) {
     draw.setFeatureProperty(id, key, value);
   }
   addToFeatureList(id, 'polyline', activeLayerId);
-  featureDrawn(coordString, id, 'polyline');
+  var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
+  featureDrawn(JSON.stringify(featureCollection), id);
 }
 
 function polylineUpdated(e) {
   var feature=e.features[0];
   var id = feature["id"];
   var coordString = JSON.stringify(feature.geometry.coordinates);
-  featureModified(coordString, id, 'polyline');
+  var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
+  featureModified(JSON.stringify(featureCollection), id);
 }
 
 function polylineSelectionChanged(e) {
@@ -169,7 +175,9 @@ function polylineSelectionChanged(e) {
     // Determine what sort of shape this is
     var id = feature["id"];
     activateDirectSelectMode(id);
-    featureSelected(id);
+    activeLayerId        = getFeatureProps(id).layerId;
+    var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
+    featureSelected(JSON.stringify(featureCollection), id);
   }
 }
 
@@ -194,14 +202,16 @@ function rectangleCreated(e) {
     draw.setFeatureProperty(id, key, value);
   }
   addToFeatureList(id, 'rectangle', activeLayerId);
-  featureDrawn(coordString, id, 'rectangle');
+  var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
+  featureDrawn(JSON.stringify(featureCollection), id);
 }
 
 function rectangleUpdated(e) {
   var feature=e.features[0];
   var id = feature["id"];
   var coordString = JSON.stringify(feature.geometry.coordinates);
-  featureModified(coordString, id, 'rectangle');
+  var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
+  featureModified(JSON.stringify(featureCollection), id);
 }
 
 function rectangleSelectionChanged(e) {
@@ -210,7 +220,9 @@ function rectangleSelectionChanged(e) {
     // Determine what sort of shape this is
     var id = feature["id"];
     activateScaleRotateMode(id);
-    featureSelected(id);
+    activeLayerId        = getFeatureProps(id).layerId;
+    var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
+    featureSelected(JSON.stringify(featureCollection), id);
   }
 }
 
@@ -380,6 +392,44 @@ function getFeatureProps(featureId) {
   var index = featureList.findIndex(v => v.featureId === featureId);
   if (index>=0) {props = featureList[index]};
   return props
+}
+
+function getFeatureCollectionInActiveLayer(activeLayerId) {
+  // Feature collection with all features (of every layer)
+//  console.log("GETTING COLLECTION")
+//  console.log("layer=" + activeLayerId);
+  var featureCollection = draw.getAll();
+  for (let i = 0; i < featureCollection.features.length; i++) {
+//    console.log(i)
+//    console.log(featureCollection.features[i].id)
+//    console.log(featureCollection.features[i].geometry.type)
+  }
+  // Make list with features in active layer
+  var featureIdsInLayer = [];
+  for (let i = 0; i < featureList.length; i++) {
+    if (featureList[i].layerId == activeLayerId) {
+      featureIdsInLayer.push(featureList[i].featureId);
+    }
+  }
+//  console.log("features in layer")
+//  console.log(featureIdsInLayer)
+//  console.log("DROPPING")
+  var nfeat = featureCollection.features.length;
+//  var j
+  for (let i = 0; i < nfeat; i++) {
+//    j = nfeat - i - 1
+//      console.log("i= " + i)
+//      console.log("j= " + j)
+//    console.log("features in collection")
+//    console.log(featureCollection.features[j].id)
+    if (featureIdsInLayer.includes(featureCollection.features[nfeat - i - 1].id) == false) {
+//      console.log("dropping " + featureCollection.features[j].id)
+      featureCollection.features.splice(nfeat - i - 1, 1);
+    } else {
+//      console.log("keeping " + featureCollection.features[j].id)
+    }
+  }
+  return featureCollection
 }
 
 

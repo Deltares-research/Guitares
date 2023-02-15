@@ -5,14 +5,16 @@ from geopandas import GeoDataFrame
 from .layer import Layer
 
 class DeckGeoJSONLayer(Layer):
-    def __init__(self, mapbox, id, map_id, data=None, file_name=None):
+    def __init__(self, mapbox, id, map_id, data=None, file_name=None, use_file=True):
         super().__init__(mapbox, id, map_id)
         self.active = False
         self.type   = "deckgeojson"
 
         if isinstance(data, GeoDataFrame):
             # Data is GeoDataFrame
-            if file_name:
+            if use_file:
+                if not file_name:
+                    file_name = id + ".geojson"
                 with open(os.path.join(self.mapbox.server_path, "overlays", file_name), "w") as f:
                     f.write(data.to_json())
                 data = "./overlays/" + file_name

@@ -1,10 +1,10 @@
 """
-Example calculator
+A Handy Webpage Comparison App
 """
 
 # Import the application object
-from calc import calc
+from wpc import wpc
 
 if __name__ == '__main__':
     # Build the GUI
-    calc.gui.build()
+    wpc.gui.build()

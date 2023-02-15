@@ -1,6 +1,3 @@
-import importlib
-
-
 class Menu:
 
     def __init__(self, menu_list, parent):

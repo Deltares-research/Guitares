@@ -8,10 +8,6 @@ export function addLayer(id, data, fillColor, fillOpacity, lineWidth, selectionO
   let lineId = "line_" + id
   var selectedFeatures = []
 
-  console.log(fillColor)
-  console.log(selectionOption)
-  console.log(data)
-
   map.addSource(id, {
     type: 'geojson',
     data: data

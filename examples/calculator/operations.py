@@ -1,11 +1,20 @@
-from calculator import calculator
+"""
+This is the callback module for the calculator app. The name of this module is defined in the GUI configuration file calculator.yml.
+Any the the user interacts with the GUI, it calls methods defined in this module.
 
+The method typically get two input arguments:
+ args[0] is the new value of a widget edited/selected by the user.
+ args[1] is the object of the widget that was edited/clicked/selected by the user.   
+"""
 
-def calculate():
+from calc import calc
 
-    a = calculator.gui.getvar("calculator", "a")
-    b = calculator.gui.getvar("calculator", "b")
-    operator = calculator.gui.getvar("calculator", "operator")
+def calculate(*args):
+
+    # Get inputs from gui variable dict
+    a = calc.gui.getvar("calculator", "a")
+    b = calc.gui.getvar("calculator", "b")
+    operator = calc.gui.getvar("calculator", "operator")
 
     if operator == "plus":
         answer = a + b
@@ -18,7 +27,4 @@ def calculate():
             b = 1.0e-9
         answer = a / b
 
-    calculator.gui.setvar("calculator", "answer", answer)
-
-    # Update all GUI elements
-    calculator.gui.update()
+    calc.gui.setvar("calculator", "answer", answer)

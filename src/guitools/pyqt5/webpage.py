@@ -1,27 +1,32 @@
-import os
-import functools
 from PyQt5 import QtWebEngineWidgets
 from PyQt5 import QtCore, QtWidgets
 
+from guitools.gui import get_position_from_string
 
 class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
+    def __init__(self, view, print_messages):
+        super().__init__(view)
+        self.print_messages = print_messages
     def javaScriptConsoleMessage(self, level, message, lineNumber, sourceID):
-        print("javaScriptConsoleMessage: ", level, message, lineNumber, sourceID)
+        if self.print_messages:
+            print("javaScriptConsoleMessage: ", level, message, lineNumber, sourceID)
 
 
 class WebPage(QtWidgets.QWidget):
-
-    def __init__(self, element, parent):
+    def __init__(self, element, parent, gui):
         super().__init__(parent)
 
-        view = self.view = QtWebEngineWidgets.QWebEngineView(parent)
-        view.setGeometry(10, 10, 100, 100)
+        self.gui = gui
 
-        page = WebEnginePage(view)
+        view = self.view = QtWebEngineWidgets.QWebEngineView(parent)
+
+        x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, self.gui.resize_factor)
+        view.setGeometry(x0, y0, wdt, hgt)
+
+        page = WebEnginePage(view, self.gui.js_messages)
         view.setPage(page)
 
         view.load(QtCore.QUrl(element["url"]))
 
-        element["widget"] = view
-
-#        self.callback_module = element["module"]
+    def set(self):
+        pass

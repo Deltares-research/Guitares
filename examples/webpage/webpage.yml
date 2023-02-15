@@ -2,7 +2,6 @@ window:
   title: A Handy News Comparison App!
   width: 1030
   height: 520
-  package: webpage_example
 element:
   - style: webpage
     url: https://www.msnbc.com/

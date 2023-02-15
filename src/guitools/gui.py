@@ -5,13 +5,14 @@ import time
 import sched
 import sys
 import copy
+import shutil
 
 import http.server
 import socketserver
 from urllib.request import urlopen
 from urllib.error import *
 import threading
-from PyQt5.QtWidgets import QApplication, QDialog
+from PyQt5.QtWidgets import QApplication, QDialog, QWidget, QVBoxLayout
 from PyQt5 import QtCore
 
 class GUI:
@@ -21,8 +22,11 @@ class GUI:
                  stylesheet=None,
                  config_path=None,
                  config_file=None,
+                 icon=None,
                  server_path=None,
-                 server_port=3000):
+                 server_port=3000,
+                 js_messages=True,
+                 copy_mapbox_server_folder=False):
 
         self.module      = module
         self.framework   = framework
@@ -36,15 +40,20 @@ class GUI:
         self.server_thread = None
         self.server_path = server_path
         self.server_port = server_port
+        self.js_messages = js_messages
+
+        # For some reason, the splash crashes on QPixmap(splash_file) ...
+        # self.show_splash()
 
         if not self.config_path:
             self.config_path = os.getcwd()
 
         self.popup_data = None
+        self.resize_factor = 1.0
 
         if server_path:
             # Need to run http server (e.g. for MapBox)
-            # Check if something's already running on port 3000.
+            # Check if something's already running on port 3000
             try:
                 html = urlopen("http://localhost:" + str(server_port) + "/")
                 print("Found server running at port 3000 ...")
@@ -52,13 +61,22 @@ class GUI:
                 print("Starting http server ...")
                 # Run http server in separate thread
                 # Use daemon=True to make sure the server stops after the application is finished
+                if copy_mapbox_server_folder:
+                    mpboxpth = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pyqt5", "mapbox", "server")
+                    # Delete current server folder
+                    shutil.rmtree(server_path)
+                    # Now copy over folder from mapbox
+                    shutil.copytree(mpboxpth, server_path)
+
                 thr = threading.Thread(target=run_server, args=(server_path, server_port), daemon=True)
                 thr.start()
+
 
     def show_splash(self):
         if self.framework == "pyqt5" and self.splash_file:
             from .pyqt5.splash import Splash
-            self.splash = Splash(os.path.join(self.config_path, self.splash_file), seconds=2.0).splash
+#            self.splash = Splash(os.path.join(self.config_path, self.splash_file), seconds=2.0).splash
+            self.splash = Splash(self.splash_file, seconds=2.0).splash
 
     def close_splash(self):
         if self.splash:
@@ -78,44 +96,44 @@ class GUI:
 
         if self.config_file:
             self.config = read_gui_config(self.config_path, self.config_file)
-        # if self.config_file:
-        #     self.config["window"] = window
-        #     self.config["menu"] = menu
-        #     self.config["toolbar"] = toolbar
-        #     self.config["element"] = element
-        #     # Read element file
-        #     self.read_gui_config(self.config_path, self.config_file)
 
+        set_missing_config_values(self.config, self)
 
         # Add main window
         if self.framework=="pyqt5":        
             from .pyqt5.main_window import MainWindow
 
-        self.main_window = MainWindow(self.config)
-
-        set_missing_config_values(self.config, self.variables, self.getvar, self.setvar)
-
-#        self.main_window.resize_factor = 1.0
+        self.window = MainWindow(self)
 
         # Add menu
         if self.config["menu"]:
             from .pyqt5.menu import Menu
-            Menu(self.config["menu"], self.main_window)
+            Menu(self.config["menu"], self.window)
 
         # Add toolbar
         # TODO
 
+        # Status bar
+#        self.window.statusBar().showMessage('Message in statusbar.')
+
+        # Central widget
+        widget = QWidget()
+        layout = QVBoxLayout()
+        widget.setLayout(layout)
+        self.window.setCentralWidget(widget)
+        self.central_widget = widget
+
         # Add elements
-        add_elements(self.config["element"], self.main_window, self.main_window, self.server_path, self.server_port)
+        add_elements(self.config["element"], self.central_widget, self)
 
         # Set elements
         self.update()
-                    
-#            self.main_window.resize_function = lambda: gui.resize()
-        self.main_window.statusBar().showMessage('Message in statusbar.')
 
-        self.main_window.show()
-        self.module.on_build()
+        self.window.show()
+
+        if hasattr(self.module, "on_build"):
+            self.module.on_build()
+
         app.exec_()
 
     def update(self):
@@ -124,7 +142,8 @@ class GUI:
 
     def update_tab(self):
         # Update all elements in tab
-        set_elements(self.main_window.active_tab["element"])
+        set_elements(self.config["element"])
+        print("Another call to update_tab ...")
 
     def setvar(self, group, name, value):
         if group not in self.variables:
@@ -184,7 +203,7 @@ def read_gui_elements(path, file_name):
                     tab["element"] = []
     return element
 
-def set_missing_config_values(config, variables, getvar, setvar):
+def set_missing_config_values(config, gui):
     if "window" not in config:
         config["window"] = {}
     # Window
@@ -198,6 +217,8 @@ def set_missing_config_values(config, variables, getvar, setvar):
         config["window"]["module"] = None
     if "variable_group" not in config["window"]:
         config["window"]["variable_group"] = "_main"
+    if "icon" not in config["window"]:
+        config["window"]["icon"] = None
     # Menu
     # Toolbar
     # Elements
@@ -208,13 +229,19 @@ def set_missing_config_values(config, variables, getvar, setvar):
     set_missing_element_values(config["element"],
                                config["window"]["variable_group"],
                                callback_module,
-                               variables,
-                               getvar,
-                               setvar)
+                               gui)
     set_missing_menu_values(config["menu"], callback_module)
 
-def set_missing_element_values(element, parent_group, parent_module, variables, getvar, setvar):
+#def set_missing_element_values(element, parent_group, parent_module, variables, getvar, setvar):
+def set_missing_element_values(element, parent_group, parent_module, gui):
+
     for el in element:
+
+#        el["gui"] = gui
+        el["visible"] = True
+
+        if "id" not in el:
+            el["id"] = ""
         if "variable_group" not in el:
             el["variable_group"] = parent_group
         if "module" not in el:
@@ -233,36 +260,44 @@ def set_missing_element_values(element, parent_group, parent_module, variables, 
                     if type(tab["module"]) == str:
                         tab["module"] = importlib.import_module(tab["module"])
                 if "element" in tab:
+                    # set_missing_element_values(tab["element"],
+                    #                        tab["variable_group"],
+                    #                        tab["module"],
+                    #                        variables,
+                    #                        getvar,
+                    #                        setvar)
                     set_missing_element_values(tab["element"],
-                                           tab["variable_group"],
-                                           tab["module"],
-                                           variables,
-                                           getvar,
-                                           setvar)
+                                               tab["variable_group"],
+                                               tab["module"],
+                                               gui)
         elif el["style"] == "panel":
             if "title" not in el:
                 el["title"] = ""
             if "element" in el:
+                # set_missing_element_values(el["element"],
+                #                            el["variable_group"],
+                #                            el["module"],
+                #                            variables,
+                #                            getvar,
+                #                            setvar)
                 set_missing_element_values(el["element"],
                                            el["variable_group"],
                                            el["module"],
-                                           variables,
-                                           getvar,
-                                           setvar)
+                                           gui)
         else:
 
             # Setvar and getvar methods
-            el["setvar"] = setvar
-            el["getvar"] = getvar
+#            el["setvar"] = setvar
+#            el["getvar"] = getvar
 
             # Variable type
             if "variable" in el:
                 group = el["variable_group"]
                 name = el["variable"]
                 el["type"] = str
-                if group in variables:
-                    if name in variables[group]:
-                        el["type"] = type(variables[group][name]["value"])
+                if group in gui.variables:
+                    if name in gui.variables[group]:
+                        el["type"] = type(gui.variables[group][name]["value"])
 
             # Special for popupmenus and listboxes
             if el["style"] == "popupmenu" or el["style"] == "listbox":
@@ -309,149 +344,151 @@ def set_missing_element_values(element, parent_group, parent_module, variables, 
             default["text"] = ""
             default["dependency"] = []
             default["enable"] = True
+            default["text_position"] = "left"
             for key, val in default.items():
                 if key not in el:
                     el[key] = val
 
 def set_missing_menu_values(menu_list, parent_module):
-    if isinstance(menu_list, dict):
-        # End node
-        if "module" not in menu_list:
-            menu_list["module"] = parent_module
+#    if isinstance(menu_list, list):
+    for menu in menu_list:
+        # Set missing values
+        # First module
+        if "module" not in menu:
+            menu["module"] = parent_module
         else:
-            if type(menu_list["module"]) == str:
+            if type(menu["module"]) == str:
                 try:
-                    menu_list["module"] = importlib.import_module(menu_list["module"])
+                    menu["module"] = importlib.import_module(menu["module"])
                 except:
-                    print("Error in menu! Module " + menu_list["module"] + " not found!")
+                    print("Error in menu! Module " + menu["module"] + " not found!")
+        # And now others
         default = {}
         default["checkable"] = False
         default["separator"] = False
         default["id"] = ""
         default["option"] = ""
         for key, val in default.items():
-            if key not in menu_list:
-                menu_list[key] = val
-    else:
-        for menu in menu_list:
-            if "module" not in menu:
-                menu["module"] = parent_module
-            else:
-                if type(menu["module"]) == str:
-                    try:
-                        menu["module"] = importlib.import_module(menu["module"])
-                    except:
-                        print("Error in menu! Module " + menu["module"] + " not found!")
-            if "menu" in menu:
-                # Loop through tabs
-                for sub_menu in menu["menu"]:
-                    set_missing_menu_values(sub_menu,
-                                            menu["module"])
+            if key not in menu:
+                menu[key] = val
 
-def add_elements(element_list, parent, main_window, server_path, server_port):
+        if "menu" in menu:
+            set_missing_menu_values(menu["menu"], menu["module"])
+
+
+#def add_elements(element_list, parent, main_window, server_path, server_port):
+def add_elements(element_list, parent, gui):
 
     for element in element_list:
 
-        if "window" not in element:
-            element["window"] = main_window
+        # if "window" not in element:
+        #     element["window"] = main_window
 
         if element["style"] == "tabpanel":
 
             from .pyqt5.tabpanel import TabPanel
-            TabPanel(element, parent)
-            element["widget"].setVisible(True)
+            element["widget"] = TabPanel(element, parent, gui)
+
+
+#            TabPanel(element, parent, gui)
+#            w = element["widget"].widgets[0]
 
             for tab in element["tab"]:
                 # And now add the elements in this tab
                 if tab["element"]:
+                    # add_elements(tab["element"],
+                    #              tab["widget"],
+                    #              main_window,
+                    #              server_path,
+                    #              server_port)
                     add_elements(tab["element"],
                                  tab["widget"],
-                                 main_window,
-                                 server_path,
-                                 server_port)
+                                 gui)
 
         elif element["style"] == "panel":
 
             # Add frame
             from .pyqt5.frame import Frame
-            Frame(element, parent)
-            element["widget"].setVisible(True)
+            element["widget"] = Frame(element, parent, gui)
+            w = element["widget"].widgets[0]
 
             # And now add the elements in this frame
             if "element" in element:
+                # add_elements(element["element"],
+                #              element["widget"],
+                #              main_window,
+                #              server_path,
+                #              server_port)
                 add_elements(element["element"],
-                             element["widget"],
-                             main_window,
-                             server_path,
-                             server_port)
+                             w,
+                             gui)
 
         else:
 
             # Add push-buttons etc.
             if element["style"] == "pushbutton":
                 from .pyqt5.pushbutton import PushButton
-                element["widget_group"] = PushButton(element, parent)
+                element["widget"] = PushButton(element, parent, gui)
 
             elif element["style"] == "edit":
                 from .pyqt5.edit import Edit
-                element["widget_group"] = Edit(element, parent)
+                element["widget"] = Edit(element, parent, gui)
 
             elif element["style"] == "datetimeedit":
                 from .pyqt5.date_edit import DateEdit
-                element["widget_group"] = DateEdit(element, parent)
+                element["widget"] = DateEdit(element, parent, gui)
 
             elif element["style"] == "popupmenu":
                 from .pyqt5.popupmenu import PopupMenu
-                element["widget_group"] = PopupMenu(element, parent)
+                element["widget"] = PopupMenu(element, parent, gui)
 
             elif element["style"] == "listbox":
                 from .pyqt5.listbox import ListBox
-                element["widget_group"] = ListBox(element, parent)
+                element["widget"] = ListBox(element, parent, gui)
 
-            elif element["style"] == "olmap":
-                from .pyqt5.olmap import OlMap
-                element["widget_group"] = OlMap(element, parent)
-                self.map_widget[element["id"]] = element["widget_group"]
+            # elif element["style"] == "olmap":
+            #     from .pyqt5.olmap import OlMap
+            #     element["widget_group"] = OlMap(element, parent)
+            #     self.map_widget[element["id"]] = element["widget_group"]
+            elif element["style"] == "slider":
+                from .pyqt5.slider import Slider
+                element["widget"] = Slider(element, parent, gui)
 
             elif element["style"] == "mapbox":
                 from .pyqt5.mapbox.mapbox import MapBox
-                element["widget_group"] = MapBox(element,
-                                                 parent,
-                                                 server_path,
-                                                 server_port)
+                element["widget"] = MapBox(element, parent, gui)
+#                MapBox(element, parent, gui)
 
             elif element["style"] == "webpage":
                 from .pyqt5.webpage import WebPage
-                WebPage(element, parent)
-
-            elif element["style"] == "slider":
-                from .pyqt5.slider import Slider
-                element["widget_group"] = Slider(element, parent)
+                element["widget"] = WebPage(element, parent, gui)
 
             else:
                 print("Element style " + element["style"] + " not recognized!")
 
             # And set the values
-            if "widget_group" in element:
-                if hasattr(element["widget_group"], "widgets"):
-                    for wdgt in element["widget_group"].widgets:
+            if "widget" in element:
+                if hasattr(element["widget"], "widgets"):
+                    for wdgt in element["widget"].widgets:
                         wdgt.setVisible(True)
 
 def set_elements(element_list):
     for element in element_list:
-        if element["style"] == "tabpanel":
-            for tab in element["tab"]:
-                # And now add the elements in this tab
-                if tab["element"]:
-                    set_elements(tab["element"])
-        elif element["style"] == "panel":
-            # And now set the elements in this frame
-            if "element" in element:
-                set_elements(element["element"])
-        else:
-            # And set the values
-            if "widget_group" in element:
-                element["widget_group"].set()
+        if element["visible"]:
+            if element["style"] == "tabpanel":
+                index = element["widget"].widgets[0].currentIndex()
+                for j, tab in enumerate(element["tab"]):
+                    # And now add the elements in this tab
+                    if tab["element"] and j==index:
+                        set_elements(tab["element"])
+            elif element["style"] == "panel":
+                # And now set the elements in this frame
+                if "element" in element:
+                    set_elements(element["element"])
+            else:
+                # And set the values
+                if "widget" in element:
+                    element["widget"].set()
 
 def find_element_by_id(element, element_id):
     element_found = None
@@ -475,12 +512,34 @@ def find_element_by_id(element, element_id):
                     return el
     return None
 
+def find_menu_item_by_id(menu, menu_id):
+    for menu_item in menu:
+        if "id" in menu_item:
+            if menu_item["id"] == menu_id:
+                return menu_item
+        if "menu" in menu_item:
+            item = find_menu_item_by_id(menu_item["menu"], menu_id)
+            if item:
+                return item
+    return None
+
+def set_menu_items(menu):
+    for menu_item in menu:
+        if "id" in menu_item:
+            if menu_item["id"] == menu_id:
+                return menu_item
+        if "menu" in menu_item:
+            item = find_menu_item_by_id(menu_item["menu"], menu_id)
+            if item:
+                return item
+    return None
 
 def resize_elements(element_list, parent, resize_factor):
     for element in element_list:
         if element["style"] == "tabpanel":
-            tab_panel = element["widget"]
             x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, resize_factor)
+#            hgt = hgt + int(20 * resize_factor)
+            tab_panel = element["widget"].widgets[0]
             tab_panel.setGeometry(x0, y0, wdt, hgt)
             for tab in element["tab"]:
                 widget = tab["widget"]
@@ -488,23 +547,16 @@ def resize_elements(element_list, parent, resize_factor):
                 # And resize elements in this tab
                 if tab["element"]:
                     resize_elements(tab["element"], widget, resize_factor)
+#            tab_panel.setGeometry(x0, y0, wdt, hgt)
         elif element["style"] == "panel":
             x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, resize_factor)
-            element["widget"].setGeometry(x0, y0, wdt, hgt)
-        elif element["style"] == "olmap":
-            x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, resize_factor)
-            element["widget"].setGeometry(x0, y0, wdt, hgt)
+            element["widget"].widgets[0].setGeometry(x0, y0, wdt, hgt)
         elif element["style"] == "mapbox":
             x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, resize_factor)
-            element["widget"].setGeometry(x0, y0, wdt, hgt)
+            element["widget"].view.setGeometry(x0, y0, wdt, hgt)
         elif element["style"] == "webpage":
             x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, resize_factor)
-            element["widget"].setGeometry(x0, y0, wdt, hgt)
-        # else:
-        #     # Should do this but it also means changing the position of label widgets ... Too much work for now.
-        #     x0, y0, wdt, hgt = self.get_position_from_string(element["position"], parent)
-        #     if "widget" in element:
-        #         element["widget"].setGeometry(x0, y0, wdt, hgt)
+            element["widget"].view.setGeometry(x0, y0, wdt, hgt)
 
 def get_position_from_string(position, parent, resize_factor):
 
