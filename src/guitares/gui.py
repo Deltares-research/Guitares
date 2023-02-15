@@ -64,7 +64,8 @@ class GUI:
                 if copy_mapbox_server_folder:
                     mpboxpth = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pyqt5", "mapbox", "server")
                     # Delete current server folder
-                    shutil.rmtree(server_path)
+                    if os.path.exists(server_path):
+                        shutil.rmtree(server_path)
                     # Now copy over folder from mapbox
                     shutil.copytree(mpboxpth, server_path)
 
