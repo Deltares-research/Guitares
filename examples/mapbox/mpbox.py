@@ -11,8 +11,6 @@ import geopandas as gpd
 from guitares.gui import GUI
 from guitares.gui import find_element_by_id
 
-
-
 class MapBoxExample:
     def __init__(self):
 
@@ -60,13 +58,12 @@ class MapBoxExample:
         from draw import add_draw_layers
         add_draw_layers()
 
-        # Add the draw layers
+        # Add the marker layer
         from markers import add_marker_layer
         add_marker_layer()
 
         # Set map view to 55 Columbia Ave in Cranston, RI
         self.map.fly_to(-71.39322, 41.77692, 13)
-
 
 
 mpbox = MapBoxExample()

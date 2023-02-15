@@ -2,7 +2,6 @@ window:
   title: MapBox Example
   width: 800
   height: 600
-  module: operations
   variable_group: mpbox
 element:
 - style: tabpanel
