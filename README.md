@@ -1,4 +1,4 @@
-# GUITools
+# GuiTares
 A set of Python scripts to build configurable GUIs with PyQt5
 
 conda install -c anaconda pyqt
