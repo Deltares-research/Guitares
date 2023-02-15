@@ -1,7 +1,7 @@
 from PyQt5 import QtWebEngineWidgets
 from PyQt5 import QtCore, QtWidgets
 
-from guitools.gui import get_position_from_string
+from guitares.gui import get_position
 
 class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
     def __init__(self, view, print_messages):
@@ -20,7 +20,7 @@ class WebPage(QtWidgets.QWidget):
 
         view = self.view = QtWebEngineWidgets.QWebEngineView(parent)
 
-        x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, self.gui.resize_factor)
+        x0, y0, wdt, hgt = get_position(element["position"], parent, self.gui.resize_factor)
         view.setGeometry(x0, y0, wdt, hgt)
 
         page = WebEnginePage(view, self.gui.js_messages)

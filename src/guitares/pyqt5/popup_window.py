@@ -5,7 +5,7 @@ from PyQt5 import QtCore
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox
 from PyQt5.QtWidgets import QApplication
 
-from guitools.gui import read_gui_config, set_missing_config_values, add_elements, resize_elements
+from guitares.gui import read_gui_config, set_missing_config_values, add_elements, resize_elements
 
 class PopupWindow(QDialog):
     def __init__(self, config, gui, modal=True):

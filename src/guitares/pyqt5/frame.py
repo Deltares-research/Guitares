@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QFrame, QLabel
 from PyQt5 import QtCore
 
-from guitools.gui import get_position_from_string
+from guitares.gui import get_position
 from .widget import Widget
 
 class Frame(Widget):
@@ -12,7 +12,7 @@ class Frame(Widget):
         frame = QFrame(parent)
         self.widgets.append(frame)
 
-        x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, self.gui.resize_factor)
+        x0, y0, wdt, hgt = get_position(element["position"], parent, self.gui.resize_factor)
         frame.setGeometry(x0, y0, wdt, hgt)
 
         frame.setFrameShape(QFrame.StyledPanel)

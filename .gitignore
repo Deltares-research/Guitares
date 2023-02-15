@@ -1,8 +1,8 @@
 /examples/calculator/.idea
 /examples/openlayers/__pycache__
-/src/guitools/pyqt5/__pycache__
+/src/guitares/pyqt5/__pycache__
 __pycache__
 .idea
-deltares_guitools.egg-info
+deltares_guitares.egg-info
 /examples/visualdelta/server/overlay.png
 /examples/mapbox/server

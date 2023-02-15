@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QLabel
 from PyQt5 import QtCore
 
 from .widget import Widget
-from guitools.gui import get_position_from_string
+from guitares.gui import get_position
 
 class DateEdit(Widget):
 
@@ -15,7 +15,7 @@ class DateEdit(Widget):
 
         b.setCalendarPopup(True)
         b.setDisplayFormat("yyyy-MM-dd hh:mm:ss")
-        x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, self.gui.resize_factor)
+        x0, y0, wdt, hgt = get_position(element["position"], parent, self.gui.resize_factor)
         b.setGeometry(x0, y0, wdt, hgt)
         if element["text"]:
             label = QLabel(self.element["text"], self.parent)

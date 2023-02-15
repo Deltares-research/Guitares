@@ -4,7 +4,7 @@ from PyQt5 import QtCore
 
 from .widget import Widget
 
-from guitools.gui import get_position_from_string
+from guitares.gui import get_position
 
 class PopupMenu(Widget):
 
@@ -41,7 +41,7 @@ class PopupMenu(Widget):
             #     name  = self.element["option_value"]["variable"]
             #     v = variables[self.element["option_value"]]
 
-        x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, self.gui.resize_factor)
+        x0, y0, wdt, hgt = get_position(element["position"], parent, self.gui.resize_factor)
 
         b.setGeometry(x0, y0, wdt, hgt)
         if element["text"]:

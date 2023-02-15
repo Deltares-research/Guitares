@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5 import QtGui
 
-from guitools.gui import resize_elements
+from guitares.gui import resize_elements
 
 class MainWindow(QMainWindow):
     def __init__(self, gui):

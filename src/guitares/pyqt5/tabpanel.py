@@ -1,13 +1,13 @@
 from PyQt5.QtWidgets import QWidget, QTabWidget
 
-from guitools.gui import set_elements, get_position_from_string
+from guitares.gui import set_elements, get_position
 from .widget import Widget
 
 class TabPanel(Widget):
     def __init__(self, element, parent, gui):
         super().__init__(element, parent, gui)
 
-        x0, y0, wdt, hgt = get_position_from_string(self.element["position"], parent, self.gui.resize_factor)
+        x0, y0, wdt, hgt = get_position(self.element["position"], parent, self.gui.resize_factor)
 
         # Add tab panel
         tab_panel = QTabWidget(parent)

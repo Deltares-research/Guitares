@@ -4,7 +4,7 @@ from PyQt5.QtGui import QPainter
 from PyQt5 import QtWidgets
 
 from .widget import Widget
-from guitools.gui import get_position_from_string
+from guitares.gui import get_position
 
 
 # from gui import getvar, setvar
@@ -27,7 +27,7 @@ class Slider(Widget):
         s.setTickPosition(QSlider.TicksBelow)
         self.widgets.append(s)
 
-        x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, self.gui.resize_factor)
+        x0, y0, wdt, hgt = get_position(element["position"], parent, self.gui.resize_factor)
 
         s.setGeometry(x0, y0, wdt, hgt)
         if element["text"]:
@@ -150,7 +150,7 @@ class Slider(Widget):
 #         self.sl.setTickInterval(interval)
 #         self.sl.setSingleStep(1)
 #
-#         x0, y0, wdt, hgt = element["window"].get_position_from_string(self.element["position"], self.parent)
+#         x0, y0, wdt, hgt = element["window"].get_position(self.element["position"], self.parent)
 #         self.sl.setGeometry(x0, y0, wdt, hgt)
 #
 #         self.widgets.append(self.sl)

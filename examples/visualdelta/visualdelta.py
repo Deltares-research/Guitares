@@ -6,7 +6,7 @@ Created on Tue Jul  5 13:40:07 2022
 """
 import os
 
-from guitools.gui import GUI
+from guitares.gui import GUI
 
 
 class VisualDelta:

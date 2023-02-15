@@ -4,7 +4,7 @@ from PyQt5.QtGui import QIcon
 #from PyQt5 import QtCore
 
 from .widget import Widget
-from guitools.gui import get_position_from_string
+from guitares.gui import get_position
 
 class PushButton(Widget):
 
@@ -14,7 +14,7 @@ class PushButton(Widget):
         b = QPushButton(element["text"], parent)
         self.widgets.append(b)
 
-        x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, self.gui.resize_factor)
+        x0, y0, wdt, hgt = get_position(element["position"], parent, self.gui.resize_factor)
 
         b.setGeometry(x0, y0, wdt, hgt)
 

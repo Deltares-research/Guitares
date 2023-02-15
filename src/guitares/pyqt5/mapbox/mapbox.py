@@ -7,7 +7,7 @@ import urllib
 from geopandas import GeoDataFrame
 
 from .layer import Layer, list_layers, find_layer_by_id
-from guitools.gui import get_position_from_string
+from guitares.gui import get_position
 
 class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
     def __init__(self, view, print_messages):
@@ -57,7 +57,7 @@ class MapBox(QtWidgets.QWidget):
         channel = self.channel = QtWebChannel.QWebChannel()
         view.page().profile().clearHttpCache()
 
-        x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, self.gui.resize_factor)
+        x0, y0, wdt, hgt = get_position(element["position"], parent, self.gui.resize_factor)
         view.setGeometry(x0, y0, wdt, hgt)
 
         page = WebEnginePage(view, self.gui.js_messages)

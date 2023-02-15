@@ -537,7 +537,7 @@ def set_menu_items(menu):
 def resize_elements(element_list, parent, resize_factor):
     for element in element_list:
         if element["style"] == "tabpanel":
-            x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, resize_factor)
+            x0, y0, wdt, hgt = get_position(element["position"], parent, resize_factor)
 #            hgt = hgt + int(20 * resize_factor)
             tab_panel = element["widget"].widgets[0]
             tab_panel.setGeometry(x0, y0, wdt, hgt)
@@ -549,16 +549,16 @@ def resize_elements(element_list, parent, resize_factor):
                     resize_elements(tab["element"], widget, resize_factor)
 #            tab_panel.setGeometry(x0, y0, wdt, hgt)
         elif element["style"] == "panel":
-            x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, resize_factor)
+            x0, y0, wdt, hgt = get_position(element["position"], parent, resize_factor)
             element["widget"].widgets[0].setGeometry(x0, y0, wdt, hgt)
         elif element["style"] == "mapbox":
-            x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, resize_factor)
+            x0, y0, wdt, hgt = get_position(element["position"], parent, resize_factor)
             element["widget"].view.setGeometry(x0, y0, wdt, hgt)
         elif element["style"] == "webpage":
-            x0, y0, wdt, hgt = get_position_from_string(element["position"], parent, resize_factor)
+            x0, y0, wdt, hgt = get_position(element["position"], parent, resize_factor)
             element["widget"].view.setGeometry(x0, y0, wdt, hgt)
 
-def get_position_from_string(position, parent, resize_factor):
+def get_position(position, parent, resize_factor):
 
     x0 = position["x"] * resize_factor
     y0 = position["y"] * resize_factor

@@ -8,8 +8,8 @@ Created on Tue Jul  5 13:40:07 2022
 import os
 import geopandas as gpd
 
-from guitools.gui import GUI
-from guitools.gui import find_element_by_id
+from guitares.gui import GUI
+from guitares.gui import find_element_by_id
 
 
 
