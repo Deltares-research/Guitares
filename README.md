@@ -1,2 +1,2 @@
 # Guitares
-A set of Python scripts to build configurable GUIs with PyQt5
+A package for building configurable GUIs with PyQt5
