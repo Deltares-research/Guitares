@@ -16,7 +16,6 @@ let color;
 
 console.log('Adding MapBox map ...')
 
-// TODO: Read the mapbox access token from the file
 mapboxgl.accessToken = 'pk.eyJ1IjoiZnJlZGVyaXF1ZTEyMyIsImEiOiJjbGFxcHBmYnAxbWdzM3JvYmFkdTBscjJmIn0.PZlYCN_VXpiX90ik-8C3rw';
 
 const map = new mapboxgl.Map({

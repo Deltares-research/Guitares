@@ -10,11 +10,10 @@ class MainWindow(QMainWindow):
 
         self.gui = gui
 
-#        QApplication.instance()
         screen = QApplication.primaryScreen()
-        if screen.size().width()>2500:
-            self.resize_factor = 2.0
-        elif screen.size().width()>1200:
+        if screen.size().width() > 2500:
+            self.resize_factor = 1.4
+        elif screen.size().width() > 1200:
             self.resize_factor = 1.4
         else:
             self.resize_factor = 1.0

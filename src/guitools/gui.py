@@ -50,6 +50,15 @@ class GUI:
                 thr = threading.Thread(target=run_server, args=(server_path, server_port), daemon=True)
                 thr.start()
 
+        # Read mapbox token and store in js file in server path
+        if os.path.exists(mapbox_token_file):
+            fid = open(mapbox_token_file, "r")
+            mapbox_token = fid.readlines()
+            fid.close()
+            fid = open(os.path.join(server_path, "mapbox_token.js"), "w")
+            fid.write("mapbox_token = '" + mapbox_token[0].strip() + "';")
+            fid.close()
+
     def show_splash(self):
         if self.framework == "pyqt5" and self.splash_file:
             from .pyqt5.splash import Splash
@@ -133,6 +142,9 @@ class GUI:
                 if "element" in element:
                     self.add_elements(element["element"],
                                       element["widget"])
+
+                x0, y0, wdt, hgt = element["window"].get_position_from_string(element["position"], parent)
+                element["widget"].setGeometry(x0, y0, wdt, hgt)
 
             else:
 
