@@ -56,14 +56,16 @@ class FloodMapOverlay:
         non_flooded_ppl = building_footprints_within_hazard_extent.loc[building_footprints_within_hazard_extent["flooded"] == 0].groupby("VIL_NAME")["flooded"].size().reset_index()
         non_flooded_ppl.rename(columns={"flooded": "not flooded"}, inplace=True)
 
+        # Add the village index
+
         Ra2ceGUI.result = pd.merge(flooded_ppl, non_flooded_ppl, how='outer', on="VIL_NAME")
         Ra2ceGUI.result.to_csv(Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'output', 'people_flooded.csv'))
 
     def color_roads(self, graph_path):
         g = GraphPickleReader().read(graph_path)
         edges = osmnx.graph_to_gdfs(g, edges=True, nodes=False, node_geometry=False)
-        edges = edges[["EV1_ma", "geometry"]]
-        edges["EV1_ma"] = edges["EV1_ma"].fillna(0)
+        edges = edges[[Ra2ceGUI.ra2ce_config["hazard"]["flood_col_name"], "geometry"]]
+        edges[Ra2ceGUI.ra2ce_config["hazard"]["flood_col_name"]] = edges[Ra2ceGUI.ra2ce_config["hazard"]["flood_col_name"]].fillna(0)
 
         # Filter only the origins on the extent of the flood map
         xmin, ymin, xmax, ymax = self.floodmap_extent
@@ -76,7 +78,7 @@ class FloodMapOverlay:
         Ra2ceGUI.gui.elements['main_map']['widget_group'].add_line_geojson(edges,
                                                                            layer_name=layer_name,
                                                                            layer_group_name=layer_group,
-                                                                           color_by=True)
+                                                                           color_by=Ra2ceGUI.ra2ce_config["hazard"]["flood_col_name"])
 
     def overlay(self):
         # Ra2ceGUI.gui.elements["spinner"].start()

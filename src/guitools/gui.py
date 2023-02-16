@@ -17,7 +17,8 @@ class GUI:
                  config_path=None,
                  config_file=None,
                  server_path=None,
-                 server_port=3000):
+                 server_port=3000,
+                 mapbox_token_file="mapbox_token.txt"):
 
         self.module      = module
         self.framework   = framework
@@ -84,8 +85,8 @@ class GUI:
         if self.framework=="pyqt5":        
             from .pyqt5.main_window import MainWindow
 
-        self.main_window = MainWindow(self.config)
-#        self.main_window.resize_factor = 1.0
+        self.main_window = MainWindow(self)
+        # self.main_window.resize_factor = 1.0
 
         # Add menu
         if self.config["menu"]:

@@ -337,8 +337,7 @@ class MapBox(QtWidgets.QWidget):
                                       dst.bounds[3])
         band1 = band1.astype(np.float32)
         isnull = np.where(band1 == no_data_value)
-        band1[isnull] = 0
-        band1 = band1.astype(np.uint8)
+        band1[isnull] = np.nan
 
         band1 = np.flipud(band1)
         cminimum = np.nanmin(band1)
@@ -409,7 +408,7 @@ class MapBox(QtWidgets.QWidget):
                          color: str = None,
                          layer_name: str = None,
                          layer_group_name: str = None,
-                         color_by: bool = False):
+                         color_by: str = ""):
 
         self.id_counter += 1
         id_string = str(self.id_counter)
@@ -425,7 +424,7 @@ class MapBox(QtWidgets.QWidget):
         feature_collection_string = self.load_geojson_from(geojson_input)
 
         if color_by:
-            js_string = "import('/main.js').then(module => {module.addLineGeojsonLayerColorByProperty(" + feature_collection_string + ",'" + id_string + "','" + layer_name + "','" + layer_group_name + "')});"
+            js_string = "import('/main.js').then(module => {module.addLineGeojsonLayerColorByProperty(" + feature_collection_string + ",'" + id_string + "','" + layer_name + "','" + layer_group_name + "','" + color_by + "')});"
         else:
             js_string = "import('/main.js').then(module => {module.addLineGeojsonLayer(" + feature_collection_string + ",'" + id_string + "','" + layer_name + "','" + layer_group_name + "','" + color + "')});"
 
@@ -450,15 +449,15 @@ class MapBox(QtWidgets.QWidget):
         layer_group = self.find_layer_group(layer_group_name)
         if layer_group:
             try:
-                existing_layer_group_name = layer_group[layer_name].name
+                existing_layer_name = layer_group[layer_name].name
             except TypeError:
-                existing_layer_group_name = layer_group.name
+                existing_layer_name = layer_group.name
 
-            if layer_group_name == existing_layer_group_name:
-                id = layer_group.id
-                if id:
-                    print("Removing " + layer_name + " - id=" + id)
-                    js_string = "import('/main.js').then(module => {module.removeLayer('" + id + "')});"
+            if layer_name == existing_layer_name:
+                layer_id = layer_group[layer_name].id
+                if layer_id:
+                    print("Removing " + layer_name + " - id=" + layer_id)
+                    js_string = "import('/main.js').then(module => {module.removeLayer('" + layer_id + "')});"
                     self.view.page().runJavaScript(js_string)
 
     # def show_image_layer(self):

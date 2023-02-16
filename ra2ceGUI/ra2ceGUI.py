@@ -125,7 +125,7 @@ class Ra2ceGUI:
                                                                        layer_name=layer_name,
                                                                        layer_group_name=layer_group)
 
-    def remove_highlighted_road(self, layer_name, layer_group):
+    def remove_roads(self, layer_name, layer_group):
         self.gui.elements['main_map']['widget_group'].remove_geojson_layer(layer_name, layer_group)
 
     def update_flood_map(self):

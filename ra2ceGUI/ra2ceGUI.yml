@@ -5,6 +5,7 @@ window:
   package: ra2ceGUI
   module: operations.operations
   variable_group: ra2ceGUI
+  icon: ../icons/deltares.ico
 element:
   - style: mapbox
     id: main_map

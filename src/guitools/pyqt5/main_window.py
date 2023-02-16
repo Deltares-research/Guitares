@@ -1,11 +1,14 @@
 from PyQt5.QtWidgets import QWidget, QMainWindow
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QVBoxLayout
+from PyQt5 import QtGui
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, config):
+    def __init__(self, gui):
         super().__init__()
+
+        self.gui = gui
 
 #        QApplication.instance()
         screen = QApplication.primaryScreen()
@@ -15,8 +18,6 @@ class MainWindow(QMainWindow):
             self.resize_factor = 1.4
         else:
             self.resize_factor = 1.0
-
-        self.config = config
 
         self.set_window()
         self.add_toolbar()
@@ -28,16 +29,16 @@ class MainWindow(QMainWindow):
         self.central_widget = widget
 
     def resizeEvent(self, event):
-        self.resize_elements(self.config["element"], self.central_widget)
+        self.resize_elements(self.gui.config["element"], self.central_widget)
 
     def closeEvent(self,event):
         QApplication.quit()        
 
     def set_window(self):
         # Window size
-        self.setWindowTitle(self.config["window"]["title"])
-        self.window_width = int(self.config["window"]["width"]*self.resize_factor)
-        self.window_height = int(self.config["window"]["height"]*self.resize_factor)
+        self.setWindowTitle(self.gui.config["window"]["title"])
+        self.window_width = int(self.gui.config["window"]["width"]*self.resize_factor)
+        self.window_height = int(self.gui.config["window"]["height"]*self.resize_factor)
         self.setMinimumSize(self.window_width, self.window_height)
 
         screen = QApplication.primaryScreen()
@@ -46,6 +47,9 @@ class MainWindow(QMainWindow):
                          int(0.5*(screen.size().height() - self.window_height)),
                          self.window_width,
                          self.window_height)
+
+        if self.gui.config["window"]["icon"]:
+            self.setWindowIcon(QtGui.QIcon(self.gui.config["window"]["icon"]))
 
     def add_toolbar(self):
         pass
