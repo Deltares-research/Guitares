@@ -6,7 +6,8 @@ import sched
 import sys
 import copy
 import shutil
-
+from pathlib import Path
+import toml
 import http.server
 import socketserver
 from urllib.request import urlopen
@@ -56,7 +57,7 @@ class GUI:
             # Check if something's already running on port 3000
             try:
                 html = urlopen("http://localhost:" + str(server_port) + "/")
-                print("Found server running at port 3000 ...")
+                print("Found server running at port {} ...".format(server_port))
             except:
                 print("Starting http server ...")
                 # Run http server in separate thread
@@ -171,7 +172,11 @@ class GUI:
         return data
 
 def read_gui_config(path, file_name):
-    d = yaml2dict(os.path.join(path, file_name))
+    suffix = Path(path).joinpath(file_name).suffix
+    if suffix == '.yml':
+        d = yaml2dict(os.path.join(path, file_name))
+    elif suffix == '.toml':
+        d = toml.load(os.path.join(path, file_name))
     config = {}
     config["window"]  = {}
     config["menu"]    = {}
@@ -190,7 +195,11 @@ def read_gui_config(path, file_name):
 
 def read_gui_elements(path, file_name):
     # Return just the elements
-    d = yaml2dict(os.path.join(path, file_name))
+    suffix = Path(path).joinpath(file_name).suffix
+    if suffix == '.yml':
+        d = yaml2dict(os.path.join(path, file_name))
+    elif suffix == '.toml':
+        d = toml.load(os.path.join(path, file_name))
     element = d["element"]
     for el in d["element"]:
         if el["style"] == "tabpanel":
@@ -613,7 +622,7 @@ def run_server(server_path, server_port):
     Handler.extensions_map['.css']    = 'text/css'
     Handler.extensions_map['.html']   = 'text/html'
     Handler.extensions_map['.json']   = 'application/json'
-    print("Server path : " + server_path)
+    print("Server path : " + str(server_path))
     with socketserver.TCPServer(("", PORT), Handler) as httpd:
         print("Serving at port", PORT)
         httpd.serve_forever()
