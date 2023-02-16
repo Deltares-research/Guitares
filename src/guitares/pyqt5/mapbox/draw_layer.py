@@ -128,6 +128,14 @@ class DrawLayer(Layer):
         if feature_index is None:
             print("Could not find feature ...")
             return
+        if self.shape == "rectangle":
+            x0, y0, dx, dy, rotation = get_rectangle_geometry(gdf["geometry"][0])
+            # Add columns with geometry info
+            gdf["x0"] = [x0]
+            gdf["y0"] = [y0]
+            gdf["dx"] = [dx]
+            gdf["dy"] = [dy]
+            gdf["rotation"] = [rotation]
         if self.create_callback:
             self.create_callback(gdf, feature_index, feature_id)
 
@@ -143,6 +151,14 @@ class DrawLayer(Layer):
         if feature_index is None:
             print("Could not find feature ...")
             return
+        if self.shape == "rectangle":
+            x0, y0, dx, dy, rotation = get_rectangle_geometry(gdf["geometry"][0])
+            # Add columns with geometry info
+            gdf["x0"] = [x0]
+            gdf["y0"] = [y0]
+            gdf["dx"] = [dx]
+            gdf["dy"] = [dy]
+            gdf["rotation"] = [rotation]
         if self.modify_callback:
             self.modify_callback(gdf, feature_index, feature_id)
         # if feature_shape == "polygon":

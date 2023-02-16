@@ -14,7 +14,7 @@ export let pointClicked;
 
 console.log('Adding MapBox map ...')
 
-mapboxgl.accessToken = 'pk.eyJ1IjoibXZhbm9ybW9uZHQiLCJhIjoiY2w1cnkyMHM3MGh3aTNjbjAwajh0NHUyZiJ9.5h1GFWjmJGW5hAK2FFCVDQ';
+mapboxgl.accessToken = mapbox_token;
 
 export const map = new mapboxgl.Map({
   container: 'map', // container ID

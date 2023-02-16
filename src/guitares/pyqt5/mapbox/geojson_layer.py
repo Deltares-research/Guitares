@@ -90,4 +90,6 @@ class GeoJSONLayer(Layer):
                  data,
                  legend_title="",
                  crs=None):
-        self.mapbox.runjs("/js/geojson_layer.js", "setData", arglist=[self.map_id, data])
+        # Make sure this is not an empty GeoDataFrame
+        if len(data) > 0:
+            self.mapbox.runjs("/js/geojson_layer.js", "setData", arglist=[self.map_id, data])

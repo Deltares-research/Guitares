@@ -56,9 +56,12 @@ class PopupMenu(Widget):
         fcn = lambda: self.first_callback()
         b.currentIndexChanged.connect(fcn)
         if self.element["module"] and "method" in self.element:
-            self.callback = getattr(self.element["module"], self.element["method"])
-            fcn2 = lambda: self.second_callback()
-            b.currentIndexChanged.connect(fcn2)
+            if hasattr(self.element["module"], self.element["method"]):
+                self.callback = getattr(self.element["module"], self.element["method"])
+                fcn2 = lambda: self.second_callback()
+                b.currentIndexChanged.connect(fcn2)
+            else:
+               print("Error! Method " + self.element["method"] + " not found!")
 
     def set(self):
         if self.check_variables():

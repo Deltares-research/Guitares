@@ -25,14 +25,14 @@ class PushButton(Widget):
         else:
             if element["module"] :
                 if "method" in element:
-                    try:
+                    if hasattr(self.element["module"], self.element["method"]):
                         self.callback = getattr(element["module"] , element["method"])
                         fcn = lambda: self.second_callback()
                         b.clicked.connect(fcn)
-                    except:
-                        print("ERROR! Method " + element["method"] + " not found!")
+                    else:
+                        print("Error! Method " + self.element["method"] + " not found!")
                 else:
-                    print("No method found in element !")
+                    print("No method found in element. Button will be inactive.")
         b.clicked.connect(self.gui.update)
 
         if "icon" in element.keys():

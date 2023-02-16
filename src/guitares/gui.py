@@ -26,7 +26,8 @@ class GUI:
                  server_path=None,
                  server_port=3000,
                  js_messages=True,
-                 copy_mapbox_server_folder=False):
+                 copy_mapbox_server_folder=False,
+                 mapbox_token=None):
 
         self.module      = module
         self.framework   = framework
@@ -71,6 +72,10 @@ class GUI:
 
                 thr = threading.Thread(target=run_server, args=(server_path, server_port), daemon=True)
                 thr.start()
+            if mapbox_token:
+                fid = open(os.path.join(server_path, "mapbox_token.js"), "w")
+                fid.write("mapbox_token = '" + mapbox_token + "';")
+                fid.close()
 
 
     def show_splash(self):
@@ -238,7 +243,6 @@ def set_missing_element_values(element, parent_group, parent_module, gui):
 
     for el in element:
 
-#        el["gui"] = gui
         el["visible"] = True
 
         if "id" not in el:
@@ -261,12 +265,6 @@ def set_missing_element_values(element, parent_group, parent_module, gui):
                     if type(tab["module"]) == str:
                         tab["module"] = importlib.import_module(tab["module"])
                 if "element" in tab:
-                    # set_missing_element_values(tab["element"],
-                    #                        tab["variable_group"],
-                    #                        tab["module"],
-                    #                        variables,
-                    #                        getvar,
-                    #                        setvar)
                     set_missing_element_values(tab["element"],
                                                tab["variable_group"],
                                                tab["module"],
@@ -275,22 +273,11 @@ def set_missing_element_values(element, parent_group, parent_module, gui):
             if "title" not in el:
                 el["title"] = ""
             if "element" in el:
-                # set_missing_element_values(el["element"],
-                #                            el["variable_group"],
-                #                            el["module"],
-                #                            variables,
-                #                            getvar,
-                #                            setvar)
                 set_missing_element_values(el["element"],
                                            el["variable_group"],
                                            el["module"],
                                            gui)
         else:
-
-            # Setvar and getvar methods
-#            el["setvar"] = setvar
-#            el["getvar"] = getvar
-
             # Variable type
             if "variable" in el:
                 group = el["variable_group"]
@@ -336,6 +323,7 @@ def set_missing_element_values(element, parent_group, parent_module, gui):
                         if "variable_group" not in check:
                             check["variable_group"] = parent_group
 
+            # TODO
             # Icon paths
 #            if "icon" in el:
 #                el["icon"] = os.path.join(self.config_path, el["icon"])
@@ -382,26 +370,14 @@ def add_elements(element_list, parent, gui):
 
     for element in element_list:
 
-        # if "window" not in element:
-        #     element["window"] = main_window
-
         if element["style"] == "tabpanel":
 
             from .pyqt5.tabpanel import TabPanel
             element["widget"] = TabPanel(element, parent, gui)
 
-
-#            TabPanel(element, parent, gui)
-#            w = element["widget"].widgets[0]
-
             for tab in element["tab"]:
                 # And now add the elements in this tab
                 if tab["element"]:
-                    # add_elements(tab["element"],
-                    #              tab["widget"],
-                    #              main_window,
-                    #              server_path,
-                    #              server_port)
                     add_elements(tab["element"],
                                  tab["widget"],
                                  gui)
@@ -415,11 +391,6 @@ def add_elements(element_list, parent, gui):
 
             # And now add the elements in this frame
             if "element" in element:
-                # add_elements(element["element"],
-                #              element["widget"],
-                #              main_window,
-                #              server_path,
-                #              server_port)
                 add_elements(element["element"],
                              w,
                              gui)
@@ -458,8 +429,6 @@ def add_elements(element_list, parent, gui):
             elif element["style"] == "mapbox":
                 from .pyqt5.mapbox.mapbox import MapBox
                 element["widget"] = MapBox(element, parent, gui)
-#                MapBox(element, parent, gui)
-
             elif element["style"] == "webpage":
                 from .pyqt5.webpage import WebPage
                 element["widget"] = WebPage(element, parent, gui)
@@ -552,6 +521,10 @@ def resize_elements(element_list, parent, resize_factor):
         elif element["style"] == "panel":
             x0, y0, wdt, hgt = get_position(element["position"], parent, resize_factor)
             element["widget"].widgets[0].setGeometry(x0, y0, wdt, hgt)
+            if len(element["widget"].widgets) == 2:
+                # Also change title widget
+                element["widget"].widgets[1].setGeometry(x0 + 10, y0 - 9, element["title_width"], 16)
+
         elif element["style"] == "mapbox":
             x0, y0, wdt, hgt = get_position(element["position"], parent, resize_factor)
             element["widget"].view.setGeometry(x0, y0, wdt, hgt)
@@ -617,4 +590,3 @@ def run_server(server_path, server_port):
     with socketserver.TCPServer(("", PORT), Handler) as httpd:
         print("Serving at port", PORT)
         httpd.serve_forever()
-

@@ -18,12 +18,23 @@ class Frame(Widget):
         frame.setFrameShape(QFrame.StyledPanel)
         frame.setLineWidth(2)
 
+        # if element["title"]:
+        #     label = QLabel(element["title"], frame)
+        #     fm = label.fontMetrics()
+        #     wlab = fm.size(0, element["title"]).width() + 15
+        #     label.setAlignment(QtCore.Qt.AlignLeft)
+        #     #                    label.setGeometry(x0 + 10, y0 - 5, wlab, 20)
+        #     label.setGeometry(10, -2, wlab, 16)
+
         if element["title"]:
-            label = QLabel(element["title"], frame)
+            label = QLabel(element["title"], parent)
             fm = label.fontMetrics()
-            wlab = fm.size(0, element["title"]).width() + 15
+            wlab = fm.size(0, element["title"]).width()
             label.setAlignment(QtCore.Qt.AlignLeft)
             #                    label.setGeometry(x0 + 10, y0 - 5, wlab, 20)
-            label.setGeometry(10, -2, wlab, 16)
+            label.setGeometry(x0 + 10, y0, wlab, 16)
+            element["title_width"] = wlab
+            self.widgets.append(label)
+
 
         frame.setVisible(True)

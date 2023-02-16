@@ -42,13 +42,12 @@ class Edit(Widget):
         b.editingFinished.connect(fcn1)
 #        b.textEdited.connect(fcn1)
         if self.element["module"] and "method" in self.element:
-#            if hasattr(self.element["method"], self.element["module"]):
-            self.callback = getattr(self.element["module"], self.element["method"])
-            fcn2 = lambda: self.second_callback()
-            b.editingFinished.connect(fcn2)
-#            b.textEdited.connect(fcn2)
-#            else:
-#                print("Error! Method " + self.element["method"] + " not found!")
+            if hasattr(self.element["module"], self.element["method"]):
+                self.callback = getattr(self.element["module"], self.element["method"])
+                fcn2 = lambda: self.second_callback()
+                b.editingFinished.connect(fcn2)
+            else:
+               print("Error! Method " + self.element["method"] + " not found!")
 
     def set(self):
         if self.check_variables():
