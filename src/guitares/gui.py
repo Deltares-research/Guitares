@@ -27,7 +27,7 @@ class GUI:
                  server_port=3000,
                  js_messages=True,
                  copy_mapbox_server_folder=False,
-                 mapbox_token=None):
+                 mapbox_token_file="mapbox_token.txt"):
 
         self.module      = module
         self.framework   = framework
@@ -72,9 +72,14 @@ class GUI:
 
                 thr = threading.Thread(target=run_server, args=(server_path, server_port), daemon=True)
                 thr.start()
-            if mapbox_token:
+
+            # Read mapbox token and store in js file in server path
+            if os.path.exists(mapbox_token_file):
+                fid = open(mapbox_token_file, "r")
+                mapbox_token = fid.readlines()
+                fid.close()
                 fid = open(os.path.join(server_path, "mapbox_token.js"), "w")
-                fid.write("mapbox_token = '" + mapbox_token + "';")
+                fid.write("mapbox_token = '" + mapbox_token[0].strip() + "';")
                 fid.close()
 
 
@@ -524,6 +529,8 @@ def resize_elements(element_list, parent, resize_factor):
             if len(element["widget"].widgets) == 2:
                 # Also change title widget
                 element["widget"].widgets[1].setGeometry(x0 + 10, y0 - 9, element["title_width"], 16)
+                element["widget"].widgets[1].setAlignment(QtCore.Qt.AlignTop)
+
 
         elif element["style"] == "mapbox":
             x0, y0, wdt, hgt = get_position(element["position"], parent, resize_factor)

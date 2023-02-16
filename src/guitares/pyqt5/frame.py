@@ -30,9 +30,10 @@ class Frame(Widget):
             label = QLabel(element["title"], parent)
             fm = label.fontMetrics()
             wlab = fm.size(0, element["title"]).width()
-            label.setAlignment(QtCore.Qt.AlignLeft)
+#            label.setAlignment(QtCore.Qt.AlignLeft)
             #                    label.setGeometry(x0 + 10, y0 - 5, wlab, 20)
-            label.setGeometry(x0 + 10, y0, wlab, 16)
+            label.setGeometry(x0 + 10, y0 - 9, wlab, 16)
+            label.setAlignment(QtCore.Qt.AlignTop)
             element["title_width"] = wlab
             self.widgets.append(label)
 
