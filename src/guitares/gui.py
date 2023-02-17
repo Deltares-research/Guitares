@@ -14,7 +14,7 @@ from urllib.request import urlopen
 from urllib.error import *
 import threading
 from PyQt5.QtWidgets import QApplication, QDialog, QWidget, QVBoxLayout
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtGui
 
 class GUI:
     def __init__(self, module,
@@ -36,15 +36,13 @@ class GUI:
         self.config_file = config_file
         self.config_path = config_path
         self.splash      = None
+        self.icon        = icon
         self.config      = {}
         self.variables   = {}
         self.server_thread = None
         self.server_path = server_path
         self.server_port = server_port
         self.js_messages = js_messages
-
-        # For some reason, the splash crashes on QPixmap(splash_file) ...
-        # self.show_splash()
 
         if not self.config_path:
             self.config_path = os.getcwd()
@@ -93,6 +91,12 @@ class GUI:
         QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
         app = QApplication(sys.argv)
 
+        # Show splash screen
+        self.show_splash()
+
+        # Set the icon
+        app.setWindowIcon(QtGui.QIcon(self.icon))
+
         if self.stylesheet:
             app.setStyleSheet(open(os.path.join(self.config_path, self.stylesheet), "r").read())
 
@@ -135,6 +139,9 @@ class GUI:
 
         if hasattr(self.module, "on_build"):
             self.module.on_build()
+
+        # Close splash screen before GUI is initiated
+        self.close_splash()
 
         app.exec_()
 
