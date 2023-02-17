@@ -1,0 +1,54 @@
+element:
+- style: listbox
+  variable: active_finished_scenario
+  multivariable: handles.toolbox.cfrss.site(handles.toolbox.cfrss.active_site).site.active_finished_scenarios
+  max: '1000'
+  position:
+    x: 10
+    y: 10
+    width: 500
+    height: 120
+  tooltip: Select on or more scenarios
+  option_string:
+    variable: finished_scenario_long_names
+- style: pushbutton
+  position:
+    x: 520
+    y: 110
+    width: 140
+    height: 20
+  text: Upload Web Viewer
+  tooltip: Upload selected scenarios to web viewer
+  method: ddb_cfrss_dashboards
+  dependency:
+  - action: enable
+    checkfor: all
+    check:
+    - variable: nr_finished_scenarios
+      operator: gt
+      value: 0
+- style: pushbutton
+  position:
+    x: 520
+    y: 80
+    width: 140
+    height: 20
+  text: Open Web Viewer
+  tooltip: Open Master Dashboard in web viewer
+  method: ddb_cfrss_dashboards
+- style: pushbutton
+  position:
+    x: 720
+    y: 110
+    width: 140
+    height: 20
+  text: Create Project
+  tooltip: Create ArcGIS project for selected scenario
+  method: ddb_cfrss_dashboards
+  dependency:
+  - action: enable
+    checkfor: all
+    check:
+    - variable: nr_finished_scenarios
+      operator: gt
+      value: 0

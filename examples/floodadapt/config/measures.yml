@@ -1,0 +1,145 @@
+element:
+- style: listbox
+  variable: active_measure
+  position:
+    x: 10
+    y: 30
+    width: 300
+    height: 100
+  tooltip: Select measure
+  method: ddb_cfrss_measures
+  option_string:
+    variable: measure_names
+- style: text
+  position:
+    x: 10
+    y: 10
+  prefix: 'Type : '
+  variable2: handles.toolbox.cfrss.site(handles.toolbox.cfrss.active_site).site.measure(handles.toolbox.cfrss.site(handles.toolbox.cfrss.active_site).site.active_measure).measure.type
+  variable: measure_description_text
+- style: pushbutton
+  position:
+    x: 320
+    y: 110
+    width: 100
+    height: 20
+  text: Add measure
+  tooltip: Add measure
+  method: ddb_cfrss_measures
+- style: popupmenu
+  variable: selected_measure_type
+  position:
+    x: 430
+    y: 110
+    width: 100
+    height: 20
+  tooltip: Select measure type to be added
+  method: ddb_cfrss_measures
+  option_value:
+    variable: measure_types
+  option_string:
+    variable: measure_type_names
+- style: pushbutton
+  position:
+    x: 320
+    y: 85
+    width: 100
+    height: 20
+  text: Edit measure
+  tooltip: Edit measure
+  method: ddb_cfrss_measures
+  dependency:
+  - action: enable
+    checkfor: all
+    check:
+    - variable: nr_measures
+      operator: gt
+      value: 0
+- style: pushbutton
+  position:
+    x: 320
+    y: 60
+    width: 100
+    height: 20
+  text: Delete measure
+  tooltip: Delete measure
+  method: ddb_cfrss_measures
+  dependency:
+  - action: enable
+    checkfor: all
+    check:
+    - variable: nr_measures
+      operator: gt
+      value: 0
+- style: pushbutton
+  position:
+    x: 320
+    y: 35
+    width: 100
+    height: 20
+  text: Copy measure
+  tooltip: Copy measure
+  method: ddb_cfrss_measures
+  dependency:
+  - action: enable
+    checkfor: all
+    check:
+    - variable: nr_measures
+      operator: gt
+      value: 0
+- style: checkbox
+  position:
+    x: 850
+    y: 110
+    width: 100
+    height: 20
+  text: Show Buildings
+  tooltip: Toggle to show buildings
+  method: ddb_cfrss_measures
+  variable: show_fiat_objects
+- style: checkbox
+  position:
+    x: 850
+    y: 80
+    width: 100
+    height: 20
+  text: Show Grid Snapper
+  tooltip: Toggle to show grid snapping for levees and floodwalls
+  method: ddb_cfrss_measures
+  variable: show_grid_snapper
+- style: checkbox
+  position:
+    x: 850
+    y: 50
+    width: 100
+    height: 20
+  text: Show SFINCS Grid
+  tooltip: Toggle to show SFINCS grid
+  method: ddb_cfrss_measures
+  variable: show_sfincs_grid
+- style: popupmenu
+  variable: measure_selection_type
+  position:
+    x: 540
+    y: 110
+    width: 100
+    height: 20
+  tooltip: Select measure type to be added
+  method: ddb_cfrss_measures
+  option_value:
+    variable: measure_selection_types
+  option_string:
+    variable: measure_selection_type_names
+  dependency:
+  - action: visible
+    checkfor: any
+    check:
+    - variable: selected_measure_type
+      operator: eq
+      value: raise_property
+    - variable: selected_measure_type
+      operator: eq
+      value: buyout_property
+    - variable: selected_measure_type
+      operator: eq
+      value: floodproof_property

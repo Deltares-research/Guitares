@@ -1,0 +1,33 @@
+element:
+- style: listbox
+  variable: active_template
+  position:
+    x: 20
+    y: 250
+    width: 460
+    height: 80
+  tooltip: Select event template
+  option_string:
+    variable: templates
+- style: edit
+  position:
+    x: 20
+    y: 50
+    width: 460
+    height: 190
+  tooltip: Select event template
+  variable: active_template}
+  nrlines: '7'
+  enable: false
+- style: pushcancel
+  position:
+    x: 350
+    y: 10
+    width: 50
+    height: 20
+- style: pushok
+  position:
+    x: 410
+    y: 10
+    width: 50
+    height: 20

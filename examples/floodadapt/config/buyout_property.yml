@@ -1,0 +1,143 @@
+element:
+- style: panel
+  position:
+    x: 10
+    y: 270
+    width: 480
+    height: 120
+  title: Description
+- style: panel
+  position:
+    x: 10
+    y: 160
+    width: 480
+    height: 100
+  title: Properties
+- style: panel
+  position:
+    x: 10
+    y: 30
+    width: 480
+    height: 120
+  title: Area
+- style: edit
+  position:
+    x: 100
+    y: 350
+    width: 200
+    height: 20
+  variable: name
+  text: Measure Name
+  tooltip: Edit the name of the measure (no spaces allowed!).
+  dependency:
+  - action: enable
+    checkfor: all
+    check:
+    - variable: add_edit
+      operator: eq
+      value: add
+- style: edit
+  position:
+    x: 100
+    y: 325
+    width: 200
+    height: 20
+  variable: long_name
+  text: Description
+  tooltip: Edit the long name of the measure
+- style: pushselectfile
+  position:
+    x: 30
+    y: 220
+    width: 130
+    height: 20
+  text: Import Area Coordinates
+  variable: polygon_file
+  showfilename: 'yes'
+  extension: '*.csv'
+  tooltip: Import coordinates
+  method: ddb_cfrss_measures
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: selection_type
+      operator: eq
+      value: polygon
+- style: popupmenu
+  variable: property_type
+  text: Property Type
+  position:
+    x: 100
+    y: 190
+    width: 100
+    height: 20
+  tooltip: Select property type for this measure
+  option_string:
+  - Residential
+  - Commercial
+  - Government
+  - Religious
+  - Industrial
+  - Agricultural
+  - Educational
+  - All
+  option_value:
+  - RES
+  - COM
+  - GOV
+  - REL
+  - IND
+  - AGR
+  - EDU
+  - ALL
+- style: listbox
+  variable: aggregation_area
+  position:
+    x: 20
+    y: 40
+    width: 200
+    height: 90
+  tooltip: Select aggregation area
+  option_string:
+    variable: active_aggregation_area_type}
+  option_value:
+    variable: active_aggregation_area_type}
+  dependency:
+  - action: visible
+    checkfor: any
+    check:
+    - variable: selection_type
+      operator: eq
+      value: aggregation_area
+- style: popupmenu
+  variable: active_aggregation_area_type
+  position:
+    x: 230
+    y: 110
+    width: 150
+    height: 20
+  tooltip: Select area
+  method: ddb_cfrss_edit_measure_raise_property
+  option_string:
+    variable: aggregation_area_types
+  dependency:
+  - action: visible
+    checkfor: any
+    check:
+    - variable: selection_type
+      operator: eq
+      value: aggregation_area
+- style: pushcancel
+  position:
+    x: 370
+    y: 10
+    width: 50
+    height: 20
+- style: pushok
+  method: ddb_cfrss_check_names
+  position:
+    x: 430
+    y: 10
+    width: 50
+    height: 20

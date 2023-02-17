@@ -1,0 +1,1090 @@
+element:
+- style: panel
+  position:
+    x: 10
+    y: 545
+    width: 350
+    height: 120
+  title: Description
+- style: panel
+  position:
+    x: 370
+    y: 545
+    width: 420
+    height: 120
+  title: Timing
+- style: panel
+  position:
+    x: 10
+    y: 485
+    width: 780
+    height: 55
+  title:
+    variable: tide_panel_text
+- style: panel
+  position:
+    x: 10
+    y: 400
+    width: 780
+    height: 80
+  title:
+    variable: surge_panel_text
+- style: panel
+  position:
+    x: 10
+    y: 315
+    width: 780
+    height: 80
+  title: Wind
+- style: panel
+  position:
+    x: 10
+    y: 230
+    width: 780
+    height: 80
+  title: Rainfall
+- style: panel
+  position:
+    x: 10
+    y: 145
+    width: 780
+    height: 80
+  title: River Discharge
+- style: edit
+  position:
+    x: 100
+    y: 625
+    width: 200
+    height: 20
+  variable: name
+  text: Event Name
+  tooltip: Edit the name of the event
+  dependency:
+  - action: enable
+    checkfor: all
+    check:
+    - variable: add_edit
+      operator: eq
+      value: add
+- style: edit
+  position:
+    x: 100
+    y: 600
+    width: 200
+    height: 20
+  variable: long_name
+  text: Long Name
+  tooltip: Edit the long name of the event
+- style: radiobutton
+  position:
+    x: 390
+    y: 625
+  text: Historical
+  variable: timing
+  value: historical
+  dependency:
+  - action: 'on'
+    checkfor: all
+    check:
+    - variable: timing
+      operator: eq
+      value: historical
+  enable: false
+- style: radiobutton
+  position:
+    x: 460
+    y: 625
+  text: Idealized
+  variable: timing
+  value: idealized
+  dependency:
+  - action: 'on'
+    checkfor: all
+    check:
+    - variable: timing
+      operator: eq
+      value: idealized
+  enable: false
+- style: edit
+  position:
+    x: 450
+    y: 595
+    width: 100
+    height: 20
+  variable: start_time
+  text: Start time
+  tooltip: Edit start time of the event
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: timing
+      operator: eq
+      value: historical
+- style: edit
+  position:
+    x: 620
+    y: 595
+    width: 100
+    height: 20
+  variable: stop_time
+  text: Stop time
+  tooltip: Edit stop time of the event
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: timing
+      operator: eq
+      value: historical
+- style: edit
+  position:
+    x: 500
+    y: 595
+    width: 60
+    height: 20
+  variable: duration_before_t0
+  text: Duration before T=0 (hrs)
+  tooltip: Edit duration before the peak of the event in hours
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: timing
+      operator: eq
+      value: idealized
+- style: edit
+  position:
+    x: 500
+    y: 565
+    width: 60
+    height: 20
+  variable: duration_after_t0
+  text: Duration after T=0 (hrs)
+  tooltip: Edit duration before the peak of the event in hours
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: timing
+      operator: eq
+      value: idealized
+- style: popupmenu
+  position:
+    x: 60
+    y: 500
+    width: 100
+    height: 20
+  variable: tide_source
+  text: Source
+  option_string:
+    variable: tide
+  tooltip: Select the source for the tidal boundary conditions
+- style: edit
+  position:
+    x: 250
+    y: 500
+    width: 50
+    height: 20
+  variable: tide_harmonic_amplitude
+  text: tide_harmonic_amplitude_text
+  tooltip: Edit the tidal amplitude
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: tide_source
+      operator: eq
+      value: harmonic
+- style: pushbutton
+  position:
+    x: 180
+    y: 500
+    width: 200
+    height: 20
+  text: Download Observed Water Levels
+  method: ddb_cfrss_edit_event
+  tooltip: Download observed tide from CO-OPS
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: tide_source
+      operator: eq
+      value: timeseries
+- style: pushselectfile
+  position:
+    x: 400
+    y: 500
+    width: 80
+    height: 20
+  text: Select File
+  variable: tide_timeseries_file
+  showfilename: 'yes'
+  extension: '*.csv'
+  tooltip: Select time series file
+  method: ddb_cfrss_edit_event
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: tide_source
+      operator: eq
+      value: timeseries
+- style: popupmenu
+  position:
+    x: 60
+    y: 440
+    width: 100
+    height: 20
+  variable: surge_source
+  text: Source
+  option_string:
+    variable: surge
+  tooltip: Select the source for the storm surge time series
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: surge_panel_text
+      operator: ne
+      value: none
+- style: edit
+  position:
+    x: 300
+    y: 440
+    width: 50
+    height: 20
+  variable: surge_shape_peak
+  text: surge_shape_peak_text
+  tooltip: Edit the peak surge
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: surge_source
+      operator: eq
+      value: shape
+    - variable: surge_shape_type
+      operator: eq
+      value: gaussian
+- style: edit
+  position:
+    x: 300
+    y: 415
+    width: 50
+    height: 20
+  variable: surge_shape_duration
+  text: Duration (hrs)
+  tooltip: Edit the surge duration.
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: surge_source
+      operator: eq
+      value: shape
+    - variable: surge_shape_type
+      operator: eq
+      value: gaussian
+- style: edit
+  position:
+    x: 450
+    y: 440
+    width: 50
+    height: 20
+  variable: surge_shape_peak_time
+  text: Peak time (hrs)
+  tooltip: Edit the timing of the peak surge with respect to T=0
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: surge_source
+      operator: eq
+      value: shape
+    - variable: surge_shape_type
+      operator: eq
+      value: gaussian
+- style: pushselectfile
+  position:
+    x: 200
+    y: 440
+    width: 80
+    height: 20
+  text: Select File
+  variable: surge_timeseries_file
+  showfilename: 'yes'
+  extension: '*.csv'
+  tooltip: Select time series file
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: surge_source
+      operator: eq
+      value: timeseries
+- style: popupmenu
+  position:
+    x: 60
+    y: 355
+    width: 100
+    height: 20
+  variable: wind_source
+  text: Source
+  option_string:
+    variable: wind
+  tooltip: Select the source for the wind
+- style: text
+  position:
+    x: 300
+    y: 355
+    width: 50
+    height: 20
+  text: Winds will be obtained from GFS re-analysis data
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: wind_source
+      operator: eq
+      value: map
+- style: edit
+  position:
+    x: 180
+    y: 325
+    width: 50
+    height: 20
+  variable: track_shift_north_south
+  text: Track shift (miles)    North-South
+  tooltip: Edit the N-S track shift in miles (North = positive, South = negative)
+  method: ddb_cfrss_edit_event
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: wind_source
+      operator: eq
+      value: track
+  - action: enable
+    checkfor: all
+    check:
+    - variable: add_edit
+      operator: eq
+      value: add
+- style: edit
+  position:
+    x: 290
+    y: 325
+    width: 50
+    height: 20
+  variable: track_shift_east_west
+  text: East-West
+  tooltip: Edit the E-W track shift in miles (East = positive, West = negative)
+  method: ddb_cfrss_edit_event
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: wind_source
+      operator: eq
+      value: track
+  - action: enable
+    checkfor: all
+    check:
+    - variable: add_edit
+      operator: eq
+      value: add
+- style: edit
+  position:
+    x: 300
+    y: 355
+    width: 50
+    height: 20
+  variable: wind_constant_speed
+  text: Wind speed (kts)
+  tooltip: Edit the wind speed
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: wind_source
+      operator: eq
+      value: constant
+- style: edit
+  position:
+    x: 300
+    y: 330
+    width: 50
+    height: 20
+  variable: wind_constant_direction
+  text: Wind direction (deg)
+  tooltip: 'Edit the wind direction in nautical degrees (i.e. where the wind is blowing
+    from: 0 degrees means wind from the North, 90 degrees means wind from the East,
+    etc.)'
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: wind_source
+      operator: eq
+      value: constant
+- style: pushselectfile
+  position:
+    x: 200
+    y: 355
+    width: 80
+    height: 20
+  text: Select File
+  variable: wind_timeseries_file
+  showfilename: 'yes'
+  extension: '*.csv'
+  tooltip: Select time series file
+  method: ddb_cfrss_edit_event
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: wind_source
+      operator: eq
+      value: timeseries
+- style: pushselectfile
+  position:
+    x: 200
+    y: 355
+    width: 80
+    height: 20
+  text: Track File
+  variable: wind_parametric_file
+  showfilename: 'yes'
+  extension: txt
+  tooltip: Select cyclone track file
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: wind_source
+      operator: eq
+      value: parametric
+- style: popupmenu
+  position:
+    x: 60
+    y: 270
+    width: 100
+    height: 20
+  variable: rainfall_source
+  text: Source
+  option_string:
+    variable: rainfall
+  tooltip: Select the source for the rainfall
+- style: text
+  position:
+    x: 300
+    y: 270
+    width: 50
+    height: 20
+  text: Rainfall will be obtained from GFS re-analysis data
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rainfall_source
+      operator: eq
+      value: map
+- style: edit
+  position:
+    x: 300
+    y: 270
+    width: 50
+    height: 20
+  variable: rainfall_constant_intensity
+  text: Intensity (in/hr)
+  tooltip: Edit the constant rainfall intensity for this event
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rainfall_source
+      operator: eq
+      value: constant
+- style: popupmenu
+  position:
+    x: 60
+    y: 240
+    width: 100
+    height: 20
+  variable: rainfall_shape_type
+  text: Type
+  option_string:
+  - gaussian
+  - block
+  - triangle
+  tooltip: Select the shape type for rainfall
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rainfall_source
+      operator: eq
+      value: shape
+- style: edit
+  position:
+    x: 300
+    y: 270
+    width: 50
+    height: 20
+  variable: rainfall_shape_cumulative
+  text: Cumulative Rainfall (in)
+  tooltip: Edit the cumulative rainfall for this event
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rainfall_source
+      operator: eq
+      value: shape
+    - variable: rainfall_shape_type
+      operator: eq
+      value: gaussian
+- style: edit
+  position:
+    x: 300
+    y: 245
+    width: 50
+    height: 20
+  variable: rainfall_shape_duration
+  text: Duration (hrs)
+  tooltip: Edit the rainfall duration
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rainfall_source
+      operator: eq
+      value: shape
+    - variable: rainfall_shape_type
+      operator: eq
+      value: gaussian
+- style: edit
+  position:
+    x: 450
+    y: 270
+    width: 50
+    height: 20
+  variable: rainfall_shape_peak_time
+  text: Peak time (hrs)
+  tooltip: Edit the timing of the peak rainfall with respect to T=0
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rainfall_source
+      operator: eq
+      value: shape
+    - variable: rainfall_shape_type
+      operator: eq
+      value: gaussian
+- style: edit
+  position:
+    x: 300
+    y: 270
+    width: 50
+    height: 20
+  variable: rainfall_shape_cumulative
+  text: Cumulative Rainfall (in)
+  tooltip: Edit the cumulative rainfall for this event
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rainfall_source
+      operator: eq
+      value: shape
+    - variable: rainfall_shape_type
+      operator: eq
+      value: block
+- style: edit
+  position:
+    x: 300
+    y: 245
+    width: 50
+    height: 20
+  variable: rainfall_shape_start_time
+  text: Start time (hrs)
+  tooltip: Edit the start time of the peak in hours with respect to T=0
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rainfall_source
+      operator: eq
+      value: shape
+    - variable: rainfall_shape_type
+      operator: eq
+      value: block
+- style: edit
+  position:
+    x: 450
+    y: 245
+    width: 50
+    height: 20
+  variable: rainfall_shape_end_time
+  text: End time (hrs)
+  tooltip: Edit the end time of the peak in hours with respect to T=0
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rainfall_source
+      operator: eq
+      value: shape
+    - variable: rainfall_shape_type
+      operator: eq
+      value: block
+- style: edit
+  position:
+    x: 300
+    y: 270
+    width: 50
+    height: 20
+  variable: rainfall_shape_cumulative
+  text: Cumulative Rainfall (in)
+  tooltip: Edit the cumulative rainfall for this event
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rainfall_source
+      operator: eq
+      value: shape
+    - variable: rainfall_shape_type
+      operator: eq
+      value: triangle
+- style: edit
+  position:
+    x: 450
+    y: 270
+    width: 50
+    height: 20
+  variable: rainfall_shape_peak_time
+  text: Peak time (hrs)
+  tooltip: Edit the timing of the peak rainfall with respect to T=0
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rainfall_source
+      operator: eq
+      value: shape
+    - variable: rainfall_shape_type
+      operator: eq
+      value: triangle
+- style: edit
+  position:
+    x: 300
+    y: 245
+    width: 50
+    height: 20
+  variable: rainfall_shape_start_time
+  text: Start time (hrs)
+  tooltip: Edit the start time of the peak in hours with respect to the peak time
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rainfall_source
+      operator: eq
+      value: shape
+    - variable: rainfall_shape_type
+      operator: eq
+      value: triangle
+- style: edit
+  position:
+    x: 450
+    y: 245
+    width: 50
+    height: 20
+  variable: rainfall_shape_end_time
+  text: End time (hrs)
+  tooltip: Edit the end time of the peak in hours with respect to the peak time
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rainfall_source
+      operator: eq
+      value: shape
+    - variable: rainfall_shape_type
+      operator: eq
+      value: triangle
+- style: pushselectfile
+  position:
+    x: 200
+    y: 270
+    width: 80
+    height: 20
+  text: Select File
+  variable: rainfall_timeseries_file
+  showfilename: 'yes'
+  extension: '*.csv'
+  tooltip: Select time series file
+  method: ddb_cfrss_edit_event
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rainfall_source
+      operator: eq
+      value: timeseries
+- style: pushselectfile
+  position:
+    x: 200
+    y: 270
+    width: 80
+    height: 20
+  text: Track File
+  variable: rainfall_parametric_file
+  showfilename: 'yes'
+  extension: txt
+  tooltip: Select cyclone track file
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rainfall_source
+      operator: eq
+      value: parametric
+- style: popupmenu
+  position:
+    x: 60
+    y: 185
+    width: 100
+    height: 20
+  variable: rivers_source
+  text: Source
+  option_string:
+    variable: rivers
+  tooltip: Select the source for the river discharge
+- style: popupmenu
+  position:
+    x: 200
+    y: 185
+    width: 100
+    height: 20
+  variable: active_river
+  text: River
+  option_string:
+    variable: river_names
+  tooltip: Select the river
+- style: popupmenu
+  position:
+    x: 60
+    y: 155
+    width: 100
+    height: 20
+  variable: rivers_shape_type
+  text: Type
+  option_string:
+  - gaussian
+  - block
+  - triangle
+  tooltip: Select the shape type for river discharge
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rivers_source
+      operator: eq
+      value: shape
+- style: edit
+  position:
+    x: 500
+    y: 185
+    width: 50
+    height: 20
+  variable: active_river)
+  text: Discharge (cfs)
+  tooltip: Edit the constant river discharge for this event
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rivers_source
+      operator: eq
+      value: constant
+- style: edit
+  position:
+    x: 500
+    y: 185
+    width: 50
+    height: 20
+  variable: active_river)
+  text: Peak Discharge (cfs)
+  tooltip: Edit the peak discharge for this event
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rivers_source
+      operator: eq
+      value: shape
+    - variable: rivers_shape_type
+      operator: eq
+      value: gaussian
+- style: edit
+  position:
+    x: 500
+    y: 160
+    width: 50
+    height: 20
+  variable: active_river)
+  text: Duration (hrs)
+  tooltip: Edit the discharge peak duration
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rivers_source
+      operator: eq
+      value: shape
+    - variable: rivers_shape_type
+      operator: eq
+      value: gaussian
+- style: edit
+  position:
+    x: 650
+    y: 185
+    width: 50
+    height: 20
+  variable: active_river)
+  text: Peak time (hrs)
+  tooltip: Edit the timing of the peak discharge with respect to T=0
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rivers_source
+      operator: eq
+      value: shape
+    - variable: rivers_shape_type
+      operator: eq
+      value: gaussian
+- style: edit
+  position:
+    x: 500
+    y: 185
+    width: 50
+    height: 20
+  variable: active_river)
+  text: Peak Discharge (cfs)
+  tooltip: Edit the peak discharge for this event
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rivers_source
+      operator: eq
+      value: shape
+    - variable: rivers_shape_type
+      operator: eq
+      value: block
+- style: edit
+  position:
+    x: 500
+    y: 160
+    width: 50
+    height: 20
+  variable: active_river)
+  text: Start time (hrs)
+  tooltip: Edit the start time of the peak in hours with respect to T=0
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rivers_source
+      operator: eq
+      value: shape
+    - variable: rivers_shape_type
+      operator: eq
+      value: block
+- style: edit
+  position:
+    x: 650
+    y: 160
+    width: 50
+    height: 20
+  variable: active_river)
+  text: End time (hrs)
+  tooltip: Edit the end time of the peak in hours with respect to T=0
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rivers_source
+      operator: eq
+      value: shape
+    - variable: rivers_shape_type
+      operator: eq
+      value: block
+- style: edit
+  position:
+    x: 500
+    y: 185
+    width: 50
+    height: 20
+  variable: active_river)
+  text: Peak Discharge (cfs)
+  tooltip: Edit the peak discharge for this event
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rivers_source
+      operator: eq
+      value: shape
+    - variable: rivers_shape_type
+      operator: eq
+      value: triangle
+- style: edit
+  position:
+    x: 650
+    y: 185
+    width: 50
+    height: 20
+  variable: active_river)
+  text: Peak time (hrs)
+  tooltip: Edit the timing of the peak discharge with respect to T=0
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rivers_source
+      operator: eq
+      value: shape
+    - variable: rivers_shape_type
+      operator: eq
+      value: triangle
+- style: edit
+  position:
+    x: 500
+    y: 160
+    width: 50
+    height: 20
+  variable: active_river)
+  text: Start time (hrs)
+  tooltip: Edit the start time of the peak in hours with respect to the peak time
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rivers_source
+      operator: eq
+      value: shape
+    - variable: rivers_shape_type
+      operator: eq
+      value: triangle
+- style: edit
+  position:
+    x: 650
+    y: 160
+    width: 50
+    height: 20
+  variable: active_river)
+  text: End time (hrs)
+  tooltip: Edit the end time of the peak in hours with respect to the peak time
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rivers_source
+      operator: eq
+      value: shape
+    - variable: rivers_shape_type
+      operator: eq
+      value: triangle
+- style: pushselectfile
+  position:
+    x: 400
+    y: 185
+    width: 80
+    height: 20
+  text: Select File
+  variable: rivers_timeseries_file
+  showfilename: 'yes'
+  extension: '*.csv'
+  tooltip: Select time series file
+  method: ddb_cfrss_edit_event
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rivers_source
+      operator: eq
+      value: timeseries
+- style: edit
+  position:
+    x: 310
+    y: 160
+    width: 50
+    height: 20
+  variable: active_river)
+  text: Base Discharge (cfs)
+  tooltip: Edit the base discharge for this event
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: rivers_source
+      operator: eq
+      value: shape
+- style: pushbutton
+  position:
+    x: 20
+    y: 70
+    width: 200
+    height: 20
+  text: Plot Water Level Boundary
+  method: ddb_cfrss_edit_event
+  tooltip: Plot water level boundary condition
+  dependency:
+  - action: enable
+    checkfor: any
+    check:
+    - variable: tide_source
+      operator: eq
+      value: timeseries
+    - variable: tide_source
+      operator: eq
+      value: harmonic
+    - variable: tide_source
+      operator: eq
+      value: astronomic
+- style: pushbutton
+  position:
+    x: 20
+    y: 40
+    width: 200
+    height: 20
+  text: Plot Rain
+  method: ddb_cfrss_edit_event
+  tooltip: Plot rainfall time-series
+  dependency:
+  - action: enable
+    checkfor: any
+    check:
+    - variable: rainfall_source
+      operator: eq
+      value: shape
+- style: pushcancel
+  position:
+    x: 670
+    y: 10
+    width: 50
+    height: 20
+- style: pushok
+  method: ddb_cfrss_check_names
+  position:
+    x: 730
+    y: 10
+    width: 50
+    height: 20

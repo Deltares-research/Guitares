@@ -1,0 +1,98 @@
+element:
+- style: panel
+  position:
+    x: 10
+    y: 250
+    width: 780
+    height: 90
+  title: Description
+- style: edit
+  position:
+    x: 100
+    y: 300
+    width: 200
+    height: 20
+  variable: name
+  text: Strategy Name
+  tooltip: Edit the name of the strategy.
+- style: edit
+  position:
+    x: 100
+    y: 275
+    width: 200
+    height: 20
+  variable: long_name
+  text: Long Name
+  tooltip: Edit the long name of the strategy.
+- style: listbox
+  text: Available measures
+  text_position: above-center
+  variable: active_available_measure
+  multivariable: active_available_measures
+  max: '1000'
+  position:
+    x: 20
+    y: 50
+    width: 300
+    height: 150
+  tooltip: Select measure
+  method: ddb_cfrss_strategies
+  option_string:
+    variable: available_measure_long_names
+- style: pushbutton
+  position:
+    x: 330
+    y: 180
+    width: 100
+    height: 20
+  text: Apply measure
+  tooltip: Add event
+  method: ddb_cfrss_strategies
+  dependency:
+  - action: enable
+    checkfor: all
+    check:
+    - variable: nr_available_measures
+      operator: gt
+      value: 0
+- style: pushbutton
+  position:
+    x: 330
+    y: 155
+    width: 100
+    height: 20
+  text: Remove measure
+  tooltip: Add event
+  method: ddb_cfrss_strategies
+  dependency:
+  - action: enable
+    checkfor: all
+    check:
+    - variable: nr_selected_measures
+      operator: gt
+      value: 0
+- style: listbox
+  text: Selected measures
+  text_position: above-center
+  variable: active_selected_measure
+  position:
+    x: 480
+    y: 50
+    width: 300
+    height: 150
+  tooltip: Select measure
+  option_string:
+    variable: selected_measure_long_names
+- style: pushcancel
+  position:
+    x: 670
+    y: 10
+    width: 50
+    height: 20
+- style: pushok
+  method: ddb_cfrss_check_names
+  position:
+    x: 730
+    y: 10
+    width: 50
+    height: 20

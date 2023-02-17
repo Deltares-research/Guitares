@@ -1,0 +1,48 @@
+element:
+- style: listbox
+  variable: active_site
+  position:
+    x: 10
+    y: 10
+    width: 200
+    height: 120
+  tooltip: Select site
+  method: ddb_cfrss_sites
+  option_string:
+    variable: site_long_names
+- style: listbox
+  variable: active_aggregation_area
+  text: Aggregation Areas
+  text_position: above-center
+  position:
+    x: 230
+    y: 10
+    width: 300
+    height: 100
+  tooltip: Select aggregation area
+  method: ddb_cfrss_sites
+  option_string:
+    variable: active_aggregation_area_type}
+- style: popupmenu
+  variable: active_aggregation_area_type
+  text: Aggregation Areas
+  text_position: above-center
+  position:
+    x: 540
+    y: 90
+    width: 150
+    height: 20
+  tooltip: Select aggregation area type
+  method: ddb_cfrss_sites
+  option_string:
+    variable: aggregation_area_types
+- style: checkbox
+  position:
+    x: 540
+    y: 65
+    width: 100
+    height: 20
+  text: Show Areas
+  tooltip: Toggle to show aggregation areas
+  method: ddb_cfrss_sites
+  variable: show_aggregation_areas

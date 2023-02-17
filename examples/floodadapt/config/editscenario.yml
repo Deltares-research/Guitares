@@ -1,0 +1,132 @@
+element:
+- style: panel
+  position:
+    x: 10
+    y: 240
+    width: 780
+    height: 210
+  title: Description
+- style: edit
+  position:
+    x: 100
+    y: 405
+    width: 500
+    height: 20
+  variable: name
+  text: Scenario Name
+  tooltip: Edit the name of the scenario.
+  dependency:
+  - action: enable
+    checkfor: all
+    check:
+    - variable: add_edit
+      operator: eq
+      value: add
+- style: edit
+  position:
+    x: 100
+    y: 380
+    width: 500
+    height: 20
+  variable: long_name
+  text: Long Name
+  tooltip: Edit the long name of the scenario.
+- style: edit
+  position:
+    x: 100
+    y: 275
+    width: 500
+    height: 100
+  variable: description
+  text: Description
+  nrlines: '10'
+  tooltip: Edit the description of the scenario.
+- style: checkbox
+  position:
+    x: 100
+    y: 245
+    width: 100
+    height: 20
+  variable: auto_update_names
+  text: Automatically Update Names
+  tooltip: Check this box to automatically update scenario names and long names
+  dependency:
+  - action: enable
+    checkfor: all
+    check:
+    - variable: add_edit
+      operator: eq
+      value: add
+- style: listbox
+  text: Available projections
+  text_position: above-center
+  variable: active_available_projection
+  position:
+    x: 20
+    y: 50
+    width: 250
+    height: 150
+  tooltip: Select projection
+  method: ddb_cfrss_scenarios
+  option_string:
+    variable: available_projection_long_names
+  dependency:
+  - action: enable
+    checkfor: all
+    check:
+    - variable: add_edit
+      operator: eq
+      value: add
+- style: listbox
+  text: Available events
+  text_position: above-center
+  variable: active_available_event
+  position:
+    x: 280
+    y: 50
+    width: 250
+    height: 150
+  tooltip: Select event
+  method: ddb_cfrss_scenarios
+  option_string:
+    variable: available_event_long_names
+  dependency:
+  - action: enable
+    checkfor: all
+    check:
+    - variable: add_edit
+      operator: eq
+      value: add
+- style: listbox
+  text: Available strategies
+  text_position: above-center
+  variable: active_available_strategy
+  position:
+    x: 540
+    y: 50
+    width: 250
+    height: 150
+  tooltip: Select strategy
+  method: ddb_cfrss_scenarios
+  option_string:
+    variable: available_strategy_long_names
+  dependency:
+  - action: enable
+    checkfor: all
+    check:
+    - variable: add_edit
+      operator: eq
+      value: add
+- style: pushcancel
+  position:
+    x: 670
+    y: 10
+    width: 50
+    height: 20
+- style: pushok
+  method: ddb_cfrss_check_names
+  position:
+    x: 730
+    y: 10
+    width: 50
+    height: 20

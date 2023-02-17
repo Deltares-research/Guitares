@@ -1,0 +1,81 @@
+element:
+- style: panel
+  position:
+    x: 10
+    y: 270
+    width: 480
+    height: 120
+  title: Description
+- style: panel
+  position:
+    x: 10
+    y: 160
+    width: 480
+    height: 100
+  title: Pump Properties
+- style: edit
+  position:
+    x: 100
+    y: 350
+    width: 200
+    height: 20
+  variable: name
+  text: Name
+  tooltip: Edit the name of the pump (no spaces allowed!).
+  dependency:
+  - action: enable
+    checkfor: all
+    check:
+    - variable: add_edit
+      operator: eq
+      value: add
+- style: edit
+  position:
+    x: 100
+    y: 325
+    width: 200
+    height: 20
+  variable: long_name
+  text: Description
+  tooltip: Edit the long name of the pump
+- style: edit
+  position:
+    x: 90
+    y: 220
+    width: 50
+    height: 20
+  variable: discharge
+  text: Capacity (cfs)
+  tooltip: Edit the discharge
+- style: pushselectfile
+  position:
+    x: 150
+    y: 220
+    width: 110
+    height: 20
+  text: Import Coordinates
+  variable: polygon_file
+  showfilename: 'yes'
+  extension: '*.csv'
+  tooltip: Import coordinates
+  method: ddb_cfrss_measures
+  dependency:
+  - action: visible
+    checkfor: all
+    check:
+    - variable: selection_type
+      operator: eq
+      value: polygon
+- style: pushcancel
+  position:
+    x: 370
+    y: 10
+    width: 50
+    height: 20
+- style: pushok
+  method: ddb_cfrss_check_names
+  position:
+    x: 430
+    y: 10
+    width: 50
+    height: 20

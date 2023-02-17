@@ -1,0 +1,45 @@
+window:
+  title: FloodAdapt
+  width: 800
+  height: 600
+  variable_group: floodadapt
+element:
+- style: tabpanel
+  position:
+    x: 10
+    y: 10
+    width: -10
+    height: 160
+  tab:
+  - string: Site
+    module: ddb_cfrss_sites
+    element: sites.yml
+  - string: Events
+    module: ddb_cfrss_events
+    element: events.yml
+  - string: Projections
+    module: ddb_cfrss_projections
+    element: projections.yml
+  - string: Measures
+    module: ddb_cfrss_measures
+    element: measures.yml
+  - string: Strategies
+    module: ddb_cfrss_strategies
+    element: strategies.yml
+  - string: Scenarios
+    module: ddb_cfrss_scenarios
+    element: scenarios.yml
+  - string: Quick View
+    module: ddb_cfrss_results
+    element: results.yml
+  - string: ArcGIS
+    module: ddb_cfrss_dashboards
+    element: dashboards.yml
+- style: mapbox
+  id: map
+  position:
+    x: 10
+    y: 180
+    width: -10
+    height: -10
+  module: floodadapt_map  

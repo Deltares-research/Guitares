@@ -1,0 +1,235 @@
+element:
+- style: panel
+  position:
+    x: 10
+    y: 350
+    width: 580
+    height: 80
+  title: Description
+- style: panel
+  position:
+    x: 10
+    y: 210
+    width: 580
+    height: 130
+  title: Physical
+- style: panel
+  position:
+    x: 10
+    y: 50
+    width: 580
+    height: 150
+  title: Socio-economic
+- style: edit
+  position:
+    x: 100
+    y: 390
+    width: 200
+    height: 20
+  variable: name
+  text: Projection Name
+  tooltip: Edit the name of the projection (no spaces allowed!).
+  dependency:
+  - action: enable
+    checkfor: all
+    check:
+    - variable: add_edit
+      operator: eq
+      value: add
+- style: edit
+  position:
+    x: 100
+    y: 365
+    width: 200
+    height: 20
+  variable: long_name
+  text: Description
+  tooltip: Edit the long name of the projection
+- style: panel
+  position:
+    x: 20
+    y: 220
+    width: 260
+    height: 100
+  title: Sea Level Rise
+- style: edit
+  position:
+    x: 220
+    y: 280
+    width: 50
+    height: 20
+  variable: sea_level_rise
+  text: sea_level_rise_text
+  tooltip: Edit the relative sea level rise
+- style: edit
+  position:
+    x: 220
+    y: 250
+    width: 50
+    height: 20
+  variable: sea_level_rise_offset
+  text: sea_level_rise_offset_text
+  enable: false
+- style: panel
+  position:
+    x: 300
+    y: 270
+    width: 280
+    height: 50
+  title: Rainfall Events (probabilistic events only)
+- style: panel
+  position:
+    x: 300
+    y: 220
+    width: 280
+    height: 50
+  title: Hurricane Events (probabilistic events only)
+- style: edit
+  position:
+    x: 470
+    y: 280
+    width: 50
+    height: 20
+  variable: rainfall_increase
+  text: Precipitation Increase (%)
+  tooltip: Edit the increase in precipitation (percent)
+- style: edit
+  position:
+    x: 470
+    y: 230
+    width: 50
+    height: 20
+  variable: storm_frequency_increase
+  text: Storm Frequency Increase (%)
+  tooltip: Edit the increase in storm frequency (percent)
+- style: edit
+  position:
+    x: 180
+    y: 160
+    width: 50
+    height: 20
+  variable: economic_growth
+  text: Economic Growth (%)
+  tooltip: Edit the economic growth
+- style: edit
+  position:
+    x: 180
+    y: 130
+    width: 50
+    height: 20
+  variable: population_growth_existing
+  text: Population Growth - Existing (%)
+  tooltip: Edit the population growth for existing buildings
+- style: edit
+  position:
+    x: 180
+    y: 100
+    width: 50
+    height: 20
+  variable: population_growth_new
+  text: Population Growth - New (%)
+  tooltip: Edit the population growth for new buildings
+- style: panel
+  position:
+    x: 250
+    y: 60
+    width: 330
+    height: 130
+  title: Population Growth - New Build Area
+- style: pushselectfile
+  position:
+    x: 260
+    y: 150
+    width: 110
+    height: 20
+  text: Select Shape File
+  variable: new_development_shape_file
+  showfilename: 'yes'
+  fullpath: 'no'
+  extension: '*.shp'
+  tooltip: Select shape file
+  method: ddb_cfrss_edit_projection
+  dependency:
+  - action: visible
+    checkfor: any
+    check:
+    - variable: population_growth_new
+      operator: gt
+      value: 0
+- style: edit
+  position:
+    x: 370
+    y: 120
+    width: 50
+    height: 20
+  variable: new_development_elevation
+  text: New build elevation (ft)
+  tooltip: Edit elevation of future development
+  dependency:
+  - action: visible
+    checkfor: any
+    check:
+    - variable: population_growth_new
+      operator: gt
+      value: 0
+- style: text
+  position:
+    x: 260
+    y: 93
+    width: 50
+    height: 20
+  text: Relative to
+  dependency:
+  - action: visible
+    checkfor: any
+    check:
+    - variable: population_growth_new
+      operator: gt
+      value: 0
+- style: radiobutton
+  position:
+    x: 320
+    y: 90
+    width: 50
+    height: 20
+  variable: new_development_elevation_reference
+  value: floodmap
+  text: Base Flood Elevation
+  tooltip: Set elevelation with respect to input surface elevation map
+  dependency:
+  - action: visible
+    checkfor: any
+    check:
+    - variable: population_growth_new
+      operator: gt
+      value: 0
+- style: radiobutton
+  position:
+    x: 320
+    y: 70
+    width: 50
+    height: 20
+  variable: new_development_elevation_reference
+  value: datum
+  text: Datum (NAVD88)
+  tooltip: Set elevelation with respect to datum
+  dependency:
+  - action: visible
+    checkfor: any
+    check:
+    - variable: population_growth_new
+      operator: gt
+      value: 0
+- style: pushcancel
+  position:
+    x: 370
+    y: 10
+    width: 50
+    height: 20
+- style: pushok
+  method: ddb_cfrss_check_names
+  position:
+    x: 430
+    y: 10
+    width: 50
+    height: 20

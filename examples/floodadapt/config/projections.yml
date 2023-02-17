@@ -1,0 +1,69 @@
+element:
+- style: listbox
+  variable: active_projection
+  position:
+    x: 10
+    y: 10
+    width: 300
+    height: 120
+  tooltip: Select projection
+  method: ddb_cfrss_projections
+  option_string:
+    variable: projection_names
+- style: pushbutton
+  position:
+    x: 320
+    y: 110
+    width: 100
+    height: 20
+  text: Add Projection
+  tooltip: Add projection
+  method: ddb_cfrss_projections
+- style: pushbutton
+  position:
+    x: 320
+    y: 85
+    width: 100
+    height: 20
+  text: Edit Projection
+  tooltip: Edit projection
+  method: ddb_cfrss_projections
+  dependency:
+  - action: enable
+    checkfor: all
+    check:
+    - variable: nr_projections
+      operator: gt
+      value: 0
+- style: pushbutton
+  position:
+    x: 320
+    y: 60
+    width: 100
+    height: 20
+  text: Delete Projection
+  tooltip: Delete projection
+  method: ddb_cfrss_projections
+  dependency:
+  - action: enable
+    checkfor: all
+    check:
+    - variable: nr_projections
+      operator: gt
+      value: 0
+- style: pushbutton
+  position:
+    x: 320
+    y: 35
+    width: 100
+    height: 20
+  text: Copy Projection
+  tooltip: Copy projection
+  method: ddb_cfrss_projections
+  dependency:
+  - action: enable
+    checkfor: all
+    check:
+    - variable: nr_projections
+      operator: gt
+      value: 0

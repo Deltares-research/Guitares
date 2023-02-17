@@ -1,0 +1,22 @@
+element:
+- style: edit
+  position:
+    x: 125
+    y: 60
+    width: 150
+    height: 20
+  variable: newname
+  text: New name
+  tooltip: Edit new name for measure
+- style: pushok
+  position:
+    x: 180
+    y: 10
+    width: 50
+    height: 20
+- style: pushcancel
+  position:
+    x: 120
+    y: 10
+    width: 50
+    height: 20

@@ -1,0 +1,68 @@
+element:
+- style: listbox
+  variable: active_finished_scenario_a
+  text: Scenario A
+  text_position: above-center
+  position:
+    x: 10
+    y: 10
+    width: 300
+    height: 110
+  tooltip: Select scenario A
+  method: ddb_cfrss_results
+  option_string:
+    variable: finished_scenarios
+- style: listbox
+  variable: active_finished_scenario_b
+  text: Scenario B
+  text_position: above-center
+  position:
+    x: 320
+    y: 10
+    width: 300
+    height: 110
+  tooltip: Select scenario B
+  method: ddb_cfrss_results
+  option_string:
+    variable: finished_scenarios
+- style: popupmenu
+  variable: result_option
+  position:
+    x: 630
+    y: 90
+    width: 100
+    height: 20
+  tooltip: Select scenario B
+  text: 'Show results for :'
+  text_position: above
+  option_string:
+    variable: available_result_options
+- style: pushbutton
+  position:
+    x: 840
+    y: 40
+    width: 140
+    height: 20
+  text: Show Flood Map (html)
+  tooltip: Show flood map on web page
+  method: ddb_cfrss_results
+  dependency:
+  - action: enable
+    checkfor: any
+    check:
+    - variable: result_option
+      operator: eq
+      value: A
+    - variable: result_option
+      operator: eq
+      value: B
+- style: pushbutton
+  position:
+    x: 840
+    y: 10
+    width: 140
+    height: 20
+  text: Show Results
+  tooltip: Show results
+  method: ddb_cfrss_results
+  enable: true

@@ -1,0 +1,31 @@
+element:
+- style: edit
+  position:
+    x: 125
+    y: 90
+    width: 150
+    height: 20
+  variable: name
+  text: New name
+  tooltip: Edit new name
+- style: edit
+  position:
+    x: 125
+    y: 60
+    width: 150
+    height: 20
+  variable: long_name
+  text: New long name
+  tooltip: Edit new long name
+- style: pushok
+  position:
+    x: 180
+    y: 10
+    width: 50
+    height: 20
+- style: pushcancel
+  position:
+    x: 120
+    y: 10
+    width: 50
+    height: 20
