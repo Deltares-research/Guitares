@@ -24,7 +24,6 @@ class Widget:
                     if dep["checkfor"] == "all":
                         okay = True
                         for check in dep["check"]:
-#                            getvar = self.element["getvar"]
                             name  = check["variable"]
                             group = check["variable_group"]
                             value = getvar(group, name)
@@ -66,7 +65,6 @@ class Widget:
                     elif dep["checkfor"] == "any":
                         okay = False
                         for check in dep["check"]:
-#                            getvar = self.element["getvar"]
                             name  = check["variable"]
                             group = check["variable_group"]
                             value = getvar(group, name)
@@ -108,7 +106,6 @@ class Widget:
                     elif dep["checkfor"] == "none":
                         okay = True
                         for check in dep["check"]:
-#                            getvar = self.element["getvar"]
                             name  = check["variable"]
                             group = check["variable_group"]
                             value = getvar(group, name)

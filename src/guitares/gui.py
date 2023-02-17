@@ -74,8 +74,8 @@ class GUI:
                 thr.start()
 
             # Read mapbox token and store in js file in server path
-            if os.path.exists(mapbox_token_file):
-                fid = open(mapbox_token_file, "r")
+            if os.path.exists(os.path.join(module.main_path, mapbox_token_file)):
+                fid = open(os.path.join(module.main_path, mapbox_token_file), "r")
                 mapbox_token = fid.readlines()
                 fid.close()
                 fid = open(os.path.join(server_path, "mapbox_token.js"), "w")
@@ -268,7 +268,10 @@ def set_missing_element_values(element, parent_group, parent_module, gui):
                     tab["module"] = el["module"]
                 else:
                     if type(tab["module"]) == str:
-                        tab["module"] = importlib.import_module(tab["module"])
+                        try:
+                            tab["module"] = importlib.import_module(tab["module"])
+                        except:
+                            print("Error! Could not import module " + tab["module"] + " ...")
                 if "element" in tab:
                     set_missing_element_values(tab["element"],
                                                tab["variable_group"],
@@ -300,16 +303,17 @@ def set_missing_element_values(element, parent_group, parent_module, gui):
                     el["select"] = "item"
                 #                        raise Exception("Error! select not specified in element with style " + el["style"])
                 if el["select"] == "item":
-                    # item
-                    # option_value and option_string must always be present
+                    # Item
+                    # Bith option_value and option_string must always be present
                     if "option_string" not in el:
                         raise Exception("Error! option_string not specified in element with style " + el["style"])
                     if "option_value" not in el:
-                        raise Exception("Error! option_value not specified in element with style " + el["style"])
+                        el["option_value"] = el["option_string"]
+#                        raise Exception("Error! option_value not specified in element with style " + el["style"])
 
                 else:
-                    # index
-                    # option_string must always be present
+                    # Index
+                    # Only option_string must always be present
                     # option_value is ignored
                     if "option_string" not in el:
                         raise Exception("Error! option_string not specified in element with style " + el["style"])

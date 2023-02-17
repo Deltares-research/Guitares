@@ -14,32 +14,31 @@ class PopupMenu(Widget):
         b = QComboBox(parent)
         self.widgets.append(b)
 
-        if "option_string" in self.element:
-            if type(self.element["option_string"]) == dict:
-                group = self.element["option_string"]["variable_group"]
-                name  = self.element["option_string"]["variable"]
-                v     = self.gui.getvar(group, name)
-                for txt in v:
-                    b.addItem(txt)
-            else:
-                for txt in self.element["option_string"]:
-                    b.addItem(txt)
+        try:
+            if "option_string" in self.element:
+                if type(self.element["option_string"]) == dict:
+                    group = self.element["option_string"]["variable_group"]
+                    name  = self.element["option_string"]["variable"]
+                    v     = self.gui.getvar(group, name)
+                    for txt in v:
+                        b.addItem(txt)
+                else:
+                    for txt in self.element["option_string"]:
+                        b.addItem(txt)
 
-        # Adjust list value types
-        if self.element["option_value"]:
-            if not type(self.element["option_value"]) == dict:
-                for i, val in enumerate(self.element["option_value"]):
-                    if "type" not in self.element:
-                        print(self.element["variable"])
-                        pass
-                    if self.element["type"] == float:
-                        self.element["option_value"][i] = float(val)
-                    elif self.element["type"] == int:
-                        self.element["option_value"][i] = int(val)
-            # else:
-            #     group = self.element["option_value"]["variable_group"]
-            #     name  = self.element["option_value"]["variable"]
-            #     v = variables[self.element["option_value"]]
+            # Adjust list value types
+            if self.element["option_value"]:
+                if not type(self.element["option_value"]) == dict:
+                    for i, val in enumerate(self.element["option_value"]):
+                        if "type" not in self.element:
+                            print(self.element["variable"])
+                            pass
+                        if self.element["type"] == float:
+                            self.element["option_value"][i] = float(val)
+                        elif self.element["type"] == int:
+                            self.element["option_value"][i] = int(val)
+        except:
+            print("Error setting popup menu for variable ..." )
 
         x0, y0, wdt, hgt = get_position(element["position"], parent, self.gui.resize_factor)
 
@@ -48,9 +47,18 @@ class PopupMenu(Widget):
             label = QLabel(self.element["text"], self.parent)
             self.widgets.append(label)
             fm = label.fontMetrics()
-            wlab = fm.size(0, self.element["text"]).width() + 15
-            label.setAlignment(QtCore.Qt.AlignRight)
-            label.setGeometry(x0 - wlab - 3, y0 + 5, wlab, hgt)
+            wlab = fm.size(0, self.element["text"]).width()
+            if element["text_position"] == "above-center" or element["text_position"] == "above":
+                label.setAlignment(QtCore.Qt.AlignCenter)
+                label.setGeometry(x0, y0 - 20, wdt, 20)
+            elif element["text_position"] == "above-left":
+                label.setAlignment(QtCore.Qt.AlignLeft)
+                label.setGeometry(x0, y0 - 20, wlab, 20)
+            else:
+                # Assuming left
+                label.setAlignment(QtCore.Qt.AlignRight)
+                label.setGeometry(x0 - wlab - 3, y0 + 5, wlab, 20)
+
             label.setStyleSheet("background: transparent; border: none")
 
         fcn = lambda: self.first_callback()

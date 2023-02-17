@@ -18,7 +18,6 @@ class ListBox(Widget):
         self.add_items()
 
         # Adjust list value types
-#        if self.element["option_value"]:
         if self.element["select"] == "item":
             if not type(self.element["option_value"]) == dict:
                 for i, val in enumerate(self.element["option_value"]):
@@ -26,10 +25,6 @@ class ListBox(Widget):
                         self.element["option_value"][i] = float(val)
                     elif self.element["type"] == int:
                         self.element["option_value"][i] = int(val)
-            # else:
-            #     group = self.element["option_value"]["variable_group"]
-            #     name  = self.element["option_value"]["variable"]
-            #     v = variables[self.element["option_value"]]
 
         x0, y0, wdt, hgt = get_position(element["position"], parent, self.gui.resize_factor)
 
@@ -38,21 +33,22 @@ class ListBox(Widget):
             label = QLabel(self.element["text"], self.parent)
             self.widgets.append(label)
             fm = label.fontMetrics()
-            wlab = fm.size(0, self.element["text"]).width() + 15
-            if element["text_position"] == "left":
-                label.setAlignment(QtCore.Qt.AlignRight)
-                label.setGeometry(x0 - wlab - 3, y0 + 5, wlab, hgt)
-            elif element["text_position"] == "above":
+            wlab = int(fm.size(0, self.element["text"]).width())
+            if element["text_position"] == "above-center" or element["text_position"] == "above":
                 label.setAlignment(QtCore.Qt.AlignCenter)
                 label.setGeometry(x0, int(y0 - 20 * self.gui.resize_factor), wdt, int(20 * self.gui.resize_factor))
-
-
+            elif element["text_position"] == "above-left":
+                label.setAlignment(QtCore.Qt.AlignLeft)
+                label.setGeometry(x0, int(y0 - 20 * self.gui.resize_factor), wlab, int(20 * self.gui.resize_factor))
+            else:
+                # Assuming left
+                label.setAlignment(QtCore.Qt.AlignRight)
+                label.setGeometry(int(x0 - wlab - 3 * self.gui.resize_factor), int(y0 + 5 * self.gui.resize_factor), wlab, int(20 * self.gui.resize_factor))
 
             label.setStyleSheet("background: transparent; border: none")
 
         # First call back to change the variable
         fcn = lambda: self.first_callback()
-#        b.currentItemChanged.connect(fcn)
         b.clicked.connect(fcn)
 
         if self.element["module"] and "method" in self.element:
