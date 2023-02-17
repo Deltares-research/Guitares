@@ -14,8 +14,8 @@ def analyzeFeedback(text):
 def aggregate_results():
     #"D:\RA2CE\1_data\fullTest\output\multi_link_origin_closest_destination\fullTest_optimal_routes_with_hazard.gpkg"
     output_folder = Ra2ceGUI.ra2ceHandler.input_config.analysis_config.config_data['output']
-    Ra2ceGUI.ra2ceHandler.input_config.analysis_config.config_data['project']['name']
-    routes_results_path = output_folder / r"multi_link_origin_closest_destination\fullTest_optimal_routes_with_hazard.gpkg"
+    project_name = Ra2ceGUI.ra2ceHandler.input_config.analysis_config.config_data['project']['name']
+    routes_results_path = output_folder / r"multi_link_origin_closest_destination\{}_optimal_routes_with_hazard.gpkg".format(project_name)
     routes_results = gpd.read_file(routes_results_path)
 
     flooded_results = output_folder / "people_flooded.csv"

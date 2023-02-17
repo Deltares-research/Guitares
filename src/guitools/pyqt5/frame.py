@@ -20,9 +20,10 @@ class Frame:
         if element["title"]:
             label = QLabel(element["title"], parent)
             fm = label.fontMetrics()
-            wlab = fm.size(0, element["title"]).width()
-            label.setGeometry(x0 + 10, y0 - 9, wlab + 20, 16)
+            wlab = fm.size(0, element["title"]).width() + 20
+            label.setGeometry(x0 + 10, y0 - 9, wlab, 16)
             label.setAlignment(QtCore.Qt.AlignTop)
+            # label.setAutoFillBackground(True)
             element["title_width"] = wlab
 
         frame.setVisible(True)

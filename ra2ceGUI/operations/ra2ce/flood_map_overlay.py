@@ -46,20 +46,28 @@ class FloodMapOverlay:
 
     def floodmap_overlay_building_footprints(self):
         # Get the building footprints with the centroids / representative points within
-        building_footprints_within_hazard_extent = gpd.read_feather(Ra2ceGUI.building_footprints_geoms, bbox=self.floodmap_extent)
+        building_footprints_within_hazard_extent = gpd.read_feather(Ra2ceGUI.building_footprints_geoms)
+
+        # Filter with the flood map bounding box
+        xmin, ymin, xmax, ymax = self.floodmap_extent
+        building_footprints_within_hazard_extent = building_footprints_within_hazard_extent.cx[xmin:xmax, ymin:ymax]
 
         # Update the GeoDataFrame with the flood map data
-        building_footprints_within_hazard_extent["flooded"] = self.hazard_overlay(building_footprints_within_hazard_extent)
+        building_footprints_within_hazard_extent["flooded_village"] = self.hazard_overlay(building_footprints_within_hazard_extent)
+
+        # Calculate the number of people that are flooded
+        building_footprints_within_hazard_extent["flooded_ppl"] = building_footprints_within_hazard_extent["flooded_village"] * building_footprints_within_hazard_extent["POP_BLDG"]
 
         # Summarize the number of people flooded and not flooded per village
-        flooded_ppl = building_footprints_within_hazard_extent.loc[building_footprints_within_hazard_extent["flooded"] == 1].groupby("VIL_NAME")["flooded"].size().reset_index()
-        non_flooded_ppl = building_footprints_within_hazard_extent.loc[building_footprints_within_hazard_extent["flooded"] == 0].groupby("VIL_NAME")["flooded"].size().reset_index()
-        non_flooded_ppl.rename(columns={"flooded": "not flooded"}, inplace=True)
+        flooded_ppl = building_footprints_within_hazard_extent.groupby("VIL_NAME")[["flooded_village", "flooded_ppl"]].sum().reset_index()
+        flooded_ppl["flooded_village"] = flooded_ppl["flooded_village"].astype(int)
+        flooded_ppl["flooded_ppl"] = flooded_ppl["flooded_ppl"].astype(int)
 
-        # Add the village index
+        # Add the village index?
 
-        Ra2ceGUI.result = pd.merge(flooded_ppl, non_flooded_ppl, how='outer', on="VIL_NAME")
-        Ra2ceGUI.result.to_csv(Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'output', 'people_flooded.csv'))
+        Ra2ceGUI.result = flooded_ppl
+        Ra2ceGUI.result.to_csv(Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'output', 'people_flooded.csv'),
+                               index=False)
 
     def color_roads(self, graph_path):
         g = GraphPickleReader().read(graph_path)
@@ -87,13 +95,15 @@ class FloodMapOverlay:
         if path_od_hazard_graph.is_file():
             print("A hazard overlay was already done previously. If you want to do a new hazard overlay, please create a new project.")
             self.color_roads(path_od_hazard_graph)
-            self.floodMapOverlayFeedback("Overlay done")
+            Ra2ceGUI.floodmap_overlay_feedback = "Overlay done"
+            self.floodMapOverlayFeedback(Ra2ceGUI.floodmap_overlay_feedback)
             # Ra2ceGUI.gui.elements["spinner"].stop()
             return
 
         try:
             assert Ra2ceGUI.ra2ceHandler
-            self.floodMapOverlayFeedback("First validate configuration")
+            Ra2ceGUI.floodmap_overlay_feedback = "First validate configuration"
+            self.floodMapOverlayFeedback(Ra2ceGUI.floodmap_overlay_feedback)
         except AssertionError:
             # Ra2ceGUI.gui.elements["spinner"].stop()
             return
@@ -102,8 +112,8 @@ class FloodMapOverlay:
         clip_origins(self.floodmap_extent)
 
         if Ra2ceGUI.floodmap_overlay_feedback == "No origins in extent":
-            self.floodMapOverlayFeedback("No origins in extent")
-            Ra2ceGUI.gui.elements["spinner"].stop()
+            self.floodMapOverlayFeedback(Ra2ceGUI.floodmap_overlay_feedback)
+            # Ra2ceGUI.gui.elements["spinner"].stop()
             return
 
         try:
@@ -170,12 +180,12 @@ def remove_nodes_within_extent(g, extent, origin_name, destination_name):
     to_remove = len(list_origins_only + list_destinations_and_origins)
 
     if to_remove > 0:
-        # Remove the flooded destination nodes
-        g.remove_nodes_from(list_origins_only)
+        # Remove the attributes for origin nodes
+        for node in list_origins_only:
+            del g.nodes[node]["od_id"]
 
         for node in list_destinations_and_origins:
-            # Delete the destination name from the "od_id" attribute of the nodes of which the destination is
-            # flooded.
+            # Delete the origin name from the "od_id" attribute of the nodes of which the origin is outside of the extent.
             od_id = g.nodes[node]["od_id"]
             g.nodes[node]["od_id"] = ",".join([od for od in od_id.split(",") if destination_name not in od])
 

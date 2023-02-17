@@ -94,7 +94,7 @@ export function addLineGeojsonLayer (geojson, id, layerName, layerGroupName, col
             'line-cap': 'round'
         },
         'paint': {
-            'line-width': 2,
+            'line-width': 3,
             'line-color': color
         }
     });
@@ -119,14 +119,14 @@ export function addLineGeojsonLayerColorByProperty (geojson, id, layerName, laye
             'line-cap': 'round'
         },
         'paint': {
-            'line-width': 2,
+            'line-width': 3,
             'line-color':  [
               "match",
               ["get", color_by],
               0,
               "orange",
               1,
-              "#08316c",
+              "#a81df2",
               "white"
             ]
         },

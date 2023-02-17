@@ -121,7 +121,7 @@ class Ra2ceGUI:
     def highlight_road(self, roads, layer_name, layer_group):
         self.gui.elements['main_map']['widget_group'].add_layer_group(layer_group)
         self.gui.elements['main_map']['widget_group'].add_line_geojson(roads,
-                                                                       color='red',
+                                                                       color='#faee05',
                                                                        layer_name=layer_name,
                                                                        layer_group_name=layer_group)
 
@@ -135,11 +135,16 @@ class Ra2ceGUI:
         # Add layer group (this only does something when there is no layer group with layer_group_name)
         self.gui.map_widget["main_map"].add_layer_group(layer_group_name)
 
+        # cvals = [1]
+        # colors = ["#02c6db"]
+        #
+        # cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", "#02c6db")
+
         # Add the new image layer to the layer group
         self.gui.map_widget["main_map"].add_image_layer(Ra2ceGUI.loaded_floodmap,
                                                             layer_name=layer_name,
                                                             layer_group_name=layer_group_name,
-                                                            legend_title="Depth (m)",
+                                                            legend_title="Flooded",
                                                             colormap="Blues",
                                                             cmin=0,
                                                             cmax=1,
