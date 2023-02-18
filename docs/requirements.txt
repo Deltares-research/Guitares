@@ -1,0 +1,13 @@
+geopandas
+numpy
+pandas
+pyproj
+rasterio
+shapely
+numpy
+geojson
+Pillow
+matplotlib
+pyyaml
+pyqt5
+pyqtwebengine

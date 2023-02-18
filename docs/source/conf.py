@@ -2,7 +2,7 @@
 
 # -- Project information
 
-project = 'CoSMoS'
+project = 'Guitares'
 copyright = 'Deltares'
 author = 'Maarten van Ormondt'
 
