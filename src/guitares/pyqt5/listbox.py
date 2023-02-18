@@ -1,67 +1,65 @@
 from PyQt5.QtWidgets import QListWidget
 from PyQt5.QtWidgets import QLabel
 from PyQt5 import QtCore
+import traceback
 
-from .widget import Widget
-
-#from gui import getvar, setvar
-from guitares.gui import get_position
-
-class ListBox(Widget):
+class ListBox(QListWidget):
 
     def __init__(self, element, parent, gui):
-        super().__init__(element, parent, gui)
+        super().__init__(parent)
 
-        b = QListWidget(parent)
-        self.widgets.append(b)
+        self.element = element
+        self.parent  = parent
+        self.gui     = gui
 
         self.add_items()
 
         # Adjust list value types
-        if self.element["select"] == "item":
+        if element["select"] == "item":
             if not type(self.element["option_value"]) == dict:
-                for i, val in enumerate(self.element["option_value"]):
-                    if self.element["type"] == float:
-                        self.element["option_value"][i] = float(val)
-                    elif self.element["type"] == int:
-                        self.element["option_value"][i] = int(val)
+                for i, val in enumerate(element["option_value"]):
+                    if element["type"] == float:
+                        element["option_value"][i] = float(val)
+                    elif element["type"] == int:
+                        element["option_value"][i] = int(val)
 
-        x0, y0, wdt, hgt = get_position(element["position"], parent, self.gui.resize_factor)
+        x0, y0, wdt, hgt = gui.get_position(element["position"], parent)
 
-        b.setGeometry(x0, y0, wdt, hgt)
+        self.setGeometry(x0, y0, wdt, hgt)
+
         if element["text"]:
-            label = QLabel(self.element["text"], self.parent)
-            self.widgets.append(label)
+            label = QLabel(element["text"], parent)
             fm = label.fontMetrics()
-            wlab = int(fm.size(0, self.element["text"]).width())
+            wlab = int(fm.size(0, element["text"]).width())
             if element["text_position"] == "above-center" or element["text_position"] == "above":
                 label.setAlignment(QtCore.Qt.AlignCenter)
-                label.setGeometry(x0, int(y0 - 20 * self.gui.resize_factor), wdt, int(20 * self.gui.resize_factor))
+                label.setGeometry(x0, int(y0 - 20 * gui.resize_factor), wdt, int(20 * gui.resize_factor))
             elif element["text_position"] == "above-left":
                 label.setAlignment(QtCore.Qt.AlignLeft)
-                label.setGeometry(x0, int(y0 - 20 * self.gui.resize_factor), wlab, int(20 * self.gui.resize_factor))
+                label.setGeometry(x0, int(y0 - 20 * gui.resize_factor), wlab, int(20 * gui.resize_factor))
             else:
                 # Assuming left
                 label.setAlignment(QtCore.Qt.AlignRight)
-                label.setGeometry(int(x0 - wlab - 3 * self.gui.resize_factor), int(y0 + 5 * self.gui.resize_factor), wlab, int(20 * self.gui.resize_factor))
+                label.setGeometry(int(x0 - wlab - 3 * gui.resize_factor), int(y0 + 5 * gui.resize_factor), wlab, int(20 * gui.resize_factor))
 
             label.setStyleSheet("background: transparent; border: none")
 
+            self.text_widget = label
+
+
         # First call back to change the variable
         fcn = lambda: self.first_callback()
-        b.clicked.connect(fcn)
+        self.clicked.connect(fcn)
 
-        if self.element["module"] and "method" in self.element:
-            if hasattr(self.element["module"], self.element["method"]):
-                self.callback = getattr(self.element["module"], self.element["method"])
+        if element["module"] and "method" in element:
+            if hasattr(element["module"], element["method"]):
+                self.callback = getattr(element["module"], element["method"])
                 fcn2 = lambda: self.second_callback()
-                b.clicked.connect(fcn2)
+                self.clicked.connect(fcn2)
             else:
-                print("Error!. Listbox method " + self.element["method"] + " does not exist.")
+                print("Error!. Listbox method " + element["method"] + " does not exist.")
 
     def set(self):
-
-        if self.check_variables():
 
             # First check if items need to be updated. This is only necessary when "option_string" is a dict
             if type(self.element["option_string"]) == dict:
@@ -69,8 +67,8 @@ class ListBox(Widget):
 
             # Get the items
             items = []
-            for x in range(self.widgets[0].count()):
-                items.append(self.widgets[0].item(x))
+            for x in range(self.count()):
+                items.append(self.item(x))
 
             # Get value
             val = self.gui.getvar(self.element["variable_group"], self.element["variable"])
@@ -95,45 +93,43 @@ class ListBox(Widget):
             else:
                 index = val
 
-            self.widgets[0].setCurrentItem(items[index])
-
-            self.set_dependencies()
+            self.setCurrentItem(items[index])
 
     def first_callback(self):
-
-        if self.check_variables():
-
-            index = self.widgets[0].currentRow()
-            if self.element["select"] == "item":
-                if type(self.element["option_value"]) == dict:
-                    name = self.element["option_value"]["variable"]
-                    group = self.element["option_value"]["variable_group"]
-                    vals = self.gui.getvar(group, name)
-                    if not vals:
-                        vals = [""]
-                else:
-                    vals = self.element["option_value"]
-                newval = vals[index]
+        index = self.widgets[0].currentRow()
+        if self.element["select"] == "item":
+            if type(self.element["option_value"]) == dict:
+                name = self.element["option_value"]["variable"]
+                group = self.element["option_value"]["variable_group"]
+                vals = self.gui.getvar(group, name)
+                if not vals:
+                    vals = [""]
             else:
-                newval = index
+                vals = self.element["option_value"]
+            newval = vals[index]
+        else:
+            newval = index
 
-            name  = self.element["variable"]
-            group = self.element["variable_group"]
-            self.gui.setvar(group, name, newval)
+        name  = self.element["variable"]
+        group = self.element["variable_group"]
+        self.gui.setvar(group, name, newval)
 
     def second_callback(self):
-        if self.okay and self.widgets[0].isEnabled():
-            group = self.element["variable_group"]
-            name  = self.element["variable"]
-            val   = self.gui.getvar(group, name)
-            self.callback(val, self)
-            # Update GUI
-            self.gui.update()
+        try:
+            if self.okay and self.isEnabled():
+                group = self.element["variable_group"]
+                name  = self.element["variable"]
+                val   = self.gui.getvar(group, name)
+                self.callback(val, self)
+                # Update GUI
+                self.gui.update()
+        except:
+            traceback.print_exc()
 
     def add_items(self):
 
         # Delete existing items
-        self.widgets[0].clear()
+        self.clear()
 
         if type(self.element["option_string"]) == dict:
             group = self.element["option_string"]["variable_group"]
@@ -142,7 +138,7 @@ class ListBox(Widget):
             if not v:
                 v = [""]
             for itxt, txt in enumerate(v):
-                self.widgets[0].insertItem(itxt, txt)
+                self.insertItem(itxt, txt)
         else:
             for itxt, txt in enumerate(self.element["option_string"]):
-                self.widgets[0].insertItem(itxt, txt)
+                self.insertItem(itxt, txt)

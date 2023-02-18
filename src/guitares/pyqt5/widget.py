@@ -12,9 +12,7 @@ class Widget:
             pass
 
     def set_dependencies(self):
-
         if self.element["dependency"]:
-
             for dep in self.element["dependency"]:
 
                 try:

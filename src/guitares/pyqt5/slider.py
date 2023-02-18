@@ -2,49 +2,46 @@ from PyQt5.QtWidgets import QSlider, QLabel, QStyle, QStyleOptionSlider
 from PyQt5.QtCore import Qt, QRect, QPoint
 from PyQt5.QtGui import QPainter
 from PyQt5 import QtWidgets
-
-from .widget import Widget
-from guitares.gui import get_position
+import traceback
 
 
-# from gui import getvar, setvar
-
-class Slider(Widget):
+class Slider(QSlider):
 
     def __init__(self, element, parent, gui):
-        super().__init__(element, parent, gui)
+        super().__init__(Qt.Horizontal, parent=parent)
 
-        # s = QSlider(parent)
-        s = QSlider(Qt.Horizontal, parent=parent)
+        self.element = element
+        self.parent  = parent
+        self.gui     = gui
+
         # ToDO: Make minimum and maximum flexible
-        minimum = self.element["minimum"]
-        maximum = self.element["maximum"]
+        minimum = element["minimum"]
+        maximum = element["maximum"]
         interval = 10
-        s.setMinimum(minimum)
-        s.setMaximum(maximum)
-        s.setTickInterval(interval)
-        s.setSingleStep(1)
-        s.setTickPosition(QSlider.TicksBelow)
-        self.widgets.append(s)
+        self.setMinimum(minimum)
+        self.setMaximum(maximum)
+        self.setTickInterval(interval)
+        self.setSingleStep(1)
+        self.setTickPosition(QSlider.TicksBelow)
 
-        x0, y0, wdt, hgt = get_position(element["position"], parent, self.gui.resize_factor)
+        x0, y0, wdt, hgt = gui.get_position(element["position"], parent)
 
-        s.setGeometry(x0, y0, wdt, hgt)
+        self.setGeometry(x0, y0, wdt, hgt)
         if element["text"]:
-            label = QLabel(self.element["text"], self.parent)
-            self.widgets.append(label)
+            label = QLabel(element["text"], parent)
             fm = label.fontMetrics()
-            wlab = fm.size(0, self.element["text"]).width() + 15
+            wlab = fm.size(0, element["text"]).width() + 15
             label.setAlignment(Qt.AlignRight)
             label.setGeometry(x0 - wlab - 3, y0 + 5, wlab, hgt)
             label.setStyleSheet("background: transparent; border: none")
+            self.text_widget = label
 
         # set tick labels
         ticks = [x0,x0+wdt]
+        self.tick_label = []
         for ii, ticklabel in enumerate([minimum,maximum]):
             xlab = ticks[ii]
             label = QLabel(str(ticklabel), self.parent)
-            self.widgets.append(label)
             fm = label.fontMetrics()
             hlab = fm.height()
             wlab = fm.width(str(ticklabel), label.fontInfo().pointSize())
@@ -52,53 +49,51 @@ class Slider(Widget):
             label.setAlignment(Qt.AlignTop)
             label.setGeometry(xlab - ii*20, y0 + hgt, wlab, hlab)
             label.setStyleSheet("background: transparent; border: none")
+            self.tick_widget.append(label)
 
-#        fcn = lambda: self.first_callback()
-#        s.valueChanged.connect(fcn)
         value_changed_callback = lambda: self.first_callback()
-        s.valueChanged.connect(value_changed_callback)
+        self.valueChanged.connect(value_changed_callback)
 
-        if self.element["module"] and "slide_method" in self.element:
+        if self.element["module"] and "slide_method" in element:
             # Called when the slider is moved
-            self.slide_callback = getattr(self.element["module"], self.element["slide_method"])
+            self.slide_callback = getattr(element["module"], element["slide_method"])
         else:
             self.slide_callback = None
 
-        if self.element["module"] and "method" in self.element:
+        if element["module"] and "method" in element:
             # Called when the slider is released
-            self.callback = getattr(self.element["module"], self.element["method"])
+            self.callback = getattr(element["module"], element["method"])
             slider_released_callback = lambda: self.second_callback()
-            s.sliderReleased.connect(slider_released_callback)
+            self.sliderReleased.connect(slider_released_callback)
 
     def set(self):
-        if self.check_variables():
-            group = self.element["variable_group"]
-            name = self.element["variable"]
-            val = self.gui.getvar(group, name)
-            self.widgets[0].setValue(val)
-            self.set_dependencies()
+        group = self.element["variable_group"]
+        name = self.element["variable"]
+        val = self.gui.getvar(group, name)
+        self.setValue(val)
 
     def first_callback(self):
         self.okay = True
-        if self.check_variables():
-            val = self.widgets[0].value()
-            # Update value in variable dict
-            if self.okay:
-                group = self.element["variable_group"]
-                name = self.element["variable"]
-                self.gui.setvar(group, name, val)
-                self.widgets[0].setValue(val)
-                if self.slide_callback:
-                    self.slide_callback(val, self)
+        val = self.value()
+        # Update value in variable dict
+        group = self.element["variable_group"]
+        name = self.element["variable"]
+        self.gui.setvar(group, name, val)
+        self.setValue(val)
+        if self.slide_callback:
+            self.slide_callback(val, self)
 
     def second_callback(self):
-        if self.okay and self.widgets[0].isEnabled():
-            group = self.element["variable_group"]
-            name  = self.element["variable"]
-            val   = self.gui.getvar(group, name)
-            self.callback(val, self)
-            # Update GUI
-            self.gui.update()
+        try:
+            if self.isEnabled():
+                group = self.element["variable_group"]
+                name  = self.element["variable"]
+                val   = self.gui.getvar(group, name)
+                self.callback(val, self)
+                # Update GUI
+                self.gui.update()
+        except:
+            traceback.print_exc()
 
 # class LabeledSlider(WidgetGroup):
 #     def __init__(self, element, parent):

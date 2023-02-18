@@ -1,53 +1,46 @@
 from PyQt5.QtWidgets import QComboBox
 from PyQt5.QtWidgets import QLabel
 from PyQt5 import QtCore
+import traceback
 
-from .widget import Widget
-
-from guitares.gui import get_position
-
-class PopupMenu(Widget):
-
+class PopupMenu(QComboBox):
     def __init__(self, element, parent, gui):
-        super().__init__(element, parent, gui)
+        super().__init__(parent)
 
-        b = QComboBox(parent)
-        self.widgets.append(b)
+        self.element = element
+        self.parent  = parent
+        self.gui     = gui
 
         try:
-            if "option_string" in self.element:
-                if type(self.element["option_string"]) == dict:
-                    group = self.element["option_string"]["variable_group"]
-                    name  = self.element["option_string"]["variable"]
-                    v     = self.gui.getvar(group, name)
+            if "option_string" in element:
+                if type(element["option_string"]) == dict:
+                    group = element["option_string"]["variable_group"]
+                    name  = element["option_string"]["variable"]
+                    v     = gui.getvar(group, name)
                     for txt in v:
-                        b.addItem(txt)
+                        self.addItem(txt)
                 else:
-                    for txt in self.element["option_string"]:
-                        b.addItem(txt)
+                    for txt in element["option_string"]:
+                        self.addItem(txt)
 
             # Adjust list value types
-            if self.element["option_value"]:
-                if not type(self.element["option_value"]) == dict:
-                    for i, val in enumerate(self.element["option_value"]):
-                        if "type" not in self.element:
-                            print(self.element["variable"])
-                            pass
-                        if self.element["type"] == float:
-                            self.element["option_value"][i] = float(val)
-                        elif self.element["type"] == int:
-                            self.element["option_value"][i] = int(val)
+            if element["option_value"]:
+                if not type(element["option_value"]) == dict:
+                    for i, val in enumerate(element["option_value"]):
+                        if element["type"] == float:
+                            element["option_value"][i] = float(val)
+                        elif element["type"] == int:
+                            element["option_value"][i] = int(val)
         except:
             print("Error setting popup menu for variable ..." )
 
-        x0, y0, wdt, hgt = get_position(element["position"], parent, self.gui.resize_factor)
+        x0, y0, wdt, hgt = gui.get_position(element["position"], parent)
 
-        b.setGeometry(x0, y0, wdt, hgt)
+        self.setGeometry(x0, y0, wdt, hgt)
         if element["text"]:
-            label = QLabel(self.element["text"], self.parent)
-            self.widgets.append(label)
+            label = QLabel(element["text"], parent)
             fm = label.fontMetrics()
-            wlab = fm.size(0, self.element["text"]).width()
+            wlab = fm.size(0, element["text"]).width()
             if element["text_position"] == "above-center" or element["text_position"] == "above":
                 label.setAlignment(QtCore.Qt.AlignCenter)
                 label.setGeometry(x0, y0 - 20, wdt, 20)
@@ -58,49 +51,49 @@ class PopupMenu(Widget):
                 # Assuming left
                 label.setAlignment(QtCore.Qt.AlignRight)
                 label.setGeometry(x0 - wlab - 3, y0 + 5, wlab, 20)
-
             label.setStyleSheet("background: transparent; border: none")
+            self.text_widget = label
 
         fcn = lambda: self.first_callback()
-        b.currentIndexChanged.connect(fcn)
-        if self.element["module"] and "method" in self.element:
-            if hasattr(self.element["module"], self.element["method"]):
-                self.callback = getattr(self.element["module"], self.element["method"])
+        self.currentIndexChanged.connect(fcn)
+        if element["module"] and "method" in element:
+            if hasattr(element["module"], element["method"]):
+                self.callback = getattr(element["module"], element["method"])
                 fcn2 = lambda: self.second_callback()
-                b.currentIndexChanged.connect(fcn2)
+                self.currentIndexChanged.connect(fcn2)
             else:
-               print("Error! Method " + self.element["method"] + " not found!")
+               print("Error! Method " + element["method"] + " not found!")
 
     def set(self):
-        if self.check_variables():
-            if self.element["option_value"]:
-                if type(self.element["option_value"]) == dict:
-                    name  = self.element["option_value"]["variable"]
-                    group = self.element["option_value"]["variable_group"]
-                    self.element["option_value"] = self.gui.getvar(group, name)
+        if self.element["option_value"]:
+            if type(self.element["option_value"]) == dict:
+                name  = self.element["option_value"]["variable"]
+                group = self.element["option_value"]["variable_group"]
+                self.element["option_value"] = self.gui.getvar(group, name)
 
-            val = self.gui.getvar(self.element["variable_group"], self.element["variable"])
-            if val:
-                if self.element["option_value"]:
-                    index = self.element["option_value"].index(val)
-                    self.widgets[0].setCurrentIndex(index)
-                self.set_dependencies()
+        val = self.gui.getvar(self.element["variable_group"], self.element["variable"])
+        if val:
+            if self.element["option_value"]:
+                index = self.element["option_value"].index(val)
+                self.setCurrentIndex(index)
 
     def first_callback(self):
-        if self.check_variables():
-            i = self.widgets[0].currentIndex()
-            newval = i
-            if self.element["option_value"]:
-                newval = self.element["option_value"][i]
-            name  = self.element["variable"]
-            group = self.element["variable_group"]
-            self.gui.setvar(group, name, newval)
+        i = self.currentIndex()
+        newval = i
+        if self.element["option_value"]:
+            newval = self.element["option_value"][i]
+        name  = self.element["variable"]
+        group = self.element["variable_group"]
+        self.gui.setvar(group, name, newval)
 
     def second_callback(self):
-        if self.okay and self.widgets[0].isEnabled():
-            group = self.element["variable_group"]
-            name  = self.element["variable"]
-            val   = self.gui.getvar(group, name)
-            self.callback(val, self)
-            # Update GUI
-            self.gui.update()
+        try:
+            if self.isEnabled():
+                group = self.element["variable_group"]
+                name  = self.element["variable"]
+                val   = self.gui.getvar(group, name)
+                self.callback(val, self)
+                # Update GUI
+                self.gui.update()
+        except:
+            traceback.print_exc()

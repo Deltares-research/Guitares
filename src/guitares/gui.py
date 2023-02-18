@@ -134,6 +134,9 @@ class GUI:
         self.window.setCentralWidget(widget)
         self.central_widget = widget
 
+        # Check if gui variables exist. If not, give a warning.
+
+
         # Add elements
         add_elements(self.config["element"], self.central_widget, self)
 
@@ -180,6 +183,11 @@ class GUI:
             data = self.popup_data
         return data
 
+    def get_position(self, position, parent):
+        # Use the method outside of the class
+        x0, y0, wdt, hgt = get_position(position, parent, self.resize_factor)
+        return x0, y0, wdt, hgt
+
 def read_gui_config(path, file_name):
     d = yaml2dict(os.path.join(path, file_name))
     config = {}
@@ -206,12 +214,23 @@ def read_gui_elements(path, file_name):
         if el["style"] == "tabpanel":
             # Loop through tabs
             for tab in el["tab"]:
+                #
+                # # Backward compatibility
+                # if "string" in tab:
+                #     tab["text"] = tab["string"]
+
                 if "element" in tab:
                     if type(tab["element"]) == str:
                         # Must be a file
                         tab["element"] = read_gui_elements(path, tab["element"])
                 else:
                     tab["element"] = []
+        # else:
+        #
+        #     # Backward compatibility
+        #     if "title" in el:
+        #         el["text"] = el["title"]
+
     return element
 
 def set_missing_config_values(config, gui):
@@ -262,6 +281,11 @@ def set_missing_element_values(element, parent_group, parent_module, gui):
         if el["style"] == "tabpanel":
             # Loop through tabs
             for tab in el["tab"]:
+
+                # Backward compatibility
+                if "string" in tab:
+                    tab["text"] = tab["string"]
+
                 if "variable_group" not in tab:
                     tab["variable_group"] = el["variable_group"]
                 if "module" not in tab:
@@ -278,8 +302,14 @@ def set_missing_element_values(element, parent_group, parent_module, gui):
                                                tab["module"],
                                                gui)
         elif el["style"] == "panel":
-            if "title" not in el:
-                el["title"] = ""
+
+            # Backward compatibility
+            if "title" in el:
+                el["text"] = el["title"]
+
+            if "text" not in el:
+                el["text"] = ""
+
             if "element" in el:
                 set_missing_element_values(el["element"],
                                            el["variable_group"],
@@ -374,7 +404,6 @@ def set_missing_menu_values(menu_list, parent_module):
             set_missing_menu_values(menu["menu"], menu["module"])
 
 
-#def add_elements(element_list, parent, main_window, server_path, server_port):
 def add_elements(element_list, parent, gui):
 
     for element in element_list:
@@ -396,12 +425,11 @@ def add_elements(element_list, parent, gui):
             # Add frame
             from .pyqt5.frame import Frame
             element["widget"] = Frame(element, parent, gui)
-            w = element["widget"].widgets[0]
 
             # And now add the elements in this frame
             if "element" in element:
                 add_elements(element["element"],
-                             w,
+                             element["widget"],
                              gui)
 
         else:
@@ -427,10 +455,6 @@ def add_elements(element_list, parent, gui):
                 from .pyqt5.listbox import ListBox
                 element["widget"] = ListBox(element, parent, gui)
 
-            # elif element["style"] == "olmap":
-            #     from .pyqt5.olmap import OlMap
-            #     element["widget_group"] = OlMap(element, parent)
-            #     self.map_widget[element["id"]] = element["widget_group"]
             elif element["style"] == "slider":
                 from .pyqt5.slider import Slider
                 element["widget"] = Slider(element, parent, gui)
@@ -447,27 +471,36 @@ def add_elements(element_list, parent, gui):
 
             # And set the values
             if "widget" in element:
-                if hasattr(element["widget"], "widgets"):
-                    for wdgt in element["widget"].widgets:
-                        wdgt.setVisible(True)
+                element["widget"].setVisible(True)
+                # if hasattr(element["widget"], "widgets"):
+                #     for wdgt in element["widget"].widgets:
+                #         wdgt.setVisible(True)
 
 def set_elements(element_list):
     for element in element_list:
-        if element["visible"]:
-            if element["style"] == "tabpanel":
-                index = element["widget"].widgets[0].currentIndex()
-                for j, tab in enumerate(element["tab"]):
-                    # And now add the elements in this tab
-                    if tab["element"] and j==index:
-                        set_elements(tab["element"])
-            elif element["style"] == "panel":
-                # And now set the elements in this frame
-                if "element" in element:
-                    set_elements(element["element"])
-            else:
-                # And set the values
-                if "widget" in element:
-                    element["widget"].set()
+        try:
+            if element["visible"]:
+                if element["style"] == "tabpanel":
+                    index = element["widget"].currentIndex()
+                    for j, tab in enumerate(element["tab"]):
+                        # And now add the elements in this tab
+                        if tab["element"] and j==index:
+                            set_elements(tab["element"])
+                elif element["style"] == "panel":
+                    # And now set the elements in this frame
+                    if "element" in element:
+                        set_elements(element["element"])
+                else:
+                    # And set the values
+                    if "widget" in element:
+                        # Set the values
+                        element["widget"].set()
+                        # Set the dependencies
+                        set_dependencies(element)
+        except Exception as err:
+            print(err)
+
+
 
 def find_element_by_id(element, element_id):
     element_found = None
@@ -518,7 +551,7 @@ def resize_elements(element_list, parent, resize_factor):
         if element["style"] == "tabpanel":
             x0, y0, wdt, hgt = get_position(element["position"], parent, resize_factor)
 #            hgt = hgt + int(20 * resize_factor)
-            tab_panel = element["widget"].widgets[0]
+            tab_panel = element["widget"]
             tab_panel.setGeometry(x0, y0, wdt, hgt)
             for tab in element["tab"]:
                 widget = tab["widget"]
@@ -526,16 +559,13 @@ def resize_elements(element_list, parent, resize_factor):
                 # And resize elements in this tab
                 if tab["element"]:
                     resize_elements(tab["element"], widget, resize_factor)
-#            tab_panel.setGeometry(x0, y0, wdt, hgt)
         elif element["style"] == "panel":
             x0, y0, wdt, hgt = get_position(element["position"], parent, resize_factor)
-            element["widget"].widgets[0].setGeometry(x0, y0, wdt, hgt)
-            if len(element["widget"].widgets) == 2:
+            element["widget"].setGeometry(x0, y0, wdt, hgt)
+            if hasattr(element["widget"], "text_widget"):
                 # Also change title widget
-                element["widget"].widgets[1].setGeometry(x0 + 10, y0 - 9, element["title_width"], 16)
-                element["widget"].widgets[1].setAlignment(QtCore.Qt.AlignTop)
-
-
+                element["widget"].text_widget.setGeometry(x0 + 10, y0 - 9, element["text_width"], 16)
+                element["widget"].text_widget.setAlignment(QtCore.Qt.AlignTop)
         elif element["style"] == "mapbox":
             x0, y0, wdt, hgt = get_position(element["position"], parent, resize_factor)
             element["widget"].view.setGeometry(x0, y0, wdt, hgt)
@@ -582,6 +612,175 @@ def get_position(position, parent, resize_factor):
 
     return x0, y0, wdt, hgt
 
+
+def set_dependencies(element):
+    if element["dependency"]:
+        for dep in element["dependency"]:
+            try:
+                getvar = element["widget"].gui.getvar
+                if dep["checkfor"] == "all":
+                    okay = True
+                    for check in dep["check"]:
+                        name  = check["variable"]
+                        group = check["variable_group"]
+                        value = getvar(group, name)
+                        if type(check["value"]) == dict:
+                            check_value = getvar(check["value"]["variable_group"], check["value"]["variable"])
+                        else:
+                            check_value = check["value"]
+                            if type(value) == int:
+                                check_value = int(check_value)
+                            elif type(value) == float:
+                                check_value = float(check_value)
+                        # if self.check_variables(name=name, group=group):
+                        if check["operator"] == "eq":
+                            if value != check_value:
+                                okay = False
+                                break
+                        elif check["operator"] == "ne":
+                            if value == check_value:
+                                okay = False
+                                break
+                        elif check["operator"] == "gt":
+                            if value <= check_value:
+                                okay = False
+                                break
+                        elif check["operator"] == "ge":
+                            if value < check_value:
+                                okay = False
+                                break
+                        elif check["operator"] == "lt":
+                            if value >= check_value:
+                                okay = False
+                                break
+                        elif check["operator"] == "le":
+                            if value > check_value:
+                                okay = False
+                                break
+                elif dep["checkfor"] == "any":
+                    okay = False
+                    for check in dep["check"]:
+                        name  = check["variable"]
+                        group = check["variable_group"]
+                        value = getvar(group, name)
+                        if type(check["value"]) == dict:
+                            check_value = getvar(check["value"]["variable_group"], check["value"]["variable"])
+                        else:
+                            check_value = check["value"]
+                            if type(value) == int:
+                                check_value = int(check_value)
+                            elif type(value) == float:
+                                check_value = float(check_value)
+                        # if self.check_variables(name=name, group=group):
+                        if check["operator"] == "eq":
+                            if value == check_value:
+                                okay = True
+                                break
+                        elif check["operator"] == "ne":
+                            if value != check_value:
+                                okay = True
+                                break
+                        elif check["operator"] == "gt":
+                            if value > check_value:
+                                okay = True
+                                break
+                        elif check["operator"] == "ge":
+                            if value >= check_value:
+                                okay = True
+                                break
+                        elif check["operator"] == "lt":
+                            if value < check_value:
+                                okay = True
+                                break
+                        elif check["operator"] == "le":
+                            if value <= check_value:
+                                okay = True
+                                break
+                elif dep["checkfor"] == "none":
+                    okay = True
+                    for check in dep["check"]:
+                        name  = check["variable"]
+                        group = check["variable_group"]
+                        value = getvar(group, name)
+                        if type(check["value"]) == dict:
+                            check_value = getvar(check["value"]["variable_group"], check["value"]["variable"])
+                        else:
+                            check_value = check["value"]
+                            if type(value) == int:
+                                check_value = int(check_value)
+                            elif type(value) == float:
+                                check_value = float(check_value)
+                        if check["operator"] == "eq":
+                            if value == check_value:
+                                okay = False
+                                break
+                        elif check["operator"] == "ne":
+                            if value != check_value:
+                                okay = False
+                                break
+                        elif check["operator"] == "gt":
+                            if value > check_value:
+                                okay = False
+                                break
+                        elif check["operator"] == "ge":
+                            if value >= check_value:
+                                okay = False
+                                break
+                        elif check["operator"] == "lt":
+                            if value < check_value:
+                                okay = False
+                                break
+                        elif check["operator"] == "le":
+                            if value <= check_value:
+                                okay = False
+                                break
+                if dep["action"] == "visible":
+                    if okay:
+                        element["widget"].setVisible(True)
+                        if hasattr(element["widget"], "text_widget"):
+                            element["widget"].text_widget.setVisible(True)
+                    else:
+                        element["widget"].setVisible(False)
+                        if hasattr(element["widget"], "text_widget"):
+                            element["widget"].text_widget.setVisible(False)
+                elif dep["action"] == "enable":
+                    if okay:
+                        element["widget"].setEnabled(True)
+                        element["widget"].setStyleSheet("")
+                        if hasattr(element["widget"], "text_widget"):
+                            element["widget"].text_widget.setVisible(True)
+                    else:
+                        element["widget"].setEnabled(False)
+                        if hasattr(element["widget"], "text_widget"):
+                            element["widget"].text_widget.setVisible(False)
+            except:
+                print("Error setting dependency !!!")
+
+def check_variable(element):
+    # Check whether variables exist
+    if not "variable_group" in element:
+        print("Error : no group specified for element !")
+        return False
+    group = element["variable_group"]
+    if not name:
+        name = element["variable"]
+    if not group:
+        group = element["variable_group"]
+    if not name:
+        print("Error : no variable name specified for element !")
+        return False
+    if not group:
+        print("Error : no group specified for element !")
+        return False
+    # if not group in variables:
+    #     print("Error : GUI variables do not include group '" + group + "' !")
+    #     return False
+    # if not name in variables[group]:
+    #     print("Error : GUI variable group '" + group +
+    #           "' does not include variable '" + name + "' !")
+    #     return False
+
+    return True
 
 def yaml2dict(file_name):
     file = open(file_name,"r")

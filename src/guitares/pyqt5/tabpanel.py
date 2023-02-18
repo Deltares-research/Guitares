@@ -3,37 +3,35 @@ from PyQt5.QtWidgets import QWidget, QTabWidget
 from guitares.gui import set_elements, get_position
 from .widget import Widget
 
-class TabPanel(Widget):
+class TabPanel(QTabWidget):
     def __init__(self, element, parent, gui):
-        super().__init__(element, parent, gui)
+        super().__init__(parent)
 
-        x0, y0, wdt, hgt = get_position(self.element["position"], parent, self.gui.resize_factor)
+        self.element = element
+        self.parent  = parent
+        self.gui     = gui
+
+        x0, y0, wdt, hgt = gui.get_position(element["position"], parent)
 
         # Add tab panel
-        tab_panel = QTabWidget(parent)
-        tab_panel.setVisible(True)
-        tab_panel.setGeometry(x0, y0, wdt, hgt)
+#        tab_panel = QTabWidget(parent)
+        self.setVisible(True)
+        self.setGeometry(x0, y0, wdt, hgt)
 
-        if element["id"] == "modelmaker_hurrywave":
-            print("okay")
-
-        self.widgets.append(tab_panel)
+#        self.widgets.append(tab_panel)
 
         # Used to programmatically select a tab
-        self.element["select_tab"] = self.select_tab
+#        element["select_tab"] = self.select_tab
 
-
-        for tab in self.element["tab"]:
+        for tab in element["tab"]:
             # Place tab in tab panel
             widget = QWidget()
             tab["widget"] = widget
-            tab_panel.addTab(widget, tab["string"])
-            widget.setGeometry(0, 0, wdt, int(hgt - 20.0 * self.gui.resize_factor))
-            pass
+            self.addTab(widget, tab["text"])
+            widget.setGeometry(0, 0, wdt, int(hgt - 20.0 * gui.resize_factor))
 
-        tab_panel.currentChanged.connect(lambda indx, tabs=self.element["tab"]: self.tab_selected(tabs, indx))
-
-        pass
+        # Add the callback
+        self.currentChanged.connect(lambda indx, tabs=element["tab"]: self.tab_selected(tabs, indx))
 
     def tab_selected(self, tabs, indx):
         # Now call the select method
@@ -45,5 +43,5 @@ class TabPanel(Widget):
 
     def select_tab(self, index):
         # Selected programmatically
-        self.element["widget"].widgets[0].setCurrentIndex(index)
+        self.element["widget"].setCurrentIndex(index)
         self.tab_selected(self.element["tab"], index)

@@ -1,50 +1,51 @@
 from PyQt5.QtWidgets import QPushButton
 from PyQt5.QtGui import QIcon
-#from PyQt5.QtWidgets import QLabel
-#from PyQt5 import QtCore
+import traceback
 
-from .widget import Widget
-from guitares.gui import get_position
-
-class PushButton(Widget):
+class PushButton(QPushButton):
 
     def __init__(self, element, parent, gui):
-        super().__init__(element, parent, gui)
+        super().__init__(element["text"], parent)
 
-        b = QPushButton(element["text"], parent)
-        self.widgets.append(b)
+        self.element = element
+        self.parent  = parent
+        self.gui     = gui
 
-        x0, y0, wdt, hgt = get_position(element["position"], parent, self.gui.resize_factor)
+        x0, y0, wdt, hgt = gui.get_position(element["position"], parent)
 
-        b.setGeometry(x0, y0, wdt, hgt)
+        self.setGeometry(x0, y0, wdt, hgt)
 
-        if hasattr(element["method"], '__call__'):
-            # Callback function is already defined as method
-            b.clicked.connect(element["method"])
-            b.clicked.connect(self.gui.update)
-        else:
-            if element["module"] :
-                if "method" in element:
-                    if hasattr(self.element["module"], self.element["method"]):
-                        self.callback = getattr(element["module"] , element["method"])
-                        fcn = lambda: self.second_callback()
-                        b.clicked.connect(fcn)
-                    else:
-                        print("Error! Method " + self.element["method"] + " not found!")
+        # if hasattr(element["method"], '__call__'):
+        #     # Callback function is already defined as method
+        #     self.clicked.connect(element["method"])
+        #     self.clicked.connect(gui.update)
+        # else:
+        if element["module"] :
+            if "method" in element:
+                if hasattr(element["module"], element["method"]):
+                    self.callback = getattr(element["module"] , element["method"])
+                    fcn = lambda: self.second_callback()
+                    self.clicked.connect(fcn)
                 else:
-                    print("No method found in element. Button will be inactive.")
-        b.clicked.connect(self.gui.update)
+                    print("Error! Method " + element["method"] + " not found!")
+            else:
+                print("No method found in element. Button will be inactive.")
+        self.clicked.connect(gui.update)
 
         if "icon" in element.keys():
-            b.setIcon(QIcon(element["icon"]))
+            self.setIcon(QIcon(element["icon"]))
         if "tooltip" in element.keys():
-            b.setToolTip(element["tooltip"])
+            self.setToolTip(element["tooltip"])
 
 
     def set(self):
-        self.set_dependencies()
+        pass
+
 
     def second_callback(self):
-        self.callback(self)
-        # Update GUI
-        self.gui.update()
+        try:
+            self.callback(self)
+            # Update GUI
+            self.gui.update()
+        except:
+            traceback.print_exc()

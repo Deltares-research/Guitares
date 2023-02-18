@@ -1,41 +1,30 @@
 from PyQt5.QtWidgets import QWidget, QFrame, QLabel
 from PyQt5 import QtCore
 
-from guitares.gui import get_position
-from .widget import Widget
-
-class Frame(Widget):
+class Frame(QFrame):
     def __init__(self, element, parent, gui):
-        super().__init__(element, parent, gui)
+        super().__init__(parent)
 
-        # Add tab panel
-        frame = QFrame(parent)
-        self.widgets.append(frame)
+        self.element = element
+        self.parent  = parent
+        self.gui     = gui
 
-        x0, y0, wdt, hgt = get_position(element["position"], parent, self.gui.resize_factor)
-        frame.setGeometry(x0, y0, wdt, hgt)
+        x0, y0, wdt, hgt = gui.get_position(element["position"], parent)
+        self.setGeometry(x0, y0, wdt, hgt)
 
-        frame.setFrameShape(QFrame.StyledPanel)
-        frame.setLineWidth(2)
+        self.setFrameShape(QFrame.StyledPanel)
+        self.setLineWidth(2)
 
-        # if element["title"]:
-        #     label = QLabel(element["title"], frame)
-        #     fm = label.fontMetrics()
-        #     wlab = fm.size(0, element["title"]).width() + 15
-        #     label.setAlignment(QtCore.Qt.AlignLeft)
-        #     #                    label.setGeometry(x0 + 10, y0 - 5, wlab, 20)
-        #     label.setGeometry(10, -2, wlab, 16)
-
-        if element["title"]:
-            label = QLabel(element["title"], parent)
+        if element["text"]:
+            label = QLabel(element["text"], parent)
             fm = label.fontMetrics()
-            wlab = fm.size(0, element["title"]).width()
-#            label.setAlignment(QtCore.Qt.AlignLeft)
-            #                    label.setGeometry(x0 + 10, y0 - 5, wlab, 20)
+            wlab = fm.size(0, element["text"]).width()
             label.setGeometry(x0 + 10, y0 - 9, wlab, 16)
             label.setAlignment(QtCore.Qt.AlignTop)
-            element["title_width"] = wlab
-            self.widgets.append(label)
+            element["text_width"] = wlab # Used for resizing
+            self.text_widget = label
 
+        self.setVisible(True)
 
-        frame.setVisible(True)
+    def set(self):
+        pass
