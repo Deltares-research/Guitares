@@ -40,7 +40,7 @@ The **configuration file** (*hello.yml*)
 
 In the configuration file, we define properties for the main window, and for the various UI elements that will make up our GUI.
 
-We not only set the size and title of the window, but also define the name of callback module, and a name of the group where GUI variables will be stored (more about this in the next section).
+We not only set the size and title of the window, but also define the name of callback module (in this case *callbacks*), and a name (*hello*) of the group where GUI variables will be stored (more about this in the next section).
 
 In this example, we use UI elements of two different styles: an *edit* element to enter the name and a *text* element to show the response. The *edit* element requires a *position*, a *variable* name, and a callback *method* that is executed when the user enters a name. The non-interactive *text* element in our case only requires a *position* and *variable*. 
    
