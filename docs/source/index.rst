@@ -28,5 +28,10 @@ Contents
 
 .. toctree::
 
-   usage
-   manual
+   getting_started
+   simple_example
+   application_structure
+   configuration
+   elements
+   callbacks
+   examples
