@@ -13,30 +13,9 @@ Let's have a look at a very simple GUI in which the user is asked to enter her o
 The **configuration file** (*hello.yml*)
 ---------------------------------
 
-.. code-block:: dos
+.. literalinclude:: ../../examples/hello/hello.yml
+   :language: none
 
-   window:
-     title: Hello!
-     width: 300
-     height: 70
-     module: callbacks
-     variable_group: hello
-   element:
-     - style: edit
-       position:
-         x: 100
-         y: 40
-         width: 100
-         height: 20
-       variable: name
-       method: enter_name
-     - style: text
-       position:
-         x: 100
-         y: 10
-         width: 100
-         height: 20
-       variable: response
 
 In the configuration file, we define properties for the main window, and for the various UI elements that will make up our GUI.
 
