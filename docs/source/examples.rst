@@ -1,12 +1,12 @@
-User manual
-=====
+More examples
+=============
 
 
-First section
-------------
+Simple Calculator
+-----------------
 
-Test test
+News Website Comparison
+-----------------------
 
-.. code-block:: matlab
-
-   a = 1 +1
+MapBox
+------

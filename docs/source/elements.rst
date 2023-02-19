@@ -1,12 +1,27 @@
-User manual
-=====
+Elements
+========
+
+Edit box
+--------
+
+Text
+----
+
+Push button
+-----------
+
+Pop-up menu
+-----------
+
+List boxes
+----------
+
+Slider
+------
 
 
-First section
-------------
+Tab panel
+---------
 
-Test test
-
-.. code-block:: matlab
-
-   a = 1 +1
+Frame
+-----

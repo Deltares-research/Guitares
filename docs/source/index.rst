@@ -8,6 +8,7 @@ A Guitares GUI consists of a main window (with optional drop-down menu) that con
 * Tab panels
 * Frames
 * Edit boxes
+* Text
 * Pop-up menus
 * List boxes
 * Sliders
@@ -30,8 +31,12 @@ Contents
 
    getting_started
    simple_example
-   application_structure
-   configuration
    elements
+   menu
+   positioning
    callbacks
+   guiobject
+   configuration
+   mapbox
+   stylesheets
    examples
