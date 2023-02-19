@@ -1,7 +1,7 @@
 A Very Simple Example
 =====================
 
-The Python code for a simple GUI consists of four components:
+The Python code for a simple Guitares application consists of four components:
 
 * A YAML **configuration file** that contains information about the main window, as well as the various UI elements in the GUI
 * An **app module** (often called *app.py*) that contains an instance (usually called *app*) of the class (usually called *Application*) that holds all of the GUI configuration data, and builds up the GUI
