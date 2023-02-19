@@ -61,8 +61,8 @@ def runRA2CE():
         return
 
     try:
-        # Ra2ceGUI.ra2ceHandler.input_config.analysis_config.configure()
-        # Ra2ceGUI.ra2ceHandler.run_analysis()
+        Ra2ceGUI.ra2ceHandler.input_config.analysis_config.configure()
+        Ra2ceGUI.ra2ceHandler.run_analysis()
         aggregate_results()
         # save_route_names()
         analyzeFeedback("Analysis finished")

@@ -51,8 +51,8 @@ class GUI:
                 thr.start()
 
         # Read mapbox token and store in js file in server path
-        if os.path.exists(mapbox_token_file):
-            fid = open(mapbox_token_file, "r")
+        if os.path.exists(os.path.join(module.main_path, mapbox_token_file)):
+            fid = open(os.path.join(module.main_path, mapbox_token_file), "r")
             mapbox_token = fid.readlines()
             fid.close()
             fid = open(os.path.join(server_path, "mapbox_token.js"), "w")
