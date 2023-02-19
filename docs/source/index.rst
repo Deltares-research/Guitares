@@ -22,7 +22,7 @@ A Guitares GUI consists of a main window (with optional drop-down menu) that con
 
 Please see the Elements section for more information about each UI element.
 
-Check out the :doc:`usage` section for instructions on how to get started!
+Check out the :doc:`getting_started` section for instructions on how to get started!
 
 .. note::
 
@@ -42,6 +42,8 @@ Contents
    positioning
    guiobject
    configuration
+   dependencies
+   tabpanels
    mapbox
    stylesheets
    examples

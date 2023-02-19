@@ -1,0 +1,24 @@
+window:
+  title: Checkbox!
+  width: 400
+  height: 70
+  module: callbacks
+  variable_group: checkbox
+element:
+- style: checkbox
+  position:
+    x: 100
+    y: 40
+    width: 80
+    height: 20
+  text: Check Me !
+  variable: checked
+  method: tick_box
+- style: text
+  position:
+    x: 100
+    y: 10
+    width: 200
+    height: 20
+  variable: response
+  

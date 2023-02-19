@@ -1,0 +1,33 @@
+window:
+  title: Radio Buttons!
+  width: 400
+  height: 100
+  module: callbacks
+  variable_group: radiobutton
+element:
+  - style: panel
+    position:
+      x: 10
+      y: 10
+      width: 380
+      height: 80
+    element:
+    - style: radiobuttongroup
+      position:
+        x: 10
+        y: 10
+        width: 80
+        height: 60
+      text: Check Me !
+      option_string: ["Button 1", "Button 2", "Button 3"]
+      option_value: [1, 2, 3]
+      variable: button
+      method: tick_button
+    - style: text
+      position:
+        x: 100
+        y: 10
+        width: 200
+        height: 20
+      variable: response
+  

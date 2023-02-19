@@ -11,7 +11,7 @@ The Python code for a simple Guitares application consists of four components:
 Let's have a look at a very simple GUI in which the user is asked to enter her or his name, and is then greeted by the program. We shall call this program *hello*.
 
 The **configuration file** (*hello.yml*)
----------------------------------
+----------------------------------------
 
 .. literalinclude:: ../../examples/hello/hello.yml
    :language: none
@@ -24,56 +24,40 @@ We not only set the size and title of the window, but also define the name of ca
 In this example, we use UI elements of two different styles: an *edit* element to enter the name and a *text* element to show the response. The *edit* element requires a *position*, a *variable* name, and a callback *method* that is executed when the user enters a name. The non-interactive *text* element in our case only requires a *position* and *variable*. 
    
 The **app module** (*app.py*)
----------------------------------
+-----------------------------
 
-.. code-block:: python
-
-   from guitares.gui import GUI
-
-   class Application:
-       def __init__(self):
-
-           # Initialize GUI 
-           self.gui = GUI(self,
-                          config_file="hello.yml")
-
-           # Define GUI variables
-           self.gui.setvar("hello", "name", "")
-           self.gui.setvar("hello", "response", "Hello, person whose name I do not yet know.")
-
-   app = Application()
+.. literalinclude:: ../../examples/hello/app.py
+   :language: python
    
-In the **app module**, the *GUI* class is imported from the Guitares package. When the *app* instance of the *Application* class is created, the GUI is initialized, using the configuration file *hello.yml*. Next, the GUI variables are defined using the *setvar* method of the *GUI* class. These variables are stored in a ``dict`` that is an attribute of the *gui* object. GUI variables are always stored in variable groups (in our case the name of the group is "hello"). They contain the values entered or selected in the various UI elements (e.g. the string that is entered by the user in an edit box). In this simple example, we defined two variables: one for the *name* to be entered and one for the *response* by the program.
+In the **app module**, the *GUI* class is imported from the Guitares package.
+When the *app* instance of the *Application* class is created, the GUI is initialized, using the configuration file *hello.yml*.
+Next, the GUI variables are defined using the *setvar* method of the *GUI* class.
+These variables are stored in a ``dict`` that is an attribute of the *gui* object.
+GUI variables are always stored in variable groups (in our case the name of the group is "hello").
+They contain the values entered or selected in the various UI elements (e.g. the string that is entered by the user in an edit box).
+In this simple example, we defined two variables: one for the *name* to be entered and one for the *response* by the program.
 
 The **callback module** (*callbacks.py*)
----------------------------------
+----------------------------------------
 
-.. code-block:: python
+.. literalinclude:: ../../examples/hello/callbacks.py
+   :language: python
 
-   from app import app
-
-   def enter_name(*args):
-       name = app.gui.getvar("hello", "name")
-       response = "Hello " + name + ", it's nice to meet you!"
-       app.gui.setvar("hello", "response", response)
-
-When the user enters a name, the application executes the callback method *enter_name* in the **callback module**. The program gets the variable *name* using the *getvar* method, and defines the response. Next, the GUI variable *response* is updated using the *setvar* method. After each execution of a callback method, the elements in the GUI are updated. This means that the response automatically appears in the user interface.
+When the user enters a name, the application executes the callback method *enter_name* in the **callback module**.
+The program gets the variable *name* using the *getvar* method, and defines the response.
+Next, the GUI variable *response* is updated using the *setvar* method.
+After each execution of a callback method, the elements in the GUI are updated.
+This means that the response automatically appears in the user interface.
 
 The **run module** (*hello.py*)
----------------------------------
+-------------------------------
 
-.. code-block:: python
-
-   # Import the application object
-   from app import app
-
-   if __name__ == '__main__':
-       # Build the GUI
-       app.gui.build()
+.. literalinclude:: ../../examples/hello/hello.py
+   :language: python
    
 The **run module** does not require editing. It imports the *app* object, and then builds the GUI. Only the name of the this module (in our case *hello.py*) should be changed by the developer. To start the application, the user simply calls:
 
-.. code-block:: dos
+.. code-block:: text
 
    python -m hello
 

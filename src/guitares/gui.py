@@ -458,6 +458,14 @@ def add_elements(element_list, parent, gui):
                 from .pyqt5.listbox import ListBox
                 element["widget"] = ListBox(element, parent, gui)
 
+            elif element["style"] == "checkbox":
+                from .pyqt5.checkbox import CheckBox
+                element["widget"] = CheckBox(element, parent, gui)
+
+            elif element["style"] == "radiobuttongroup":
+                from .pyqt5.radiobuttongroup import RadioButtonGroup
+                element["widget"] = RadioButtonGroup(element, parent, gui)
+
             elif element["style"] == "slider":
                 from .pyqt5.slider import Slider
                 element["widget"] = Slider(element, parent, gui)
@@ -473,11 +481,9 @@ def add_elements(element_list, parent, gui):
                 print("Element style " + element["style"] + " not recognized!")
 
             # And set the values
-            if "widget" in element:
-                element["widget"].setVisible(True)
-                # if hasattr(element["widget"], "widgets"):
-                #     for wdgt in element["widget"].widgets:
-                #         wdgt.setVisible(True)
+            if element["style"] != "radiobuttongroup": # Cannot set radiobutton group to visible
+                if "widget" in element:
+                    element["widget"].setVisible(True)
 
 def set_elements(element_list):
     for element in element_list:
@@ -569,12 +575,23 @@ def resize_elements(element_list, parent, resize_factor):
                 # Also change title widget
                 element["widget"].text_widget.setGeometry(x0 + 10, y0 - 9, element["text_width"], 16)
                 element["widget"].text_widget.setAlignment(QtCore.Qt.AlignTop)
+            if element["element"] and element["position"]["height"] < 0:
+                resize_elements(element["element"], element["widget"], resize_factor)
         elif element["style"] == "mapbox":
             x0, y0, wdt, hgt = get_position(element["position"], parent, resize_factor)
             element["widget"].view.setGeometry(x0, y0, wdt, hgt)
         elif element["style"] == "webpage":
             x0, y0, wdt, hgt = get_position(element["position"], parent, resize_factor)
             element["widget"].view.setGeometry(x0, y0, wdt, hgt)
+        elif element["style"] == "radiobuttongroup":
+            nbuttons = len(element["option_value"])
+            x0, y0, wdt, hgt = get_position(element["position"], parent, resize_factor)
+            yll = y0 + hgt - int(nbuttons * 20 * resize_factor)
+            for i in range(nbuttons):
+                element["widget"].buttons()[i].setGeometry(x0,
+                                                           int(yll + i * 20 * resize_factor),
+                                                           wdt,
+                                                           int(20 * resize_factor))
         else:
             if "widget" not in element:
                 continue
