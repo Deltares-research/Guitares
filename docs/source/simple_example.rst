@@ -1,5 +1,5 @@
 A Very Simple Example
-================
+=====================
 
 The Python code for a simple GUI consists of four components:
 
@@ -96,12 +96,12 @@ The **run module** does not require editing. It imports the *app* object, and th
 
 .. code-block:: dos
 
-   python -m greeter.py
+   python -m hello
 
 The following window now shows up, prompting the user to enter a name.
 
-.. figure:: ./img/hello1.png
+.. figure:: ./img/hello/hello1.png
 
 After entering the name, the GUI is automatically updated with a new response.
 
-.. figure:: ./img/hello2.png
+.. figure:: ./img/hello/hello2.png
