@@ -136,7 +136,6 @@ class GUI:
 
         # Check if gui variables exist. If not, give a warning.
 
-
         # Add elements
         add_elements(self.config["element"], self.central_widget, self)
 
@@ -447,6 +446,10 @@ def add_elements(element_list, parent, gui):
                 from .pyqt5.date_edit import DateEdit
                 element["widget"] = DateEdit(element, parent, gui)
 
+            elif element["style"] == "text":
+                from .pyqt5.text import Text
+                element["widget"] = Text(element, parent, gui)
+
             elif element["style"] == "popupmenu":
                 from .pyqt5.popupmenu import PopupMenu
                 element["widget"] = PopupMenu(element, parent, gui)
@@ -572,13 +575,37 @@ def resize_elements(element_list, parent, resize_factor):
         elif element["style"] == "webpage":
             x0, y0, wdt, hgt = get_position(element["position"], parent, resize_factor)
             element["widget"].view.setGeometry(x0, y0, wdt, hgt)
+        else:
+            if "widget" not in element:
+                continue
+            x0, y0, wdt, hgt = get_position(element["position"], parent, resize_factor)
+            element["widget"].setGeometry(x0, y0, wdt, hgt)
+            if hasattr(element["widget"], "text_widget"):
+                # Also change title widget
+                label = element["widget"].text_widget
+                fm = label.fontMetrics()
+                wlab = fm.size(0, element["text"]).width()
+                if element["text_position"] == "above-center" or element["text_position"] == "above":
+                    label.setAlignment(QtCore.Qt.AlignCenter)
+                    label.setGeometry(x0, y0 - 20, wdt, 20)
+                elif element["text_position"] == "above-left":
+                    label.setAlignment(QtCore.Qt.AlignLeft)
+                    label.setGeometry(x0, y0 - 20, wlab, 20)
+                else:
+                    # Assuming left
+                    label.setAlignment(QtCore.Qt.AlignRight)
+                    label.setGeometry(x0 - wlab - 3, y0 + 5, wlab, 20)
 
 def get_position(position, parent, resize_factor):
 
     x0 = position["x"] * resize_factor
     y0 = position["y"] * resize_factor
-    wdt = position["width"] * resize_factor
-    hgt = position["height"] * resize_factor
+    wdt = 10
+    hgt = 10
+    if "width" in position:
+        wdt = position["width"] * resize_factor
+    if "height" in position:
+        hgt = position["height"] * resize_factor
 
     if x0>0:
         if wdt>0:

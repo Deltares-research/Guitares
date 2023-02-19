@@ -12,6 +12,8 @@ class Edit(QLineEdit):
         self.parent  = parent
         self.gui     = gui
 
+        self.string = None
+
         if element["type"] == float or element["type"] == int:
             self.setAlignment(QtCore.Qt.AlignRight)
         if not element["enable"]:
@@ -23,11 +25,11 @@ class Edit(QLineEdit):
         self.setGeometry(x0, y0, wdt, hgt)
 
         if element["text"]:
-            label = QLabel("", parent)
+            label = QLabel(element["text"], parent)
             fm = label.fontMetrics()
             wlab = fm.size(0, element["text"]).width() + 15
             label.setAlignment(QtCore.Qt.AlignRight)
-            label.setGeometry(x0 - wlab - 3, y0 + 5, wlab, hgt)
+            label.setGeometry(x0 - wlab - 3, y0 + 6, wlab, hgt)
             label.setStyleSheet("background: transparent; border: none")
             if not element["enable"]:
                 label.setEnabled(False)
@@ -47,6 +49,7 @@ class Edit(QLineEdit):
         group  = self.element["variable_group"]
         name   = self.element["variable"]
         val    = self.gui.getvar(group, name)
+        self.string = str(val)
         self.setText(str(val))
         self.setStyleSheet("")
 
@@ -76,6 +79,10 @@ class Edit(QLineEdit):
             self.setStyleSheet("")
         else:
             self.setStyleSheet("QLineEdit{background-color: red}")
+
+        if self.string == newtext:
+            # Nothing changed
+            self.okay = False # Not going to run second callback
 
     def second_callback(self):
         try:

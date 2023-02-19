@@ -1,0 +1,24 @@
+window:
+  title: Hello!
+  width: 400
+  height: 70
+  module: callbacks
+  variable_group: hello
+element:
+- style: edit
+  position:
+    x: 100
+    y: 40
+    width: 200
+    height: 20
+  text: Enter your name  
+  variable: name
+  method: enter_name
+- style: text
+  position:
+    x: 100
+    y: 10
+    width: 200
+    height: 20
+  variable: response
+  
