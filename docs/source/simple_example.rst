@@ -1,19 +1,67 @@
-A Simple Example
+A Very Simple Example
 ================
-
-
-First section
-------------
 
 The Python code for a simple GUI consists of four components:
 
-* An ***run module***, which is the script to start running the application
-* An ***app module***, which contains a class that holds all of the GUI configuration data, and builds up the GUI
-* A ***callback module***, which contains the different functions (or methods) that are called when the user interacts with the GUI
-* A YAML ***configuration file***, which contains information about the main window, as well as the various UI elements in the GUI
+* A **run module** to start running the application
+* An **app module** (often called *app.py*) that contains an instance (usually called *app*) of the class (usually called *Application*) that holds all of the GUI configuration data, and builds up the GUI
+* A **callback module** that contains the different functions (or methods) that are called when the user interacts with the GUI
+* A YAML **configuration file** that contains information about the main window, as well as the various UI elements in the GUI
 
-Let's have a look at a very simple GUI in which the user is asked to enter her or his name, and is then greeted by the program.
+Let's have a look at a very simple GUI in which the user is asked to enter her or his name, and is then greeted by the program. We shall call this program *hello*.
 
-.. code-block:: matlab
+The **run module** (*hello.py*)
+---------------------------------
 
-   a = 1 +1
+.. code-block:: python
+
+   # Import the application object
+   from app import app
+
+   if __name__ == '__main__':
+       # Build the GUI
+       app.gui.build()
+   
+The **run module** does not require editing. It imports the *app* object, and then builds the GUI. Only the name of the this module (in our case *hello.py*) should be changed by the developer. To start the application, the user simply calls:
+
+.. code-block:: dos
+
+   python -m greeter.py
+   
+The **app module** (*app.py*)
+---------------------------------
+
+.. code-block:: python
+
+   from guitares.gui import GUI
+
+   class Application:
+       def __init__(self):
+
+           # Initialize GUI 
+           self.gui = GUI(self,
+                          config_file="hello.yml")
+
+           # Define GUI variables
+           self.gui.setvar("hello", "name", "")
+           self.gui.setvar("hello", "response", "Hello, person whose name I do not yet know.")
+
+   app = Application()
+   
+In the **app module**, the *GUI* class is imported from the Guitares package. When the *app* instance of the *Application* class is created, the GUI is initialized, using the configuration file *hello.yml*. Next, the GUI variables are defined using the *setvar* method of the *GUI* class. These variables are stored in a ``dict`` that is an attribute of the *gui* object. GUI variables are always stored in variable groups (in our case the name of the group is "hello"). They contain the values entered or selected in the various UI elements (e.g. the string that is entered by the user in an edit box). In this simple example, we defined two variables: one for the name to be entered and one for the response by the program.
+
+The **callback module** (*callbacks.py*)
+---------------------------------
+
+.. code-block:: python
+
+   from app import app
+
+   def enter_name(*args):
+       name = app.gui.getvar("hello", "name")
+       response = "Hello " + name + ", it's nice to meet you!"
+       app.gui.setvar("hello", "response", response)
+
+When the user enters a name, the application runs the callback method *enter_name* in the **callback module**. The program gets the variable *name* using the *getvar* method, and defines the response. Next, the GUI variable *response* is updated using the *setvar* method. After each execution of a callback method, the elements in the GUI are updated. This means that the response automatically appears in the user interface.
+
+
