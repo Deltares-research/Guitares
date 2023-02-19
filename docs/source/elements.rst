@@ -13,12 +13,11 @@ Push button
 Pop-up menu
 -----------
 
-List boxes
+List box
 ----------
 
 Slider
 ------
-
 
 Tab panel
 ---------

@@ -37,8 +37,9 @@ Contents
    simple_example
    elements
    menu
-   positioning
+   variables
    callbacks
+   positioning
    guiobject
    configuration
    mapbox
