@@ -23,7 +23,9 @@ class Frame:
             wlab = fm.size(0, element["title"]).width() + 20
             label.setGeometry(x0 + 10, y0 - 9, wlab, 16)
             label.setAlignment(QtCore.Qt.AlignTop)
+            label.adjustSize()
             # label.setAutoFillBackground(True)
             element["title_width"] = wlab
+            element["label"] = label
 
         frame.setVisible(True)

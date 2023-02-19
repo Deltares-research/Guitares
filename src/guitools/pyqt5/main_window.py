@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QWidget, QMainWindow
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5 import QtGui
+from PyQt5 import QtCore
 
 
 class MainWindow(QMainWindow):
@@ -68,6 +69,12 @@ class MainWindow(QMainWindow):
             elif element["style"] == "panel":
                 x0, y0, wdt, hgt = self.get_position_from_string(element["position"], parent)
                 element["widget"].setGeometry(x0, y0, wdt, hgt)
+
+                if element['label'] and element["title_width"]:
+                    # Also change title widget
+                    element["label"].setGeometry(x0 + 10, y0 - 9, element["title_width"], 16)
+                    element["label"].setAlignment(QtCore.Qt.AlignTop)
+                    element["label"].adjustSize()
             elif element["style"] == "olmap":
                 x0, y0, wdt, hgt = self.get_position_from_string(element["position"], parent)
                 element["widget"].setGeometry(x0, y0, wdt, hgt)
