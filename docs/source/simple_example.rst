@@ -6,7 +6,7 @@ The Python code for a simple GUI consists of four components:
 * A YAML **configuration file** that contains information about the main window, as well as the various UI elements in the GUI
 * An **app module** (often called *app.py*) that contains an instance (usually called *app*) of the class (usually called *Application*) that holds all of the GUI configuration data, and builds up the GUI
 * A **callback module** that contains the different functions (or methods) that are called when the user interacts with the GUI
-* A **run module** to start running the application
+* A **run module** to start the application
 
 Let's have a look at a very simple GUI in which the user is asked to enter her or his name, and is then greeted by the program. We shall call this program *hello*.
 
@@ -64,7 +64,7 @@ The **app module** (*app.py*)
 
    app = Application()
    
-In the **app module**, the *GUI* class is imported from the Guitares package. When the *app* instance of the *Application* class is created, the GUI is initialized, using the configuration file *hello.yml*. Next, the GUI variables are defined using the *setvar* method of the *GUI* class. These variables are stored in a ``dict`` that is an attribute of the *gui* object. GUI variables are always stored in variable groups (in our case the name of the group is "hello"). They contain the values entered or selected in the various UI elements (e.g. the string that is entered by the user in an edit box). In this simple example, we defined two variables: one for the *name( to be entered and one for the *response* by the program.
+In the **app module**, the *GUI* class is imported from the Guitares package. When the *app* instance of the *Application* class is created, the GUI is initialized, using the configuration file *hello.yml*. Next, the GUI variables are defined using the *setvar* method of the *GUI* class. These variables are stored in a ``dict`` that is an attribute of the *gui* object. GUI variables are always stored in variable groups (in our case the name of the group is "hello"). They contain the values entered or selected in the various UI elements (e.g. the string that is entered by the user in an edit box). In this simple example, we defined two variables: one for the *name to be entered and one for the *response* by the program.
 
 The **callback module** (*callbacks.py*)
 ---------------------------------
