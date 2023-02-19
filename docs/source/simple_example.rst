@@ -42,7 +42,7 @@ In the configuration file, we define properties for the main window, and for the
 
 We not only set the size and title of the window, but also define the name of callback module, and a name of the group where GUI variables will be stored (more about this in the next section).
 
-In this example, we use UI elements of two different styles: an *edit* element to enter the name and a *text* element to show the response. The *edit* element requires a *position*, a *variable* name, and a callback *method* that is executed when the user enters a name. The static *text* element only requires a *position* and *variable*. 
+In this example, we use UI elements of two different styles: an *edit* element to enter the name and a *text* element to show the response. The *edit* element requires a *position*, a *variable* name, and a callback *method* that is executed when the user enters a name. The non-interactive *text* element in our case only requires a *position* and *variable*. 
    
 The **app module** (*app.py*)
 ---------------------------------
@@ -97,3 +97,11 @@ The **run module** does not require editing. It imports the *app* object, and th
 .. code-block:: dos
 
    python -m greeter.py
+
+The following window now shows up, prompting the user to enter a name.
+
+.. figure:: ./img/hello1.png
+
+After entering the name, the GUI is automatically updated with a new response.
+
+.. figure:: ./img/hello2.png
