@@ -34,6 +34,7 @@ class Edit(QLineEdit):
             if not element["enable"]:
                 label.setEnabled(False)
             self.text_widget = label
+            label.setVisible(True)
 
         fcn1 = lambda: self.first_callback()
         self.editingFinished.connect(fcn1)

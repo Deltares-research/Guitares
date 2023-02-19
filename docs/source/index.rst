@@ -15,6 +15,8 @@ A Guitares GUI consists of a main window (with optional drop-down menu) that con
 * Text
 * Pop-up menus
 * List boxes
+* Check boxes
+* Radio buttons
 * Sliders
 * Push buttons
 * Web views

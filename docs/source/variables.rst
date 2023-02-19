@@ -3,14 +3,14 @@ Variables
 
 All required GUI variables should be defined before the GUI is built.
 This should therefore be done somewhere in the __init__() method of the *Application* class (in the **app module**).
-The standard way to set and get variables is with *gui* objects *setvar* and *getvar* methods.
+The standard way to set and get variables is with *gui* object's *setvar* and *getvar* methods.
 
-GUI variables are stored as a ``dict`` in groups (keys) with unique names.
+GUI variables are stored in a ``dict`` in groups (keys) with unique names.
 For simple applications, using just one group is often sufficient.
 For more complex situations, it is advisable to classify them in more groups.
 This becomes particularly important when you have variables with different roles that share the same name.
-You may for example use the name *x* for the x-coordinate of one map feature, and the same name *x* for coordinate of another map feature.
-You will now want to define two groups (e.g. *feature1* and *feature2*):
+You may for example use the name *x* for the x-coordinate of one map feature, and the same name *x* for the coordinate of another map feature.
+You will now want to define two variable groups (e.g. *feature1* and *feature2*):
 
 .. code-block:: python
 

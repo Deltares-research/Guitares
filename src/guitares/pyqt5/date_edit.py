@@ -42,8 +42,8 @@ class DateEdit(QDateTimeEdit):
         self.setDateTime(qtDate)
 
 
-    def fist_callback(self):
-        newval = self.widgets[0].dateTime().toPyDateTime()
+    def first_callback(self):
+        newval = self.dateTime().toPyDateTime()
         # Do some range checking here ...
         # Update value in variable dict
         group = self.element["variable_group"]

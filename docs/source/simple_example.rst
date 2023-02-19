@@ -44,7 +44,7 @@ The **callback module** (*callbacks.py*)
    :language: python
 
 When the user enters a name, the application executes the callback method *enter_name* in the **callback module**.
-The program gets the variable *name* using the *getvar* method, and defines the response.
+The program obtains the variable *name* with the *getvar* method, and defines the response.
 Next, the GUI variable *response* is updated using the *setvar* method.
 After each execution of a callback method, the elements in the GUI are updated.
 This means that the response automatically appears in the user interface.

@@ -119,7 +119,7 @@ class GUI:
         # Add menu
         if self.config["menu"]:
             from .pyqt5.menu import Menu
-            Menu(self.config["menu"], self.window)
+            self.menu = Menu(self.config["menu"], self.window)
 
         # Add toolbar
         # TODO
@@ -355,6 +355,18 @@ def set_missing_element_values(element, parent_group, parent_module, gui):
                     if "variable_group" not in el["option_string"]:
                         el["option_string"]["variable_group"] = el["variable_group"]
 
+            if el["style"] == "pushselectfile" or el["style"] == "pushloadfile":
+                if "title" not in el:
+                    el["title"] = "Open file"
+                if "filter" not in el:
+                    el["filter"] = "All files (*.*)"
+
+            if el["style"] == "pushsavefile":
+                if "title" not in el:
+                    el["title"] = "Save file"
+                if "filter" not in el:
+                    el["filter"] = "All files (*.*)"
+
             if "dependency" in el:
                 for dep in el["dependency"]:
                     for check in dep["check"]:
@@ -470,6 +482,14 @@ def add_elements(element_list, parent, gui):
                 from .pyqt5.slider import Slider
                 element["widget"] = Slider(element, parent, gui)
 
+            elif element["style"] == "pushselectfile":
+                from .pyqt5.pushopenfile import PushOpenFile
+                element["widget"] = PushOpenFile(element, parent, gui)
+
+            elif element["style"] == "pushsavefile":
+                from .pyqt5.pushsavefile import PushSaveFile
+                element["widget"] = PushSaveFile(element, parent, gui)
+
             elif element["style"] == "mapbox":
                 from .pyqt5.mapbox.mapbox import MapBox
                 element["widget"] = MapBox(element, parent, gui)
@@ -575,8 +595,9 @@ def resize_elements(element_list, parent, resize_factor):
                 # Also change title widget
                 element["widget"].text_widget.setGeometry(x0 + 10, y0 - 9, element["text_width"], 16)
                 element["widget"].text_widget.setAlignment(QtCore.Qt.AlignTop)
-            if element["element"] and element["position"]["height"] < 0:
-                resize_elements(element["element"], element["widget"], resize_factor)
+            if "element" in element:
+                if element["position"]["height"] < 0:
+                    resize_elements(element["element"], element["widget"], resize_factor)
         elif element["style"] == "mapbox":
             x0, y0, wdt, hgt = get_position(element["position"], parent, resize_factor)
             element["widget"].view.setGeometry(x0, y0, wdt, hgt)
@@ -614,6 +635,8 @@ def resize_elements(element_list, parent, resize_factor):
                     label.setGeometry(x0 - wlab - 3, y0 + 5, wlab, 20)
 
 def get_position(position, parent, resize_factor):
+
+    # TO DO: relative positions!
 
     x0 = position["x"] * resize_factor
     y0 = position["y"] * resize_factor
