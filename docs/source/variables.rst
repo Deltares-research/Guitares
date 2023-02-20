@@ -14,8 +14,8 @@ You will now want to define two variable groups (e.g. *feature1* and *feature2*)
 
 .. code-block:: python
 
-      app.gui.getvar("feature1", "x", 1.0)
-      app.gui.getvar("feature2", "x", 2.0)
+      app.gui.setvar("feature1", "x", 1.0)
+      app.gui.setvar("feature2", "x", 2.0)
 
 Alternatively, you can use:
 
