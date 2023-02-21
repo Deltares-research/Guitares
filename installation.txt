@@ -1,0 +1,27 @@
+To build this package:
+
+Open (Anaconda) PowerShell
+
+To make sure you have the latest version of build:
+
+python -m pip install --upgrade build
+
+and to build the package, e.g.: 
+
+cd c:\checkouts\github\Guitares
+python -m build
+
+Upload to Pypi with:
+
+cd c:\checkouts\github\Guitares
+python -m pip install --upgrade twine
+python -m twine upload dist/*
+
+For an editable package, make the package with e.g.:
+
+cd c:\checkouts\github\Guitares
+pip install -e .
+
+or something like:
+
+pip install -e c:\checkouts\github\Guitares
