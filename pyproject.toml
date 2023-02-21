@@ -4,6 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "guitares"
+version = "0.0.3"
 authors = [
     {name = "Maarten van Ormondt", email = "maarten.vanormondt@deltares-usa.us"},
 ]
@@ -23,4 +24,9 @@ dependencies = [
     "pyqt5",
     "pyqtwebengine",
 ]
-dynamic = ["version"]
+
+[tool.setuptools.package-data]
+"guitares.pyqt5.mapbox.server"    = ["*.js", "*.html"]
+"guitares.pyqt5.mapbox.server.js" = ["*.js"]
+"guitares.pyqt5.mapbox.server.js.img" = ["*.png"]
+"guitares.pyqt5.mapbox.server.css" = ["*.css"]
