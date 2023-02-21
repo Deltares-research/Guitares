@@ -12,3 +12,4 @@ deltares_guitares.egg-info
 /docs/_build
 /src/deltares_guitools.egg-info
 /src/guitares.egg-info
+mapbox_token.txt
