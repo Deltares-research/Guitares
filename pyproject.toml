@@ -8,6 +8,7 @@ version = "0.0.3"
 authors = [
     {name = "Maarten van Ormondt", email = "maarten.vanormondt@deltares-usa.us"},
 ]
+description = "Guitares is a Python package for building configurable Graphical User Interfaces (GUIs) using the PyQt5 framework."
 requires-python = ">=3.10"
 dependencies = [
     "geopandas >=0.8",
@@ -30,3 +31,7 @@ dependencies = [
 "guitares.pyqt5.mapbox.server.js" = ["*.js"]
 "guitares.pyqt5.mapbox.server.js.img" = ["*.png"]
 "guitares.pyqt5.mapbox.server.css" = ["*.css"]
+
+[project.urls]
+"Homepage" = "https://github.com/Deltares/Guitares"
+"Documentation" = "https://guitares.readthedocs.io/en/latest/"
