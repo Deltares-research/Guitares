@@ -9,7 +9,7 @@ import os
 import geopandas as gpd
 
 from guitares.gui import GUI
-from guitares.gui import find_element_by_id
+#from guitares.gui import find_element_by_id
 
 class MapBoxExample:
     def __init__(self):
@@ -48,8 +48,8 @@ class MapBoxExample:
         # Executed after the MapBox map has been loaded
 
         # Find the map widget
-        element = find_element_by_id(self.gui.config["element"], "map")
-        self.map = element["widget"]
+        element = self.gui.find_element_by_id(self.gui.window.elements, "map")
+        self.map = element.widget
 
         # Add container layer to the map
         layer = self.map.add_layer("main")

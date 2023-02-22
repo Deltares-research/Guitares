@@ -6,16 +6,14 @@ import traceback
 
 class PushOpenFile(QPushButton):
 
-    def __init__(self, element, parent, gui):
-        super().__init__(element["text"], parent)
+    def __init__(self, element):
+        super().__init__(element.text, element.parent.widget)
 
         self.element = element
-        self.parent  = parent
-        self.gui     = gui
 
         self.setVisible(True)
 
-        x0, y0, wdt, hgt = gui.get_position(element["position"], parent)
+        x0, y0, wdt, hgt = element.get_position()
         self.setGeometry(x0, y0, wdt, hgt)
 
         # if element["text"]:
@@ -30,45 +28,34 @@ class PushOpenFile(QPushButton):
         #     self.text_widget = label
         #     label.setVisible(True)
 
-        fcn1 = lambda: self.first_callback()
-        self.clicked.connect(fcn1)
-        if self.element["module"] and "method" in self.element:
-            if hasattr(self.element["module"], self.element["method"]):
-                self.callback = getattr(self.element["module"], self.element["method"])
-                fcn2 = lambda: self.second_callback()
-                self.clicked.connect(fcn2)
-            else:
-               print("Error! Method " + self.element["method"] + " not found!")
+        self.clicked.connect(self.callback)
 
     def set(self):
-        group  = self.element["variable_group"]
-        name   = self.element["variable"]
-        val    = self.gui.getvar(group, name)
+        group  = self.element.variable_group
+        name   = self.element.variable
+        val    = self.element.getvar(group, name)
         # self.string = str(val)
         # self.setText(str(val))
         # self.setStyleSheet("")
 
-    def first_callback(self):
+    def callback(self):
         self.okay = True
-        group = self.element["variable_group"]
-        name  = self.element["variable"]
-        val   = self.gui.getvar(group, name)
+        group = self.element.variable_group
+        name  = self.element.variable
+        val   = self.element.getvar(group, name)
         if not val:
             val = os.getcwd()
-        fname = QFileDialog.getOpenFileName(self, self.element["title"], val, self.element["filter"])
+        fname = QFileDialog.getOpenFileName(self, self.element.title, val, self.element.filter)
         if len(fname[0])>0:
-            self.gui.setvar(group, name, fname[0])
+            self.element.setvar(group, name, fname[0])
         else:
             self.okay = False
 
-    def second_callback(self):
         try:
-            if self.okay:
-                group = self.element["variable_group"]
-                name  = self.element["variable"]
-                val   = self.gui.getvar(group, name)
-                self.callback(val, self)
+            if self.okay and self.element.callback:
+                val   = fname[0]
+                self.element.callback(val, self)
                 # Update GUI
-                self.gui.update()
+                self.element.window.update()
         except:
             traceback.print_exc()

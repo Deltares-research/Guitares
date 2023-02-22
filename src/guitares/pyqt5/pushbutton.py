@@ -4,48 +4,31 @@ import traceback
 
 class PushButton(QPushButton):
 
-    def __init__(self, element, parent, gui):
-        super().__init__(element["text"], parent)
+    def __init__(self, element):
+        super().__init__(element.text, element.parent.widget)
 
         self.element = element
-        self.parent  = parent
-        self.gui     = gui
 
-        x0, y0, wdt, hgt = gui.get_position(element["position"], parent)
+        x0, y0, wdt, hgt = element.get_position()
 
         self.setGeometry(x0, y0, wdt, hgt)
 
-        # if hasattr(element["method"], '__call__'):
-        #     # Callback function is already defined as method
-        #     self.clicked.connect(element["method"])
-        #     self.clicked.connect(gui.update)
-        # else:
-        if element["module"] :
-            if "method" in element:
-                if hasattr(element["module"], element["method"]):
-                    self.callback = getattr(element["module"] , element["method"])
-                    fcn = lambda: self.second_callback()
-                    self.clicked.connect(fcn)
-                else:
-                    print("Error! Method " + element["method"] + " not found!")
-            else:
-                print("No method found in element. Button will be inactive.")
-        self.clicked.connect(gui.update)
+        self.clicked.connect(self.callback)
 
-        if "icon" in element.keys():
-            self.setIcon(QIcon(element["icon"]))
-        if "tooltip" in element.keys():
-            self.setToolTip(element["tooltip"])
-
+        if element.icon:
+            self.setIcon(QIcon(element.icon))
+        if element.tooltip:
+            self.setToolTip(element.tooltip)
 
     def set(self):
         pass
 
 
-    def second_callback(self):
+    def callback(self):
         try:
-            self.callback(self)
-            # Update GUI
-            self.gui.update()
+            if self.element.callback:
+                self.element.callback(self)
+                # Update GUI
+                self.element.window.update()
         except:
             traceback.print_exc()
