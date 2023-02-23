@@ -130,7 +130,7 @@ def selectFloodmap():
         try:
             Ra2ceGUI.update_flood_map()
         except:
-            print("Memory error")
+            Ra2ceGUI.gui.setvar("ra2ceGUI", "loaded_floodmap", "Cannot load in GUI")
 
         Ra2ceGUI.previous_floodmap = Ra2ceGUI.loaded_floodmap.name
         Ra2ceGUI.gui.setvar("ra2ceGUI", "loaded_floodmap", Path(Ra2ceGUI.loaded_floodmap).name)

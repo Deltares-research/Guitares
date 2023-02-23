@@ -53,20 +53,20 @@ class FloodMapOverlay:
         building_footprints_within_hazard_extent = building_footprints_within_hazard_extent.cx[xmin:xmax, ymin:ymax]
 
         # Update the GeoDataFrame with the flood map data
-        building_footprints_within_hazard_extent["flooded_village"] = self.hazard_overlay(building_footprints_within_hazard_extent)
+        building_footprints_within_hazard_extent["flooded_buildings"] = self.hazard_overlay(building_footprints_within_hazard_extent)
 
         # Calculate the number of people that are flooded
-        building_footprints_within_hazard_extent["flooded_ppl"] = building_footprints_within_hazard_extent["flooded_village"] * building_footprints_within_hazard_extent["POP_BLDG"]
+        building_footprints_within_hazard_extent["flooded_ppl"] = building_footprints_within_hazard_extent["flooded_buildings"] * building_footprints_within_hazard_extent["POP_BLDG"]
 
         # Summarize the number of people flooded and not flooded per village
-        flooded_ppl = building_footprints_within_hazard_extent.groupby("VIL_NAME")[["flooded_village", "flooded_ppl"]].sum().reset_index()
-        flooded_ppl["flooded_village"] = flooded_ppl["flooded_village"].astype(int)
+        flooded_ppl = building_footprints_within_hazard_extent.groupby("VIL_NAME")[["flooded_buildings", "flooded_ppl"]].sum().reset_index()
+        flooded_ppl["flooded_buildings"] = flooded_ppl["flooded_buildings"].astype(int)
         flooded_ppl["flooded_ppl"] = flooded_ppl["flooded_ppl"].astype(int)
 
         # Add the village index?
 
         Ra2ceGUI.result = flooded_ppl
-        Ra2ceGUI.result.to_csv(Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'output', 'people_flooded.csv'),
+        Ra2ceGUI.result.to_csv(Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'output', 'buildings_flooded.csv'),
                                index=False)
 
     def color_roads(self, graph_path):

@@ -3,7 +3,7 @@ window:
   width: 1100
   height: 650
   package: ra2ceGUI
-  module: ra2ceGUI.operations.operations
+  module: operations.operations
   variable_group: ra2ceGUI
   icon: ../icons/deltares.ico
 element:
@@ -14,7 +14,7 @@ element:
       y: 120
       width: -20
       height: -40
-    module: ra2ceGUI.mapbox_map
+    module: mapbox_map
   - style: panel
     id: panel
     title: Project
@@ -34,7 +34,7 @@ element:
         height: 22
       variable: run_name
       tooltip: The current run name
-      module: ra2ceGUI.operations.ra2ce.run_manager
+      module: operations.ra2ce.run_manager
       method: getRunName
     - style: edit
       id: run_name
@@ -56,7 +56,7 @@ element:
         width: 130
         height: 22
       tooltip: Select a previous run
-      module: ra2ceGUI.operations.ra2ce.run_manager
+      module: operations.ra2ce.run_manager
       method: selectPreviousRun
   - style: panel
     id: panel
@@ -115,7 +115,7 @@ element:
         width: 130
         height: 22
       tooltip: Validate RA2CE configuration
-      module: ra2ceGUI.operations.ra2ce.validate_ra2ce_configuration
+      module: operations.ra2ce.validate_ra2ce_configuration
       method: validateRA2CEconfiguration
   - style: panel
     id: panel
@@ -135,7 +135,7 @@ element:
         width: 130
         height: 22
       tooltip: Flood map overlay
-      module: ra2ceGUI.operations.ra2ce.flood_map_overlay
+      module: operations.ra2ce.flood_map_overlay
       method: FloodMapOverlay
     - style: edit
       id: feedback_flood_map_overlay
@@ -155,7 +155,7 @@ element:
         width: 130
         height: 22
       tooltip: Analyze
-      module: ra2ceGUI.operations.ra2ce.run_ra2ce
+      module: operations.ra2ce.run_ra2ce
       method: runRA2CE
     - style: pushbutton
       id: get_summary_results
@@ -166,7 +166,7 @@ element:
         width: 130
         height: 22
       tooltip: Get summary results
-      module: ra2ceGUI.operations.ra2ce.summary_results
+      module: operations.ra2ce.summary_results
       method: getSummaryResults
     - style: edit
       id: feedback_analyze

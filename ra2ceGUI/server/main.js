@@ -158,6 +158,11 @@ export function addImageLayer(fileName, id, bounds, colorbar) {
         }
     });
 
+    map.fitBounds([
+        [bounds[0][0], bounds[1][1]],
+        [bounds[0][0], bounds[1][0]]
+        ]);
+
     // Legend
     const legend     = document.createElement("div");
     legend.id        = "legend" + id;
@@ -194,4 +199,11 @@ export function removeLayer(id) {
     if (legend) {
         legend.remove();
     }
+}
+
+
+export function flyTo(lon, lat, zoom) {
+	// Called after moving map ended
+	// Get new map extents
+	map.flyTo({center: [lon, lat], zoom: zoom});
 }
