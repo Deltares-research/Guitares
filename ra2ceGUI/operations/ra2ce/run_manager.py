@@ -28,7 +28,7 @@ def resetFeedbackBoxes():
     Ra2ceGUI.gui.setvar("ra2ceGUI", "modification_feedback", Ra2ceGUI.modification_feedback)
 
     if Ra2ceGUI.previous_floodmap:
-        Ra2ceGUI.gui.map_widget["main_map"].remove_layer("flood_map_layer_group", Ra2ceGUI.previous_floodmap)
+        Ra2ceGUI.gui.map_widget["main_map"].remove_raster_layer("flood_map_layer_group", Ra2ceGUI.previous_floodmap)
 
     # Update all GUI elements
     Ra2ceGUI.gui.update()

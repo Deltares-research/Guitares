@@ -17,6 +17,43 @@ def analyzeFeedback(text):
     Ra2ceGUI.gui.update()
 
 
+def get_col_widths(dataframe):
+    """Set col width 'autofit' style
+    Adjusted from https://stackoverflow.com/questions/29463274/simulate-autofit-column-in-xslxwriter
+    """
+    # Return the max of the lengths of column name and its values for each column, left to right
+    if isinstance(dataframe.columns, pd.MultiIndex):
+        # First we find the maximum length of the index column
+        idx_max = max([len(str(s)) for s in dataframe.index.values] + [len(str(dataframe.index.name))])
+        tot = [idx_max] + [max([len(str(s)) for s in dataframe[col].values] + [len(col[0])] + [len(col[1])]) for col in
+                     dataframe.columns]
+    else:
+        tot = [max([len(str(s)) for s in dataframe[col].values] + [len(col)]) for col in dataframe.columns]
+
+    return [t + 2 for t in tot]
+
+
+def write_to_sheet_table(xlsx_writer, data, name, indexing=False):
+    # Write each dataframe to a different worksheet.
+    data.to_excel(xlsx_writer, sheet_name=name, index=indexing)
+
+    # Get the xlsxwriter workbook and worksheet objects.
+    worksheet = xlsx_writer.sheets[name]
+
+    # Get the dimensions of the dataframe.
+    (max_row, max_col) = data.shape
+
+    # Create a list of column headers, to use in add_table().
+    column_settings = [{'header': column} for column in data.columns]
+
+    # Add the Excel table structure. Pandas will add the data.
+    worksheet.add_table(0, 0, max_row, max_col - 1, {'columns': column_settings})
+
+    # Make the columns wider for clarity.
+    for i, width in enumerate(get_col_widths(data)):
+        worksheet.set_column(i, i, width)
+
+
 def aggregate_results():
     #"D:\RA2CE\1_data\fullTest\output\multi_link_origin_closest_destination\fullTest_optimal_routes_with_hazard.gpkg"
     output_folder = Ra2ceGUI.ra2ceHandler.input_config.analysis_config.config_data['output']
@@ -36,8 +73,13 @@ def aggregate_results():
     for d in ['o_id', 'cnt', 'geometry', 'FID']:
         del total_results[d]
 
-    total_results.to_excel(output_folder / "summary_results.xlsx", index=False)
+    # Sum the damages over the totals per Event, RP, EAD and aggregation labels
+    # Create a Pandas Excel writer using XlsxWriter as the engine.
+    writer = pd.ExcelWriter(output_folder / "summary_results.xlsx", engine='xlsxwriter')
+    write_to_sheet_table(writer, total_results, 'Results')
 
+    # Close the Pandas Excel writer and output the Excel file.
+    writer.save()
 
 def save_route_names():
     output_folder = Ra2ceGUI.ra2ceHandler.input_config.analysis_config.config_data['output']

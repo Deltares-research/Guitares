@@ -1,20 +1,35 @@
-from pyqtspinner import WaitingSpinner
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QWidget, QLabel
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QMovie
+from pathlib import Path
 
-from .widget_group import WidgetGroup
+from src.guitools.pyqt5.widget_group import WidgetGroup
 
 
 class Spinner(WidgetGroup):
     def __init__(self, element, parent):
         super().__init__(element, parent)
 
-        b = QWidget()
-        self.widgets.append(b)
+        self.spinner = QWidget()
 
-        self.spinner = WaitingSpinner(parent)
+        self.spinner.setFixedSize(200, 200)
+        self.spinner.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.CustomizeWindowHint)
+
+        self.spinner.label_animation = QLabel(self.spinner)
+
+        self.movie = QMovie('loading.gif')
+        self.spinner.label_animation.setMovie(self.movie)
+
+        # timer = QTimer(self.spinner)
+        # self.start
+        # timer.singleShot(3000, self.stop)
+
+        self.widgets.append(self.spinner)
 
     def start(self):
-        self.spinner.start()
+        self.movie.start()
+        self.spinner.show()
 
     def stop(self):
-        self.spinner.stop()
+        self.movie.stop()
+        self.spinner.close()
