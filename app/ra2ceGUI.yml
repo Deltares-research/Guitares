@@ -179,7 +179,7 @@ element:
       enable: False
   - style: panel
     id: panel
-    title: Modification
+    title: Modify Road Accessibility
     position:
       x: 910
       y: 10
@@ -198,7 +198,7 @@ element:
       tooltip: Flood depth of the selected road segment
     - style: pushbutton
       id: edit_flood_depth
-      text: Edit
+      text: Edit value
       position:
         x: 100
         y: 33

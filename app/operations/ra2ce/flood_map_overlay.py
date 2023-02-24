@@ -7,7 +7,7 @@ from rasterstats import point_query
 import osmnx
 
 # from src.guitools.pyqt5.spinner import Spinner
-from ra2ceGUI.ra2ceGUI_base import Ra2ceGUI
+from app.ra2ceGUI_base import Ra2ceGUI
 from ra2ce.io.readers.graph_pickle_reader import GraphPickleReader
 from ra2ce.io.writers.network_exporter_factory import NetworkExporterFactory
 

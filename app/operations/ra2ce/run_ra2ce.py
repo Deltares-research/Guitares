@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from PyQt5.QtCore import QThreadPool
 from src.guitools.pyqt5.worker import Worker
-from ra2ceGUI.ra2ceGUI_base import Ra2ceGUI
+from app.ra2ceGUI_base import Ra2ceGUI
 import geopandas as gpd
 import pandas as pd
 import pickle
@@ -93,6 +93,7 @@ def aggregate_results():
     # Close the Pandas Excel writer and output the Excel file.
     writer.save()
 
+
 def save_route_names():
     output_folder = Ra2ceGUI.ra2ceHandler.input_config.analysis_config.config_data['output']
     project_name = Ra2ceGUI.ra2ceHandler.input_config.analysis_config.config_data['project']['name']
@@ -101,12 +102,7 @@ def save_route_names():
     warehouses = 'D2'
 
 
-def runRA2CE():
-    # self.threadpool = QtCore.QThreadPool()
-    # print("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount())
-
-
-
+def runRA2CE_worker(progress_callback):
     try:
         assert Ra2ceGUI.ra2ceHandler
     except AssertionError:
@@ -120,6 +116,7 @@ def runRA2CE():
         return
 
     try:
+        progress_callback.emit("Running...")
         Ra2ceGUI.ra2ceHandler.input_config.analysis_config.configure()
         Ra2ceGUI.ra2ceHandler.run_analysis()
         aggregate_results()
@@ -128,3 +125,17 @@ def runRA2CE():
         print("RA2CE successfully ran.")
     except BaseException as e:
         print(e)
+
+
+def runRA2CE():
+    Ra2ceGUI.gui.elements["main_map"]["widget"].threadpool = QThreadPool()
+    print("Multithreading with maximum %d threads" % Ra2ceGUI.gui.elements["main_map"]["widget"].threadpool.maxThreadCount())
+
+    worker = Worker(runRA2CE_worker)  # Any other args, kwargs are passed to the run function
+    worker.signals.result.connect(worker.print_output)
+    worker.signals.finished.connect(worker.thread_complete)
+    worker.signals.progress.connect(worker.progress_fn)
+
+    # Execute
+    Ra2ceGUI.gui.elements["main_map"]["widget"].threadpool.start(worker)
+

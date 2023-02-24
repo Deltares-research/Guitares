@@ -2,7 +2,7 @@
 import os
 from pathlib import Path
 
-from ra2ceGUI.ra2ceGUI_base import Ra2ceGUI
+from app.ra2ceGUI_base import Ra2ceGUI
 
 
 def getSummaryResults():

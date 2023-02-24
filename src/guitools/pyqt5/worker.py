@@ -53,6 +53,15 @@ class Worker(QRunnable):
         # Add the callback to our kwargs
         self.kwargs['progress_callback'] = self.signals.progress
 
+    def progress_fn(self, n):
+        print("%d%% done" % n)
+
+    def print_output(self, s):
+        print(s)
+
+    def thread_complete(self):
+        print("THREAD COMPLETE!")
+
     @pyqtSlot()
     def run(self):
         '''
