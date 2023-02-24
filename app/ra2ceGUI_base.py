@@ -69,7 +69,7 @@ class Ra2ceGUI:
         # Define GUI variables
         self.gui.setvar("ra2ceGUI", "run_name", self.run_name)
         self.gui.setvar("ra2ceGUI", "loaded_floodmap", self.loaded_floodmap)
-        self.gui.setvar("ra2ceGUI", "threshold_road_disruption", 0.001)  # 0.01 as default value!
+        self.gui.setvar("ra2ceGUI", "threshold_road_disruption", 0.001)  # 0.001 as default value!
         self.gui.setvar("ra2ceGUI", "valid_config", self.valid_config)
         self.gui.setvar("ra2ceGUI", "coords_clicked", self.coords_clicked)
         self.gui.setvar("ra2ceGUI", "edited_flood_depth", self.edited_flood_depth)

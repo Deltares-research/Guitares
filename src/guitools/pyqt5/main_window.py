@@ -1,8 +1,5 @@
-from PyQt5.QtWidgets import QWidget, QMainWindow
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtWidgets import QVBoxLayout
-from PyQt5 import QtGui
-from PyQt5 import QtCore
+from PyQt5.QtWidgets import QWidget, QMainWindow, QApplication, QVBoxLayout
+from PyQt5 import QtGui, QtCore
 
 
 class MainWindow(QMainWindow):

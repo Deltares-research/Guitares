@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from PyQt5.QtCore import QThreadPool
+from src.guitools.pyqt5.worker import Worker
 from ra2ceGUI.ra2ceGUI_base import Ra2ceGUI
 import geopandas as gpd
 import pandas as pd
@@ -100,6 +102,11 @@ def save_route_names():
 
 
 def runRA2CE():
+    # self.threadpool = QtCore.QThreadPool()
+    # print("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount())
+
+
+
     try:
         assert Ra2ceGUI.ra2ceHandler
     except AssertionError:
