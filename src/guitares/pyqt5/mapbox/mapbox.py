@@ -7,7 +7,6 @@ import urllib
 from geopandas import GeoDataFrame
 
 from .layer import Layer, list_layers, find_layer_by_id
-from guitares.gui import get_position
 
 class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
     def __init__(self, view, print_messages):
@@ -18,10 +17,10 @@ class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
             print("javaScriptConsoleMessage: ", level, message, lineNumber, sourceID)
 
 class MapBox(QtWidgets.QWidget):
-    def __init__(self, element, parent, gui):
-        super().__init__(parent)
+    def __init__(self, element):
+        super().__init__(element.parent.widget)
 
-        self.gui = gui
+        self.gui = element.gui
 
         url = "http://localhost:" + str(self.gui.server_port) + "/"
         self.url = url
@@ -53,11 +52,11 @@ class MapBox(QtWidgets.QWidget):
 
         self.setGeometry(0, 0, -1, -1) # this is necessary because otherwise an invisible widget sits over the top left hand side of the screen and block the menu
 
-        view = self.view = QtWebEngineWidgets.QWebEngineView(parent)
+        view = self.view = QtWebEngineWidgets.QWebEngineView(element.parent.widget)
         channel = self.channel = QtWebChannel.QWebChannel()
         view.page().profile().clearHttpCache()
 
-        x0, y0, wdt, hgt = get_position(element["position"], parent, self.gui.resize_factor)
+        x0, y0, wdt, hgt = element.get_position()
         view.setGeometry(x0, y0, wdt, hgt)
 
         page = WebEnginePage(view, self.gui.js_messages)
@@ -68,7 +67,7 @@ class MapBox(QtWidgets.QWidget):
 
         view.load(QtCore.QUrl(url))
 
-        self.callback_module = element["module"]
+        self.callback_module = element.module
 
         self.layer = {}
         self.map_extent = None

@@ -4,60 +4,42 @@ import traceback
 
 class CheckBox(QCheckBox):
 
-    def __init__(self, element, parent, gui):
-        super().__init__("", parent)
+    def __init__(self, element):
+        super().__init__("", element.parent.widget)
 
         self.element = element
-        self.parent  = parent
-        self.gui     = gui
 
         self.setVisible(True)
 
-        x0, y0, wdt, hgt = gui.get_position(element["position"], parent)
+        x0, y0, wdt, hgt = element.get_position()
         self.setGeometry(x0, y0, wdt, hgt)
 
-        if element["text"]:
-            self.setText(element["text"])
+        if element.text:
+            self.setText(element.text)
 
-#        fcn1 = lambda: self.first_callback()
-        fcn1 = self.first_callback
-        self.stateChanged.connect(fcn1)
-        if self.element["module"] and "method" in self.element:
-            if hasattr(self.element["module"], self.element["method"]):
-                self.callback = getattr(self.element["module"], self.element["method"])
-#                fcn2 = lambda: self.second_callback()
-                fcn2 = self.second_callback
-                self.stateChanged.connect(fcn2)
-            else:
-               print("Error! Method " + self.element["method"] + " not found!")
+        self.stateChanged.connect(self.callback)
 
     def set(self):
-        group  = self.element["variable_group"]
-        name   = self.element["variable"]
-        val    = self.gui.getvar(group, name)
+        group  = self.element.variable_group
+        name   = self.element.variable
+        val    = self.element.getvar(group, name)
         if val == True:
             self.setChecked = True
         else:
             self.setChecked = False
 
-
-
-    def first_callback(self, state):
-        group = self.element["variable_group"]
-        name = self.element["variable"]
+    def callback(self, state):
+        group = self.element.variable_group
+        name = self.element.variable
         if state == QtCore.Qt.Checked:
-            self.gui.setvar(group, name, True)
+            val = True
         else:
-            self.gui.setvar(group, name, False)
-
-    def second_callback(self):
+            val = False
+        self.element.setvar(group, name, True)
         try:
-            if self.isEnabled():
-                group = self.element["variable_group"]
-                name  = self.element["variable"]
-                val   = self.gui.getvar(group, name)
-                self.callback(val, self)
+            if self.isEnabled() and self.element.callback:
+                self.element.callback(val, self)
                 # Update GUI
-                self.gui.update()
+                self.element.window.update()
         except:
             traceback.print_exc()

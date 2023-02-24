@@ -7,16 +7,14 @@ import traceback
 
 class Slider(QSlider):
 
-    def __init__(self, element, parent, gui):
-        super().__init__(Qt.Horizontal, parent=parent)
+    def __init__(self, element):
+        super().__init__(Qt.Horizontal, parent=element.parent.widget)
 
         self.element = element
-        self.parent  = parent
-        self.gui     = gui
 
         # ToDO: Make minimum and maximum flexible
-        minimum = element["minimum"]
-        maximum = element["maximum"]
+        minimum = element.minimum
+        maximum = element.maximum
         interval = 10
         self.setMinimum(minimum)
         self.setMaximum(maximum)
@@ -24,13 +22,13 @@ class Slider(QSlider):
         self.setSingleStep(1)
         self.setTickPosition(QSlider.TicksBelow)
 
-        x0, y0, wdt, hgt = gui.get_position(element["position"], parent)
+        x0, y0, wdt, hgt = element.get_position()
 
         self.setGeometry(x0, y0, wdt, hgt)
-        if element["text"]:
-            label = QLabel(element["text"], parent)
+        if element.text:
+            label = QLabel(element.text, parent)
             fm = label.fontMetrics()
-            wlab = fm.size(0, element["text"]).width() + 15
+            wlab = fm.size(0, element.text).width() + 15
             label.setAlignment(Qt.AlignRight)
             label.setGeometry(x0 - wlab - 3, y0 + 5, wlab, hgt)
             label.setStyleSheet("background: transparent; border: none")
@@ -51,47 +49,35 @@ class Slider(QSlider):
             label.setStyleSheet("background: transparent; border: none")
             self.tick_widget.append(label)
 
-        value_changed_callback = lambda: self.first_callback()
-        self.valueChanged.connect(value_changed_callback)
-
-        if self.element["module"] and "slide_method" in element:
-            # Called when the slider is moved
-            self.slide_callback = getattr(element["module"], element["slide_method"])
-        else:
-            self.slide_callback = None
-
-        if element["module"] and "method" in element:
-            # Called when the slider is released
-            self.callback = getattr(element["module"], element["method"])
-            slider_released_callback = lambda: self.second_callback()
-            self.sliderReleased.connect(slider_released_callback)
+        self.valueChanged.connect(self.first_callback)
+        self.sliderReleased.connect(self.second_callback)
 
     def set(self):
-        group = self.element["variable_group"]
-        name = self.element["variable"]
-        val = self.gui.getvar(group, name)
+        group = self.element.variable_group
+        name = self.element.variable
+        val = self.element.getvar(group, name)
         self.setValue(val)
 
     def first_callback(self):
         self.okay = True
         val = self.value()
         # Update value in variable dict
-        group = self.element["variable_group"]
-        name = self.element["variable"]
-        self.gui.setvar(group, name, val)
+        group = self.element.variable_group
+        name = self.element.variable
+        self.element.setvar(group, name, val)
         self.setValue(val)
         if self.slide_callback:
             self.slide_callback(val, self)
 
     def second_callback(self):
         try:
-            if self.isEnabled():
-                group = self.element["variable_group"]
-                name  = self.element["variable"]
-                val   = self.gui.getvar(group, name)
-                self.callback(val, self)
+            if self.isEnabled() and self.element.callback:
+                group = self.element.variable_group
+                name  = self.element.variable
+                val   = self.element.getvar(group, name)
+                self.element.callback(val, self)
                 # Update GUI
-                self.gui.update()
+                self.element.window.update()
         except:
             traceback.print_exc()
 
@@ -218,8 +204,8 @@ class Slider(QSlider):
 #     def set(self):
 #         if self.check_variables():
 #             getvar = self.element["getvar"]
-#             group = self.element["variable_group"]
-#             name = self.element["variable"]
+#             group = self.element.variable_group
+#             name = self.element.variable
 #             val = getvar(group, name)
 #             self.widgets[0].setValue(val)
 #             self.set_dependencies()
@@ -232,7 +218,7 @@ class Slider(QSlider):
 #             # Update value in variable dict
 #             if self.okay:
 #                 setvar = self.element["setvar"]
-#                 group = self.element["variable_group"]
-#                 name = self.element["variable"]
+#                 group = self.element.variable_group
+#                 name = self.element.variable
 #                 setvar(group, name, newval)
 #                 self.widgets[0].setValue(newval)

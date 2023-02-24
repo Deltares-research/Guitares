@@ -5,28 +5,21 @@ import traceback
 
 class Text(QLabel):
 
-    def __init__(self, element, parent, gui):
-        super().__init__("", parent)
+    def __init__(self, element):
+        super().__init__("", element.parent.widget)
 
         self.element = element
-        self.parent  = parent
-        self.gui     = gui
-
-        # if element["type"] == float or element["type"] == int:
-        #     self.setAlignment(QtCore.Qt.AlignRight)
-        # if not element["enable"]:
-        #     self.setEnabled(False)
 
         self.setVisible(True)
 
-        x0, y0, wdt, hgt = gui.get_position(element["position"], parent)
+        x0, y0, wdt, hgt = element.get_position()
         self.setGeometry(x0, y0, wdt, hgt)
 
     def set(self):
-        if "variable" in self.element:
-            group = self.element["variable_group"]
-            name = self.element["variable"]
-            val = self.gui.getvar(group, name)
+        if self.element.variable:
+            group = self.element.variable_group
+            name = self.element.variable
+            val = self.element.getvar(group, name)
         else:
-            val = self.element["text"]
+            val = self.element.text
         self.setText(val)

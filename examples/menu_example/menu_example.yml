@@ -1,0 +1,19 @@
+window:
+  title: Menu!
+  width: 400
+  height: 200
+  module: callbacks
+  variable_group: menu_example
+menu:
+- text: Menu 1
+  menu:
+  - text: Menu 1a
+  - text: Menu 1b
+    menu:
+    - text: Menu 1aI
+    - text: Menu 1bII
+- text: Menu 2
+  menu:
+  - text: Menu 2a
+  - text: Menu 2b
+  - text: Menu 2c

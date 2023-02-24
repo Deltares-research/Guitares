@@ -5,60 +5,49 @@ import traceback
 
 class DateEdit(QDateTimeEdit):
 
-    def __init__(self, element, parent, gui):
-        super().__init__(parent)
+    def __init__(self, element):
+        super().__init__(element.parent.widget)
 
         self.element = element
-        self.parent  = parent
-        self.gui     = gui
 
         self.setCalendarPopup(True)
         self.setDisplayFormat("yyyy-MM-dd hh:mm:ss")
-        x0, y0, wdt, hgt = gui.get_position(element["position"], parent)
+        x0, y0, wdt, hgt = element.get_position()
         self.setGeometry(x0, y0, wdt, hgt)
-        if element["text"]:
-            label = QLabel("", parent)
+        if element.text:
+            label = QLabel(element.text, element.parent.widget)
             fm = label.fontMetrics()
-            wlab = fm.size(0, element["text"]).width() + 15
+            wlab = fm.size(0, element.text).width() + 15
             label.setAlignment(QtCore.Qt.AlignRight)
             label.setGeometry(x0 - wlab - 3, y0 + 5, wlab, hgt)
             label.setStyleSheet("background: transparent; border: none")
             self.text_widget = label
+            label.setVisible(True)
 
-        fcn = lambda: self.first_callback()
-        self.editingFinished.connect(fcn)
-        if self.element["module"] and "method" in self.element:
-            self.callback = getattr(self.element["module"], self.element["method"])
-            fcn2 = lambda: self.second_callback()
-            self.editingFinished.connect(fcn2)
-
+        self.editingFinished.connect(self.callback)
 
     def set(self):
-        group = self.element["variable_group"]
-        name  = self.element["variable"]
-        val   = self.gui.getvar(group, name)
+        group = self.element.variable_group
+        name  = self.element.variable
+        val   = self.element.getvar(group, name)
         dtstr = val.strftime("%Y-%m-%d %H:%M:%S")
         qtDate = QtCore.QDateTime.fromString(dtstr, 'yyyy-MM-dd hh:mm:ss')
         self.setDateTime(qtDate)
 
 
-    def first_callback(self):
+    def callback(self):
         newval = self.dateTime().toPyDateTime()
         # Do some range checking here ...
         # Update value in variable dict
-        group = self.element["variable_group"]
-        name  = self.element["variable"]
-        self.gui.setvar(group, name, newval)
+        group = self.element.variable_group
+        name  = self.element.variable
+        self.element.setvar(group, name, newval)
         self.okay = True
-
-    def second_callback(self):
         try:
-            if self.okay and self.isEnabled():
-                group = self.element["variable_group"]
-                name  = self.element["variable"]
-                val   = self.gui.getvar(group, name)
-                self.callback(val, self)
+            if self.okay and self.isEnabled() and self.element.callback:
+                val   = newval
+                self.element.callback(val, self)
                 # Update GUI
-                self.gui.update()
+            self.element.window.update()
         except:
             traceback.print_exc()

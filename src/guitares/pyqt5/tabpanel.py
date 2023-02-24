@@ -1,47 +1,44 @@
 from PyQt5.QtWidgets import QWidget, QTabWidget
-
-from guitares.gui import set_elements, get_position
-from .widget import Widget
+import traceback
 
 class TabPanel(QTabWidget):
-    def __init__(self, element, parent, gui):
-        super().__init__(parent)
+    def __init__(self, element):
+        super().__init__(element.parent.widget)
 
         self.element = element
-        self.parent  = parent
-        self.gui     = gui
 
-        x0, y0, wdt, hgt = gui.get_position(element["position"], parent)
-
-        # Add tab panel
-#        tab_panel = QTabWidget(parent)
-        self.setVisible(True)
+        x0, y0, wdt, hgt = element.get_position()
         self.setGeometry(x0, y0, wdt, hgt)
 
-#        self.widgets.append(tab_panel)
+        self.setVisible(True)
 
         # Used to programmatically select a tab
 #        element["select_tab"] = self.select_tab
 
-        for tab in element["tab"]:
+        for tab in element.tabs:
             # Place tab in tab panel
             widget = QWidget()
-            tab["widget"] = widget
-            self.addTab(widget, tab["text"])
-            widget.setGeometry(0, 0, wdt, int(hgt - 20.0 * gui.resize_factor))
+            tab.widget = widget
+            self.addTab(widget, tab.text)
+            widget.setGeometry(0, 0, wdt, int(hgt - 20.0 * element.gui.resize_factor))
 
         # Add the callback
-        self.currentChanged.connect(lambda indx, tabs=element["tab"]: self.tab_selected(tabs, indx))
+        self.currentChanged.connect(lambda indx, tabs=element.tabs: self.tab_selected(tabs, indx))
 
     def tab_selected(self, tabs, indx):
         # Now call the select method
-        if tabs[indx]["module"]:
-            if hasattr(tabs[indx]["module"], "select"):
-                tabs[indx]["module"].select()
+        if tabs[indx].module:
+            if hasattr(tabs[indx].module, "select"):
+                tabs[indx].module.select()
         # Update GUI
-        self.gui.update()
+        self.element.window.update()
 
     def select_tab(self, index):
         # Selected programmatically
-        self.element["widget"].setCurrentIndex(index)
-        self.tab_selected(self.element["tab"], index)
+        self.setCurrentIndex(index)
+        self.tab_selected(self.element.tabs, index)
+
+    def clear_tab(self, index):
+        tab = self.element.tabs[index].widget
+        for child in tab.children():
+            child.setParent(None)
