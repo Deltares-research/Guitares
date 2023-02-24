@@ -68,6 +68,9 @@ class GUI:
         if self.splash:
             self.splash.close()
 
+    def process(self, text):
+        self.main_window.statusBar().showMessage(text)
+
     def build(self, app,
               window={},
               menu={},
@@ -102,7 +105,8 @@ class GUI:
             from .pyqt5.menu import Menu
             Menu(self.config["menu"], self.main_window)
 
-        # Add toolbar
+        # Add status bar
+        self.main_window.statusBar().showMessage('Ready.')
         
         # Add elements
         self.add_elements(self.config["element"], self.main_window)
@@ -201,10 +205,6 @@ class GUI:
                 self.elements[i] = element
                 i += 1
 
-        # Import the spinner
-        from .pyqt5.spinner import Spinner
-        self.elements["spinner"] = Spinner("spinner", parent)
-        
     def read_gui_config(self, path, file_name):
         
         d = yaml2dict(os.path.join(path, file_name))
