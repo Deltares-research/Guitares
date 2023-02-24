@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from ra2ceGUI import Ra2ceGUI
+from ra2ceGUI.ra2ceGUI_base import Ra2ceGUI
 from ra2ce.ra2ce_handler import Ra2ceHandler
 
 import shutil

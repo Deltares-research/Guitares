@@ -1,4 +1,4 @@
-from ra2ceGUI import Ra2ceGUI
+from ra2ceGUI.ra2ceGUI_base import Ra2ceGUI
 from src.guitools.pyqt5.io import openFileNameDialog
 from ra2ce.io.readers.graph_pickle_reader import GraphPickleReader
 
