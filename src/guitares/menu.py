@@ -40,6 +40,8 @@ class Menu:
             self.option = dct["option"]
         if "checkable" in dct:
             self.checkable = dct["checkable"]
+        if "separator" in dct:
+            self.separator = dct["separator"]
         if "module" in dct:
             if type(dct["module"]) == str:
                 try:

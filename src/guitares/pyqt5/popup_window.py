@@ -34,19 +34,3 @@ class PopupWindow(QDialog):
 
     def resizeEvent(self, event):
         self.window.resize_elements(self.window.elements, self.window.gui.resize_factor)
-
-    def set_window(self):
-        # Window size
-        self.setWindowTitle(self.window.title)
-        self.window_width = int(self.window.width*self.window.gui.resize_factor)
-        self.window_height = int(self.window.height*self.window.gui.resize_factor)
-        self.setMinimumSize(self.window_width, self.window_height)
-        if self.window.icon:
-          self.setWindowIcon(QtGui.QIcon(self.window.icon))
-
-        screen = QApplication.primaryScreen()
-
-        self.setGeometry(int(0.5*(screen.size().width() - self.window_width)),
-                         int(0.5*(screen.size().height() - self.window_height)),
-                         self.window_width,
-                         self.window_height)

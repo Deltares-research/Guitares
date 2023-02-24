@@ -1,7 +1,7 @@
 from PyQt5 import QtWebEngineWidgets
 from PyQt5 import QtCore, QtWidgets
 
-from guitares.gui import get_position
+#from guitares.gui import get_position
 
 class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
     def __init__(self, view, print_messages):
@@ -16,7 +16,7 @@ class WebPage(QtWidgets.QWidget):
     def __init__(self, element):
         super().__init__(element.parent.widget)
 
-        view = self.view = QtWebEngineWidgets.QWebEngineView(parent)
+        view = self.view = QtWebEngineWidgets.QWebEngineView(element.parent.widget)
 
         x0, y0, wdt, hgt = element.get_position()
         view.setGeometry(x0, y0, wdt, hgt)

@@ -15,13 +15,14 @@ class DateEdit(QDateTimeEdit):
         x0, y0, wdt, hgt = element.get_position()
         self.setGeometry(x0, y0, wdt, hgt)
         if element.text:
-            label = QLabel("", element.parent.widget)
+            label = QLabel(element.text, element.parent.widget)
             fm = label.fontMetrics()
             wlab = fm.size(0, element.text).width() + 15
             label.setAlignment(QtCore.Qt.AlignRight)
             label.setGeometry(x0 - wlab - 3, y0 + 5, wlab, hgt)
             label.setStyleSheet("background: transparent; border: none")
             self.text_widget = label
+            label.setVisible(True)
 
         self.editingFinished.connect(self.callback)
 
@@ -47,6 +48,6 @@ class DateEdit(QDateTimeEdit):
                 val   = newval
                 self.element.callback(val, self)
                 # Update GUI
-                self.element.window.update()
+            self.element.window.update()
         except:
             traceback.print_exc()

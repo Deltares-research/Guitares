@@ -82,6 +82,6 @@ class Edit(QLineEdit):
                 val   = newval
                 self.element.callback(val, self)
                 # Update GUI
-                self.element.window.update()
+            self.element.window.update()
         except:
             traceback.print_exc()

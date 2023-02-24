@@ -50,28 +50,25 @@ class Window:
             config_dict["element"].append(cancel)
             config_dict["element"].append(ok)
 
-        self.add_elements_to_tree(self.elements, config_dict["element"], self, self.gui, self)
+        self.add_elements_to_tree(config_dict["element"], self, self)
         self.add_menu_to_tree(self.menus, config_dict["menu"], self)
 
-    def add_elements_to_tree(self, element_list, dcts, parent, gui, window):
+    def add_elements_to_tree(self, dcts, parent, window):
+        parent.elements = []
         for dct in dcts:
-            element = Element(dct, parent, gui, window)
+            element = Element(dct, parent, window)
             if element.style == "tabpanel":
                 for itab, tab_dct in enumerate(dct["tab"]):
                     if "element" in tab_dct:
-                        self.add_elements_to_tree(element.tabs[itab].elements,
-                                                  tab_dct["element"],
+                        self.add_elements_to_tree(tab_dct["element"],
                                                   element.tabs[itab],
-                                                  gui,
                                                   window)
             elif dct["style"] == "panel":
                 if "element" in dct:
-                    self.add_elements_to_tree(element.elements,
-                                              dct["element"],
+                    self.add_elements_to_tree(dct["element"],
                                               element,
-                                              gui,
                                               window)
-            element_list.append(element)
+            parent.elements.append(element)
 
     def add_menu_to_tree(self, menu_list, dcts, parent):
         for dct in dcts:
@@ -247,11 +244,13 @@ class Window:
             else:
                 menu.set_dependencies()
 
-    def find_menu_item_by_id(self, menus, menu_id):
+    def find_menu_item_by_id(self, menu_id, menus=None):
+        if menus == None:
+            menus = self.menus
         for menu in menus:
             if menu.id == menu_id:
                 return menu
-            item = find_menu_item_by_id(menu.menus, menu_id)
+            item = self.find_menu_item_by_id(menu_id, menus=menu.menus)
             if item:
                 return item
         return None

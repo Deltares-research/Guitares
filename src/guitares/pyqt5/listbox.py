@@ -106,8 +106,8 @@ class ListBox(QListWidget):
         try:
             if self.isEnabled() and self.element.callback:
                 self.element.callback(newval, self)
-                # Update GUI
-                self.element.window.update()
+            # Update GUI
+            self.element.window.update()
         except:
             traceback.print_exc()
 

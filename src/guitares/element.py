@@ -39,7 +39,7 @@ class Tab:
 
 
 class Element:
-    def __init__(self, dct, parent, gui, window):
+    def __init__(self, dct, parent, window):
         self.style = None
         self.widget = None
         self.parent = parent
@@ -59,9 +59,9 @@ class Element:
         self.text_position = "left"
         self.tooltip = ""
         self.type = str
-        self.gui    = gui
-        self.getvar = gui.getvar
-        self.setvar = gui.setvar
+        self.gui    = window.gui
+        self.getvar = window.gui.getvar
+        self.setvar = window.gui.setvar
         self.window = window
         self.select = "item"
         self.option_value = OptionValue(self.variable_group)
