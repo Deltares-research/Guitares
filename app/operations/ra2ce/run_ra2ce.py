@@ -94,6 +94,12 @@ def aggregate_results():
     writer.save()
 
 
+def remove_ini_files():
+    for ini_file in ['network.ini', 'analyses.ini']:
+        if Ra2ceGUI.current_project.joinpath(ini_file).is_file():
+            Ra2ceGUI.current_project.joinpath(ini_file).unlink()
+
+
 def save_route_names():
     output_folder = Ra2ceGUI.ra2ceHandler.input_config.analysis_config.config_data['output']
     project_name = Ra2ceGUI.ra2ceHandler.input_config.analysis_config.config_data['project']['name']
@@ -103,16 +109,19 @@ def save_route_names():
 
 
 def runRA2CE_worker(progress_callback):
+    Ra2ceGUI.gui.process('Analyzing... Please wait.')
     try:
         assert Ra2ceGUI.ra2ceHandler
     except AssertionError:
         analyzeFeedback("Validate configuration")
+        Ra2ceGUI.gui.process('Ready.')
         return
 
     try:
         assert Ra2ceGUI.floodmap_overlay_feedback == "Overlay done"
     except AssertionError:
         analyzeFeedback("Overlay flood map")
+        Ra2ceGUI.gui.process('Ready.')
         return
 
     try:
@@ -121,10 +130,14 @@ def runRA2CE_worker(progress_callback):
         Ra2ceGUI.ra2ceHandler.run_analysis()
         aggregate_results()
         # save_route_names()
+        remove_ini_files()
         analyzeFeedback("Analysis finished")
         print("RA2CE successfully ran.")
     except BaseException as e:
+        Ra2ceGUI.gui.process('Ready.')
         print(e)
+
+    Ra2ceGUI.gui.process('Ready.')
 
 
 def runRA2CE():
@@ -132,9 +145,6 @@ def runRA2CE():
     print("Multithreading with maximum %d threads" % Ra2ceGUI.gui.elements["main_map"]["widget"].threadpool.maxThreadCount())
 
     worker = Worker(runRA2CE_worker)  # Any other args, kwargs are passed to the run function
-    worker.signals.result.connect(worker.print_output)
-    worker.signals.finished.connect(worker.thread_complete)
-    worker.signals.progress.connect(worker.progress_fn)
 
     # Execute
     Ra2ceGUI.gui.elements["main_map"]["widget"].threadpool.start(worker)

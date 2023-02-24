@@ -2,7 +2,7 @@ window:
   title: RA2CE
   width: 1100
   height: 650
-  package: ra2ceGUI
+  package: app
   module: operations.operations
   variable_group: ra2ceGUI
   icon: ../icons/deltares.ico
@@ -13,7 +13,7 @@ element:
       x: 20
       y: 120
       width: -20
-      height: -40
+      height: -20
     module: mapbox_map
   - style: panel
     id: panel

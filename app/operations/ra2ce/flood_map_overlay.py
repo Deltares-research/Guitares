@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from PyQt5.QtCore import QThreadPool
+from src.guitools.pyqt5.worker import Worker
 import rasterio
 import pandas as pd
 import geopandas as gpd
@@ -6,7 +8,6 @@ from shapely.geometry import box
 from rasterstats import point_query
 import osmnx
 
-# from src.guitools.pyqt5.spinner import Spinner
 from app.ra2ceGUI_base import Ra2ceGUI
 from ra2ce.io.readers.graph_pickle_reader import GraphPickleReader
 from ra2ce.io.writers.network_exporter_factory import NetworkExporterFactory
@@ -86,24 +87,24 @@ class FloodMapOverlay:
                                                                            layer_group_name=layer_group,
                                                                            color_by=Ra2ceGUI.ra2ce_config["hazard"]["flood_col_name"])
 
-    def overlay(self):
-        # Ra2ceGUI.gui.elements["spinner"].start()
+    def overlay_worker(self, progress_callback):
+        Ra2ceGUI.gui.process('Overlaying flood map... Please wait.')
 
         path_od_hazard_graph = Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'static', 'output_graph', 'origins_destinations_graph_hazard.p')
         if path_od_hazard_graph.is_file():
             print("A hazard overlay was already done previously. If you want to do a new hazard overlay, please create a new project.")
             self.color_roads(path_od_hazard_graph)
-            Ra2ceGUI.floodmap_overlay_feedback = "Overlay done"
+            Ra2ceGUI.floodmap_overlay_feedback = "Existing overlay shown"
             self.floodMapOverlayFeedback(Ra2ceGUI.floodmap_overlay_feedback)
-            # Ra2ceGUI.gui.elements["spinner"].stop()
+            Ra2ceGUI.gui.process('Ready.')
             return
 
         try:
             assert Ra2ceGUI.ra2ceHandler
+        except AssertionError:
             Ra2ceGUI.floodmap_overlay_feedback = "First validate configuration"
             self.floodMapOverlayFeedback(Ra2ceGUI.floodmap_overlay_feedback)
-        except AssertionError:
-            # Ra2ceGUI.gui.elements["spinner"].stop()
+            Ra2ceGUI.gui.process('Ready.')
             return
 
         # Clip the origins to the extent of the hazard map
@@ -111,7 +112,7 @@ class FloodMapOverlay:
 
         if Ra2ceGUI.floodmap_overlay_feedback == "No origins in extent":
             self.floodMapOverlayFeedback(Ra2ceGUI.floodmap_overlay_feedback)
-            # Ra2ceGUI.gui.elements["spinner"].stop()
+            Ra2ceGUI.gui.process('Ready.')
             return
 
         try:
@@ -120,9 +121,21 @@ class FloodMapOverlay:
             self.color_roads(path_od_hazard_graph)
             self.floodMapOverlayFeedback("Overlay done")
         except BaseException as e:
-            print(e)
+            Ra2ceGUI.floodmap_overlay_feedback = "Overlay failed"
+            self.floodMapOverlayFeedback(Ra2ceGUI.floodmap_overlay_feedback)
+            Ra2ceGUI.gui.process('Ready.')
 
-        # Ra2ceGUI.gui.elements["spinner"].stop()
+        Ra2ceGUI.gui.process('Ready.')
+
+    def overlay(self):
+        Ra2ceGUI.gui.elements["main_map"]["widget"].threadpool = QThreadPool()
+        print("Multithreading with maximum %d threads" % Ra2ceGUI.gui.elements["main_map"][
+            "widget"].threadpool.maxThreadCount())
+
+        worker = Worker(self.overlay_worker)  # Any other args, kwargs are passed to the run function
+
+        # Execute
+        Ra2ceGUI.gui.elements["main_map"]["widget"].threadpool.start(worker)
 
 
 def clip_origins(clip_extent: rasterio.coords.BoundingBox):

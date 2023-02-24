@@ -109,11 +109,11 @@ def selectRoad():
 
 
 def showRoads():
-    # Ra2ceGUI.gui.elements["spinner"].start()
+    Ra2ceGUI.gui.process('Loading roads... Please wait.')
 
     Ra2ceGUI.show_roads()
 
-    # Ra2ceGUI.gui.elements["spinner"].stop()
+    Ra2ceGUI.gui.process('Ready.')
 
 
 def selectFloodmap():
@@ -124,7 +124,6 @@ def selectFloodmap():
         Ra2ceGUI.gui.map_widget["main_map"].remove_raster_layer("flood_map_layer_group", Ra2ceGUI.previous_floodmap)
 
     if _loaded_floodmap:
-        # Ra2ceGUI.gui.elements["spinner"].start()
         Ra2ceGUI.loaded_floodmap = Path(_loaded_floodmap)
 
         try:
@@ -137,4 +136,3 @@ def selectFloodmap():
 
         # Update all GUI elements
         Ra2ceGUI.gui.update()
-        # Ra2ceGUI.gui.elements["spinner"].stop()
