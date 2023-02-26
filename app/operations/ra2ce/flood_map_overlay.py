@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
-from PyQt5.QtCore import QThreadPool
 from src.guitools.pyqt5.worker import Worker
+from app.ra2ceGUI_base import Ra2ceGUI
+from ra2ce.io.readers.graph_pickle_reader import GraphPickleReader
+from ra2ce.io.writers.network_exporter_factory import NetworkExporterFactory
+
+import logging
+from PyQt5.QtCore import QThreadPool
 import rasterio
 import pandas as pd
 import geopandas as gpd
 from shapely.geometry import box
 from rasterstats import point_query
 import osmnx
-
-from app.ra2ceGUI_base import Ra2ceGUI
-from ra2ce.io.readers.graph_pickle_reader import GraphPickleReader
-from ra2ce.io.writers.network_exporter_factory import NetworkExporterFactory
 
 
 class FloodMapOverlay:
@@ -56,6 +57,9 @@ class FloodMapOverlay:
         # Update the GeoDataFrame with the flood map data
         building_footprints_within_hazard_extent["flooded_buildings"] = self.hazard_overlay(building_footprints_within_hazard_extent)
 
+        # Save the building footprints to the output folder
+        building_footprints_within_hazard_extent.to_file(Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'output', 'buildings_flooded.gpkg'))
+
         # Calculate the number of people that are flooded
         building_footprints_within_hazard_extent["flooded_ppl"] = building_footprints_within_hazard_extent["flooded_buildings"] * building_footprints_within_hazard_extent["POP_BLDG"]
 
@@ -92,7 +96,6 @@ class FloodMapOverlay:
 
         path_od_hazard_graph = Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'static', 'output_graph', 'origins_destinations_graph_hazard.p')
         if path_od_hazard_graph.is_file():
-            print("A hazard overlay was already done previously. If you want to do a new hazard overlay, please create a new project.")
             self.color_roads(path_od_hazard_graph)
             Ra2ceGUI.floodmap_overlay_feedback = "Existing overlay shown"
             self.floodMapOverlayFeedback(Ra2ceGUI.floodmap_overlay_feedback)
@@ -129,7 +132,7 @@ class FloodMapOverlay:
 
     def overlay(self):
         Ra2ceGUI.gui.elements["main_map"]["widget"].threadpool = QThreadPool()
-        print("Multithreading with maximum %d threads" % Ra2ceGUI.gui.elements["main_map"][
+        logging.info("Multithreading with maximum %d threads" % Ra2ceGUI.gui.elements["main_map"][
             "widget"].threadpool.maxThreadCount())
 
         worker = Worker(self.overlay_worker)  # Any other args, kwargs are passed to the run function

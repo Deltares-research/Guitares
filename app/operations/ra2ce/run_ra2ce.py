@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
-from PyQt5.QtCore import QThreadPool
 from src.guitools.pyqt5.worker import Worker
 from app.ra2ceGUI_base import Ra2ceGUI
+
+import logging
+from PyQt5.QtCore import QThreadPool
 import geopandas as gpd
 import pandas as pd
 import pickle
@@ -118,7 +120,7 @@ def runRA2CE_worker(progress_callback):
         return
 
     try:
-        assert Ra2ceGUI.floodmap_overlay_feedback == "Overlay done"
+        assert Ra2ceGUI.floodmap_overlay_feedback == "Overlay done" or Ra2ceGUI.floodmap_overlay_feedback == "Existing overlay shown"
     except AssertionError:
         analyzeFeedback("Overlay flood map")
         Ra2ceGUI.gui.process('Ready.')
@@ -132,17 +134,17 @@ def runRA2CE_worker(progress_callback):
         # save_route_names()
         remove_ini_files()
         analyzeFeedback("Analysis finished")
-        print("RA2CE successfully ran.")
+        logging.info("RA2CE successfully ran.")
     except BaseException as e:
         Ra2ceGUI.gui.process('Ready.')
-        print(e)
+        logging.error(e)
 
     Ra2ceGUI.gui.process('Ready.')
 
 
 def runRA2CE():
     Ra2ceGUI.gui.elements["main_map"]["widget"].threadpool = QThreadPool()
-    print("Multithreading with maximum %d threads" % Ra2ceGUI.gui.elements["main_map"]["widget"].threadpool.maxThreadCount())
+    logging.info("Multithreading with maximum %d threads" % Ra2ceGUI.gui.elements["main_map"]["widget"].threadpool.maxThreadCount())
 
     worker = Worker(runRA2CE_worker)  # Any other args, kwargs are passed to the run function
 

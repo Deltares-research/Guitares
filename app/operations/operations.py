@@ -2,6 +2,7 @@ from app.ra2ceGUI_base import Ra2ceGUI
 from src.guitools.pyqt5.io import openFileNameDialog
 from ra2ce.io.readers.graph_pickle_reader import GraphPickleReader
 
+import logging
 import numpy as np
 import osmnx
 from pathlib import Path
@@ -41,7 +42,7 @@ def color_roads():
 
 def modifyFloodDepth():
     Ra2ceGUI.edited_flood_depth = Ra2ceGUI.gui.getvar("ra2ceGUI", "edited_flood_depth")
-    print(f'Flood depth input: {Ra2ceGUI.edited_flood_depth}')
+    logging.info(f'Flood depth input: {Ra2ceGUI.edited_flood_depth}')
 
     Ra2ceGUI.graph.edges[Ra2ceGUI.closest_u_v_k[0], Ra2ceGUI.closest_u_v_k[1], Ra2ceGUI.closest_u_v_k[2]][Ra2ceGUI.ra2ce_config["hazard"]["flood_col_name"]] = Ra2ceGUI.edited_flood_depth
 
@@ -116,22 +117,32 @@ def showRoads():
     Ra2ceGUI.gui.process('Ready.')
 
 
-def selectFloodmap():
-    _loaded_floodmap = openFileNameDialog(Ra2ceGUI.current_project.joinpath('static', 'hazard'),
-                                          fileTypes=["GeoTIFF files (*.tif)"])
+def showFloodmap():
+    Ra2ceGUI.gui.process('Loading flood map... Please wait.')
 
     if Ra2ceGUI.previous_floodmap:
         Ra2ceGUI.gui.map_widget["main_map"].remove_raster_layer("flood_map_layer_group", Ra2ceGUI.previous_floodmap)
 
+    try:
+        Ra2ceGUI.update_flood_map()
+
+    except:
+        Ra2ceGUI.gui.setvar("ra2ceGUI", "loaded_floodmap", "Cannot load in GUI")
+
+    Ra2ceGUI.previous_floodmap = Ra2ceGUI.loaded_floodmap.name
+
+    Ra2ceGUI.gui.process('Ready.')
+
+    # Update all GUI elements
+    Ra2ceGUI.gui.update()
+
+
+def selectFloodmap():
+    _loaded_floodmap = openFileNameDialog(Ra2ceGUI.current_project.joinpath('static', 'hazard'),
+                                          fileTypes=["GeoTIFF files (*.tif)"])
+
     if _loaded_floodmap:
         Ra2ceGUI.loaded_floodmap = Path(_loaded_floodmap)
-
-        try:
-            Ra2ceGUI.update_flood_map()
-        except:
-            Ra2ceGUI.gui.setvar("ra2ceGUI", "loaded_floodmap", "Cannot load in GUI")
-
-        Ra2ceGUI.previous_floodmap = Ra2ceGUI.loaded_floodmap.name
         Ra2ceGUI.gui.setvar("ra2ceGUI", "loaded_floodmap", Path(Ra2ceGUI.loaded_floodmap).name)
 
         # Update all GUI elements

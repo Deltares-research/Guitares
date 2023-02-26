@@ -88,10 +88,20 @@ element:
       tooltip: loaded_floodmap
       enable: False
     - style: pushbutton
+      id: show_floodmap
+      text: Show floodmap
+      position:
+        x: 30
+        y: 33
+        width: 130
+        height: 22
+      tooltip: Show the floodmap
+      method: showFloodmap
+    - style: pushbutton
       id: show_roads
       text: Show roads
       position:
-        x: 30
+        x: 180
         y: 33
         width: 130
         height: 22
