@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
+from src.guitools.gui import GUI
+from ra2ce.io.readers.ini_file_reader import IniFileReader
+
+import logging
 import os, sys
 from pathlib import Path
 from matplotlib.colors import LinearSegmentedColormap
-
-from src.guitools.gui import GUI
-from ra2ce.io.readers.ini_file_reader import IniFileReader
 
 
 class Ra2ceGUI:
@@ -81,7 +82,7 @@ class Ra2ceGUI:
     def validate_base_data(required_base_data):
         for base_data in required_base_data:
             if not base_data.is_file():
-                print(f"Warning: {str(base_data)} cannot be found!")
+                logging.warning(f"Warning: {str(base_data)} cannot be found!")
 
     def valid_input(self):
         _original_value = "Choose a name"
@@ -199,7 +200,7 @@ class Ra2ceGUI:
         try:
             assert 'indirect' in self.ra2ceHandler.input_config.analysis_config.config_data
         except AssertionError as e:
-            print(e)
+            logging.info(e)
             return
 
         for i in range(len(self.ra2ceHandler.input_config.analysis_config.config_data['indirect'])):

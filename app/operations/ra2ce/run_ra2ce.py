@@ -66,23 +66,33 @@ def read_pickle(path):
 
 
 def aggregate_results():
-    #"D:\RA2CE\1_data\fullTest\output\multi_link_origin_closest_destination\fullTest_optimal_routes_with_hazard.gpkg"
+    # Get the paths
     output_folder = Ra2ceGUI.ra2ceHandler.input_config.analysis_config.config_data['output']
     village_ids = Ra2ceGUI.ra2ce_config['base_data']['path'].joinpath('network', 'village_ids.pickle')
     project_name = Ra2ceGUI.ra2ceHandler.input_config.analysis_config.config_data['project']['name']
-    origins_path = output_folder / r"multi_link_origin_closest_destination\{}_origins.gpkg".format(project_name)
+    origins_path = output_folder / "multi_link_origin_closest_destination/{}_origins.gpkg".format(project_name)
+    flooded_results_path = output_folder / "buildings_flooded.csv"
+    route_paths_path = output_folder / "multi_link_origin_closest_destination/{}_optimal_routes_with_hazard.gpkg".format(project_name)
+
+    # Read the results data
     origins = gpd.read_file(origins_path)
+    flooded_results = pd.read_csv(flooded_results_path)
+    route_paths = gpd.read_file(route_paths_path)
 
     id_to_vilname = read_pickle(village_ids)
     origins['FID'] = origins['o_id'].apply(lambda x: int(x.split("_")[-1]))
+
+    # Transform the optimal routes geodataframe to something that can be added to the summary results
+    route_paths['FID'] = route_paths['origin'].apply(lambda x: x.replace("village_",  ""))
+    route_paths[['FID', 'length']]
+
     origins['VIL_NAME'] = origins['FID'].map(id_to_vilname)
     if 'POI' in origins.columns:
         del origins["POI"]
 
     origins.rename(columns=rename_temp, inplace=True)
 
-    flooded_results_path = output_folder / "buildings_flooded.csv"
-    flooded_results = pd.read_csv(flooded_results_path)
+
     total_results = pd.merge(flooded_results, origins, on="VIL_NAME")
     for d in ['o_id', 'cnt', 'geometry', 'FID']:
         del total_results[d]
@@ -119,20 +129,20 @@ def runRA2CE_worker(progress_callback):
         Ra2ceGUI.gui.process('Ready.')
         return
 
-    try:
-        assert Ra2ceGUI.floodmap_overlay_feedback == "Overlay done" or Ra2ceGUI.floodmap_overlay_feedback == "Existing overlay shown"
-    except AssertionError:
-        analyzeFeedback("Overlay flood map")
-        Ra2ceGUI.gui.process('Ready.')
-        return
+    # try:
+    #     assert Ra2ceGUI.floodmap_overlay_feedback == "Overlay done" or Ra2ceGUI.floodmap_overlay_feedback == "Existing overlay shown"
+    # except AssertionError:
+    #     analyzeFeedback("Overlay flood map")
+    #     Ra2ceGUI.gui.process('Ready.')
+    #     return
 
     try:
         progress_callback.emit("Running...")
-        Ra2ceGUI.ra2ceHandler.input_config.analysis_config.configure()
-        Ra2ceGUI.ra2ceHandler.run_analysis()
+        # Ra2ceGUI.ra2ceHandler.input_config.analysis_config.configure()
+        # Ra2ceGUI.ra2ceHandler.run_analysis()
         aggregate_results()
         # save_route_names()
-        remove_ini_files()
+        # remove_ini_files()
         analyzeFeedback("Analysis finished")
         logging.info("RA2CE successfully ran.")
     except BaseException as e:

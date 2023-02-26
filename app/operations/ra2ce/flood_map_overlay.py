@@ -119,8 +119,8 @@ class FloodMapOverlay:
             return
 
         try:
-            Ra2ceGUI.ra2ceHandler.input_config.network_config.configure_hazard()
             self.floodmap_overlay_building_footprints()
+            Ra2ceGUI.ra2ceHandler.input_config.network_config.configure_hazard()
             self.color_roads(path_od_hazard_graph)
             self.floodMapOverlayFeedback("Overlay done")
         except BaseException as e:

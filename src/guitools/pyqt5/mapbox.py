@@ -136,39 +136,7 @@ class MapBox(QtWidgets.QWidget):
         if self.rectangle_modify_callback:
             self.rectangle_modify_callback(id, coords)
 
-    def add_layer(self, layer_id, type, create=None, modify=None, select=None):
-
-        # First add layer group
-        ids = layer_id.split(".")
-        lid = ids[-1]
-        ids = ids[:-1]
-        idstr = ids[0]
-        for j, id in enumerate(ids):
-            if j>0:
-                idstr = idstr + "." + id
-        self.add_layer_group(idstr)
-
-        # Now add the layer
-        if type == "draw":
-            layer = DrawLayer(self, layer_id, create=create, modify=modify, select=select)
-
-        nids = len(ids)
-
-        if nids == 1:
-            self.layer[ids[0]][lid] = layer
-        elif nids == 2:
-            self.layer[ids[0]][ids[1]][lid] = layer
-        elif nids == 3:
-            self.layer[ids[0]][ids[1]][ids[2]][lid] = layer
-        elif nids == 4:
-            self.layer[ids[0]][ids[1]][ids[2]][ids[3]][lid] = layer
-        elif nids == 5:
-            self.layer[ids[0]][ids[1]][ids[2]][ids[3]][ids[4]][lid] = layer
-
-        return layer
-
     def delete_layer(self, layer_id):
-
         layer = self.find_layer_by_id(layer_id)
 
         if layer:
@@ -207,28 +175,6 @@ class MapBox(QtWidgets.QWidget):
         else:
             print("Error! No layer found with id " + layer_id)
 
-
-    def add_layer_group(self, layer_group_id):
-        ids = layer_group_id.split(".")
-        id = ids[0]
-        if ids[0] not in self.layer:
-            self.layer[ids[0]] = {"_id": id}
-        if len(ids)>1:
-            id = id + "." + ids[1]
-            if ids[1] not in self.layer[ids[0]]:
-                self.layer[ids[0]][ids[1]] = {"_id": id}
-        if len(ids)>2:
-            id = id + "." + ids[2]
-            if ids[2] not in self.layer[ids[0]][ids[1]]:
-                self.layer[ids[0]][ids[1]][ids2[2]] = {"_id": id}
-        if len(ids)>3:
-            id = id + "." + ids[3]
-            if ids[3] not in self.layer[ids[0]][ids[1]][ids[2]]:
-                self.layer[ids[0]][ids[1]][ids2[2]][ids[3]] = {"_id": id}
-        if len(ids)>4:
-            id = id + "." + ids[4]
-            if ids[3] not in self.layer[ids[0]][ids[1]][ids[2]][ids[3]]:
-                self.layer[ids[0]][ids[1]][ids2[2]][ids[3]][ids[4]] = {"_id": id}
 
     def find_layer_by_id(self, id):
         layer_list = self.list_layers()
