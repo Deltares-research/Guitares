@@ -48,7 +48,7 @@ class MapBoxExample:
         # Executed after the MapBox map has been loaded
 
         # Find the map widget
-        element = self.gui.find_element_by_id(self.gui.window.elements, "map")
+        element = self.gui.window.find_element_by_id(self.gui.window.elements, "map")
         self.map = element.widget
 
         # Add container layer to the map
