@@ -6,12 +6,17 @@ import logging
 from PyQt5.QtCore import QThreadPool
 import geopandas as gpd
 import pandas as pd
-import pickle
 
-dest_temp = {'Health facility': 'D1', 'HSA Warehouse': 'D2', 'Market': 'D3'}
-rename_temp = {'EV1_ma_AD1': 'Health facility access',
+rename_cols = {'EV1_ma_AD1': 'Health facility access',
                'EV1_ma_AD2': 'HSA Warehouse access',
-               'EV1_ma_AD3': 'Market access'}
+               'EV1_ma_AD3': 'Market access',
+               'VIL_NAME': 'Village',
+               'flooded_buildings': '# of flooded buildings',
+               'flooded_ppl': '# of flooded people',
+               'DISTRICT': 'District',
+               'Municipal': 'Municipality',
+               'Ward_no': 'Ward Number'
+               }
 
 
 def analyzeFeedback(text):
@@ -59,16 +64,10 @@ def write_to_sheet_table(xlsx_writer, data, name, indexing=False):
         worksheet.set_column(i, i, width)
 
 
-def read_pickle(path):
-    with open(path, 'rb') as file:
-        f = pickle.load(file)
-    return f
-
-
 def aggregate_results():
     # Get the paths
     output_folder = Ra2ceGUI.ra2ceHandler.input_config.analysis_config.config_data['output']
-    village_ids = Ra2ceGUI.ra2ce_config['base_data']['path'].joinpath('network', 'village_ids.pickle')
+    village_ids = Ra2ceGUI.ra2ce_config['base_data']['path'].joinpath('network', 'village_ids.feather')
     project_name = Ra2ceGUI.ra2ceHandler.input_config.analysis_config.config_data['project']['name']
     origins_path = output_folder / "multi_link_origin_closest_destination/{}_origins.gpkg".format(project_name)
     flooded_results_path = output_folder / "buildings_flooded.csv"
@@ -78,11 +77,9 @@ def aggregate_results():
     origins = gpd.read_file(origins_path)
     flooded_results = pd.read_csv(flooded_results_path)
     route_paths = gpd.read_file(route_paths_path)
+    id_to_vilname = pd.read_feather(village_ids)
 
-    id_to_vilname = read_pickle(village_ids)
-    origins['FID'] = origins['o_id'].apply(lambda x: int(x.split("_")[-1]))
-
-    # Transform the optimal routes geodataframe to something that can be added to the summary results
+    # Transform the optimal routes and origins geodataframes to something that can be added to the summary results
     route_paths['FID'] = route_paths['origin'].apply(lambda x: x.replace("village_",  ""))
     route_paths['FID'] = route_paths['FID'].apply(lambda x: x.split(","))
     route_paths['Distance [km]'] = route_paths['length'] / 1000
@@ -98,18 +95,19 @@ def aggregate_results():
     route_paths = route_paths.loc[route_paths['FID'].apply(lambda x: 'POI' not in x)]
     route_paths['FID'] = route_paths['FID'].astype(int)
 
-    origins['VIL_NAME'] = origins['FID'].map(id_to_vilname)
+    origins['FID'] = origins['o_id'].apply(lambda x: int(x.split("_")[-1]))
+    origins = pd.merge(origins, id_to_vilname[['FID', 'VIL_NAME', 'DISTRICT', 'Municipal', 'Ward_no']], on="FID")
     if 'POI' in origins.columns:
         del origins["POI"]
 
-    origins.rename(columns=rename_temp, inplace=True)
+    origins.rename(columns=rename_cols, inplace=True)
 
-    total_results = pd.merge(flooded_results, origins, on="VIL_NAME")
+    total_results = pd.merge(origins, flooded_results, on="VIL_NAME")
     total_results = pd.merge(total_results, route_paths, on="FID")
-    total_results.rename(columns={'VIL_NAME': 'Village', 'flooded_buildings': '# of flooded buildings',
-                                  'flooded_ppl': '# of flooded people'}, inplace=True)
+    total_results.rename(columns=rename_cols, inplace=True)
     for d in ['o_id', 'cnt', 'geometry', 'FID']:
-        del total_results[d]
+        if d in total_results.columns:
+            del total_results[d]
 
     # Sum the damages over the totals per Event, RP, EAD and aggregation labels
     # Create a Pandas Excel writer using XlsxWriter as the engine.
@@ -154,11 +152,12 @@ def runRA2CE_worker(progress_callback):
         progress_callback.emit("Running...")
         # Ra2ceGUI.ra2ceHandler.input_config.analysis_config.configure()
         # Ra2ceGUI.ra2ceHandler.run_analysis()
+        logging.info("RA2CE successfully ran. Aggregating results..")
         aggregate_results()
         # save_route_names()
         # remove_ini_files()
         analyzeFeedback("Analysis finished")
-        logging.info("RA2CE successfully ran.")
+        logging.info("Analysis finished.")
     except BaseException as e:
         Ra2ceGUI.gui.process('Ready.')
         logging.error(e)

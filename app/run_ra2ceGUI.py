@@ -36,5 +36,5 @@ if __name__ == "__main__":
         app.exec_()
     except BaseException as e:
         logging.exception(
-            f"RA2CE crashed. Check the logfile for the Traceback message: {e}"
+            f"The RA2CE GUI crashed. Check the logfile for the Traceback message: {e}"
         )
