@@ -39,7 +39,7 @@ class FloodMapOverlay:
         from tqdm import tqdm  # somehow this only works when importing here and not at the top of the file
 
         # Do the hazard overlay
-        tqdm.pandas(desc="Flood map overlay with " + Ra2ceGUI.loaded_floodmap.stem)
+        tqdm.pandas(desc="Flood map overlay of the building footprints with " + Ra2ceGUI.loaded_floodmap.stem)
         flood_stats = point_gdf.geometry.progress_apply(
             lambda x: point_query(x, str(Ra2ceGUI.loaded_floodmap))
         )
@@ -58,6 +58,7 @@ class FloodMapOverlay:
         building_footprints_within_hazard_extent["flooded_buildings"] = self.hazard_overlay(building_footprints_within_hazard_extent)
 
         # Save the building footprints to the output folder
+        logging.info("Saving building footprints to {}".format(str(Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'output', 'buildings_flooded.gpkg'))))
         building_footprints_within_hazard_extent.to_file(Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'output', 'buildings_flooded.gpkg'))
 
         # Calculate the number of people that are flooded

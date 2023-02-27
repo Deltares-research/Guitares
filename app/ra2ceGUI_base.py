@@ -19,8 +19,13 @@ class Ra2ceGUI:
         # Read the additional ini file (for RA2CE) and convert the paths to pathlib Paths
         self.ra2ce_ini = Path(self.main_path).joinpath('ra2ce.ini')
         self.ra2ce_config = IniFileReader().read(self.ra2ce_ini)
-        self.ra2ce_config['database']['path'] = Path(self.ra2ce_config['database']['path'])
-        self.ra2ce_config['base_data']['path'] = Path(self.ra2ce_config['base_data']['path'])
+
+        if getattr(sys, 'frozen', False):
+            self.ra2ce_config['database']['path'] = Path(self.main_path).resolve().parent / '1_data'
+            self.ra2ce_config['base_data']['path'] = Path(self.main_path).resolve().parent / '3_data'
+        elif __file__:
+            self.ra2ce_config['database']['path'] = Path(self.ra2ce_config['database']['path'])
+            self.ra2ce_config['base_data']['path'] = Path(self.ra2ce_config['base_data']['path'])
 
         server_path = os.path.join(self.main_path, "server")
         self.server_path = server_path

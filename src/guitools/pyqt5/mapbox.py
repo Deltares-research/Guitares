@@ -198,6 +198,7 @@ class MapBox(QtWidgets.QWidget):
 
         self.id_counter += 1
         id_string = str(self.id_counter)
+        layer_group_name = layer_name + '_group'
 
         # Add layer
         self.add_layer(layer_name, id_string)
@@ -205,9 +206,9 @@ class MapBox(QtWidgets.QWidget):
         feature_collection_string = self.load_geojson_from(geojson_input)
 
         if color_by:
-            js_string = "import('/main.js').then(module => {module.addLineGeojsonLayerColorByProperty(" + feature_collection_string + ",'" + id_string + "','" + layer_name + "','" + layer_name + "','" + color_by + "')});"
+            js_string = "import('/main.js').then(module => {module.addLineGeojsonLayerColorByProperty(" + feature_collection_string + ",'" + id_string + "','" + layer_name + "','" + layer_group_name + "','" + color_by + "')});"
         else:
-            js_string = "import('/main.js').then(module => {module.addLineGeojsonLayer(" + feature_collection_string + ",'" + id_string + "','" + layer_name + "','" + layer_name + "','" + color + "')});"
+            js_string = "import('/main.js').then(module => {module.addLineGeojsonLayer(" + feature_collection_string + ",'" + id_string + "','" + layer_name + "','" + layer_group_name + "','" + color + "')});"
 
         self.view.page().runJavaScript(js_string)
 

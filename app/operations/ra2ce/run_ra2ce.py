@@ -84,7 +84,19 @@ def aggregate_results():
 
     # Transform the optimal routes geodataframe to something that can be added to the summary results
     route_paths['FID'] = route_paths['origin'].apply(lambda x: x.replace("village_",  ""))
-    route_paths = route_paths[['FID', 'category', 'length']]
+    route_paths['FID'] = route_paths['FID'].apply(lambda x: x.split(","))
+    route_paths['Distance [km]'] = route_paths['length'] / 1000
+    route_paths = route_paths[['FID', 'category', 'Distance [km]']]
+    route_paths = route_paths.explode(['FID'], ignore_index=True)
+    route_paths = pd.pivot(route_paths, index=['FID'], columns=['category'], values=['Distance [km]'])
+    route_paths = route_paths.droplevel(level=0, axis=1).reset_index()
+    route_paths[['HSA Warehouse', 'Health facility', 'Market']] = route_paths[['HSA Warehouse', 'Health facility', 'Market']].round(1)
+    route_paths.rename(columns={'HSA Warehouse': 'Distance [km] to HSA Warehouse',
+                                'Health facility': 'Distance [km] to Health facility',
+                                'Market': 'Distance [km] to Market'},
+                       inplace=True)
+    route_paths = route_paths.loc[route_paths['FID'].apply(lambda x: 'POI' not in x)]
+    route_paths['FID'] = route_paths['FID'].astype(int)
 
     origins['VIL_NAME'] = origins['FID'].map(id_to_vilname)
     if 'POI' in origins.columns:
@@ -92,8 +104,10 @@ def aggregate_results():
 
     origins.rename(columns=rename_temp, inplace=True)
 
-
     total_results = pd.merge(flooded_results, origins, on="VIL_NAME")
+    total_results = pd.merge(total_results, route_paths, on="FID")
+    total_results.rename(columns={'VIL_NAME': 'Village', 'flooded_buildings': '# of flooded buildings',
+                                  'flooded_ppl': '# of flooded people'}, inplace=True)
     for d in ['o_id', 'cnt', 'geometry', 'FID']:
         del total_results[d]
 
