@@ -109,37 +109,30 @@ class Ra2ceGUI:
 
     def show_roads(self):
         # Find the layer group
-        layer_group = 'Road network'
         layer_name = 'roads'
-        self.gui.elements['main_map']['widget_group'].add_layer_group(layer_group)
 
         # Add the road network to the map
         path_roads = self.ra2ce_config['base_data']['path'].joinpath('network', self.ra2ce_config['network']['geojson'])
         self.gui.elements['main_map']['widget_group'].add_line_geojson(path_roads,
                                                                        color='orange',
-                                                                       layer_name=layer_name,
-                                                                       layer_group_name=layer_group)
+                                                                       layer_name=layer_name)
 
-    def highlight_road(self, roads, layer_name, layer_group):
-        self.gui.elements['main_map']['widget_group'].add_layer_group(layer_group)
+    def highlight_road(self, roads, layer_name):
         self.gui.elements['main_map']['widget_group'].add_line_geojson(roads,
                                                                        color='#faee05',
-                                                                       layer_name=layer_name,
-                                                                       layer_group_name=layer_group)
+                                                                       layer_name=layer_name)
 
     def remove_roads(self, layer_name):
         self.gui.elements['main_map']['widget_group'].remove_layer(layer_name)
 
     def update_flood_map(self):
-        layer_name = Path(self.loaded_floodmap).name
-        layer_group_name = "flood_map"
+        layer_name = "flood_map"
 
         colormap = LinearSegmentedColormap.from_list([0, 1], ["#FFFFFF", "#02c6db"])
 
         # Add the new image layer to the layer group
         self.gui.map_widget["main_map"].add_image_layer(Ra2ceGUI.loaded_floodmap,
                                                             layer_name=layer_name,
-                                                            layer_group_name=layer_group_name,
                                                             legend_title="Flooded",
                                                             colormap=colormap,
                                                             cmin=0,

@@ -12,13 +12,7 @@ class Layer:
 
     def delete(self):
         # Delete this layer and all nested layers from map
-        self.delete_from_map()
-
-        # Remove layer from layer dict
-        self.parent.layer.pop(self.id)
-
-    def delete_from_map(self):
-        self.mapbox.runjs("/js/main.js", "removeLayer", arglist=[self.map_id])
+        self.mapbox.runjs("/main.js", "removeLayer", arglist=[self.map_id])
 
     def clear(self):
         pass

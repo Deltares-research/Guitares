@@ -54,7 +54,7 @@ class MapBox(QtWidgets.QWidget):
         self.map_moved = None
         self.clicked_coords = None
 
-        self.layer = {}
+        self.layers = {}
         self.id_counter = 0
 
         view = self.view = QtWebEngineWidgets.QWebEngineView(parent)
@@ -91,10 +91,13 @@ class MapBox(QtWidgets.QWidget):
     def mapMoved(self, coords):
         self.callback_module.map_moved(json.loads(coords))
 
+    @QtCore.pyqtSlot(str, str, str)
+    def layerAdded(self, layer_name, layer_group_name, id):
+        pass
+
     def add_image_layer(self,
                         image_file,
                         layer_name=None,
-                        layer_group_name=None,
                         legend_title="",
                         cmin=None,
                         cmax=None,
@@ -160,7 +163,7 @@ class MapBox(QtWidgets.QWidget):
         im.save(os.path.join(self.server_path, overlay_file))
 
         # Add layer
-        self.add_layer(layer_group_name)
+        self.add_layer(layer_name, id_string)
 
         # Bounds
         bounds = [[new_bounds[0], new_bounds[2]], [new_bounds[3], new_bounds[1]]]
@@ -191,21 +194,20 @@ class MapBox(QtWidgets.QWidget):
                          geojson_input: Union[str, Path],
                          color: str = None,
                          layer_name: str = None,
-                         layer_group_name: str = None,
                          color_by: str = ""):
 
         self.id_counter += 1
         id_string = str(self.id_counter)
 
         # Add layer
-        self.add_layer(layer_group_name)
+        self.add_layer(layer_name, id_string)
 
         feature_collection_string = self.load_geojson_from(geojson_input)
 
         if color_by:
-            js_string = "import('/main.js').then(module => {module.addLineGeojsonLayerColorByProperty(" + feature_collection_string + ",'" + id_string + "','" + layer_name + "','" + layer_group_name + "','" + color_by + "')});"
+            js_string = "import('/main.js').then(module => {module.addLineGeojsonLayerColorByProperty(" + feature_collection_string + ",'" + id_string + "','" + layer_name + "','" + layer_name + "','" + color_by + "')});"
         else:
-            js_string = "import('/main.js').then(module => {module.addLineGeojsonLayer(" + feature_collection_string + ",'" + id_string + "','" + layer_name + "','" + layer_group_name + "','" + color + "')});"
+            js_string = "import('/main.js').then(module => {module.addLineGeojsonLayer(" + feature_collection_string + ",'" + id_string + "','" + layer_name + "','" + layer_name + "','" + color + "')});"
 
         self.view.page().runJavaScript(js_string)
 
@@ -215,28 +217,46 @@ class MapBox(QtWidgets.QWidget):
         self.callback_module.coords_clicked(json.loads(coords))
 
     def remove_layer(self, layer_name):
-        if layer_name in self.layer:
-            logging.info("Removing " + layer_name + " - id=" + layer_name)
-            js_string = "import('/main.js').then(module => {module.removeLayer('" + layer_name + "')});"
-            self.view.page().runJavaScript(js_string)
-            self.layer[layer_name].delete()
+        if layer_name in self.layers:
+            logging.info("Removing " + layer_name)
+            self.layers[layer_name].delete()
+            del self.layers[layer_name]
 
-    def find_layer_group(self, name):
-        layer_group = tree_traverse(self.layer_group, name)
-        return layer_group
-
-    def find_layer(self, layer_name, layer_group_name):
-        layer_group = tree_traverse(self.layer_group, layer_group_name)
-        return layer_group[layer_name]
-
-    def add_layer(self, layer_id):
+    def add_layer(self, layer_id, id_nr):
         # Adds a container layer
-        if layer_id not in self.layer:
-            self.layer[layer_id] = Layer(self, layer_id, layer_id)
-            self.layer[layer_id].map_id = layer_id
+        if layer_id not in self.layers:
+            self.layers[layer_id] = Layer(self, layer_id, layer_id)
+            self.layers[layer_id].map_id = id_nr
         else:
             logging.info("Layer " + layer_id + " already exists.")
-        return self.layer[layer_id]
+        return self.layers[layer_id]
+
+    def runjs(self, module, function, arglist=None):
+        if not arglist:
+            arglist = []
+        string = "import('" + module + "').then(module => {module." + function + "("
+        for iarg, arg in enumerate(arglist):
+            if isinstance(arg, bool):
+                if arg:
+                    string = string + "true"
+                else:
+                    string = string + "false"
+            elif isinstance(arg, int):
+                string = string + str(arg)
+            elif isinstance(arg, float):
+                string = string + str(arg)
+            elif isinstance(arg, dict):
+                string = string + json.dumps(arg)
+            elif isinstance(arg, list):
+                string = string + "[]"
+            elif isinstance(arg, gpd.GeoDataFrame):
+                string = string + arg.to_json()
+            else:
+                string = string + "'" + arg + "'"
+            if iarg<len(arglist) - 1:
+                string = string + ","
+        string = string + ")});"
+        self.view.page().runJavaScript(string)
 
 
 def tree_traverse(tree, key):

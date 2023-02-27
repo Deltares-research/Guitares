@@ -32,11 +32,9 @@ def color_roads():
     # Remove the previous roads
     Ra2ceGUI.gui.elements['main_map']['widget_group'].remove_layer('roads')
 
-    layer_group = 'Road network'
     layer_name = 'roads_overlay'
     Ra2ceGUI.gui.elements['main_map']['widget_group'].add_line_geojson(edges,
                                                                        layer_name=layer_name,
-                                                                       layer_group_name=layer_group,
                                                                        color_by=Ra2ceGUI.ra2ce_config["hazard"]["flood_col_name"])
 
 
@@ -104,7 +102,7 @@ def selectRoad():
 
         # Highlight the selected road in yellow in the interface
         to_highlight = Ra2ceGUI.graph.edges[closest_u_v_k[0], closest_u_v_k[1], closest_u_v_k[2]]["geometry"]
-        Ra2ceGUI.highlight_road(to_highlight, 'selected_road', 'selected_road_group')
+        Ra2ceGUI.highlight_road(to_highlight, 'selected_road')
 
         roadModificationFeedback("Road selected")
 
@@ -127,7 +125,7 @@ def showFloodmap():
         Ra2ceGUI.update_flood_map()
 
     except:
-        Ra2ceGUI.gui.setvar("ra2ceGUI", "loaded_floodmap", "Cannot load in GUI")
+        Ra2ceGUI.gui.setvar("ra2ceGUI", "loaded_floodmap", "Cannot load flood map in GUI")
 
     Ra2ceGUI.previous_floodmap = Ra2ceGUI.loaded_floodmap.name
 

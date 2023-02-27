@@ -84,11 +84,9 @@ class FloodMapOverlay:
 
         edges = edges.to_json()
 
-        layer_group = 'Road network'
         layer_name = 'roads_overlay'
         Ra2ceGUI.gui.elements['main_map']['widget_group'].add_line_geojson(edges,
                                                                            layer_name=layer_name,
-                                                                           layer_group_name=layer_group,
                                                                            color_by=Ra2ceGUI.ra2ce_config["hazard"]["flood_col_name"])
 
     def overlay_worker(self, progress_callback):
