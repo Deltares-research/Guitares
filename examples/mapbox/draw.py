@@ -117,5 +117,5 @@ def update():
     mpbox.gui.setvar("mpbox", "polyline_names", polyline_names)
     mpbox.gui.setvar("mpbox", "nr_polylines", len(mpbox.polylines))
 
-    mpbox.gui.update()
+    mpbox.gui.window.update()
 

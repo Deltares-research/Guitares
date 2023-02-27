@@ -12,6 +12,7 @@ description = "Guitares is a Python package for building configurable Graphical 
 requires-python = ">=3.10"
 dependencies = [
     "geopandas >=0.8",
+    "toml",
     "numpy",
     "pandas",
     "pyproj",
