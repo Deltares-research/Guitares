@@ -145,17 +145,17 @@ def runRA2CE_worker(progress_callback):
         Ra2ceGUI.gui.process('Ready.')
         return
 
-    # try:
-    #     assert Ra2ceGUI.floodmap_overlay_feedback == "Overlay done" or Ra2ceGUI.floodmap_overlay_feedback == "Existing overlay shown"
-    # except AssertionError:
-    #     analyzeFeedback("Overlay flood map")
-    #     Ra2ceGUI.gui.process('Ready.')
-    #     return
+    try:
+        assert Ra2ceGUI.floodmap_overlay_feedback == "Overlay done" or Ra2ceGUI.floodmap_overlay_feedback == "Existing overlay shown"
+    except AssertionError:
+        analyzeFeedback("Overlay flood map")
+        Ra2ceGUI.gui.process('Ready.')
+        return
 
     try:
         progress_callback.emit("Running...")
-        # Ra2ceGUI.ra2ceHandler.input_config.analysis_config.configure()
-        # Ra2ceGUI.ra2ceHandler.run_analysis()
+        Ra2ceGUI.ra2ceHandler.input_config.analysis_config.configure()
+        Ra2ceGUI.ra2ceHandler.run_analysis()
         logging.info("RA2CE successfully ran. Aggregating results..")
         aggregate_results()
         # save_route_names()

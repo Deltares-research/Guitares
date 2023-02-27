@@ -16,8 +16,7 @@ import osmnx
 
 class FloodMapOverlay:
     def __init__(self):
-        self.floodmap_extent = self.get_floodmap_extent()
-        Ra2ceGUI.floodmap_extent = self.floodmap_extent
+        self.floodmap_extent = []
         self.overlay()
 
     @staticmethod
@@ -91,10 +90,34 @@ class FloodMapOverlay:
                                                                            color_by=Ra2ceGUI.ra2ce_config["hazard"]["flood_col_name"])
 
     def overlay_worker(self, progress_callback):
+        self.floodmap_extent = self.get_floodmap_extent()
+        Ra2ceGUI.floodmap_extent = self.floodmap_extent
+
+        # Clip the origins to the extent of the hazard map
+        clip_origins(self.floodmap_extent)
+
+        if Ra2ceGUI.floodmap_overlay_feedback == "No origins in extent":
+            self.floodMapOverlayFeedback(Ra2ceGUI.floodmap_overlay_feedback)
+            return
+
+        try:
+            self.floodmap_overlay_building_footprints()
+            Ra2ceGUI.ra2ceHandler.input_config.network_config.configure_hazard()
+            self.floodMapOverlayFeedback("Overlay done")
+        except BaseException as e:
+            Ra2ceGUI.floodmap_overlay_feedback = "Overlay failed"
+            self.floodMapOverlayFeedback(Ra2ceGUI.floodmap_overlay_feedback)
+
+    def overlay(self):
         Ra2ceGUI.gui.process('Overlaying flood map... Please wait.')
 
-        path_od_hazard_graph = Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'static', 'output_graph', 'origins_destinations_graph_hazard.p')
+        path_od_hazard_graph = Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'static',
+                                                                                  'output_graph',
+                                                                                  'origins_destinations_graph_hazard.p')
         if path_od_hazard_graph.is_file():
+            self.floodmap_extent = self.get_floodmap_extent()
+            Ra2ceGUI.floodmap_extent = self.floodmap_extent
+
             self.color_roads(path_od_hazard_graph)
             Ra2ceGUI.floodmap_overlay_feedback = "Existing overlay shown"
             self.floodMapOverlayFeedback(Ra2ceGUI.floodmap_overlay_feedback)
@@ -109,27 +132,6 @@ class FloodMapOverlay:
             Ra2ceGUI.gui.process('Ready.')
             return
 
-        # Clip the origins to the extent of the hazard map
-        clip_origins(self.floodmap_extent)
-
-        if Ra2ceGUI.floodmap_overlay_feedback == "No origins in extent":
-            self.floodMapOverlayFeedback(Ra2ceGUI.floodmap_overlay_feedback)
-            Ra2ceGUI.gui.process('Ready.')
-            return
-
-        try:
-            self.floodmap_overlay_building_footprints()
-            Ra2ceGUI.ra2ceHandler.input_config.network_config.configure_hazard()
-            self.color_roads(path_od_hazard_graph)
-            self.floodMapOverlayFeedback("Overlay done")
-        except BaseException as e:
-            Ra2ceGUI.floodmap_overlay_feedback = "Overlay failed"
-            self.floodMapOverlayFeedback(Ra2ceGUI.floodmap_overlay_feedback)
-            Ra2ceGUI.gui.process('Ready.')
-
-        Ra2ceGUI.gui.process('Ready.')
-
-    def overlay(self):
         Ra2ceGUI.gui.elements["main_map"]["widget"].threadpool = QThreadPool()
         logging.info("Multithreading with maximum %d threads" % Ra2ceGUI.gui.elements["main_map"][
             "widget"].threadpool.maxThreadCount())
@@ -138,6 +140,9 @@ class FloodMapOverlay:
 
         # Execute
         Ra2ceGUI.gui.elements["main_map"]["widget"].threadpool.start(worker)
+
+        self.color_roads(path_od_hazard_graph)
+        Ra2ceGUI.gui.process('Ready.')
 
 
 def clip_origins(clip_extent: rasterio.coords.BoundingBox):

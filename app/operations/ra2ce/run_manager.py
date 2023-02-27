@@ -30,6 +30,7 @@ def resetFeedbackBoxes():
 
     if Ra2ceGUI.previous_floodmap:
         Ra2ceGUI.gui.map_widget["main_map"].remove_layer("flood_map")
+        Ra2ceGUI.gui.map_widget["main_map"].remove_layer("roads_overlay")
 
     # Update all GUI elements
     Ra2ceGUI.gui.update()
