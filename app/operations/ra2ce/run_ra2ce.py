@@ -84,7 +84,7 @@ def aggregate_results():
 
     # Transform the optimal routes geodataframe to something that can be added to the summary results
     route_paths['FID'] = route_paths['origin'].apply(lambda x: x.replace("village_",  ""))
-    route_paths[['FID', 'length']]
+    route_paths = route_paths[['FID', 'category', 'length']]
 
     origins['VIL_NAME'] = origins['FID'].map(id_to_vilname)
     if 'POI' in origins.columns:

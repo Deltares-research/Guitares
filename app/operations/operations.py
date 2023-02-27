@@ -27,10 +27,10 @@ def color_roads():
 
     edges = edges.to_json()
 
-    Ra2ceGUI.remove_roads('selected_road', 'selected_road_group')
+    Ra2ceGUI.remove_roads('selected_road')
 
     # Remove the previous roads
-    Ra2ceGUI.gui.elements['main_map']['widget_group'].remove_geojson_layer('roads_overlay', 'Road network')
+    Ra2ceGUI.gui.elements['main_map']['widget_group'].remove_layer('roads')
 
     layer_group = 'Road network'
     layer_name = 'roads_overlay'
@@ -62,7 +62,7 @@ def modifyFloodDepth():
 
 
 def selectRoad():
-    Ra2ceGUI.remove_roads('selected_road', 'selected_road_group')
+    Ra2ceGUI.remove_roads('selected_road')
 
     coords = Ra2ceGUI.gui.getvar("ra2ceGUI", "coords_clicked")
 
@@ -121,7 +121,7 @@ def showFloodmap():
     Ra2ceGUI.gui.process('Loading flood map... Please wait.')
 
     if Ra2ceGUI.previous_floodmap:
-        Ra2ceGUI.gui.map_widget["main_map"].remove_raster_layer("flood_map_layer_group", Ra2ceGUI.previous_floodmap)
+        Ra2ceGUI.gui.map_widget["main_map"].remove_layer("flood_map")
 
     try:
         Ra2ceGUI.update_flood_map()

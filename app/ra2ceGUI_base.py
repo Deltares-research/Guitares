@@ -127,15 +127,12 @@ class Ra2ceGUI:
                                                                        layer_name=layer_name,
                                                                        layer_group_name=layer_group)
 
-    def remove_roads(self, layer_name, layer_group):
-        self.gui.elements['main_map']['widget_group'].remove_geojson_layer(layer_name, layer_group)
+    def remove_roads(self, layer_name):
+        self.gui.elements['main_map']['widget_group'].remove_layer(layer_name)
 
     def update_flood_map(self):
         layer_name = Path(self.loaded_floodmap).name
-        layer_group_name = "flood_map_layer_group"
-
-        # Add layer group (this only does something when there is no layer group with layer_group_name)
-        self.gui.map_widget["main_map"].add_layer_group(layer_group_name)
+        layer_group_name = "flood_map"
 
         colormap = LinearSegmentedColormap.from_list([0, 1], ["#FFFFFF", "#02c6db"])
 

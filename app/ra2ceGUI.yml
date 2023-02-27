@@ -89,7 +89,7 @@ element:
       enable: False
     - style: pushbutton
       id: show_floodmap
-      text: Show floodmap
+      text: Show flood map
       position:
         x: 30
         y: 33
