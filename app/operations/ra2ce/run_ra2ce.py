@@ -17,6 +17,11 @@ rename_cols = {'EV1_ma_AD1': 'Health facility access',
                'Municipal': 'Municipality',
                'Ward_no': 'Ward Number'
                }
+save_cols = ['Village', 'District', 'Municipality',
+             'Ward Number', '# of flooded people', '# of flooded buildings',
+             'HSA Warehouse access', 'Market access', 'Health facility access',
+             'Distance [km] to HSA Warehouse', 'Distance [km] to Market',
+             'Distance [km] to Health facility', ]
 
 
 def analyzeFeedback(text):
@@ -100,19 +105,18 @@ def aggregate_results():
     if 'POI' in origins.columns:
         del origins["POI"]
 
-    origins.rename(columns=rename_cols, inplace=True)
-
-    total_results = pd.merge(origins, flooded_results, on="VIL_NAME")
+    total_results = pd.merge(flooded_results, origins, on="VIL_NAME")
     total_results = pd.merge(total_results, route_paths, on="FID")
     total_results.rename(columns=rename_cols, inplace=True)
     for d in ['o_id', 'cnt', 'geometry', 'FID']:
         if d in total_results.columns:
             del total_results[d]
 
-    # Sum the damages over the totals per Event, RP, EAD and aggregation labels
+    total_results.sort_values('# of flooded people', ascending=False, inplace=True)
+
     # Create a Pandas Excel writer using XlsxWriter as the engine.
     writer = pd.ExcelWriter(output_folder / "summary_results.xlsx", engine='xlsxwriter')
-    write_to_sheet_table(writer, total_results, 'Results')
+    write_to_sheet_table(writer, total_results[save_cols], 'Results')
 
     # Close the Pandas Excel writer and output the Excel file.
     writer.save()
