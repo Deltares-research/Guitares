@@ -72,7 +72,6 @@ def write_to_sheet_table(xlsx_writer, data, name, indexing=False):
 def aggregate_results():
     # Get the paths
     output_folder = Ra2ceGUI.ra2ceHandler.input_config.analysis_config.config_data['output']
-    village_ids = Ra2ceGUI.ra2ce_config['base_data']['path'].joinpath('network', 'village_ids.feather')
     project_name = Ra2ceGUI.ra2ceHandler.input_config.analysis_config.config_data['project']['name']
     origins_path = output_folder / "multi_link_origin_closest_destination/{}_origins.gpkg".format(project_name)
     flooded_results_path = output_folder / "buildings_flooded.csv"
@@ -82,7 +81,7 @@ def aggregate_results():
     origins = gpd.read_file(origins_path)
     flooded_results = pd.read_csv(flooded_results_path)
     route_paths = gpd.read_file(route_paths_path)
-    id_to_vilname = pd.read_feather(village_ids)
+    id_to_vilname = pd.read_feather(Ra2ceGUI.village_ids)
 
     # Transform the optimal routes and origins geodataframes to something that can be added to the summary results
     route_paths['FID'] = route_paths['origin'].apply(lambda x: x.replace("village_",  ""))
