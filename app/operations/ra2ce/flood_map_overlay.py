@@ -17,6 +17,7 @@ import osmnx
 class FloodMapOverlay:
     def __init__(self):
         self.floodmap_extent = []
+        self.ready = False
         self.overlay()
 
     @staticmethod
@@ -89,9 +90,18 @@ class FloodMapOverlay:
                                                                            layer_name=layer_name,
                                                                            color_by=Ra2ceGUI.ra2ce_config["hazard"]["flood_col_name"])
 
+    def on_finished(self):
+        self.ready = True
+
     def overlay_worker(self, progress_callback):
+        Ra2ceGUI.gui.process('Overlaying flood map... Please wait.')
+
         self.floodmap_extent = self.get_floodmap_extent()
         Ra2ceGUI.floodmap_extent = self.floodmap_extent
+
+        path_od_hazard_graph = Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'static',
+                                                                                  'output_graph',
+                                                                                  'origins_destinations_graph_hazard.p')
 
         # Clip the origins to the extent of the hazard map
         clip_origins(self.floodmap_extent)
@@ -137,6 +147,7 @@ class FloodMapOverlay:
             "widget"].threadpool.maxThreadCount())
 
         worker = Worker(self.overlay_worker)  # Any other args, kwargs are passed to the run function
+        # worker.signals.finished.connect(self.on_finished)
 
         # Execute
         Ra2ceGUI.gui.elements["main_map"]["widget"].threadpool.start(worker)

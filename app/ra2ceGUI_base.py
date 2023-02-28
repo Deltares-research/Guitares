@@ -21,8 +21,8 @@ class Ra2ceGUI:
         self.ra2ce_config = IniFileReader().read(self.ra2ce_ini)
 
         if getattr(sys, 'frozen', False):
-            self.ra2ce_config['database']['path'] = Path(self.main_path).resolve().parent / '1_data'
-            self.ra2ce_config['base_data']['path'] = Path(self.main_path).resolve().parent / '3_data'
+            self.ra2ce_config['database'] = {'path': Path(self.main_path).resolve().parent / '1_data'}
+            self.ra2ce_config['base_data'] = {'path': Path(self.main_path).resolve().parent / '3_data'}
         elif __file__:
             self.ra2ce_config['database']['path'] = Path(self.ra2ce_config['database']['path'])
             self.ra2ce_config['base_data']['path'] = Path(self.ra2ce_config['base_data']['path'])
@@ -40,9 +40,8 @@ class Ra2ceGUI:
         roads_geojson = self.ra2ce_config['base_data']['path'] / 'network' / 'terai_roads_final_clean.geojson'
         roads_gpkg = self.ra2ce_config['base_data']['path'] / 'network' / 'terai_roads_final.gpkg'
         self.validate_base_data(required_base_data=[self.origins_destinations_graph, self.origin_destination_table,
-                                                    self.building_footprints_geoms, self.building_footprints_data,
-                                                    self.villages, poi_data, self.village_ids, roads_geojson,
-                                                    roads_gpkg])
+                                                    self.building_footprints_geoms, self.villages,
+                                                    poi_data, self.village_ids, roads_geojson, roads_gpkg])
 
         # Create a variable for the results
         self.result = None
