@@ -17,7 +17,7 @@ class ListBox(QListWidget):
         if element.select == "item":
             if not self.element.option_value.variable:
                 # List
-                for i, val in enumerate(element.option_value):
+                for i, val in enumerate(element.option_value.list):
                     if element.type == float:
                         element.option_value[i] = float(val)
                     elif element.type == int:

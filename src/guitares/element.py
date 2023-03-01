@@ -279,7 +279,7 @@ class Element:
         if self.style == "mapbox" or self.style == "webpage":
             self.widget.view.setGeometry(x0, y0, wdt, hgt)
         elif self.style == "radiobuttongroup":
-            nbuttons = len(self.option_value)
+            nbuttons = len(self.option_value.list)
             yll = y0 + hgt - int(nbuttons * 20 * resize_factor)
             for i in range(nbuttons):
                 self.widget.buttons()[i].setGeometry(x0,

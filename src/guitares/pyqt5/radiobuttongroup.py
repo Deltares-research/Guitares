@@ -12,10 +12,10 @@ class RadioButtonGroup(QButtonGroup):
         x0, y0, wdt, hgt = element.get_position()
 
         # Lower y of top button
-        yll = y0 + hgt - int(len(element.option_value.list) * 20 * element.resize_factor)
+        yll = y0 + hgt - int(len(element.option_value.list) * 20 * element.gui.resize_factor)
         for i in range(len(element.option_value.list)):
             d = QRadioButton(element.option_string.list[i], element.parent.widget)
-            d.setGeometry(x0, int(yll + i*20*element.resize_factor), wdt, int(20 * element.resize_factor))
+            d.setGeometry(x0, int(yll + i*20*element.gui.resize_factor), wdt, int(20 * element.gui.resize_factor))
             d.setVisible(True)
             d.id = i
             self.addButton(d)
