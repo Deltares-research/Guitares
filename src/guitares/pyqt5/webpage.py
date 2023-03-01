@@ -16,10 +16,11 @@ class WebPage(QtWidgets.QWidget):
     def __init__(self, element):
         super().__init__(element.parent.widget)
 
+        self.element = element
+
         view = self.view = QtWebEngineWidgets.QWebEngineView(element.parent.widget)
 
-        x0, y0, wdt, hgt = element.get_position()
-        view.setGeometry(x0, y0, wdt, hgt)
+        self.set_geometry()
 
         page = WebEnginePage(view, element.gui.js_messages)
         view.setPage(page)
@@ -28,3 +29,8 @@ class WebPage(QtWidgets.QWidget):
 
     def set(self):
         pass
+
+    def set_geometry(self):
+        resize_factor = self.element.gui.resize_factor
+        x0, y0, wdt, hgt = self.element.get_position()
+        self.view.setGeometry(x0, y0, wdt, hgt)

@@ -21,6 +21,7 @@ class MapBox(QtWidgets.QWidget):
         super().__init__(element.parent.widget)
 
         self.gui = element.gui
+        self.element = element
 
         url = "http://localhost:" + str(self.gui.server_port) + "/"
         self.url = url
@@ -56,8 +57,7 @@ class MapBox(QtWidgets.QWidget):
         channel = self.channel = QtWebChannel.QWebChannel()
         view.page().profile().clearHttpCache()
 
-        x0, y0, wdt, hgt = element.get_position()
-        view.setGeometry(x0, y0, wdt, hgt)
+        self.set_geometry()
 
         page = WebEnginePage(view, self.gui.js_messages)
         view.setPage(page)
@@ -66,6 +66,10 @@ class MapBox(QtWidgets.QWidget):
         channel.registerObject("MapBox", self)
 
         view.load(QtCore.QUrl(url))
+
+        # file_path = os.path.join(self.server_path, "index.html")
+        # local_url = QtCore.QUrl.fromLocalFile(file_path)
+        # view.load(local_url)
 
         self.callback_module = element.module
 
@@ -88,6 +92,11 @@ class MapBox(QtWidgets.QWidget):
 
     def set(self):
         pass
+
+    def set_geometry(self):
+        resize_factor = self.element.gui.resize_factor
+        x0, y0, wdt, hgt = self.element.get_position()
+        self.view.setGeometry(x0, y0, wdt, hgt)
 
     @QtCore.pyqtSlot(str)
     def mapReady(self, coords):

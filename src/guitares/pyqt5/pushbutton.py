@@ -9,16 +9,14 @@ class PushButton(QPushButton):
 
         self.element = element
 
-        x0, y0, wdt, hgt = element.get_position()
-
-        self.setGeometry(x0, y0, wdt, hgt)
-
         self.clicked.connect(self.callback)
 
         if element.icon:
             self.setIcon(QIcon(element.icon))
         if element.tooltip:
             self.setToolTip(element.tooltip)
+
+        self.set_geometry()
 
     def set(self):
         pass
@@ -32,3 +30,8 @@ class PushButton(QPushButton):
                 self.element.window.update()
         except:
             traceback.print_exc()
+
+    def set_geometry(self):
+        resize_factor = self.element.gui.resize_factor
+        x0, y0, wdt, hgt = self.element.get_position()
+        self.setGeometry(x0, y0, wdt, hgt)

@@ -70,17 +70,22 @@ class Element:
         self.filter = "All Files (*.*)"
         self.url = ""
         self.icon = ""
+        self.collapse = False
+        self.collapsed = False
+        self.fraction_collapsed = 1.0
+        self.fraction_expanded = 0.5
 
         # Now update element attributes based on dict
 
         self.style = dct["style"]
 
-        self.position.x = dct["position"]["x"]
-        self.position.y = dct["position"]["y"]
-        if "width" in dct["position"]:
-            self.position.width = dct["position"]["width"]
-        if "height" in dct["position"]:
-            self.position.height = dct["position"]["height"]
+        if "position" in dct:
+            self.position.x = dct["position"]["x"]
+            self.position.y = dct["position"]["y"]
+            if "width" in dct["position"]:
+                self.position.width = dct["position"]["width"]
+            if "height" in dct["position"]:
+                self.position.height = dct["position"]["height"]
 
         if "variable" in dct:
             self.variable = dct["variable"]
@@ -163,6 +168,14 @@ class Element:
             self.filter = dct["filter"]
         if "url" in dct:
             self.url = dct["url"]
+        if "collapse" in dct:
+            self.collapse = dct["collapse"]
+        if "collapsed" in dct:
+            self.collapsed = dct["collapsed"]
+        if "fraction_collapsed" in dct:
+            self.fraction_collapsed = dct["fraction_collapsed"]
+        if "fraction_expanded" in dct:
+            self.fraction_expanded = dct["fraction_expanded"]
 
         if "dependency" in dct:
             for dep in dct["dependency"]:
@@ -211,6 +224,12 @@ class Element:
             # Add frame
             from .pyqt5.frame import Frame
             self.widget = Frame(self)
+
+        elif self.style == "dual_frame":
+            # Add dual frame
+            from .pyqt5.dual_frame import DualFrame
+            self.widget = DualFrame(self)
+
 
         elif self.style == "pushbutton":
             from .pyqt5.pushbutton import PushButton
@@ -325,7 +344,38 @@ class Element:
         resize_factor = self.gui.resize_factor
         parent = self.parent.widget
 
-        # TO DO: relative positions!
+        # collapsable = False
+        # if hasattr(self.parent, "style"):
+        #     if self.parent.style == "panel" and self.parent.collapse:
+        #         collapsable = True
+        #
+        # if collapsable:
+        #     pwdt = self.parent.widget.geometry().width()
+        #     phgt = self.parent.widget.geometry().height()
+        #     if self == self.parent.elements[0]:
+        #         # First panel
+        #         x0 = 0
+        #         y0 = 0
+        #         if self.parent.collapsed:
+        #             wdt = self.parent.fraction_collapsed * pwdt
+        #         else:
+        #             wdt = self.parent.fraction_expanded * pwdt
+        #         hgt = phgt
+        #     else:
+        #         # Second panel
+        #         if self.parent.collapsed:
+        #             x0 = self.parent.fraction_collapsed * pwdt
+        #         else:
+        #             x0 = self.parent.fraction_expanded * pwdt
+        #         y0 = 0
+        #         wdt = pwdt - x0
+        #         hgt = phgt
+        #
+        # else:
+
+            # TO DO: relative positions!
+        pwdt = parent.geometry().width()
+        phgt = parent.geometry().height()
 
         x0 = position.x * resize_factor
         y0 = position.y * resize_factor
@@ -336,26 +386,26 @@ class Element:
             if wdt>0:
                 pass
             else:
-                wdt = parent.geometry().width() - x0 + wdt
+                wdt = pwdt - x0 + wdt
         else:
             if wdt>0:
-                x0 = parent.geometry().width() - wdt + x0
+                x0 = pwdt - wdt + x0
             else:
-                x0 = parent.geometry().width() + x0
-                wdt = parent.geometry().width() - x0 + wdt
+                x0 = pwdt + x0
+                wdt = pwdt - x0 + wdt
 
         if y0>0:
             if hgt>0:
-                y0 = parent.geometry().height() - (y0 + hgt)
+                y0 = phgt - (y0 + hgt)
             else:
                 y0 = - hgt
-                hgt = parent.geometry().height() - position.y * resize_factor + hgt
+                hgt = phgt - position.y * resize_factor + hgt
         else:
             if hgt>0:
-                y0 = parent.geometry().width() - hgt
+                y0 = phgt - hgt
             else:
                 hgt = - y0 - hgt
-                y0 = parent.geometry().width() - (y0 + hgt)
+                y0 = phgt - (y0 + hgt)
 
         x0 = int(x0)
         y0 = int(y0)
@@ -394,3 +444,7 @@ class Element:
 
     def clear_tab(self, index):
         self.widget.clear_tab(index)
+
+    def set_collapsed(self, true_or_false):
+        self.collapsed = true_or_false
+        self.gui.window.resize_elements(self.elements)

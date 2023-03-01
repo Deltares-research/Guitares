@@ -32,7 +32,7 @@ class MainWindow(QMainWindow):
                          self.window_height)
 
     def resizeEvent(self, event):
-        self.window.resize_elements(self.window.elements, self.window.gui.resize_factor)
+        self.window.resize_elements(self.window.elements)
 
     def closeEvent(self, event):
         QApplication.quit()        
