@@ -1,3 +1,0 @@
-﻿Driver,threshold,x,y,Location,icon_file,uncertainty_range,Critical parameter,Description,Description (long),Region,Hard or soft limits,sector
-SLR,1,3.7,51.633,Oosterscheldekering,oosterschelde.png,,,closing 45x per year,,,,flood risk
-SLR,1.3,3.7,51.633,Oosterscheldekering,oosterschelde.png,,,permanently closed,,,,flood risk
