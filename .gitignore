@@ -14,3 +14,5 @@ deltares_guitares.egg-info
 /src/guitares.egg-info
 mapbox_token.txt
 src/guitares/pyqt5/mapbox/server/mapbox_token.js
+/examples/frame_collapse/server
+

@@ -4,8 +4,8 @@ export function addLayer(id, data, fillColor, fillOpacity, lineWidth, selectionO
 
   let hoveredId = null;
   let selectedId = null
-  let fillId = "fill_" + id
-  let lineId = "line_" + id
+  let fillId = id + ".fill"
+  let lineId = id + ".line"
   var selectedFeatures = []
 
   map.addSource(id, {
@@ -35,22 +35,22 @@ export function addLayer(id, data, fillColor, fillOpacity, lineWidth, selectionO
     }
   });
 
-  map.addLayer({
-    'id': 'points',
-    'type': 'symbol',
-    'source': id,
-    'layout': {
-      // get the title name from the source's "title" property
-      'text-field': ['get', 'utm_number'],
-      'text-font': [
-        'Open Sans Semibold',
-        'Arial Unicode MS Bold'
-      ],
-      'text-offset': [0, 0],
-      'text-anchor': 'top',
-      'text-size': 12
-    }
-  });
+//  map.addLayer({
+//    'id': 'points',
+//    'type': 'symbol',
+//    'source': id,
+//    'layout': {
+//      // get the title name from the source's "title" property
+//      'text-field': ['get', 'utm_number'],
+//      'text-font': [
+//        'Open Sans Semibold',
+//        'Arial Unicode MS Bold'
+//      ],
+//      'text-offset': [0, 0],
+//      'text-anchor': 'top',
+//      'text-size': 12
+//    }
+//  });
 
   // When the user moves their mouse over the fill layer, we'll update the
   // feature state for the feature under the mouse.

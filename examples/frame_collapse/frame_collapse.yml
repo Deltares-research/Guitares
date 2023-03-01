@@ -1,0 +1,42 @@
+window:
+  title: Frame Collapse!
+  width: 800
+  height: 600
+  module: callbacks
+  variable_group: frame_collapse
+element:
+- style: panel
+  id: dual
+  collapse: True
+  collapse_orientation: horizontal
+  collapsed: True
+  fraction_expanded: 0.5
+  fraction_collapsed: 1.0
+  collapse_id: a
+  position:
+    x: 20
+    y: 50
+    width: -20
+    height: -10
+  element:
+  - style: panel
+    id: a
+    element:
+    - style: mapbox
+      id: map
+      position:
+        x: 1
+        y: 1
+        width: -1
+        height: -1
+  - style: panel
+    id: b
+    element:
+    - style: webpage
+      url: https://guitares.readthedocs.io/en/latest/
+      id: pb
+      position:
+        x: 10
+        y: 1
+        width: -1
+        height: -1

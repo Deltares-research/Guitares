@@ -30,7 +30,7 @@ class GUI:
                  server_path=None,
                  server_port=3000,
                  js_messages=True,
-                 copy_mapbox_server_folder=False,
+                 copy_mapbox_server_folder=True,
                  mapbox_token_file="mapbox_token.txt"):
 
         self.module      = module
@@ -53,26 +53,23 @@ class GUI:
         if not self.config_path:
             self.config_path = os.getcwd()
 
+        self.image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "img")
+        self.image_path = self.image_path.replace(os.sep, '/')
+
         if server_path:
             # Need to run http server (e.g. for MapBox)
-            # Check if something's already running on port 3000
-            try:
-                html = urlopen("http://localhost:" + str(server_port) + "/")
-                print("Found server running at port {} ...".format(server_port))
-            except:
-                print("Starting http server ...")
-                # Run http server in separate thread
-                # Use daemon=True to make sure the server stops after the application is finished
-                if copy_mapbox_server_folder:
-                    mpboxpth = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pyqt5", "mapbox", "server")
-                    # Delete current server folder
-                    if os.path.exists(server_path):
-                        shutil.rmtree(server_path)
-                    # Now copy over folder from mapbox
-                    shutil.copytree(mpboxpth, server_path)
-
-                thr = threading.Thread(target=run_server, args=(server_path, server_port), daemon=True)
-                thr.start()
+            print("Starting http server ...")
+            # Run http server in separate thread
+            # Use daemon=True to make sure the server stops after the application is finished
+            if copy_mapbox_server_folder:
+                mpboxpth = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pyqt5", "mapbox", "server")
+                # Delete current server folder
+                if os.path.exists(server_path):
+                    shutil.rmtree(server_path)
+                # Now copy over folder from mapbox
+                shutil.copytree(mpboxpth, server_path)
+            thr = threading.Thread(target=run_server, args=(server_path, server_port), daemon=True)
+            thr.start()
 
             # Read mapbox token and store in js file in server path
             if os.path.exists(os.path.join(module.main_path, mapbox_token_file)):

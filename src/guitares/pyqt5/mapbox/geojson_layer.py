@@ -93,3 +93,11 @@ class GeoJSONLayer(Layer):
         # Make sure this is not an empty GeoDataFrame
         if len(data) > 0:
             self.mapbox.runjs("/js/geojson_layer.js", "setData", arglist=[self.map_id, data])
+
+    def set_visibility(self, true_or_false):
+        if true_or_false:
+            self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id + ".fill"])
+            self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id + ".line"])
+        else:
+            self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".fill"])
+            self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".line"])

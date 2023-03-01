@@ -189,8 +189,10 @@ class Window:
             except Exception as err:
                 print(err)
 
-    def find_element_by_id(self, elements, element_id):
+    def find_element_by_id(self, element_id, elements=None):
         element_found = None
+        if elements == None:
+            elements=self.elements
         for element in elements:
             if element.id == element_id:
                 return element
@@ -210,11 +212,12 @@ class Window:
                         return element_found
         return None
 
-    def resize_elements(self, elements, resize_factor):
+    def resize_elements(self, elements):
         # Loop through elements
         for element in elements:
             # Set geometry of this element
-            element.set_geometry()
+            element.widget.set_geometry()
+            # Check for children
             if element.style == "tabpanel":
                 # Loop through tabs
                 for tab in element.tabs:
@@ -222,11 +225,15 @@ class Window:
                     # tab.widget.setGeometry(0, 0, wdt, int(hgt - 20 * resize_factor))
                     # And resize elements in this tab
                     if tab.elements:
-                        self.resize_elements(tab.elements, resize_factor)
+                        self.resize_elements(tab.elements)
             elif element.style == "panel":
                 # If this panel is resizable, also update element positions of children
-                if element.position.height < 0:
-                    self.resize_elements(element.elements, resize_factor)
+                collapsable = False
+                if hasattr(element.parent, "style"):
+                    if element.parent.style == "panel" and element.parent.collapse:
+                        collapsable = True
+                if element.position.height < 0 or element.collapse or collapsable:
+                    self.resize_elements(element.elements)
 
     def add_menus(self, menus, parent, gui):
         # Loop through elements list
