@@ -33,4 +33,4 @@ class PopupWindow(QDialog):
         self.setModal(modal)
 
     def resizeEvent(self, event):
-        self.window.resize_elements(self.window.elements, self.window.gui.resize_factor)
+        self.window.resize_elements(self.window.elements)
