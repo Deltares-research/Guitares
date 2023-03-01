@@ -12,8 +12,7 @@ class Text(QLabel):
 
         self.setVisible(True)
 
-        x0, y0, wdt, hgt = element.get_position()
-        self.setGeometry(x0, y0, wdt, hgt)
+        self.set_geometry()
 
     def set(self):
         if self.element.variable:
@@ -23,3 +22,7 @@ class Text(QLabel):
         else:
             val = self.element.text
         self.setText(val)
+
+    def set_geometry(self):
+        x0, y0, wdt, hgt = self.element.get_position()
+        self.setGeometry(x0, y0, wdt, hgt)

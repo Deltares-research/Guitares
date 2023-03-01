@@ -11,13 +11,12 @@ class CheckBox(QCheckBox):
 
         self.setVisible(True)
 
-        x0, y0, wdt, hgt = element.get_position()
-        self.setGeometry(x0, y0, wdt, hgt)
-
         if element.text:
             self.setText(element.text)
 
         self.stateChanged.connect(self.callback)
+
+        self.set_geometry()
 
     def set(self):
         group  = self.element.variable_group
@@ -43,3 +42,9 @@ class CheckBox(QCheckBox):
                 self.element.window.update()
         except:
             traceback.print_exc()
+
+    def set_geometry(self):
+        resize_factor = self.element.gui.resize_factor
+        x0, y0, wdt, hgt = self.element.get_position()
+        self.setGeometry(x0, y0, wdt, hgt)
+

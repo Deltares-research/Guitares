@@ -9,17 +9,14 @@ class RadioButtonGroup(QButtonGroup):
 
         self.element = element
 
-        x0, y0, wdt, hgt = element.get_position()
-
-        # Lower y of top button
-        yll = y0 + hgt - int(len(element.option_value.list) * 20 * element.resize_factor)
         for i in range(len(element.option_value.list)):
             d = QRadioButton(element.option_string.list[i], element.parent.widget)
-            d.setGeometry(x0, int(yll + i*20*element.resize_factor), wdt, int(20 * element.resize_factor))
             d.setVisible(True)
             d.id = i
             self.addButton(d)
             self.buttonClicked.connect(self.callback)
+
+        self.set_geometry()
 
     def set(self):
         group  = self.element.variable_group
@@ -42,3 +39,15 @@ class RadioButtonGroup(QButtonGroup):
                 self.element.window.update()
         except:
             traceback.print_exc()
+
+    def set_geometry(self):
+        resize_factor = self.gui.resize_factor
+        x0, y0, wdt, hgt = self.element.get_position()
+        nbuttons = len(self.element.option_value)
+        # Lower y of top button
+        yll = y0 + hgt - int(nbuttons * 20 * resize_factor)
+        for i in range(nbuttons):
+            self.buttons()[i].setGeometry(x0,
+                                          int(yll + i * 20 * resize_factor),
+                                          wdt,
+                                          int(20 * resize_factor))

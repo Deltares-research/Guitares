@@ -201,13 +201,13 @@ class Window:
                 for tab in element.tabs:
                     # Look for elements in this tab
                     if tab.elements:
-                        element_found = self.find_element_by_id(tab.elements, element_id)
+                        element_found = self.find_element_by_id(element_id, elements=tab.elements)
                         if element_found:
                             return element_found
             elif element.style == "panel":
                 # Look for elements in this frame
                 if element.elements:
-                    element_found = self.find_element_by_id(element.elements, element_id)
+                    element_found = self.find_element_by_id(element_id, elements=element.elements)
                     if element_found:
                         return element_found
         return None

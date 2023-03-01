@@ -290,6 +290,7 @@ class Element:
                 self.widget.setVisible(True)
 
     def set_geometry(self):
+        self.element.widget.set_geometry()
 
         resize_factor = self.gui.resize_factor
 

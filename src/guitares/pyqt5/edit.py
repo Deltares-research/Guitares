@@ -19,15 +19,8 @@ class Edit(QLineEdit):
 
         self.setVisible(True)
 
-        x0, y0, wdt, hgt = element.get_position()
-        self.setGeometry(x0, y0, wdt, hgt)
-
         if element.text:
             label = QLabel(element.text, element.parent.widget)
-            fm = label.fontMetrics()
-            wlab = fm.size(0, element.text).width() + 15
-            label.setAlignment(QtCore.Qt.AlignRight)
-            label.setGeometry(x0 - wlab - 3, y0 + 6, wlab, hgt)
             label.setStyleSheet("background: transparent; border: none")
             if not element.enable:
                 label.setEnabled(False)
@@ -35,6 +28,8 @@ class Edit(QLineEdit):
             label.setVisible(True)
 
         self.editingFinished.connect(self.callback)
+
+        self.set_geometry()
 
     def set(self):
         group  = self.element.variable_group
@@ -85,3 +80,25 @@ class Edit(QLineEdit):
             self.element.window.update()
         except:
             traceback.print_exc()
+
+    def set_geometry(self):
+        resize_factor = self.element.gui.resize_factor
+        x0, y0, wdt, hgt = self.element.get_position()
+        self.setGeometry(x0, y0, wdt, hgt)
+        if self.element.text:
+            label = self.text_widget
+            fm = label.fontMetrics()
+            wlab = int(fm.size(0, self.element.text).width())
+            if self.element.text_position == "above-center" or self.element.text_position == "above":
+                label.setAlignment(QtCore.Qt.AlignCenter)
+                label.setGeometry(x0, int(y0 - 20 * resize_factor), wdt, int(20 * resize_factor))
+            elif self.element.text_position == "above-left":
+                label.setAlignment(QtCore.Qt.AlignLeft)
+                label.setGeometry(x0, int(y0 - 20 * resize_factor), wlab, int(20 * resize_factor))
+            else:
+                # Assuming left
+                label.setAlignment(QtCore.Qt.AlignRight)
+                label.setGeometry(int(x0 - wlab - 3 * resize_factor),
+                                  int(y0 + 5 * self.element.gui.resize_factor),
+                                  wlab,
+                                  int(20 * resize_factor))
