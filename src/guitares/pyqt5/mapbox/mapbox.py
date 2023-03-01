@@ -147,7 +147,8 @@ class MapBox(QtWidgets.QWidget):
         # Find layer by ID
         layer = find_layer_by_id(layer_id, self.layer)
         if hasattr(layer, "select_callback"):
-            layer.select_callback(json.loads(feature_props))
+            if layer.select_callback:
+                layer.select_callback(json.loads(feature_props))
 
 #    @QtCore.pyqtSlot(str, str, str)
     @QtCore.pyqtSlot(str, str)
