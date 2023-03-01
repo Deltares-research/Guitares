@@ -104,6 +104,7 @@ def aggregate_results():
     if 'POI' in origins.columns:
         del origins["POI"]
 
+    # TODO: fix issue with the villages with the same names
     total_results = pd.merge(flooded_results, origins, on="VIL_NAME")
     total_results = pd.merge(total_results, route_paths, on="FID")
     total_results.rename(columns=rename_cols, inplace=True)

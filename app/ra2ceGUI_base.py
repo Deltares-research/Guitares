@@ -22,7 +22,7 @@ class Ra2ceGUI:
 
         if getattr(sys, 'frozen', False):
             self.ra2ce_config['database'] = {'path': Path(self.main_path).resolve().parent / '1_data'}
-            self.ra2ce_config['base_data'] = {'path': Path(self.main_path).resolve().parent / '3_data'}
+            self.ra2ce_config['base_data'] = {'path': Path(self.main_path).resolve().parent / '3_base_data'}
         elif __file__:
             self.ra2ce_config['database']['path'] = Path(self.ra2ce_config['database']['path'])
             self.ra2ce_config['base_data']['path'] = Path(self.ra2ce_config['base_data']['path'])
