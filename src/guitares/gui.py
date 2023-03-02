@@ -7,13 +7,15 @@ import sys
 import copy
 import shutil
 
+from pathlib import Path
+import toml
 import http.server
 import socketserver
 from urllib.request import urlopen
 from urllib.error import *
 import threading
 from PyQt5.QtWidgets import QApplication
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtGui
 
 from guitares.window import Window
 
@@ -38,6 +40,7 @@ class GUI:
         self.config_file = config_file
         self.config_path = config_path
         self.splash      = None
+        self.icon        = icon
         self.config      = {}
         self.variables   = {}
         self.server_thread = None
@@ -46,9 +49,6 @@ class GUI:
         self.js_messages = js_messages
         self.popup_data = None
         self.resize_factor = 1.0
-
-        # For some reason, the splash crashes on QPixmap(splash_file) ...
-        # self.show_splash()
 
         if not self.config_path:
             self.config_path = os.getcwd()
@@ -96,6 +96,12 @@ class GUI:
         QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
         app = QApplication(sys.argv)
 
+        # Show splash screen
+        self.show_splash()
+
+        # Set the icon
+        app.setWindowIcon(QtGui.QIcon(self.icon))
+
         if self.stylesheet:
             app.setStyleSheet(open(os.path.join(self.config_path, self.stylesheet), "r").read())
 
@@ -110,7 +116,9 @@ class GUI:
         # Call on_build method after building window
         if hasattr(self.module, "on_build"):
             self.module.on_build()
-
+            
+        # Close splash screen before GUI is initiated
+        self.close_splash()
         app.exec_()
 
     # def update(self):
@@ -151,7 +159,11 @@ class GUI:
         return data
 
     def read_gui_config(self, path, file_name):
-        d = yaml2dict(os.path.join(path, file_name))
+        suffix = Path(path).joinpath(file_name).suffix
+        if suffix == '.yml':
+            d = yaml2dict(os.path.join(path, file_name))
+        elif suffix == '.toml':
+            d = toml.load(os.path.join(path, file_name))
         config = {}
         config["window"] = {}
         config["toolbar"] = {}
@@ -171,7 +183,11 @@ class GUI:
 
     def read_gui_elements(self, path, file_name):
         # Return just the elements
-        d = yaml2dict(os.path.join(path, file_name))
+        suffix = Path(path).joinpath(file_name).suffix
+        if suffix == '.yml':
+            d = yaml2dict(os.path.join(path, file_name))
+        elif suffix == '.toml':
+            d = toml.load(os.path.join(path, file_name))
         element = d["element"]
         for el in d["element"]:
             if el["style"] == "tabpanel":
