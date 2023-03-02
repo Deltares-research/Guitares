@@ -5,6 +5,8 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # See the GNU Lesser General Public License for more details. You should have received a copy of the GNU Lesser General
 # Public License along with RA2CE GUI. If not, see <https://www.gnu.org/licenses/>.
+#
+# This tool is developed for demonstration purposes only.
 
 from app.ra2ceGUI_base import Ra2ceGUI
 from src.guitools.pyqt5.io import openFileNameDialog
@@ -128,6 +130,7 @@ def showFloodmap():
 
     if Ra2ceGUI.previous_floodmap:
         Ra2ceGUI.gui.map_widget["main_map"].remove_layer("flood_map")
+        Ra2ceGUI.gui.setvar("ra2ceGUI", "valid_config", "Not yet configured")
 
     try:
         Ra2ceGUI.update_flood_map()

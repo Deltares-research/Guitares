@@ -5,14 +5,14 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # See the GNU Lesser General Public License for more details. You should have received a copy of the GNU Lesser General
 # Public License along with RA2CE GUI. If not, see <https://www.gnu.org/licenses/>.
+#
+# This tool is developed for demonstration purposes only.
 
 from PyQt5.QtWidgets import QSlider, QLabel
 from PyQt5.QtCore import Qt
 
 from .widget_group import WidgetGroup
 
-
-# from gui import getvar, setvar
 
 class Slider(WidgetGroup):
 

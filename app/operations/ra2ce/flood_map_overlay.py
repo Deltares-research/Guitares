@@ -5,6 +5,8 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # See the GNU Lesser General Public License for more details. You should have received a copy of the GNU Lesser General
 # Public License along with RA2CE GUI. If not, see <https://www.gnu.org/licenses/>.
+#
+# This tool is developed for demonstration purposes only.
 
 from src.guitools.pyqt5.worker import Worker
 from app.ra2ceGUI_base import Ra2ceGUI
@@ -56,6 +58,7 @@ class FloodMapOverlay:
     def floodmap_overlay_building_footprints(self):
         # Get the building footprints with the centroids / representative points within
         building_footprints_within_hazard_extent = gpd.read_feather(Ra2ceGUI.building_footprints_geoms)
+        # building_footprints_within_hazard_extent = gpd.read_feather(r"D:\RA2CE\3_base_data\building_footprints\building_footprints.feather")
 
         # Filter with the flood map bounding box
         xmin, ymin, xmax, ymax = self.floodmap_extent
@@ -120,10 +123,13 @@ class FloodMapOverlay:
         try:
             self.floodmap_overlay_building_footprints()
             Ra2ceGUI.ra2ceHandler.input_config.network_config.configure_hazard()
+            self.color_roads(path_od_hazard_graph)
             self.floodMapOverlayFeedback("Overlay done")
+            Ra2ceGUI.gui.process('Ready.')
         except BaseException as e:
             Ra2ceGUI.floodmap_overlay_feedback = "Overlay failed"
             self.floodMapOverlayFeedback(Ra2ceGUI.floodmap_overlay_feedback)
+            logging.error(e)
 
     def overlay(self):
         Ra2ceGUI.gui.process('Overlaying flood map... Please wait.')
@@ -154,13 +160,9 @@ class FloodMapOverlay:
             "widget"].threadpool.maxThreadCount())
 
         worker = Worker(self.overlay_worker)  # Any other args, kwargs are passed to the run function
-        # worker.signals.finished.connect(self.on_finished)
 
         # Execute
         Ra2ceGUI.gui.elements["main_map"]["widget"].threadpool.start(worker)
-
-        self.color_roads(path_od_hazard_graph)
-        Ra2ceGUI.gui.process('Ready.')
 
 
 def clip_origins(clip_extent: rasterio.coords.BoundingBox):
@@ -180,17 +182,17 @@ def clip_origins(clip_extent: rasterio.coords.BoundingBox):
                                                        'output_graph',
                                                        'origin_destination_table.feather')
 
-    # Convert the Rasterio bounding box to a Polygon object for removing origin nodes outside of the hazard extent
+    # Convert the Rasterio bounding box to a Polygon object for removing origin nodes outside the hazard extent
     clip_extent_box = box(*clip_extent, ccw=True)
 
-    # Load the graph, remove the origin nodes outside of the extent and
+    # Load the graph, remove the origin nodes outside the extent
     od_graph = GraphPickleReader().read(od_graph_path)
     od_graph = remove_nodes_within_extent(od_graph, clip_extent_box, origin_name_, destination_name_)
 
     if od_graph:
         NetworkExporterFactory().export(od_graph, 'origins_destinations_graph',
                                         od_graph_path.parent,
-                                        'pickle')
+                                        ['pickle'])
     else:
         Ra2ceGUI.floodmap_overlay_feedback = "No origins in extent"
 
@@ -223,7 +225,7 @@ def remove_nodes_within_extent(g, extent, origin_name, destination_name):
         for node in list_destinations_and_origins:
             # Delete the origin name from the "od_id" attribute of the nodes of which the origin is outside of the extent.
             od_id = g.nodes[node]["od_id"]
-            g.nodes[node]["od_id"] = ",".join([od for od in od_id.split(",") if destination_name not in od])
+            g.nodes[node]["od_id"] = ",".join([od for od in od_id.split(",") if origin_name not in od])
 
         return g
     else:

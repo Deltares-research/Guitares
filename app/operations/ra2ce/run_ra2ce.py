@@ -5,6 +5,8 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # See the GNU Lesser General Public License for more details. You should have received a copy of the GNU Lesser General
 # Public License along with RA2CE GUI. If not, see <https://www.gnu.org/licenses/>.
+#
+# This tool is developed for demonstration purposes only.
 
 from src.guitools.pyqt5.worker import Worker
 from app.ra2ceGUI_base import Ra2ceGUI
@@ -170,6 +172,7 @@ def runRA2CE_worker(progress_callback):
         analyzeFeedback("Analysis finished")
         logging.info("Analysis finished.")
     except BaseException as e:
+        analyzeFeedback("Analysis failed")
         Ra2ceGUI.gui.process('Ready.')
         logging.error(e)
 

@@ -5,6 +5,8 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # See the GNU Lesser General Public License for more details. You should have received a copy of the GNU Lesser General
 # Public License along with RA2CE GUI. If not, see <https://www.gnu.org/licenses/>.
+#
+# This tool is developed for demonstration purposes only.
 
 from app.ra2ceGUI_base import Ra2ceGUI
 from ra2ce.ra2ce_handler import Ra2ceHandler
