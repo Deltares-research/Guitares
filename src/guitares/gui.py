@@ -137,17 +137,29 @@ class GUI:
             return None
         return self.variables[group][name]["value"]
 
-    def popup(self, config, data):
+    def popup(self, config, data=None):
+        # Make pop-up window
+        # config needs to be file name of yml file, or configuration dict
+        # Data is optional and can have any shape (e.g. dict, str, object, etc.)
+        # Data will only be changed if Okay is clicked in the pop-up window
         if type(config) == str:
             path = os.path.dirname(config)
             file_name = os.path.basename(config)
             config = self.read_gui_config(path, file_name)
-        self.popup_data = copy.copy(data)
+        if data:    
+            self.popup_data = copy.copy(data)
         self.popup_window = Window(config, self, type="popup")
         p = self.popup_window.build()
+        okay = False
         if p.result() == 1:
-            data = self.popup_data
-        return data
+            okay = True
+            if data:
+                data = self.popup_data
+        # Only return "data" if it was also entered (otherwise just return True or False (for OK or Cancel, respectively))        
+        if data:
+            return okay, data
+        else:
+            return okay
 
     def read_gui_config(self, path, file_name):
         suffix = Path(path).joinpath(file_name).suffix
