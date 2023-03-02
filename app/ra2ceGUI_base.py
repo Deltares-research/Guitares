@@ -42,18 +42,15 @@ class Ra2ceGUI:
         # Get the base data paths
         self.origins_destinations_graph = self.ra2ce_config['base_data']['path'] / 'network' / 'origins_destinations_graph.p'
         self.origin_destination_table = self.ra2ce_config['base_data']['path'] / 'network' / 'origin_destination_table.feather'
-        self.building_footprints_geoms = self.ra2ce_config['base_data']['path'] / 'building_footprints' / 'building_footprints_geoms.feather'
-        self.villages = self.ra2ce_config['base_data']['path'] / 'network' / 'villages.gpkg'
+        self.building_footprints_geoms = self.ra2ce_config['base_data']['path'] / 'building_footprints' / 'building_footprints.feather'
+        self.villages = self.ra2ce_config['base_data']['path'] / 'network' / 'villages.shp'
         self.village_ids = self.ra2ce_config['base_data']['path'] / 'network' / 'village_ids.feather'
-        poi_data = self.ra2ce_config['base_data']['path'] / 'network' / 'POI.gpkg'
+        poi_data = self.ra2ce_config['base_data']['path'] / 'network' / 'POI.shp'
         roads_geojson = self.ra2ce_config['base_data']['path'] / 'network' / 'terai_roads_final_clean.geojson'
         roads_gpkg = self.ra2ce_config['base_data']['path'] / 'network' / 'terai_roads_final.gpkg'
         self.validate_base_data(required_base_data=[self.origins_destinations_graph, self.origin_destination_table,
                                                     self.building_footprints_geoms, self.villages,
                                                     poi_data, self.village_ids, roads_geojson, roads_gpkg])
-
-        # Create a variable for the results
-        self.result = None
 
         # Initialize a RA2CE handler
         self.ra2ceHandler = None

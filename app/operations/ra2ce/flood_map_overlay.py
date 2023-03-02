@@ -58,7 +58,6 @@ class FloodMapOverlay:
     def floodmap_overlay_building_footprints(self):
         # Get the building footprints with the centroids / representative points within
         building_footprints_within_hazard_extent = gpd.read_feather(Ra2ceGUI.building_footprints_geoms)
-        # building_footprints_within_hazard_extent = gpd.read_feather(r"D:\RA2CE\3_base_data\building_footprints\building_footprints.feather")
 
         # Filter with the flood map bounding box
         xmin, ymin, xmax, ymax = self.floodmap_extent
@@ -68,19 +67,25 @@ class FloodMapOverlay:
         building_footprints_within_hazard_extent["flooded_buildings"] = self.hazard_overlay(building_footprints_within_hazard_extent)
 
         # Save the building footprints to the output folder
-        logging.info("Saving building footprints to {}".format(str(Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'output', 'buildings_flooded.gpkg'))))
-        building_footprints_within_hazard_extent.to_file(Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'output', 'buildings_flooded.gpkg'))
+        logging.info("Saving building footprints to {}".format(str(Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'output', 'buildings_flooded.shp'))))
+        building_footprints_within_hazard_extent.to_file(Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'output', 'buildings_flooded.shp'))
 
         # Calculate the number of people that are flooded
         building_footprints_within_hazard_extent["flooded_ppl"] = building_footprints_within_hazard_extent["flooded_buildings"] * building_footprints_within_hazard_extent["POP_BLDG"]
 
         # Summarize the number of people flooded and not flooded per village
-        flooded_ppl = building_footprints_within_hazard_extent.groupby("VIL_NAME")[["flooded_buildings", "flooded_ppl"]].sum().reset_index()
+        flooded_ppl = building_footprints_within_hazard_extent.groupby(["FID", "VIL_NAME", "DISTRICT",
+                                                                        "Municipal", "Ward_no"])[["flooded_buildings", "flooded_ppl"]].sum().reset_index()
         flooded_ppl["flooded_buildings"] = flooded_ppl["flooded_buildings"].astype(int)
         flooded_ppl["flooded_ppl"] = flooded_ppl["flooded_ppl"].astype(int)
+        flooded_ppl.rename(columns={'VIL_NAME': 'Village',
+               'flooded_buildings': '# of flooded buildings',
+               'flooded_ppl': '# of flooded people',
+               'DISTRICT': 'District',
+               'Municipal': 'Municipality',
+               'Ward_no': 'Ward Number'}, inplace=True)
 
-        Ra2ceGUI.result = flooded_ppl
-        Ra2ceGUI.result.to_csv(Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'output', 'buildings_flooded.csv'),
+        flooded_ppl.to_csv(Ra2ceGUI.ra2ce_config['database']['path'].joinpath(Ra2ceGUI.run_name, 'output', 'buildings_flooded.csv'),
                                index=False)
 
     def color_roads(self, graph_path):
@@ -130,6 +135,7 @@ class FloodMapOverlay:
             Ra2ceGUI.floodmap_overlay_feedback = "Overlay failed"
             self.floodMapOverlayFeedback(Ra2ceGUI.floodmap_overlay_feedback)
             logging.error(e)
+            Ra2ceGUI.gui.process('Ready.')
 
     def overlay(self):
         Ra2ceGUI.gui.process('Overlaying flood map... Please wait.')

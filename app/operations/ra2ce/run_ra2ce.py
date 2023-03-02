@@ -20,17 +20,15 @@ rename_cols = {'EV1_ma_AD1': 'Health facility access',
                'EV1_ma_AD2': 'HSA Warehouse access',
                'EV1_ma_AD3': 'Market access',
                'VIL_NAME': 'Village',
-               'flooded_buildings': '# of flooded buildings',
-               'flooded_ppl': '# of flooded people',
                'DISTRICT': 'District',
                'Municipal': 'Municipality',
                'Ward_no': 'Ward Number'
                }
-save_cols = ['Village', 'District', 'Municipality',
+save_cols = ['FID', 'Village', 'Municipality', 'District',
              'Ward Number', '# of flooded people', '# of flooded buildings',
              'HSA Warehouse access', 'Market access', 'Health facility access',
              'Distance [km] to HSA Warehouse', 'Distance [km] to Market',
-             'Distance [km] to Health facility', ]
+             'Distance [km] to Health facility']
 
 
 def analyzeFeedback(text):
@@ -100,7 +98,7 @@ def aggregate_results():
     route_paths = route_paths.explode(['FID'], ignore_index=True)
     route_paths = pd.pivot(route_paths, index=['FID'], columns=['category'], values=['Distance [km]'])
     route_paths = route_paths.droplevel(level=0, axis=1).reset_index()
-    route_paths[['HSA Warehouse', 'Health facility', 'Market']] = route_paths[['HSA Warehouse', 'Health facility', 'Market']].round(1)
+    route_paths[['HSA Warehouse', 'Health facility', 'Market']] = route_paths[['HSA Warehouse', 'Health facility', 'Market']].round(2)
     route_paths.rename(columns={'HSA Warehouse': 'Distance [km] to HSA Warehouse',
                                 'Health facility': 'Distance [km] to Health facility',
                                 'Market': 'Distance [km] to Market'},
@@ -109,13 +107,14 @@ def aggregate_results():
     route_paths['FID'] = route_paths['FID'].astype(int)
 
     origins['FID'] = origins['o_id'].apply(lambda x: int(x.split("_")[-1]))
-    origins = pd.merge(origins, id_to_vilname[['FID', 'VIL_NAME', 'DISTRICT', 'Municipal', 'Ward_no']], on="FID")
+    origins = pd.merge(origins, id_to_vilname[['FID', 'VIL_NAME', 'DISTRICT', 'Municipal', 'Ward_no']],
+                       on="FID")
     if 'POI' in origins.columns:
         del origins["POI"]
 
-    # TODO: fix issue with the villages with the same names
-    total_results = pd.merge(flooded_results, origins, on="VIL_NAME")
-    total_results = pd.merge(total_results, route_paths, on="FID")
+    total_results = pd.merge(flooded_results[['FID', '# of flooded buildings', '# of flooded people']], origins,
+                             on="FID", how='left')
+    total_results = pd.merge(total_results, route_paths, on="FID", how='left')
     total_results.rename(columns=rename_cols, inplace=True)
     for d in ['o_id', 'cnt', 'geometry']:
         if d in total_results.columns:
@@ -137,12 +136,12 @@ def remove_ini_files():
             Ra2ceGUI.current_project.joinpath(ini_file).unlink()
 
 
-def save_route_names():
-    output_folder = Ra2ceGUI.ra2ceHandler.input_config.analysis_config.config_data['output']
-    project_name = Ra2ceGUI.ra2ceHandler.input_config.analysis_config.config_data['project']['name']
-    routes_results_path = output_folder / r"multi_link_origin_closest_destination\{}_results_edges.gpkg".format(project_name)
-    routes_results = gpd.read_file(routes_results_path)
-    warehouses = 'D2'
+# def save_route_names():
+#     output_folder = Ra2ceGUI.ra2ceHandler.input_config.analysis_config.config_data['output']
+#     project_name = Ra2ceGUI.ra2ceHandler.input_config.analysis_config.config_data['project']['name']
+#     routes_results_path = output_folder / r"multi_link_origin_closest_destination\{}_results_edges.gpkg".format(project_name)
+#     routes_results = gpd.read_file(routes_results_path)
+#     warehouses = 'D2'
 
 
 def runRA2CE_worker(progress_callback):
@@ -163,8 +162,8 @@ def runRA2CE_worker(progress_callback):
 
     try:
         progress_callback.emit("Running...")
-        Ra2ceGUI.ra2ceHandler.input_config.analysis_config.configure()
-        Ra2ceGUI.ra2ceHandler.run_analysis()
+        # Ra2ceGUI.ra2ceHandler.input_config.analysis_config.configure()
+        # Ra2ceGUI.ra2ceHandler.run_analysis()
         logging.info("RA2CE successfully ran. Aggregating results..")
         aggregate_results()
         # save_route_names()
