@@ -12,6 +12,6 @@ deltares_guitares.egg-info
 /docs/_build
 /src/deltares_guitools.egg-info
 /src/guitares.egg-info
-mapbox_token.txt
-src/guitares/pyqt5/mapbox/server/mapbox_token.js
 /examples/frame_collapse/server
+mapbox_token.txt
+examples/popup_window/.vscode/launch.json

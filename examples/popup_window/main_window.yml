@@ -1,0 +1,31 @@
+window:
+  title: Pop-up Window Example
+  width: 400
+  height: 200
+  module: callbacks_main_window
+  variable_group: main
+element:
+- style: pushbutton
+  position:
+    x: 100
+    y: 40
+    width: 200
+    height: 20
+  text: DATA
+  method: push_data
+- style: pushbutton
+  position:
+    x: 100
+    y: 70
+    width: 200
+    height: 20
+  text: SIMPLE
+  method: push_simple
+- style: text
+  position:
+    x: 100
+    y: 10
+    width: 200
+    height: 20
+  variable: response
+  

@@ -28,27 +28,14 @@ class PopupMenu(QComboBox):
                     elif element.type == int:
                         element.option_value[i] = int(val)
 
-        x0, y0, wdt, hgt = element.get_position()
-
-        self.setGeometry(x0, y0, wdt, hgt)
         if element.text:
             label = QLabel(element.text, element.parent.widget)
-            fm = label.fontMetrics()
-            wlab = fm.size(0, element.text).width()
-            if element.text_position == "above-center" or element.text_position == "above":
-                label.setAlignment(QtCore.Qt.AlignCenter)
-                label.setGeometry(x0, y0 - 20, wdt, 20)
-            elif element.text_position == "above-left":
-                label.setAlignment(QtCore.Qt.AlignLeft)
-                label.setGeometry(x0, y0 - 20, wlab, 20)
-            else:
-                # Assuming left
-                label.setAlignment(QtCore.Qt.AlignRight)
-                label.setGeometry(x0 - wlab - 3, y0 + 5, wlab, 20)
             label.setStyleSheet("background: transparent; border: none")
             self.text_widget = label
 
         self.currentIndexChanged.connect(self.callback)
+
+        self.set_geometry()
 
     def set(self):
 
@@ -86,3 +73,25 @@ class PopupMenu(QComboBox):
             self.element.window.update()
         except:
             traceback.print_exc()
+
+    def set_geometry(self):
+        resize_factor = self.element.gui.resize_factor
+        x0, y0, wdt, hgt = self.element.get_position()
+        self.setGeometry(x0, y0, wdt, hgt)
+        if self.element.text:
+            label = self.text_widget
+            fm = label.fontMetrics()
+            wlab = int(fm.size(0, self.element.text).width())
+            if self.element.text_position == "above-center" or self.element.text_position == "above":
+                label.setAlignment(QtCore.Qt.AlignCenter)
+                label.setGeometry(x0, int(y0 - 20 * resize_factor), wdt, int(20 * resize_factor))
+            elif self.element.text_position == "above-left":
+                label.setAlignment(QtCore.Qt.AlignLeft)
+                label.setGeometry(x0, int(y0 - 20 * resize_factor), wlab, int(20 * resize_factor))
+            else:
+                # Assuming left
+                label.setAlignment(QtCore.Qt.AlignRight)
+                label.setGeometry(int(x0 - wlab - 3 * resize_factor),
+                                  int(y0 + 5 * self.element.gui.resize_factor),
+                                  wlab,
+                                  int(20 * resize_factor))

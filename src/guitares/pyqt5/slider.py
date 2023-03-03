@@ -22,35 +22,22 @@ class Slider(QSlider):
         self.setSingleStep(1)
         self.setTickPosition(QSlider.TicksBelow)
 
-        x0, y0, wdt, hgt = element.get_position()
-
-        self.setGeometry(x0, y0, wdt, hgt)
         if element.text:
-            label = QLabel(element.text, parent)
-            fm = label.fontMetrics()
-            wlab = fm.size(0, element.text).width() + 15
-            label.setAlignment(Qt.AlignRight)
-            label.setGeometry(x0 - wlab - 3, y0 + 5, wlab, hgt)
+            label = QLabel(element.text, self.element.parent.widget)
             label.setStyleSheet("background: transparent; border: none")
             self.text_widget = label
 
         # set tick labels
-        ticks = [x0,x0+wdt]
         self.tick_label = []
         for ii, ticklabel in enumerate([minimum,maximum]):
-            xlab = ticks[ii]
             label = QLabel(str(ticklabel), self.parent)
-            fm = label.fontMetrics()
-            hlab = fm.height()
-            wlab = fm.width(str(ticklabel), label.fontInfo().pointSize())
-            label.setAlignment(Qt.AlignHCenter)
-            label.setAlignment(Qt.AlignTop)
-            label.setGeometry(xlab - ii*20, y0 + hgt, wlab, hlab)
             label.setStyleSheet("background: transparent; border: none")
             self.tick_widget.append(label)
 
         self.valueChanged.connect(self.first_callback)
         self.sliderReleased.connect(self.second_callback)
+
+        self.set_geometry()
 
     def set(self):
         group = self.element.variable_group
@@ -80,6 +67,28 @@ class Slider(QSlider):
                 self.element.window.update()
         except:
             traceback.print_exc()
+
+    def set_geometry(self):
+        resize_factor = self.element.gui.resize_factor
+        x0, y0, wdt, hgt = self.element.get_position()
+        self.setGeometry(x0, y0, wdt, hgt)
+
+        if self.element.text:
+            label = self.text_widget
+            fm = label.fontMetrics()
+            wlab = fm.size(0, element.text).width() + 15
+            label.setAlignment(Qt.AlignRight)
+            label.setGeometry(x0 - wlab - 3, y0 + 5, wlab, hgt)
+
+        # set tick labels
+        ticks = [x0, x0 + wdt]
+        for ii, label in enumerate(self.tick_widget):
+            fm = label.fontMetrics()
+            hlab = fm.height()
+            wlab = fm.width(label.text, label.fontInfo().pointSize())
+            label.setAlignment(Qt.AlignHCenter)
+            label.setAlignment(Qt.AlignTop)
+            label.setGeometry(ticks[ii], y0 + hgt, wlab, hlab)
 
 # class LabeledSlider(WidgetGroup):
 #     def __init__(self, element, parent):

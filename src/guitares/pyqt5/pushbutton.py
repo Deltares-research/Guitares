@@ -32,6 +32,5 @@ class PushButton(QPushButton):
             traceback.print_exc()
 
     def set_geometry(self):
-        resize_factor = self.element.gui.resize_factor
         x0, y0, wdt, hgt = self.element.get_position()
         self.setGeometry(x0, y0, wdt, hgt)

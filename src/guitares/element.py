@@ -290,53 +290,54 @@ class Element:
                 self.widget.setVisible(True)
 
     def set_geometry(self):
+        self.element.widget.set_geometry()
 
-        resize_factor = self.gui.resize_factor
+        # resize_factor = self.gui.resize_factor
 
-        x0, y0, wdt, hgt = self.get_position()
+        # x0, y0, wdt, hgt = self.get_position()
 
-        if self.style == "mapbox" or self.style == "webpage":
-            self.widget.view.setGeometry(x0, y0, wdt, hgt)
-        elif self.style == "radiobuttongroup":
-            nbuttons = len(self.option_value.list)
-            yll = y0 + hgt - int(nbuttons * 20 * resize_factor)
-            for i in range(nbuttons):
-                self.widget.buttons()[i].setGeometry(x0,
-                                                        int(yll + i * 20 * resize_factor),
-                                                        wdt,
-                                                        int(20 * resize_factor))
-        else:
-            # All other elements
-            self.widget.setGeometry(x0, y0, wdt, hgt)
+        # if self.style == "mapbox" or self.style == "webpage":
+        #     self.widget.view.setGeometry(x0, y0, wdt, hgt)
+        # elif self.style == "radiobuttongroup":
+        #     nbuttons = len(self.option_value)
+        #     yll = y0 + hgt - int(nbuttons * 20 * resize_factor)
+        #     for i in range(nbuttons):
+        #         self.widget.buttons()[i].setGeometry(x0,
+        #                                                 int(yll + i * 20 * resize_factor),
+        #                                                 wdt,
+        #                                                 int(20 * resize_factor))
+        # else:
+        #     # All other elements
+        #     self.widget.setGeometry(x0, y0, wdt, hgt)
 
-        if self.style == "tabpanel":
-            for tab in self.tabs:
-                # Resize tab widgets
-                tab.widget.setGeometry(0, 0, wdt, int(hgt - 20 * resize_factor))
+        # if self.style == "tabpanel":
+        #     for tab in self.tabs:
+        #         # Resize tab widgets
+        #         tab.widget.setGeometry(0, 0, wdt, int(hgt - 20 * resize_factor))
 
-        # Also update text labels
-        if self.style == "panel":
-            if hasattr(self.widget, "text_widget"):
-                # Also change title widget
-                self.widget.text_widget.setGeometry(x0 + 10, y0 - 9, self.widget.text_widget.width(), 16)
-                self.widget.text_widget.setAlignment(QtCore.Qt.AlignTop)
+        # # Also update text labels
+        # if self.style == "panel":
+        #     if hasattr(self.widget, "text_widget"):
+        #         # Also change title widget
+        #         self.widget.text_widget.setGeometry(x0 + 10, y0 - 9, self.text_width, 16)
+        #         self.widget.text_widget.setAlignment(QtCore.Qt.AlignTop)
 
-        else:
-            if hasattr(self.widget, "text_widget"):
-                # Also change title widget
-                label = self.widget.text_widget
-                fm = label.fontMetrics()
-                wlab = fm.size(0, self.text).width()
-                if self.text_position == "above-center" or self.text_position == "above":
-                    label.setAlignment(QtCore.Qt.AlignCenter)
-                    label.setGeometry(x0, y0 - 20, wdt, 20)
-                elif self.text_position == "above-left":
-                    label.setAlignment(QtCore.Qt.AlignLeft)
-                    label.setGeometry(x0, y0 - 20, wlab, 20)
-                else:
-                    # Assuming left
-                    label.setAlignment(QtCore.Qt.AlignRight)
-                    label.setGeometry(x0 - wlab - 3, y0 + 5, wlab, 20)
+        # else:
+        #     if hasattr(self.widget, "text_widget"):
+        #         # Also change title widget
+        #         label = self.widget.text_widget
+        #         fm = label.fontMetrics()
+        #         wlab = fm.size(0, self.text).width()
+        #         if self.text_position == "above-center" or self.text_position == "above":
+        #             label.setAlignment(QtCore.Qt.AlignCenter)
+        #             label.setGeometry(x0, y0 - 20, wdt, 20)
+        #         elif self.text_position == "above-left":
+        #             label.setAlignment(QtCore.Qt.AlignLeft)
+        #             label.setGeometry(x0, y0 - 20, wlab, 20)
+        #         else:
+        #             # Assuming left
+        #             label.setAlignment(QtCore.Qt.AlignRight)
+        #             label.setGeometry(x0 - wlab - 3, y0 + 5, wlab, 20)
 
     def get_position(self):
 

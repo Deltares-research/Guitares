@@ -13,23 +13,10 @@ class PushSaveFile(QPushButton):
 
         self.setVisible(True)
 
-        x0, y0, wdt, hgt = element.get_position()
-        self.setGeometry(x0, y0, wdt, hgt)
-
-        # if element["text"]:
-        #     label = QLabel(element["text"], parent)
-        #     fm = label.fontMetrics()
-        #     wlab = fm.size(0, element["text"]).width() + 15
-        #     label.setAlignment(QtCore.Qt.AlignRight)
-        #     label.setGeometry(x0 - wlab - 3, y0 + 6, wlab, hgt)
-        #     label.setStyleSheet("background: transparent; border: none")
-        #     if not element["enable"]:
-        #         label.setEnabled(False)
-        #     self.text_widget = label
-        #     label.setVisible(True)
-
         self.clicked.connect(self.callback)
 
+        self.set_geometry()
+  
     def set(self):
         group  = self.element.variable_group
         name   = self.element.variable
@@ -59,3 +46,7 @@ class PushSaveFile(QPushButton):
                 self.element.window.update()
         except:
             traceback.print_exc()
+
+    def set_geometry(self):
+        x0, y0, wdt, hgt = self.element.get_position()
+        self.setGeometry(x0, y0, wdt, hgt)

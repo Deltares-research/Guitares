@@ -22,6 +22,7 @@ class Window:
         self.module = None
         self.icon   = None
         self.modal  = False
+        self.okay_method = None
         if "width" in config_dict["window"]:
             self.width = config_dict["window"]["width"]
         if "height" in config_dict["window"]:
@@ -36,6 +37,8 @@ class Window:
             self.module = config_dict["window"]["icon"]
         if "modal" in config_dict["window"]:
             self.modal = config_dict["window"]["modal"]
+        if self.module and "okay_method" in config_dict["window"]:
+            self.okay_method = getattr(self.module, config_dict["window"]["okay_method"])
         self.elements = []
         self.menus    = []
         self.toolbar  = []
@@ -129,6 +132,8 @@ class Window:
         return window
 
     def ok(self, *args):
+        if self.okay_method:
+            self.okay_method()
         self.widget.done(1)
 
     def cancel(self, *args):
@@ -201,13 +206,13 @@ class Window:
                 for tab in element.tabs:
                     # Look for elements in this tab
                     if tab.elements:
-                        element_found = self.find_element_by_id(element_id, tab.elements)
+                        element_found = self.find_element_by_id(element_id, elements=tab.elements)
                         if element_found:
                             return element_found
             elif element.style == "panel":
                 # Look for elements in this frame
                 if element.elements:
-                    element_found = self.find_element_by_id(element_id, element.elements)
+                    element_found = self.find_element_by_id(element_id, elements=element.elements)
                     if element_found:
                         return element_found
         return None

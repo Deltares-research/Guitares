@@ -23,23 +23,8 @@ class ListBox(QListWidget):
                     elif element.type == int:
                         element.option_value[i] = int(val)
 
-        x0, y0, wdt, hgt = element.get_position()
-        self.setGeometry(x0, y0, wdt, hgt)
-
         if element.text:
             label = QLabel(element.text, element.parent.widget)
-            fm = label.fontMetrics()
-            wlab = int(fm.size(0, element.text).width())
-            if element.text_position == "above-center" or element.text_position == "above":
-                label.setAlignment(QtCore.Qt.AlignCenter)
-                label.setGeometry(x0, int(y0 - 20 * resize_factor), wdt, int(20 * resize_factor))
-            elif element.text_position == "above-left":
-                label.setAlignment(QtCore.Qt.AlignLeft)
-                label.setGeometry(x0, int(y0 - 20 * resize_factor), wlab, int(20 * resize_factor))
-            else:
-                # Assuming left
-                label.setAlignment(QtCore.Qt.AlignRight)
-                label.setGeometry(int(x0 - wlab - 3 * resize_factor), int(y0 + 5 * element.gui.resize_factor), wlab, int(20 * resize_factor))
 
             label.setStyleSheet("background: transparent; border: none")
 
@@ -47,6 +32,8 @@ class ListBox(QListWidget):
 
         # First call back to change the variable
         self.clicked.connect(self.callback)
+
+        self.set_geometry()
 
     def set(self):
 
@@ -125,3 +112,25 @@ class ListBox(QListWidget):
         else:
             for itxt, txt in enumerate(self.element.option_string.list):
                 self.insertItem(itxt, txt)
+
+    def set_geometry(self):
+        resize_factor = self.element.gui.resize_factor
+        x0, y0, wdt, hgt = self.element.get_position()
+        self.setGeometry(x0, y0, wdt, hgt)
+        if self.element.text:
+            label = self.text_widget
+            fm = label.fontMetrics()
+            wlab = int(fm.size(0, self.element.text).width())
+            if self.element.text_position == "above-center" or self.element.text_position == "above":
+                label.setAlignment(QtCore.Qt.AlignCenter)
+                label.setGeometry(x0, int(y0 - 20 * resize_factor), wdt, int(20 * resize_factor))
+            elif self.element.text_position == "above-left":
+                label.setAlignment(QtCore.Qt.AlignLeft)
+                label.setGeometry(x0, int(y0 - 20 * resize_factor), wlab, int(20 * resize_factor))
+            else:
+                # Assuming left
+                label.setAlignment(QtCore.Qt.AlignRight)
+                label.setGeometry(int(x0 - wlab - 3 * resize_factor),
+                                  int(y0 + 5 * self.element.gui.resize_factor),
+                                  wlab,
+                                  int(20 * resize_factor))
