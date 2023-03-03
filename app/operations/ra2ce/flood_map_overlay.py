@@ -193,7 +193,7 @@ def clip_origins(clip_extent: rasterio.coords.BoundingBox):
 
     # Load the graph, remove the origin nodes outside the extent
     od_graph = GraphPickleReader().read(od_graph_path)
-    od_graph = remove_nodes_within_extent(od_graph, clip_extent_box, origin_name_, destination_name_)
+    od_graph, origins_remove = remove_nodes_within_extent(od_graph, clip_extent_box, origin_name_, destination_name_)
 
     if od_graph:
         NetworkExporterFactory().export(od_graph, 'origins_destinations_graph',
@@ -204,7 +204,7 @@ def clip_origins(clip_extent: rasterio.coords.BoundingBox):
 
     # Load the OD table and split it into origins and destinations
     od_table_ = gpd.read_feather(od_table_path)
-    od_table_ = filter_od_table_within_extent(od_table_, clip_extent)
+    od_table_ = filter_od_table_within_extent(od_table_, origins_remove)
 
     if not od_table_.empty:
         od_table_.to_feather(od_table_path, index=False)
@@ -221,7 +221,12 @@ def remove_nodes_within_extent(g, extent, origin_name, destination_name):
     list_origins_only = [n[0] for n in nodes_remove if destination_name not in n[-1]['od_id']]
     list_destinations_and_origins = [n[0] for n in nodes_remove if destination_name in n[-1]['od_id']]
 
-    to_remove = len(list_origins_only + list_destinations_and_origins)
+    to_remove_list = list_origins_only + list_destinations_and_origins
+    to_remove = len(to_remove_list)
+
+    full_list_remove = [n[-1]['od_id'].split(',') for n in nodes_remove]
+    full_list_remove = [item for sublist in full_list_remove for item in sublist]
+    full_list_remove = [int(r.split('_')[-1]) for r in full_list_remove if 'POI' not in r]
 
     if to_remove > 0:
         # Remove the attributes for origin nodes
@@ -233,18 +238,16 @@ def remove_nodes_within_extent(g, extent, origin_name, destination_name):
             od_id = g.nodes[node]["od_id"]
             g.nodes[node]["od_id"] = ",".join([od for od in od_id.split(",") if origin_name not in od])
 
-        return g
+        return g, full_list_remove
     else:
-        return None
+        return None, []
 
 
-def filter_od_table_within_extent(od_table, extent):
+def filter_od_table_within_extent(od_table, origins_remove_):
     od_table_destinations = od_table.loc[od_table['d_id'].notnull()]
     od_table_origins = od_table.loc[od_table['o_id'].notnull()]
 
-    # Filter only the origins on the extent of the flood map
-    xmin, ymin, xmax, ymax = extent
-    od_table_origins = od_table_origins.cx[xmin:xmax, ymin:ymax]
+    od_table_origins = od_table_origins.loc[~od_table_origins['FID'].isin(origins_remove_)]
 
     if od_table_origins.empty:
         return gpd.GeoDataFrame()
