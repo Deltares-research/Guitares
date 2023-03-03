@@ -201,13 +201,13 @@ class Window:
                 for tab in element.tabs:
                     # Look for elements in this tab
                     if tab.elements:
-                        element_found = self.find_element_by_id(tab.elements, element_id)
+                        element_found = self.find_element_by_id(element_id, tab.elements)
                         if element_found:
                             return element_found
             elif element.style == "panel":
                 # Look for elements in this frame
                 if element.elements:
-                    element_found = self.find_element_by_id(element.elements, element_id)
+                    element_found = self.find_element_by_id(element_id, element.elements)
                     if element_found:
                         return element_found
         return None
@@ -216,7 +216,7 @@ class Window:
         # Loop through elements
         for element in elements:
             # Set geometry of this element
-            element.widget.set_geometry()
+            element.set_geometry()
             # Check for children
             if element.style == "tabpanel":
                 # Loop through tabs

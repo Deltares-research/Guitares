@@ -4,8 +4,8 @@ export function addLayer(id, data, fillColor, fillOpacity, lineColor, lineWidth,
 
   let hoveredId = null;
   let selectedId = null
-  let fillId = "fill_" + id
-  let lineId = "line_" + id
+  let fillId = id + ".fill"
+  let lineId = id + ".line"
   var selectedFeatures = []
 
   map.addSource(id, {

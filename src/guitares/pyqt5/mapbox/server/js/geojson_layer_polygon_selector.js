@@ -1,6 +1,6 @@
 import { map, featureClicked } from '/js/main.js';
 
-export function addLayer(id, data, fillColor, fillOpacity, lineWidth, selectionOption) {
+export function addLayer(id, data, fillColor, fillOpacity, lineColor, lineWidth, selectionOption) {
 
   let hoveredId = null;
   let selectedId = null
@@ -19,15 +19,15 @@ export function addLayer(id, data, fillColor, fillOpacity, lineWidth, selectionO
     'source': id,
     'layout': {},
     'paint': {
-      'line-color': '#000',
-      'line-width': 0.5
+      'line-color': lineColor,
+      'line-width': lineWidth
      }
   });
 
   map.addLayer({
-    id: fillId,
-    type: 'fill',
-    source: id,
+    'id': fillId,
+    'type': 'fill',
+    'source': id,
     'paint': {
       'fill-color': fillColor,
       'fill-opacity': ['case', ['any', ['boolean', ['feature-state', 'hover'], false], ['boolean', ['feature-state', 'selected'], false]], fillOpacity, 0.0],

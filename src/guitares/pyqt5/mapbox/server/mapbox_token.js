@@ -1,1 +1,1 @@
-mapbox_token = 'YOUR_MAPBOX_TOKEN_HERE';
+mapbox_token = 'pk.eyJ1IjoicGFub3NhdGhhIiwiYSI6ImNsZThmcmViOTA5ejczcHBmZjdna3JjODkifQ.b3pku2kpbGBbb-nZuhe1Gg';

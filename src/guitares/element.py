@@ -318,7 +318,7 @@ class Element:
         if self.style == "panel":
             if hasattr(self.widget, "text_widget"):
                 # Also change title widget
-                self.widget.text_widget.setGeometry(x0 + 10, y0 - 9, self.text_width, 16)
+                self.widget.text_widget.setGeometry(x0 + 10, y0 - 9, self.widget.text_widget.width(), 16)
                 self.widget.text_widget.setAlignment(QtCore.Qt.AlignTop)
 
         else:

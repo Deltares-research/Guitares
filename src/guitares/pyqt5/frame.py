@@ -46,7 +46,7 @@ class Frame(QFrame):
 
         # Text widget
         if self.element.text:
-            fm = self.element.text_widget.fontMetrics()
+            fm = self.text_widget.fontMetrics()
             wlab = fm.size(0, self.element.text).width()
             self.text_widget.setGeometry(x0 + 10, y0 - 9, wlab, 16)
             self.text_widget.setAlignment(QtCore.Qt.AlignTop)
