@@ -15,6 +15,7 @@ import logging
 from PyQt5.QtCore import QThreadPool
 import geopandas as gpd
 import pandas as pd
+import numpy as np
 
 rename_cols = {'EV1_ma_AD1': 'Health facility access',
                'EV1_ma_AD2': 'HSA Warehouse access',
@@ -122,6 +123,15 @@ def aggregate_results():
 
     total_results.sort_values('# of flooded people', ascending=False, inplace=True)
 
+    # Filter out the rows that have access but do not have a distance in any of the destinations
+    total_results['dist'] = np.where(total_results[['Distance [km] to HSA Warehouse', 'Distance [km] to Market', 'Distance [km] to Health facility']].isnull().all(1), 1, 0)
+    total_results['acc'] = np.where((total_results[['HSA Warehouse access', 'Market access', 'Health facility access']] == "access").all(1), 1, 0)
+    total_results['filter'] = total_results['dist'] + total_results['acc']
+    total_results = total_results.loc[total_results['filter'] != 2]
+    del total_results['dist']
+    del total_results['acc']
+    del total_results['filter']
+
     # Create a Pandas Excel writer using XlsxWriter as the engine.
     writer = pd.ExcelWriter(output_folder / "summary_results.xlsx", engine='xlsxwriter')
     write_to_sheet_table(writer, total_results[save_cols], 'Results')
@@ -162,8 +172,8 @@ def runRA2CE_worker(progress_callback):
 
     try:
         progress_callback.emit("Running...")
-        # Ra2ceGUI.ra2ceHandler.input_config.analysis_config.configure()
-        # Ra2ceGUI.ra2ceHandler.run_analysis()
+        Ra2ceGUI.ra2ceHandler.input_config.analysis_config.configure()
+        Ra2ceGUI.ra2ceHandler.run_analysis()
         logging.info("RA2CE successfully ran. Aggregating results..")
         aggregate_results()
         # save_route_names()
