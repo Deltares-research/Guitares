@@ -1,12 +1,12 @@
-import { map, featureClicked } from '/js/main.js';
+import { map } from '/js/main.js';
 
-export function addLayer(id, data) {
+export function addLayer(id, data, symbol_path) {
 
-  let hoveredStateId = null;
   let fillId = id + ".fill"
   let lineId = id + ".line"
   let circleId = id + ".circle"
-  let selectedId = null
+  console.log(data)
+
 
   map.addSource(id, {
     type: 'geojson',
@@ -32,7 +32,7 @@ export function addLayer(id, data) {
     'layout': {},
     'paint': {
       'line-color': '#000',
-      'line-width': 0.5
+      'line-width': 1
      }
   });
 
@@ -46,22 +46,6 @@ export function addLayer(id, data) {
     }
   });
 
-//   map.addLayer({
-//     'id': 'points',
-//     'type': 'symbol',
-//     'source': id,
-//     'layout': {
-//       // get the title name from the source's "title" property
-//       'text-field': ['get', 'utm_number'],
-//       'text-font': [
-//         'Open Sans Semibold',
-//         'Arial Unicode MS Bold'
-//       ],
-//       'text-offset': [0, 0],
-//       'text-anchor': 'top',
-//       'text-size': 12
-//     }
-//   });
 };
 
 export function setData(id, data) {
