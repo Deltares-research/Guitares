@@ -41,9 +41,9 @@ class RadioButtonGroup(QButtonGroup):
             traceback.print_exc()
 
     def set_geometry(self):
-        resize_factor = self.gui.resize_factor
+        resize_factor = self.element.gui.resize_factor
         x0, y0, wdt, hgt = self.element.get_position()
-        nbuttons = len(self.element.option_value)
+        nbuttons = len(self.element.option_value.list)
         # Lower y of top button
         yll = y0 + hgt - int(nbuttons * 20 * resize_factor)
         for i in range(nbuttons):
