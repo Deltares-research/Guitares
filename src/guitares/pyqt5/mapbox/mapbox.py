@@ -177,6 +177,9 @@ class MapBox(QtWidgets.QWidget):
     def set_zoom(self, zoom):
         self.runjs("/js/main.js", "setZoom",  arglist=[zoom])
 
+    def fit_bounds(self, lon1, lat1, lon2, lat2):
+        self.runjs("/js/main.js", "fitBounds",  arglist=[lon1, lat1, lon2, lat2])
+
     def jump_to(self, lon, lat, zoom):
         self.runjs("/js/main.js", "jumpTo",  arglist=[lon, lat, zoom])
 
