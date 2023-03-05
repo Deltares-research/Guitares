@@ -18,7 +18,8 @@ class GeoJSONLayer(Layer):
                  line_color="black",
                  line_width=1,
                  circle_radius=5,
-                 hoveredID=None):
+                 highlight="",
+                 ):
         super().__init__(mapbox, id, map_id)
         self.active = False
         self.type   = "geojson"
@@ -52,7 +53,8 @@ class GeoJSONLayer(Layer):
                                                                                              fill_opacity,
                                                                                              line_color,
                                                                                              line_width,
-                                                                                             selection_type])
+                                                                                             selection_type,
+                                                                                             highlight])
 
         elif type == "marker_selector":
             self.mapbox.runjs("./js/geojson_layer_marker_selector.js", "addLayer", arglist=[self.map_id,
@@ -62,7 +64,7 @@ class GeoJSONLayer(Layer):
                                                                                             line_width,
                                                                                             circle_radius,
                                                                                             selection_type,
-                                                                                            hoveredID])
+                                                                                            highlight])
         elif type == "circle":
             self.mapbox.runjs("./js/geojson_layer_circle.js", "addLayer", arglist=[self.map_id,
                                                                                    data,
@@ -98,19 +100,33 @@ class GeoJSONLayer(Layer):
         if len(data) > 0:
             self.mapbox.runjs("/js/geojson_layer.js", "setData", arglist=[self.map_id, data])
 
+    def highlight_data(self, column, name):
+        self.mapbox.runjs("/js/geojson_layer_polygon_selector.js", "highlightData", arglist=[self.map_id, column, name])
+
     def set_visibility(self, true_or_false):
+        # TODO probably better to have different file for each type of layer?
         if true_or_false:
             if self.subtype == "marker_selector":
                 self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id])
-            self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id + ".fill"])
-            self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id + ".line"])
-            if self.subtype != "polygon_selector":
-                self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id + ".circle"])
+            else:
+                self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id + ".fill"])
+                self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id + ".line"])
+                if self.subtype != "polygon_selector":
+                    self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id + ".circle"])
+                else:
+                    self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id + ".fill2"])
+                    self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id + ".line2"])
         else:
             if self.subtype == "marker_selector":
                 self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id])
-            self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".fill"])
-            self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".line"])
-            if self.subtype != "polygon_selector":
-                self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".circle"])
+            else:
+                self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".fill"])
+                self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".line"])
+                if self.subtype != "polygon_selector":
+                    self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".circle"])
+                else:
+                    self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".fill2"])
+                    self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".line2"])
+
+
 
