@@ -1,8 +1,9 @@
 import { map, featureClicked, mapboxgl } from '/js/main.js';
 
-export function addLayer(id, data, fillColor, fillOpacity, lineWidth, circleRadius, selectionOption, hoveredId) {
+export function addLayer(id, data, fillColor, fillOpacity, lineWidth, circleRadius, selectionOption, highlight) {
 
   let selectedId = null
+  let hoveredId = null
   let fillId = "fill_" + id
   let lineId = "line_" + id
   var selectedFeatures = []
@@ -73,7 +74,7 @@ export function addLayer(id, data, fillColor, fillOpacity, lineWidth, circleRadi
 
                 // Copy coordinates array.
                 const coordinates = e.features[0].geometry.coordinates.slice();
-                var description   = e.features[0].properties[hoveredId];
+                var description   = e.features[0].properties[highlight];
                 if (e.features[0].properties.hasOwnProperty('hover_popup_width')) {
 					popup.setMaxWidth(e.features[0].properties.hover_popup_width);
 			    }
@@ -87,7 +88,7 @@ export function addLayer(id, data, fillColor, fillOpacity, lineWidth, circleRadi
 
                 // Populate the popup and set its coordinates
                 // based on the feature found.
-                popup.setLngLat(coordinates).setHTML(hoveredId + ": " + description).addTo(map);
+                popup.setLngLat(coordinates).setHTML(highlight + ": " + description).addTo(map);
 
             });
 
