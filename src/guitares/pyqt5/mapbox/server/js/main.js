@@ -172,6 +172,11 @@ export function setZoom(zoom) {
 	map.setZoom(zoom);
 }
 
+export function fitBounds(lon1, lat1, lon2, lat2) {
+  // Fit bounds of map using southwest and northeast corner coordinates
+	map.fitBounds([[lon1, lat1], [lon2, lat2]])
+}
+
 export function jumpTo(lon, lat, zoom) {
 	// Called after moving map ended
 	// Get new map extents
