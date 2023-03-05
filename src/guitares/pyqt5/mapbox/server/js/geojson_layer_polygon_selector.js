@@ -1,11 +1,13 @@
-import { map, featureClicked } from '/js/main.js';
+import { map, featureClicked, mapboxgl} from '/js/main.js';
 
-export function addLayer(id, data, fillColor, fillOpacity, lineColor, lineWidth, selectionOption) {
+export function addLayer(id, data, fillColor, fillOpacity, lineColor, lineWidth, selectionOption, highlight) {
 
-  let hoveredId = null;
   let selectedId = null
+  let hoveredId = null
   let fillId = id + ".fill"
+  let fillId2 = id + ".fill2"
   let lineId = id + ".line"
+  let lineId2 = id + ".line2"
   var selectedFeatures = []
 
   map.addSource(id, {
@@ -25,6 +27,17 @@ export function addLayer(id, data, fillColor, fillOpacity, lineColor, lineWidth,
   });
 
   map.addLayer({
+    'id': lineId2,
+    'type': 'line',
+    'source': id,
+    'paint': {
+      'line-color': fillColor,
+      'line-width': 2
+    },
+    "filter": ["==", highlight, ""]
+  });
+
+  map.addLayer({
     'id': fillId,
     'type': 'fill',
     'source': id,
@@ -33,6 +46,18 @@ export function addLayer(id, data, fillColor, fillOpacity, lineColor, lineWidth,
       'fill-opacity': ['case', ['any', ['boolean', ['feature-state', 'hover'], false], ['boolean', ['feature-state', 'selected'], false]], fillOpacity, 0.0],
       'fill-outline-color': 'transparent'
     }
+  });
+
+  map.addLayer({
+    'id': fillId2,
+    'type': 'fill',
+    'source': id,
+    'paint': {
+      'fill-color': fillColor,
+      'fill-opacity': 0.3,
+      'fill-outline-color': '#000'
+    },
+    "filter": ["==", highlight, ""]
   });
 
 //  map.addLayer({
@@ -51,10 +76,16 @@ export function addLayer(id, data, fillColor, fillOpacity, lineColor, lineWidth,
 //      'text-size': 12
 //    }
 //  });
-
+  // Create a popup, but don't add it to the map yet.
+  const popup = new mapboxgl.Popup({
+    closeButton: false,
+    closeOnClick: false
+  });
   // When the user moves their mouse over the fill layer, we'll update the
   // feature state for the feature under the mouse.
   map.on('mousemove', fillId, (e) => {
+    // Change the cursor style as a UI indicator.
+    map.getCanvas().style.cursor = 'pointer';
     if (e.features.length > 0) {
       if (hoveredId !== null) {
         map.setFeatureState(
@@ -67,6 +98,11 @@ export function addLayer(id, data, fillColor, fillOpacity, lineColor, lineWidth,
         { source: id, id: hoveredId },
         { hover: true }
       );
+
+      // Display a popup with the name of area
+      popup.setLngLat(e.lngLat)
+      .setText(e.features[0].properties[highlight])
+      .addTo(map);
     }
   });
 
@@ -80,6 +116,7 @@ export function addLayer(id, data, fillColor, fillOpacity, lineColor, lineWidth,
       );
     }
     hoveredId = null;
+    popup.remove();
   });
 
   if (selectionOption == "single") {
@@ -138,4 +175,9 @@ export function setData(id, data) {
   console.log(data);
   var source = map.getSource(id);
   source.setData(data);
+}
+
+export function highlightData(id, highlight, value) {
+  map.setFilter(id + ".line2", ["==", highlight, value])
+  map.setFilter(id + ".fill2", ["==", highlight, value])
 }
