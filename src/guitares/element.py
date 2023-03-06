@@ -181,6 +181,10 @@ class Element:
             for dep in dct["dependency"]:
                 dependency = Dependency()
                 dependency.gui = parent.gui
+                if "action" in dep:
+                    dependency.action = dep["action"]
+                if "checkfor" in dep:
+                    dependency.checkfor = dep["checkfor"]
                 for check_dct in dep["check"]:
                     check = DependencyCheck(self.variable_group)
                     if "variable" in check_dct:
@@ -292,87 +296,11 @@ class Element:
     def set_geometry(self):
         self.element.widget.set_geometry()
 
-        # resize_factor = self.gui.resize_factor
-
-        # x0, y0, wdt, hgt = self.get_position()
-
-        # if self.style == "mapbox" or self.style == "webpage":
-        #     self.widget.view.setGeometry(x0, y0, wdt, hgt)
-        # elif self.style == "radiobuttongroup":
-        #     nbuttons = len(self.option_value)
-        #     yll = y0 + hgt - int(nbuttons * 20 * resize_factor)
-        #     for i in range(nbuttons):
-        #         self.widget.buttons()[i].setGeometry(x0,
-        #                                                 int(yll + i * 20 * resize_factor),
-        #                                                 wdt,
-        #                                                 int(20 * resize_factor))
-        # else:
-        #     # All other elements
-        #     self.widget.setGeometry(x0, y0, wdt, hgt)
-
-        # if self.style == "tabpanel":
-        #     for tab in self.tabs:
-        #         # Resize tab widgets
-        #         tab.widget.setGeometry(0, 0, wdt, int(hgt - 20 * resize_factor))
-
-        # # Also update text labels
-        # if self.style == "panel":
-        #     if hasattr(self.widget, "text_widget"):
-        #         # Also change title widget
-        #         self.widget.text_widget.setGeometry(x0 + 10, y0 - 9, self.text_width, 16)
-        #         self.widget.text_widget.setAlignment(QtCore.Qt.AlignTop)
-
-        # else:
-        #     if hasattr(self.widget, "text_widget"):
-        #         # Also change title widget
-        #         label = self.widget.text_widget
-        #         fm = label.fontMetrics()
-        #         wlab = fm.size(0, self.text).width()
-        #         if self.text_position == "above-center" or self.text_position == "above":
-        #             label.setAlignment(QtCore.Qt.AlignCenter)
-        #             label.setGeometry(x0, y0 - 20, wdt, 20)
-        #         elif self.text_position == "above-left":
-        #             label.setAlignment(QtCore.Qt.AlignLeft)
-        #             label.setGeometry(x0, y0 - 20, wlab, 20)
-        #         else:
-        #             # Assuming left
-        #             label.setAlignment(QtCore.Qt.AlignRight)
-        #             label.setGeometry(x0 - wlab - 3, y0 + 5, wlab, 20)
-
     def get_position(self):
 
         position = self.position
         resize_factor = self.gui.resize_factor
         parent = self.parent.widget
-
-        # collapsable = False
-        # if hasattr(self.parent, "style"):
-        #     if self.parent.style == "panel" and self.parent.collapse:
-        #         collapsable = True
-        #
-        # if collapsable:
-        #     pwdt = self.parent.widget.geometry().width()
-        #     phgt = self.parent.widget.geometry().height()
-        #     if self == self.parent.elements[0]:
-        #         # First panel
-        #         x0 = 0
-        #         y0 = 0
-        #         if self.parent.collapsed:
-        #             wdt = self.parent.fraction_collapsed * pwdt
-        #         else:
-        #             wdt = self.parent.fraction_expanded * pwdt
-        #         hgt = phgt
-        #     else:
-        #         # Second panel
-        #         if self.parent.collapsed:
-        #             x0 = self.parent.fraction_collapsed * pwdt
-        #         else:
-        #             x0 = self.parent.fraction_expanded * pwdt
-        #         y0 = 0
-        #         wdt = pwdt - x0
-        #         hgt = phgt
-        #
-        # else:
 
             # TO DO: relative positions!
         pwdt = parent.geometry().width()
