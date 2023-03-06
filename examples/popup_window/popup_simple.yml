@@ -1,0 +1,17 @@
+window:
+  title: Enter response
+  width: 200
+  height: 70
+  module: callbacks_popup_simple
+  variable_group: popup
+  okay_method: on_okay
+element:
+- style: edit
+  variable: string_in_popup_window
+  position:
+    x: 100
+    y: 40
+    width: 80
+    height: 20
+  text: Enter text
+  method: edit_text

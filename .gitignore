@@ -13,3 +13,5 @@ deltares_guitares.egg-info
 /src/deltares_guitools.egg-info
 /src/guitares.egg-info
 /examples/frame_collapse/server
+mapbox_token.txt
+examples/popup_window/.vscode/launch.json

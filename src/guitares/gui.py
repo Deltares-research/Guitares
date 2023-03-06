@@ -7,13 +7,15 @@ import sys
 import copy
 import shutil
 
+from pathlib import Path
+import toml
 import http.server
 import socketserver
 from urllib.request import urlopen
 from urllib.error import *
 import threading
 from PyQt5.QtWidgets import QApplication
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtGui
 
 from guitares.window import Window
 
@@ -38,6 +40,7 @@ class GUI:
         self.config_file = config_file
         self.config_path = config_path
         self.splash      = None
+        self.icon        = icon
         self.config      = {}
         self.variables   = {}
         self.server_thread = None
@@ -46,9 +49,6 @@ class GUI:
         self.js_messages = js_messages
         self.popup_data = None
         self.resize_factor = 1.0
-
-        # For some reason, the splash crashes on QPixmap(splash_file) ...
-        # self.show_splash()
 
         if not self.config_path:
             self.config_path = os.getcwd()
@@ -84,7 +84,6 @@ class GUI:
     def show_splash(self):
         if self.framework == "pyqt5" and self.splash_file:
             from .pyqt5.splash import Splash
-#            self.splash = Splash(os.path.join(self.config_path, self.splash_file), seconds=2.0).splash
             self.splash = Splash(self.splash_file, seconds=2.0).splash
 
     def close_splash(self):
@@ -95,6 +94,12 @@ class GUI:
 
         QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
         app = QApplication(sys.argv)
+
+        # Show splash screen
+        self.show_splash()
+
+        # Set the icon
+        app.setWindowIcon(QtGui.QIcon(self.icon))
 
         if self.stylesheet:
             app.setStyleSheet(open(os.path.join(self.config_path, self.stylesheet), "r").read())
@@ -110,17 +115,11 @@ class GUI:
         # Call on_build method after building window
         if hasattr(self.module, "on_build"):
             self.module.on_build()
+            
+        # Close splash screen before GUI is initiated
+        self.close_splash()
 
         app.exec_()
-
-    # def update(self):
-    #     # Update all elements
-    #     self.set_elements(self.window.elements)
-    #     self.set_menus(self.window.menus)
-
-    def update_tab(self):
-        # Update all elements in tab
-        print("Another call to update_tab ...")
 
     def setvar(self, group, name, value):
         if group not in self.variables:
@@ -138,20 +137,36 @@ class GUI:
             return None
         return self.variables[group][name]["value"]
 
-    def popup(self, config, data):
+    def popup(self, config, data=None):
+        # Make pop-up window
+        # config needs to be file name of yml file, or configuration dict
+        # Data is optional and can have any shape (e.g. dict, str, object, etc.)
+        # Data will only be changed if Okay is clicked in the pop-up window
         if type(config) == str:
             path = os.path.dirname(config)
             file_name = os.path.basename(config)
             config = self.read_gui_config(path, file_name)
-        self.popup_data = copy.copy(data)
+        if data:    
+            self.popup_data = copy.copy(data)
         self.popup_window = Window(config, self, type="popup")
         p = self.popup_window.build()
+        okay = False
         if p.result() == 1:
-            data = self.popup_data
-        return data
+            okay = True
+            if data:
+                data = self.popup_data
+        # Only return "data" if it was also entered (otherwise just return True or False (for OK or Cancel, respectively))        
+        if data:
+            return okay, data
+        else:
+            return okay
 
     def read_gui_config(self, path, file_name):
-        d = yaml2dict(os.path.join(path, file_name))
+        suffix = Path(path).joinpath(file_name).suffix
+        if suffix == '.yml':
+            d = yaml2dict(os.path.join(path, file_name))
+        elif suffix == '.toml':
+            d = toml.load(os.path.join(path, file_name))
         config = {}
         config["window"] = {}
         config["toolbar"] = {}
@@ -171,7 +186,11 @@ class GUI:
 
     def read_gui_elements(self, path, file_name):
         # Return just the elements
-        d = yaml2dict(os.path.join(path, file_name))
+        suffix = Path(path).joinpath(file_name).suffix
+        if suffix == '.yml':
+            d = yaml2dict(os.path.join(path, file_name))
+        elif suffix == '.toml':
+            d = toml.load(os.path.join(path, file_name))
         element = d["element"]
         for el in d["element"]:
             if el["style"] == "tabpanel":
@@ -184,143 +203,6 @@ class GUI:
                     else:
                         tab["element"] = []
         return element
-
-    # def add_elements(self, elements):
-    #     # Loop through elements list
-    #     for element in elements:
-    #         if element.style == "tabpanel":
-    #             # Add tab panel
-    #             element.add()
-    #             # Loop through tabs in tab panel
-    #             for tab in element.tabs:
-    #                 # And now add the elements in this tab
-    #                 if tab.elements:
-    #                     self.add_elements(tab.elements)
-    #         elif element.style == "panel":
-    #             # Add panel
-    #             element.add()
-    #             # And now add the elements in this frame
-    #             if element.elements:
-    #                 self.add_elements(element.elements)
-    #         else:
-    #             element.add()
-    #
-    # def set_elements(self, elements):
-    #     # Loop through elements list
-    #     for element in elements:
-    #         try:
-    #             if element.visible:
-    #                 if element.style == "tabpanel":
-    #                     # Only update the elements in the active tab
-    #                     index = element.widget.currentIndex()
-    #                     # Loop through elements in tab
-    #                     for j, tab in enumerate(element.tabs):
-    #                         # Check if tab has elements
-    #                         if tab.elements and j==index:
-    #                             # And now add the elements in this tab
-    #                             self.set_elements(tab.elements)
-    #                 elif element.style == "panel":
-    #                     # Check if this frame has elements
-    #                     if element.elements:
-    #                         # Set elements in this frame
-    #                         self.set_elements(element.elements)
-    #                 else:
-    #                     # Set the element values
-    #                     element.widget.set()
-    #                     # Set the dependencies
-    #                     element.set_dependencies()
-    #         except Exception as err:
-    #             print(err)
-
-    # def find_element_by_id(self, elements, element_id):
-    #     element_found = None
-    #     for element in elements:
-    #         if element.id == element_id:
-    #             return element
-    #         if element.style == "tabpanel":
-    #             # Loop through tabs
-    #             for tab in element.tabs:
-    #                 # Look for elements in this tab
-    #                 if tab.elements:
-    #                     element_found = self.find_element_by_id(tab.elements, element_id)
-    #                     if element_found:
-    #                         return element_found
-    #         elif element.style == "panel":
-    #             # Look for elements in this frame
-    #             if element.elements:
-    #                 element_found = self.find_element_by_id(element.elements, element_id)
-    #                 if element_found:
-    #                     return element_found
-    #     return None
-    #
-    # def resize_elements(self, elements, resize_factor):
-    #     # Loop through elements
-    #     for element in elements:
-    #         # Set geometry of this element
-    #         element.set_geometry()
-    #         if element.style == "tabpanel":
-    #             # Loop through tabs
-    #             for tab in element.tabs:
-    #                 # # Resize tab widgets
-    #                 # tab.widget.setGeometry(0, 0, wdt, int(hgt - 20 * resize_factor))
-    #                 # And resize elements in this tab
-    #                 if tab.elements:
-    #                     self.resize_elements(tab.elements, resize_factor)
-    #         elif element.style == "panel":
-    #             # If this panel is resizable, also update element positions of children
-    #             if element.position.height < 0:
-    #                 self.resize_elements(element.elements, resize_factor)
-
-    # def add_menus(self, menus, parent, gui):
-    #     # Loop through elements list
-    #     for menu in menus:
-    #         menu.parent = parent
-    #         menu.gui = gui
-    #         menu.add()
-    #         if menu.menus:
-    #             self.add_menus(menu.menus, menu, gui)
-    #
-    # def set_menus(self, menus):
-    #     for menu in menus:
-    #         if menu.menus:
-    #             self.set_menus(menu.menus)
-    #         else:
-    #             menu.set_dependencies()
-
-    # def find_menu_item_by_id(self, menus, menu_id):
-    #     for menu in menus:
-    #         if menu.id == menu_id:
-    #             return menu
-    #         item = find_menu_item_by_id(menu.menus, menu_id)
-    #         if item:
-    #             return item
-    #     return None
-
-# def check_variable(element):
-#     # Check whether variables exist
-#     if not "variable_group" in element:
-#         print("Error : no group specified for element !")
-#         return False
-#     group = element["variable_group"]
-#     if not name:
-#         name = element["variable"]
-#     if not group:
-#         group = element["variable_group"]
-#     if not name:
-#         print("Error : no variable name specified for element !")
-#         return False
-#     if not group:
-#         print("Error : no group specified for element !")
-#         return False
-#     # if not group in variables:
-#     #     print("Error : GUI variables do not include group '" + group + "' !")
-#     #     return False
-#     # if not name in variables[group]:
-#     #     print("Error : GUI variable group '" + group +
-#     #           "' does not include variable '" + name + "' !")
-#     #     return False
-#
-#     return True
 
 def yaml2dict(file_name):
     file = open(file_name,"r")
