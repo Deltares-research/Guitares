@@ -109,6 +109,11 @@ class MapBox(QtWidgets.QWidget):
             self.gui.module.on_map_ready()
 
     @QtCore.pyqtSlot(str)
+    def layerStyleSet(self, coords):
+        print("Layer style changed.")
+        self.redraw_layers()
+
+    @QtCore.pyqtSlot(str)
     def mouseMoved(self, coords):
         coords = json.loads(coords)
         self.map_extent = coords
@@ -142,13 +147,12 @@ class MapBox(QtWidgets.QWidget):
         self.map_extent = coords
 
     @QtCore.pyqtSlot(str, str)
-#    def featureClicked2(self, layer_id, feature_props):
     def featureClicked(self, layer_id, feature_props):
         # Find layer by ID
         layer = find_layer_by_id(layer_id, self.layer)
-        if hasattr(layer, "select_callback"):
-            if layer.select_callback:
-                layer.select_callback(json.loads(feature_props))
+        if hasattr(layer, "select"):
+            if layer.select:
+                layer.select(json.loads(feature_props))
 
 #    @QtCore.pyqtSlot(str, str, str)
     @QtCore.pyqtSlot(str, str)
@@ -207,6 +211,12 @@ class MapBox(QtWidgets.QWidget):
     def list_layers(self):
         # Return a list with all layers
         return list_layers(self.layer)
+    
+    def redraw_layers(self):
+        # Redraw all layers (after map style has changed)
+        layers = self.list_layers()
+        for layer in layers:
+            layer.redraw()
 
     def runjs(self, module, function, arglist=None):
         if not arglist:
@@ -227,10 +237,15 @@ class MapBox(QtWidgets.QWidget):
             elif isinstance(arg, list):
                 string = string + "[]"
             elif isinstance(arg, GeoDataFrame):
-                string = string + arg.to_json()
+                if len(arg) == 0:
+                    string = string + "{}"
+                else:    
+                    string = string + arg.to_json()
             else:
                 string = string + "'" + arg + "'"
             if iarg<len(arglist) - 1:
                 string = string + ","
         string = string + ")});"
+        # print("JS String")
+        # print(string)
         self.view.page().runJavaScript(string)

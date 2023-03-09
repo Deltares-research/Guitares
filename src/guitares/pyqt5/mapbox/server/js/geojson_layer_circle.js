@@ -1,12 +1,6 @@
 import { map, featureClicked, mapboxgl } from '/js/main.js';
 
-export function addLayer(id, data, fillColor, fillOpacity, lineColor, lineWidth, circleRadius, selectionOption) {
-
-  let hoveredId = null;
-  let selectedId = null
-  let fillId = "fill_" + id
-  let lineId = "line_" + id
-  var selectedFeatures = []
+export function addLayer(id, data, lineColor, lineWidth, lineStyle, lineOpacity, fillColor, fillOpacity, circleRadius) {
 
   map.addSource(id, {
     type: 'geojson',
@@ -29,8 +23,24 @@ export function addLayer(id, data, fillColor, fillOpacity, lineColor, lineWidth,
 };
 
 export function setData(id, data) {
-  console.log('setting data in ' + id);
-  console.log(data);
+  // console.log('setting data in ' + id);
+  // console.log(data);
   var source = map.getSource(id);
   source.setData(data);
+}
+
+export function setPaintProperties(id,
+  lineColor,
+  lineWidth,
+  lineStyle,
+  lineOpacity,
+  fillColor,
+  fillOpacity,                         
+  circleRadius) {
+
+  if (map.getLayer(id)) {  
+    map.setPaintProperty(id, 'circle-stroke-color', lineColor);
+    map.setPaintProperty(id, 'circle-color', fillColor);                  
+    map.setPaintProperty(id, 'circle-radius', circleRadius);  
+  }
 }

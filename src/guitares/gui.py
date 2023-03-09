@@ -72,8 +72,8 @@ class GUI:
             thr.start()
 
             # Read mapbox token and store in js file in server path
-            if os.path.exists(os.path.join(module.main_path, mapbox_token_file)):
-                fid = open(os.path.join(module.main_path, mapbox_token_file), "r")
+            if os.path.exists(os.path.join(module.config_path, mapbox_token_file)):
+                fid = open(os.path.join(module.config_path, mapbox_token_file), "r")
                 mapbox_token = fid.readlines()
                 fid.close()
                 fid = open(os.path.join(server_path, "mapbox_token.js"), "w")
@@ -148,18 +148,15 @@ class GUI:
             config = self.read_gui_config(path, file_name)
         if data:    
             self.popup_data = copy.copy(data)
+        else:
+            self.popup_data = None    
         self.popup_window = Window(config, self, type="popup")
         p = self.popup_window.build()
         okay = False
         if p.result() == 1:
             okay = True
-            if data:
-                data = self.popup_data
-        # Only return "data" if it was also entered (otherwise just return True or False (for OK or Cancel, respectively))        
-        if data:
-            return okay, data
-        else:
-            return okay
+            data = self.popup_data
+        return okay, data
 
     def read_gui_config(self, path, file_name):
         suffix = Path(path).joinpath(file_name).suffix

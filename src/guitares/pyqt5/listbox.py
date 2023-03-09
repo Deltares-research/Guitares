@@ -32,44 +32,51 @@ class ListBox(QListWidget):
 
         # First call back to change the variable
         self.clicked.connect(self.callback)
+#        self.itemSelectionChanged.connect(self.callback)
+#        self.currentRowChanged.connect(self.callback)
 
         self.set_geometry()
 
     def set(self):
 
-            # First check if items need to be updated. This is only necessary when "option_string" is a dict
-            if self.element.option_string.variable:
-                self.add_items()
+        current_index = self.currentRow() 
 
-            # Get the items
-            items = []
-            for x in range(self.count()):
-                items.append(self.item(x))
+        # First check if items need to be updated. This is only necessary when "option_string" is a dict
+        if self.element.option_string.variable:
+            self.add_items()
 
-            # Get value
-            val = self.element.getvar(self.element.variable_group, self.element.variable)
+        # Get the items
+        items = []
+        for x in range(self.count()):
+            items.append(self.item(x))
 
-            # Now get the values
-            if self.element.select == "item":
-                if self.element.option_value.variable:
-                    name  = self.element.option_value.variable
-                    group = self.element.option_value.variable_group
-                    vals = self.element.getvar(group, name)
-                    if not vals:
-                        vals = [""]
-                else:
-                    vals = self.element.option_value.list
+        # Get value
+        val = self.element.getvar(self.element.variable_group, self.element.variable)
 
-                if val in vals:
-                    index = vals.index(val)
-                else:
-                    index = 0
-                    print(self.element.variable + ' not found !')
-
+        # Now get the values
+        if self.element.select == "item":
+            if self.element.option_value.variable:
+                name  = self.element.option_value.variable
+                group = self.element.option_value.variable_group
+                vals = self.element.getvar(group, name)
+                if not vals:
+                    vals = [""]
             else:
-                index = val
+                vals = self.element.option_value.list
 
-            self.setCurrentItem(items[index])
+            if val in vals:
+                index = vals.index(val)
+            else:
+                index = 0
+                print(self.element.variable + ' not found !')
+
+        else:
+            index = val
+
+        # print("current_index=" + str(current_index))
+        # print("index=" + str(index))
+        # if index != current_index:
+        self.setCurrentItem(items[index])
 
     def callback(self):
         index = self.currentRow()
