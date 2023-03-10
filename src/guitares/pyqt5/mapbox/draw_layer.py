@@ -1,6 +1,9 @@
 import math
 import geopandas as gpd
 import matplotlib.colors as mcolors
+import shapely
+import json
+from shapely.geometry import Polygon
 
 from .layer import Layer
 
@@ -74,6 +77,15 @@ class DrawLayer(Layer):
     def add_feature(self, feature_id, shape, geometry):
         self.mapbox.runjs("./js/draw.js", "addFeature", arglist=[feature_id, shape, geometry, self.map_id])
 
+    def add_rectangle(self, feature_id, x0, y0, lenx, leny, rotation):
+        shape = "rectangle"
+        lon_point_list = [x0, x0 + lenx, x0 + lenx, x0, x0]
+        lat_point_list = [y0, y0, y0 + leny, y0 + leny, y0]
+        polygon_geom = Polygon(zip(lon_point_list, lat_point_list))
+        json_string = shapely.to_geojson(polygon_geom)
+        geometry = json.loads(json_string)
+        self.add_feature(feature_id, shape, geometry)
+
     def draw(self):
         self.mapbox.active_draw_layer = self
         if self.shape == "polygon":
@@ -84,6 +96,7 @@ class DrawLayer(Layer):
             self.mapbox.runjs("./js/draw.js", "drawRectangle", arglist=[self.map_id])
 
     def feature_drawn(self, feature_collection, feature_id):
+        print("feature drawn")
         for feature in feature_collection["features"]:
             feature["properties"]["id"] = feature["id"]
         gdf = gpd.GeoDataFrame.from_features(feature_collection)
@@ -96,13 +109,14 @@ class DrawLayer(Layer):
             print("Could not find feature ...")
             return
         if self.shape == "rectangle":
-            x0, y0, dx, dy, rotation = get_rectangle_geometry(gdf["geometry"][0])
+            x0, y0, dx, dy, rotation = get_rectangle_geometry(gdf["geometry"])
             # Add columns with geometry info
-            gdf["x0"] = [x0]
-            gdf["y0"] = [y0]
-            gdf["dx"] = [dx]
-            gdf["dy"] = [dy]
-            gdf["rotation"] = [rotation]
+            gdf["x0"] = x0
+            gdf["y0"] = y0
+            gdf["dx"] = dx
+            gdf["dy"]= dy
+            gdf["rotation"] = rotation
+        self.gdf = gdf    
         if self.create:
             self.create(gdf, feature_index, feature_id)
 
@@ -119,13 +133,14 @@ class DrawLayer(Layer):
             print("Could not find feature ...")
             return
         if self.shape == "rectangle":
-            x0, y0, dx, dy, rotation = get_rectangle_geometry(gdf["geometry"][0])
+            x0, y0, dx, dy, rotation = get_rectangle_geometry(gdf["geometry"])
             # Add columns with geometry info
-            gdf["x0"] = [x0]
-            gdf["y0"] = [y0]
-            gdf["dx"] = [dx]
-            gdf["dy"] = [dy]
-            gdf["rotation"] = [rotation]
+            gdf["x0"] = x0
+            gdf["y0"] = y0
+            gdf["dx"] = dx
+            gdf["dy"]= dy
+            gdf["rotation"] = rotation
+        self.gdf = gdf    
         if self.modify:
             self.modify(gdf, feature_index, feature_id)
 
@@ -161,13 +176,13 @@ class DrawLayer(Layer):
 
     def clear(self):
         self.active = False
-        # Empty GeoDataFrame
-        self.gdf    = gpd.GeoDataFrame()
         # Loop through draw features
         for index, row in self.gdf.iterrows():
             feature_id = row["id"]
             # Remove feature from draw layer
             self.mapbox.runjs("./js/draw.js", "deleteFeature", arglist=[feature_id])
+        # Empty GeoDataFrame
+        self.gdf    = gpd.GeoDataFrame()
 
     def get_gdf(self, id=None):
         if id:
@@ -177,11 +192,17 @@ class DrawLayer(Layer):
         else:
             return self.gdf
 
-def get_rectangle_geometry(geom):
-    xx, yy = geom.exterior.coords.xy
-    x0 = xx[0]
-    y0 = yy[0]
-    dx = xx[1] - xx[0]
-    dy = yy[2] - yy[1]
-    rotation = math.atan2(yy[1] - yy[0], xx[1] - xx[0])
+def get_rectangle_geometry(geoms):
+    x0 = []
+    y0 = []
+    dx = []
+    dy = []
+    rotation = []
+    for geom in geoms:
+        xx, yy = geom.exterior.coords.xy
+        x0.append(xx[0])
+        y0.append(yy[0])
+        dx.append(xx[1] - xx[0])
+        dy.append(yy[2] - yy[1])
+        rotation.append(math.atan2(yy[1] - yy[0], xx[1] - xx[0]))
     return x0, y0, dx, dy, rotation

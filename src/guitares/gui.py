@@ -9,13 +9,14 @@ import shutil
 
 from pathlib import Path
 import toml
-import http.server
-import socketserver
 from urllib.request import urlopen
 from urllib.error import *
 import threading
 from PyQt5.QtWidgets import QApplication
 from PyQt5 import QtCore, QtGui
+from PyQt5.QtWidgets import QFileDialog
+
+from http.server import HTTPServer as BaseHTTPServer, SimpleHTTPRequestHandler
 
 from guitares.window import Window
 
@@ -201,21 +202,40 @@ class GUI:
                         tab["element"] = []
         return element
 
+    def open_file_name(self, text, filter):
+        fname = QFileDialog.getOpenFileName(None, text, "", filter)
+        if fname:
+            fname = fname[0]
+        return fname
+
+    def select_path(self, old_path):
+        new_path = QFileDialog.getExistingDirectory(None, "Select a directory")
+        return new_path
+
+    def quit(self):
+        QApplication.quit()
+
 def yaml2dict(file_name):
     file = open(file_name,"r")
     dct = yaml.load(file, Loader=yaml.FullLoader)
     return dct
 
+class HTTPHandler(SimpleHTTPRequestHandler):
+    """This handler uses server.base_path instead of always using os.getcwd()"""
+    def translate_path(self, path):
+        path = SimpleHTTPRequestHandler.translate_path(self, path)
+        relpath = os.path.relpath(path, os.getcwd())
+        fullpath = os.path.join(self.server.base_path, relpath)
+        return fullpath
+
+class HTTPServer(BaseHTTPServer):
+    """The main server, you pass in base_path which is the path you want to serve requests from"""
+    def __init__(self, base_path, server_address, RequestHandlerClass=HTTPHandler):
+        self.base_path = base_path
+        BaseHTTPServer.__init__(self, server_address, RequestHandlerClass)
+
 def run_server(server_path, server_port):
-    os.chdir(server_path)
-    PORT = server_port
-    Handler = http.server.SimpleHTTPRequestHandler
-    Handler.extensions_map['.js']     = 'text/javascript'
-    Handler.extensions_map['.mjs']    = 'text/javascript'
-    Handler.extensions_map['.css']    = 'text/css'
-    Handler.extensions_map['.html']   = 'text/html'
-    Handler.extensions_map['.json']   = 'application/json'
     print("Server path : " + server_path)
-    with socketserver.TCPServer(("", PORT), Handler) as httpd:
-        print("Serving at port", PORT)
-        httpd.serve_forever()
+    httpd = HTTPServer(server_path, ("", server_port))
+    httpd.serve_forever()
+
