@@ -4,6 +4,8 @@ import matplotlib.colors as mcolors
 import shapely
 import json
 from shapely.geometry import Polygon
+from shapely.ops import transform
+import pyproj
 
 from .layer import Layer
 
@@ -81,8 +83,11 @@ class DrawLayer(Layer):
         shape = "rectangle"
         lon_point_list = [x0, x0 + lenx, x0 + lenx, x0, x0]
         lat_point_list = [y0, y0, y0 + leny, y0 + leny, y0]
-        polygon_geom = Polygon(zip(lon_point_list, lat_point_list))
-        json_string = shapely.to_geojson(polygon_geom)
+        polygon_crs = Polygon(zip(lon_point_list, lat_point_list))
+        # Transform to WGS 84
+        project = pyproj.Transformer.from_crs(self.crs, pyproj.CRS(4326), always_xy=True).transform
+        polygon_wgs84 = transform(project, polygon_crs)
+        json_string = shapely.to_geojson(polygon_wgs84)
         geometry = json.loads(json_string)
         self.add_feature(feature_id, shape, geometry)
 
@@ -96,10 +101,9 @@ class DrawLayer(Layer):
             self.mapbox.runjs("./js/draw.js", "drawRectangle", arglist=[self.map_id])
 
     def feature_drawn(self, feature_collection, feature_id):
-        print("feature drawn")
         for feature in feature_collection["features"]:
             feature["properties"]["id"] = feature["id"]
-        gdf = gpd.GeoDataFrame.from_features(feature_collection)
+        gdf = gpd.GeoDataFrame.from_features(feature_collection, crs=4326).to_crs(self.crs)
         feature_index = None
         if len(gdf)>0:
             indx = gdf.index[gdf["id"]==feature_id].tolist()
@@ -123,7 +127,7 @@ class DrawLayer(Layer):
     def feature_modified(self, feature_collection, feature_id):
         for feature in feature_collection["features"]:
             feature["properties"]["id"] = feature["id"]
-        gdf = gpd.GeoDataFrame.from_features(feature_collection)
+        gdf = gpd.GeoDataFrame.from_features(feature_collection, crs=4326).to_crs(self.crs)
         feature_index = None
         if len(gdf)>0:
             indx = gdf.index[gdf["id"]==feature_id].tolist()
@@ -147,7 +151,7 @@ class DrawLayer(Layer):
     def feature_selected(self, feature_collection, feature_id):
         for feature in feature_collection["features"]:
             feature["properties"]["id"] = feature["id"]
-        gdf = gpd.GeoDataFrame.from_features(feature_collection)
+        gdf = gpd.GeoDataFrame.from_features(feature_collection, crs=4326).to_crs(self.crs)
         feature_index = None
         if len(gdf)>0:
             indx = gdf.index[gdf["id"]==feature_id].tolist()

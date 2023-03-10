@@ -85,7 +85,7 @@ class GUI:
     def show_splash(self):
         if self.framework == "pyqt5" and self.splash_file:
             from .pyqt5.splash import Splash
-            self.splash = Splash(self.splash_file, seconds=2.0).splash
+            self.splash = Splash(self.splash_file, seconds=20.0).splash
 
     def close_splash(self):
         if self.splash:
@@ -96,8 +96,8 @@ class GUI:
         QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
         app = QApplication(sys.argv)
 
-        # Show splash screen
-        self.show_splash()
+        # # Show splash screen
+        # self.show_splash()
 
         # Set the icon
         app.setWindowIcon(QtGui.QIcon(self.icon))
@@ -113,12 +113,15 @@ class GUI:
 
         window_widget = self.window.build()
 
+        # Show splash screen
+        self.show_splash()
+
         # Call on_build method after building window
         if hasattr(self.module, "on_build"):
             self.module.on_build()
             
-        # Close splash screen before GUI is initiated
-        self.close_splash()
+        # # Close splash screen before GUI is initiated
+        # self.close_splash()
 
         app.exec_()
 

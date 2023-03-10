@@ -67,7 +67,7 @@ class DeckGeoJSONLayer(Layer):
         # Assuming data is GeoDataFrame
         file_name = "_deck.geojson"
         with open(os.path.join(self.mapbox.server_path, "_deck.geojson"), "w") as f:
-            f.write(data.to_json())
+            f.write(data.to_crs(4326).to_json())
         data = "./" + file_name
 
         self.mapbox.runjs("./js/deck_geojson_layer.js", "addLayer", arglist=[self.map_id, data])

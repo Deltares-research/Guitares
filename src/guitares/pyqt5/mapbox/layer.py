@@ -13,6 +13,7 @@ class Layer:
         self.data      = None
         self.index     = None
         self.select    = None
+        self.crs       = 4326
 
         self.line_color     = "dodgerblue"
         self.line_width     = 2

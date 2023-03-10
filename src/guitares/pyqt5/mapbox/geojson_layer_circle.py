@@ -29,14 +29,14 @@ class GeoJSONLayerCircle(Layer):
 
         # Add new layer        
         self.mapbox.runjs("./js/geojson_layer_circle.js", "addLayer", arglist=[self.map_id,
-                                                                                        data,
-                                                                                        self.line_color,
-                                                                                        self.line_width,
-                                                                                        self.line_style,
-                                                                                        self.line_opacity,
-                                                                                        self.fill_color,
-                                                                                        self.fill_opacity,
-                                                                                        self.circle_radius])
+                                                                               data.to_crs(4326),
+                                                                               self.line_color,
+                                                                               self.line_width,
+                                                                               self.line_style,
+                                                                               self.line_opacity,
+                                                                               self.fill_color,
+                                                                               self.fill_opacity,
+                                                                               self.circle_radius])
 
     def activate(self):
         self.mapbox.runjs("./js/geojson_layer_circle.js", "setPaintProperties", arglist=[self.map_id,
