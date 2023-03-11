@@ -24,6 +24,9 @@ class GeoJSONLayerCircleSelector(Layer):
         # Remove existing layer        
         self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id])
         # Add new layer        
+        indices = []
+        indices.extend(range(len(data)))
+        data["index"] = indices
         self.mapbox.runjs("./js/geojson_layer_circle_selector.js", "addLayer", arglist=[self.map_id,
                                                                                         data,
                                                                                         index,

@@ -195,14 +195,14 @@ export function addLayer(id,
 export function setSelectedIndex(id, index) {
   const features = map.querySourceFeatures(id, {sourceLayer: id});
   for (let i = 0; i < features.length; i++) {
-    if (features[i].id == index) {
+    if (features[i].properties.index == index) {
       map.setFeatureState(
-        { source: id, id: i },
+        { source: id, id: features[i].id },
         { selected: true, active: true }
       );
     } else {
       map.setFeatureState(
-        { source: id, id: i },
+        { source: id, id: features[i].id  },
         { selected: false, active: true }
       );
     }
