@@ -54,6 +54,19 @@ class RasterLayer(Layer):
                  decimals=None,
                  crs=None,
                  colormap=None):
+        
+        self.data = {}
+        self.data["x"] = x
+        self.data["y"] = y
+        self.data["z"] = z
+        self.data["image_file"] = image_file
+        self.data["legend_title"] = legend_title
+        self.data["cmin"] = cmin
+        self.data["cmax"] = cmax
+        self.data["cstep"] = cstep
+        self.data["decimals"] = decimals
+        self.data["crs"] = crs
+        self.data["colormap"] = colormap
 
         cmap = colormap
 
@@ -214,3 +227,19 @@ class RasterLayer(Layer):
             self.mapbox.view.page().runJavaScript(js_string)
 
         self.new = False
+
+    def redraw(self):
+        if self.data:
+            self.new = True
+            self.set_data(x=self.data["x"],
+                          y=self.data["y"],
+                          z=self.data["z"],
+                          image_file=self.data["image_file"],
+                          legend_title=self.data["legend_title"],
+                          cmin=self.data["cmin"],
+                          cmax=self.data["cmax"],
+                          cstep=self.data["cstep"],
+                          decimals=self.data["decimals"],
+                          crs=self.data["crs"],
+                          colormap=self.data["colormap"])
+        

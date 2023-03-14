@@ -1,6 +1,15 @@
 import { map, featureClicked, mapboxgl} from '/js/main.js';
 
-export function addLayer(id, data, fillColor, fillOpacity, lineColor, lineWidth, selectionOption, highlight) {
+export function addLayer(id, data, index,
+  lineColor,
+  lineWidth,
+  lineStyle,
+  lineOpacity,
+  fillColor,
+  fillOpacity,                         
+  lineColorActive,
+  fillColorActive,
+  selectionOption) {
 
   let selectedId = null
   let hoveredId = null
@@ -170,11 +179,94 @@ export function addLayer(id, data, fillColor, fillOpacity, lineColor, lineWidth,
   }
 };
 
-export function setData(id, data) {
-  console.log('setting data in ' + id);
-  console.log(data);
-  var source = map.getSource(id);
-  source.setData(data);
+// export function setData(id, data) {
+//   console.log('setting data in ' + id);
+//   console.log(data);
+//   var source = map.getSource(id);
+//   source.setData(data);
+// }
+
+export function setSelectedIndex(id, index) {
+  const features = map.querySourceFeatures(id, {sourceLayer: id});
+  for (let i = 0; i < features.length; i++) {
+    if (features[i].id == index) {
+      map.setFeatureState(
+        { source: id, id: i },
+        { selected: true, active: true }
+      );
+    } else {
+      map.setFeatureState(
+        { source: id, id: i },
+        { selected: false, active: true }
+      );
+    }
+  }
+}
+
+export function activate(id,
+                         lineColor,
+                         lineWidth,
+                         lineStyle,
+                         lineOpacity,
+                         fillColor,
+                         fillOpacity,                         
+                         lineColorActive,
+                         fillColorActive) {
+
+  const features = map.querySourceFeatures(id, {sourceLayer: id});
+  for (let i = 0; i < features.length; i++) {
+    map.setFeatureState(
+      { source: id, id: i },
+      { active: true }
+    );
+  }
+  if (map.getLayer(id)) {  
+    map.setPaintProperty(id, 'circle-stroke-color', ['case',
+      ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
+      lineColorActive,
+      lineColor]);                          
+    map.setPaintProperty(id, 'circle-color', ['case',
+      ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
+      fillColorActive,
+      fillColor]);                          
+    map.setPaintProperty(id, 'circle-radius', ['case',
+      ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
+      circleRadiusActive,
+      circleRadius]);
+  }                           
+}
+
+export function deactivate(id,
+  lineColor,
+  lineWidth,
+  lineStyle,
+  lineOpacity,
+  fillColor,
+  fillOpacity,                         
+  lineColorActive,
+  fillColorActive) {
+
+  const features = map.querySourceFeatures(id, {sourceLayer: id});
+  for (let i = 0; i < features.length; i++) {
+    map.setFeatureState(
+      { source: id, id: i },
+      { active: false }
+    );
+  }  
+  if (map.getLayer(id)) {  
+    map.setPaintProperty(id, 'circle-stroke-color', ['case',
+      ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
+      lineColorActive,
+      lineColor]);                          
+    map.setPaintProperty(id, 'circle-color', ['case',
+      ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
+      fillColorActive,
+      fillColor]);                          
+    map.setPaintProperty(id, 'circle-radius', ['case',
+      ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
+      circleRadiusActive,
+      circleRadius]);                          
+  }
 }
 
 export function highlightData(id, highlight, value) {

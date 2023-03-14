@@ -11,6 +11,7 @@ export let featureModified;
 export let jsonString;
 export let featureClicked;
 export let pointClicked;
+export let layerStyleSet;
 
 console.log('Adding MapBox map ...')
 
@@ -52,6 +53,7 @@ new QWebChannel(qt.webChannelTransport, function (channel) {
     featureModified   = function(featureCollection, featureId) { MapBox.featureModified(featureCollection, featureId)};
     featureSelected   = function(featureCollection, featureId) { MapBox.featureSelected(featureCollection, featureId)};
     pointClicked      = function(coords) { MapBox.pointClicked(JSON.stringify(coords))};
+    layerStyleSet     = function() { MapBox.layerStyleSet('')};
   }
 });
 
@@ -125,14 +127,16 @@ export function removeLayer(id) {
 
 export function showLayer(id) {
 	// Show layer
-	var mapLayer = map.getLayer(id);
-	map.setLayoutProperty(id, 'visibility', 'visible');
+	if (map.getLayer(id)) {
+    map.setLayoutProperty(id, 'visibility', 'visible');
+  }  
 }
 
 export function hideLayer(id) {
 	// Show layer
-	var mapLayer = map.getLayer(id);
-	map.setLayoutProperty(id, 'visibility', 'none');
+	if (map.getLayer(id)) {
+  	map.setLayoutProperty(id, 'visibility', 'none');
+  }  
 }
 
 export function getExtent() {
@@ -197,6 +201,7 @@ export function setProjection(projection) {
 
 export function setLayerStyle(style) {
   map.setStyle('mapbox://styles/mapbox/' + style);
+  map.once('idle', () => { addDummyLayer(); layerStyleSet(); });
 }
 
 export function setTerrain(trueOrFalse, exaggeration) {

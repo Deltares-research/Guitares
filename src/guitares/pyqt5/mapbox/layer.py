@@ -1,14 +1,74 @@
-# from .image_layer import ImageLayer
-# from .deck_tile_layer import DeckTileLayer
+import matplotlib.colors as mcolors
 
 class Layer:
-    def __init__(self, mapbox, id, map_id):
+    def __init__(self, mapbox, id, map_id, **kwargs):
+
         self.mapbox    = mapbox
         self.id        = id
         self.map_id    = map_id
         self.type      = "container"
         self.layer     = {}
         self.parent    = None
+        self.mode      = "active"
+        self.data      = None
+        self.index     = None
+        self.select    = None
+        self.crs       = 4326
+
+        self.line_color     = "dodgerblue"
+        self.line_width     = 2
+        self.line_style     = "-"
+        self.line_opacity   = 1.0
+        self.fill_color     = "dodgerblue"
+        self.fill_opacity   = 1.0
+        self.circle_radius  = 4
+
+        self.line_color_inactive    = "lightgrey"
+        self.line_width_inactive    = 2
+        self.line_style_inactive    = "-"
+        self.line_opacity_inactive  = 1.0
+        self.fill_color_inactive    = "lightgrey"
+        self.fill_opacity_inactive  = 0.0
+        self.circle_radius_inactive = 2
+
+        self.line_color_selected    = "dodgerblue"
+        self.line_width_selected    = 2
+        self.line_style_selected    = "-"
+        self.line_opacity_selected  = 1.0
+        self.fill_color_selected    = "red"
+        self.fill_opacity_selected  = 1.0
+        self.circle_radius_selected = 5
+
+        self.line_color_selected_inactive    = "lightgrey"
+        self.line_width_selected_inactive    = 2
+        self.line_style_selected_inactive    = "-"
+        self.line_opacity_selected_inactive  = 1.0
+        self.fill_color_selected_inactive    = "lightgrey"
+        self.fill_opacity_selected_inactive  = 0.0
+        self.circle_radius_selected_inactive = 2
+
+        self.selection_type = "single"
+
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+        if self.line_color != "transparent": 
+            self.line_color = mcolors.to_hex(self.line_color)
+        if self.fill_color != "transparent": 
+            self.fill_color = mcolors.to_hex(self.fill_color)
+        if self.line_color_inactive != "transparent": 
+            self.line_color_inactive = mcolors.to_hex(self.line_color_inactive)
+        if self.fill_color_inactive != "transparent": 
+            self.fill_color_inactive = mcolors.to_hex(self.fill_color_inactive)
+        if self.line_color_selected != "transparent": 
+            self.line_color_selected = mcolors.to_hex(self.line_color_selected)
+        if self.fill_color_selected != "transparent": 
+            self.fill_color_selected = mcolors.to_hex(self.fill_color_selected)
+        if self.line_color_selected_inactive != "transparent": 
+            self.line_color_selected_inactive = mcolors.to_hex(self.line_color_selected_inactive)
+        if self.fill_color_selected_inactive != "transparent": 
+            self.fill_color_selected_inactive = mcolors.to_hex(self.fill_color_selected_inactive)
+
 
     def update(self):
         pass
@@ -32,56 +92,59 @@ class Layer:
         else:
             return None
 
-    def add_layer(self, layer_id):
-        # Add containing layer
-        map_id = self.map_id + "." + layer_id
-        self.layer[layer_id] = Layer(self.mapbox, layer_id, map_id)
-        self.layer[layer_id].parent = self
-        return self.layer[layer_id]
+    def add_layer(self, layer_id, type=None, **kwargs):
 
-    def add_draw_layer(self, layer_id, **kwargs):
-        from .draw_layer import DrawLayer
-        if self.type != "container":
-            print("Error! Can not add draw layer to layer of type : " + self.type)
-            return None
         map_id = self.map_id + "." + layer_id
-        if layer_id not in self.layer:
-            self.layer[layer_id] = DrawLayer(self.mapbox, layer_id, map_id, **kwargs)
-            self.layer[layer_id].parent = self
-        return self.layer[layer_id]
 
-    def add_raster_layer(self, layer_id, data=None):
-        from .raster_layer import RasterLayer
-        map_id = self.map_id + "." + layer_id
-        if self.type != "container":
-            print("Error! Can not add raster layer to layer of type : " + self.type)
-            return None
-        if layer_id not in self.layer:
-            self.layer[layer_id] = RasterLayer(self.mapbox, layer_id, map_id)
-            self.layer[layer_id].parent = self
-        return self.layer[layer_id]
+        if type == None:
 
-    def add_geojson_layer(self, layer_id, **kwargs):
-        from .geojson_layer import GeoJSONLayer
-        map_id = self.map_id + "." + layer_id
-        if self.type != "container":
-            print("Error! Can not add geojson_layer to layer of type : " + self.type)
-            return None
-        if layer_id not in self.layer:
-            self.layer[layer_id] = GeoJSONLayer(self.mapbox, layer_id, map_id, **kwargs)
+            # Add containing layer
+            self.layer[layer_id] = Layer(self.mapbox, layer_id, map_id)
             self.layer[layer_id].parent = self
-        return self.layer[layer_id]
+            return self.layer[layer_id]
+        
+        else:
 
-    def add_deck_geojson_layer(self, layer_id, **kwargs):
-        from .deck_geojson_layer import DeckGeoJSONLayer
-        map_id = self.map_id + "." + layer_id
-        if self.type != "container":
-            print("Error! Can not add deck_geojson_layer to layer of type : " + self.type)
-            return None
-        if layer_id not in self.layer:
-            self.layer[layer_id] = DeckGeoJSONLayer(self.mapbox, layer_id, map_id, **kwargs)
+            if self.type != "container":
+                print("Error! Can not add layer to layer of type : " + self.type)
+                return None
+
+            if layer_id in self.layer:
+                # Layer already exists
+                return self.layer[layer_id]
+
+            if type == "circle_selector":
+                from .geojson_layer_circle_selector import GeoJSONLayerCircleSelector
+                self.layer[layer_id] = GeoJSONLayerCircleSelector(self.mapbox, layer_id, map_id, **kwargs)
+
+            elif type == "polygon_selector":
+                from .geojson_layer_polygon_selector import GeoJSONLayerPolygonSelector
+                self.layer[layer_id] = GeoJSONLayerPolygonSelector(self.mapbox, layer_id, map_id, **kwargs)
+
+            elif type == "circle":
+                from .geojson_layer_circle import GeoJSONLayerCircle
+                self.layer[layer_id] = GeoJSONLayerCircle(self.mapbox, layer_id, map_id, **kwargs)
+
+            elif type == "draw":
+                from .draw_layer import DrawLayer
+                self.layer[layer_id] = DrawLayer(self.mapbox, layer_id, map_id, **kwargs)
+
+            elif type == "raster":
+                from .raster_layer import RasterLayer
+                self.layer[layer_id] = RasterLayer(self.mapbox, layer_id, map_id, **kwargs)
+
+            elif type == "deck_geojson":
+                from .deck_geojson_layer import DeckGeoJSONLayer
+                self.layer[layer_id] = DeckGeoJSONLayer(self.mapbox, layer_id, map_id, **kwargs)
+
+            else:
+                print("Error! Layer type " + self.type + " not recognized!")
+                return None
+
+            self.layer[layer_id].type = type
             self.layer[layer_id].parent = self
-        return self.layer[layer_id]
+            return self.layer[layer_id]
+
 
     def show(self):
         self.set_visibility(True)
@@ -106,16 +169,25 @@ class Layer:
         # Make a list of all layers
         if self.layer:
             # Container layer
+            self.mode = mode
             layers = list_layers(self.layer)
-            for layer in layers:
+            for layer in layers:                
                 layer.set_mode(mode)
         else:
-            if mode == "active" or mode == "inactive":
-                js_string = "import('./js/main.js').then(module => {module.showLayer('" + self.map_id + "')});"
-            else:
-                js_string = "import('./js/main.js').then(module => {module.hideLayer('" + self.map_id + "')});"
-            self.mapbox.view.page().runJavaScript(js_string)
+            # Only change if mode has changed
+            if self.mode != mode:
+                if mode == "active":
+                    self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id])
+                    self.activate()
+                elif mode == "inactive":
+                    self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id])
+                    self.deactivate()
+                else:    
+                    self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id])
+                self.mode = mode
 
+    def redraw(self):
+        print("Cannot redraw layer of type " + self.type)
 
 def list_layers(layer_dict, layer_type="all", layer_list=None):
     if not layer_list:
@@ -139,32 +211,3 @@ def find_layer_by_id(layer_id, layer_dict, layer_type="all", layer_list=None):
     for layer in layer_list:
         if layer.map_id == layer_id:
             return layer
-
-    #     # Now add the layer
-    #     if type == "draw":
-    #         layer = DrawLayer(self, layer_id, create=create, modify=modify, select=select)
-    #     elif type == "image":
-    #         layer = ImageLayer(self, layer_id)
-    #     elif type == "raster":
-    #         layer = RasterLayer(self, layer_id)
-    #     elif type == "deckgeojson":
-    #         layer = DeckGeoJSONLayer(self, layer_id, data=data)
-    #     elif type == "decktile":
-    #         layer = DeckTileLayer(self, layer_id, data=data)
-
-
-    # def add_marker_layer(self,
-    #                      collection,
-    #                      marker_file=None,
-    #                      layer_name=None,
-    #                      layer_group_name=None):
-    #
-    #     self.id_counter += 1
-    #     id_string = str(self.id_counter)
-    #     layer = Layer(name=layer_name, type="image")
-    #     layer.id = id_string
-    #     layer_group = self.find_layer_group(layer_group_name)
-    #     layer_group[layer_name] = layer
-    #     geojs = geojson.dumps(collection)
-    #     js_string = "import('/main.js').then(module => {module.addMarkerLayer(" + geojs + ",'" + marker_file + "','" + id_string + "','"+ layer_name + "','" + layer_group_name + "')});"
-    #     self.view.page().runJavaScript(js_string)

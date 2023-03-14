@@ -1,14 +1,13 @@
 import math
 import geopandas as gpd
-import pandas as pd
-import json
-import geojson
-import shapely
 import matplotlib.colors as mcolors
+import shapely
+import json
+from shapely.geometry import Polygon
+from shapely.ops import transform
+import pyproj
 
-from .layer import Layer, list_layers
-#from .mapbox import JavascriptString
-
+from .layer import Layer
 
 class DrawLayer(Layer):
     def __init__(self, mapbox, id, map_id,
@@ -39,9 +38,9 @@ class DrawLayer(Layer):
         self.shape  = shape
         self.mode   = "active" # Draw layers can have three modes: active, inactive, invisible
         self.gdf    = gpd.GeoDataFrame()
-        self.create_callback = create
-        self.modify_callback = modify
-        self.select_callback = select
+        self.create = create
+        self.modify = modify
+        self.select = select
 
         # Get Hex values for colors
         self.paint_props = {}
@@ -80,6 +79,18 @@ class DrawLayer(Layer):
     def add_feature(self, feature_id, shape, geometry):
         self.mapbox.runjs("./js/draw.js", "addFeature", arglist=[feature_id, shape, geometry, self.map_id])
 
+    def add_rectangle(self, feature_id, x0, y0, lenx, leny, rotation):
+        shape = "rectangle"
+        lon_point_list = [x0, x0 + lenx, x0 + lenx, x0, x0]
+        lat_point_list = [y0, y0, y0 + leny, y0 + leny, y0]
+        polygon_crs = Polygon(zip(lon_point_list, lat_point_list))
+        # Transform to WGS 84
+        project = pyproj.Transformer.from_crs(self.crs, pyproj.CRS(4326), always_xy=True).transform
+        polygon_wgs84 = transform(project, polygon_crs)
+        json_string = shapely.to_geojson(polygon_wgs84)
+        geometry = json.loads(json_string)
+        self.add_feature(feature_id, shape, geometry)
+
     def draw(self):
         self.mapbox.active_draw_layer = self
         if self.shape == "polygon":
@@ -89,37 +100,10 @@ class DrawLayer(Layer):
         elif self.shape == "rectangle":
             self.mapbox.runjs("./js/draw.js", "drawRectangle", arglist=[self.map_id])
 
-    # def draw_polygon(self):
-    #     self.mapbox.active_draw_layer = self
-    #     self.mapbox.runjs("./js/draw.js", "drawPolygon", arglist=[self.map_id])
-    #
-    # def draw_polyline(self):
-    #     self.mapbox.active_draw_layer = self
-    #     self.mapbox.runjs("./js/draw.js", "drawPolyline", arglist=[self.map_id])
-    #
-    # def draw_rectangle(self):
-    #     self.mapbox.active_draw_layer = self
-    #     self.mapbox.runjs("./js/draw.js", "drawRectangle", arglist=[self.map_id])
-
-    # def feature_drawn(self, coords, feature_id, feature_shape):
-    #     if feature_shape == "polygon":
-    #         geom = shapely.geometry.Polygon(coords[0])
-    #         gdf = gpd.GeoDataFrame(data=[[feature_id, feature_shape]], columns=["id", "shape"], crs='epsg:4326', geometry=[geom])
-    #     if feature_shape == "polyline":
-    #         geom = shapely.geometry.LineString(coords)
-    #         gdf = gpd.GeoDataFrame(data=[[feature_id, feature_shape]], columns=["id", "shape"], crs='epsg:4326', geometry=[geom])
-    #     if feature_shape == "rectangle":
-    #         geom = shapely.geometry.Polygon(coords[0])
-    #         x0, y0, dx, dy, rotation = get_rectangle_geometry(geom)
-    #         gdf = gpd.GeoDataFrame(data=[[feature_id, feature_shape, x0, y0, dx, dy, rotation]], columns=["id", "shape", "x0", "y0", "dx", "dy", "rotation"], crs='epsg:4326', geometry=[geom])
-    #     self.gdf = pd.concat([self.gdf, gdf], ignore_index=True)
-    #     if self.create_callback:
-    #         self.create_callback(gdf, feature_shape, feature_id)
-
     def feature_drawn(self, feature_collection, feature_id):
         for feature in feature_collection["features"]:
             feature["properties"]["id"] = feature["id"]
-        gdf = gpd.GeoDataFrame.from_features(feature_collection)
+        gdf = gpd.GeoDataFrame.from_features(feature_collection, crs=4326).to_crs(self.crs)
         feature_index = None
         if len(gdf)>0:
             indx = gdf.index[gdf["id"]==feature_id].tolist()
@@ -129,20 +113,21 @@ class DrawLayer(Layer):
             print("Could not find feature ...")
             return
         if self.shape == "rectangle":
-            x0, y0, dx, dy, rotation = get_rectangle_geometry(gdf["geometry"][0])
+            x0, y0, dx, dy, rotation = get_rectangle_geometry(gdf["geometry"])
             # Add columns with geometry info
-            gdf["x0"] = [x0]
-            gdf["y0"] = [y0]
-            gdf["dx"] = [dx]
-            gdf["dy"] = [dy]
-            gdf["rotation"] = [rotation]
-        if self.create_callback:
-            self.create_callback(gdf, feature_index, feature_id)
+            gdf["x0"] = x0
+            gdf["y0"] = y0
+            gdf["dx"] = dx
+            gdf["dy"]= dy
+            gdf["rotation"] = rotation
+        self.gdf = gdf    
+        if self.create:
+            self.create(gdf, feature_index, feature_id)
 
     def feature_modified(self, feature_collection, feature_id):
         for feature in feature_collection["features"]:
             feature["properties"]["id"] = feature["id"]
-        gdf = gpd.GeoDataFrame.from_features(feature_collection)
+        gdf = gpd.GeoDataFrame.from_features(feature_collection, crs=4326).to_crs(self.crs)
         feature_index = None
         if len(gdf)>0:
             indx = gdf.index[gdf["id"]==feature_id].tolist()
@@ -152,36 +137,21 @@ class DrawLayer(Layer):
             print("Could not find feature ...")
             return
         if self.shape == "rectangle":
-            x0, y0, dx, dy, rotation = get_rectangle_geometry(gdf["geometry"][0])
+            x0, y0, dx, dy, rotation = get_rectangle_geometry(gdf["geometry"])
             # Add columns with geometry info
-            gdf["x0"] = [x0]
-            gdf["y0"] = [y0]
-            gdf["dx"] = [dx]
-            gdf["dy"] = [dy]
-            gdf["rotation"] = [rotation]
-        if self.modify_callback:
-            self.modify_callback(gdf, feature_index, feature_id)
-        # if feature_shape == "polygon":
-        #     geom = shapely.geometry.Polygon(coords[0])
-        #     gdf = gpd.GeoDataFrame(data=[[feature_id, feature_shape]], columns=["id", "shape"], crs='epsg:4326', geometry=[geom])
-        # if feature_shape == "polyline":
-        #     geom = shapely.geometry.LineString(coords)
-        #     gdf = gpd.GeoDataFrame(data=[[feature_id, feature_shape]], columns=["id", "shape"], crs='epsg:4326', geometry=[geom])
-        # if feature_shape == "rectangle":
-        #     geom = shapely.geometry.Polygon(coords[0])
-        #     x0, y0, dx, dy, rotation = get_rectangle_geometry(geom)
-        #     gdf = gpd.GeoDataFrame(data=[[feature_id, feature_shape, x0, y0, dx, dy, rotation]], columns=["id", "shape", "x0", "y0", "dx", "dy", "rotation"], crs='epsg:4326', geometry=[geom])
-        # for index, row in self.gdf.iterrows():
-        #     if row["id"] == feature_id:
-        #         self.gdf.at[index, "geometry"] = geom
-        #         break
-        # if self.modify_callback:
-        #     self.modify_callback(gdf, feature_shape, feature_id)
+            gdf["x0"] = x0
+            gdf["y0"] = y0
+            gdf["dx"] = dx
+            gdf["dy"]= dy
+            gdf["rotation"] = rotation
+        self.gdf = gdf    
+        if self.modify:
+            self.modify(gdf, feature_index, feature_id)
 
     def feature_selected(self, feature_collection, feature_id):
         for feature in feature_collection["features"]:
             feature["properties"]["id"] = feature["id"]
-        gdf = gpd.GeoDataFrame.from_features(feature_collection)
+        gdf = gpd.GeoDataFrame.from_features(feature_collection, crs=4326).to_crs(self.crs)
         feature_index = None
         if len(gdf)>0:
             indx = gdf.index[gdf["id"]==feature_id].tolist()
@@ -190,8 +160,8 @@ class DrawLayer(Layer):
         if feature_index is None:
             print("Could not find feature ...")
             return
-        if self.select_callback:
-            self.select_callback(feature_index)
+        if self.select:
+            self.select(feature_index)
 
     def activate_feature(self, feature_id):
         if self.mode != "active":
@@ -210,13 +180,13 @@ class DrawLayer(Layer):
 
     def clear(self):
         self.active = False
-        # Empty GeoDataFrame
-        self.gdf    = gpd.GeoDataFrame()
         # Loop through draw features
         for index, row in self.gdf.iterrows():
             feature_id = row["id"]
             # Remove feature from draw layer
             self.mapbox.runjs("./js/draw.js", "deleteFeature", arglist=[feature_id])
+        # Empty GeoDataFrame
+        self.gdf    = gpd.GeoDataFrame()
 
     def get_gdf(self, id=None):
         if id:
@@ -226,11 +196,17 @@ class DrawLayer(Layer):
         else:
             return self.gdf
 
-def get_rectangle_geometry(geom):
-    xx, yy = geom.exterior.coords.xy
-    x0 = xx[0]
-    y0 = yy[0]
-    dx = xx[1] - xx[0]
-    dy = yy[2] - yy[1]
-    rotation = math.atan2(yy[1] - yy[0], xx[1] - xx[0])
+def get_rectangle_geometry(geoms):
+    x0 = []
+    y0 = []
+    dx = []
+    dy = []
+    rotation = []
+    for geom in geoms:
+        xx, yy = geom.exterior.coords.xy
+        x0.append(xx[0])
+        y0.append(yy[0])
+        dx.append(xx[1] - xx[0])
+        dy.append(yy[2] - yy[1])
+        rotation.append(math.atan2(yy[1] - yy[0], xx[1] - xx[0]))
     return x0, y0, dx, dy, rotation
