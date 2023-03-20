@@ -47,7 +47,8 @@ class DeckGeoJSONLayer(Layer):
 
 
     def clear(self):
-        pass
+        # Remove existing layer        
+        self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id])
         # self.active = False
         # js_string = "import('./js/main.js').then(module => {module.removeLayer('" + self.map_id + "')});"
         # self.mapbox.view.page().runJavaScript(js_string)
