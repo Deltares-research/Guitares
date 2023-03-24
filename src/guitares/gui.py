@@ -73,8 +73,8 @@ class GUI:
             thr.start()
 
             # Read mapbox token and store in js file in server path
-            if os.path.exists(os.path.join(module.config_path, mapbox_token_file)):
-                fid = open(os.path.join(module.config_path, mapbox_token_file), "r")
+            if os.path.exists(os.path.join(self.config_path, mapbox_token_file)):
+                fid = open(os.path.join(self.config_path, mapbox_token_file), "r")
                 mapbox_token = fid.readlines()
                 fid.close()
                 fid = open(os.path.join(server_path, "mapbox_token.js"), "w")
@@ -97,7 +97,7 @@ class GUI:
         app = QApplication(sys.argv)
 
         # # Show splash screen
-        # self.show_splash()
+        self.show_splash()
 
         # Set the icon
         app.setWindowIcon(QtGui.QIcon(self.icon))
@@ -113,15 +113,13 @@ class GUI:
 
         window_widget = self.window.build()
 
-        # Show splash screen
-        self.show_splash()
 
         # Call on_build method after building window
         if hasattr(self.module, "on_build"):
             self.module.on_build()
             
         # # Close splash screen before GUI is initiated
-        # self.close_splash()
+        self.close_splash()
 
         app.exec_()
 
