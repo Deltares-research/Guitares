@@ -1,27 +1,26 @@
 import { map, featureClicked, mapboxgl} from '/js/main.js';
 
-export function addLayer(id, data, index,
+export function addLayer(id, 
+  data, 
+  index, 
+  hover_property,
   lineColor,
   lineWidth,
-  lineStyle,
   lineOpacity,
   fillColor,
-  fillOpacity,                         
-  lineColorActive,
-  fillColorActive,
+  fillOpacity,
   selectionOption) {
 
   let selectedId = null
   let hoveredId = null
   let fillId = id + ".fill"
-  let fillId2 = id + ".fill2"
   let lineId = id + ".line"
-  let lineId2 = id + ".line2"
   var selectedFeatures = []
 
   map.addSource(id, {
     type: 'geojson',
-    data: data
+    data: data, 
+    promoteId: hover_property
   });
 
   map.addLayer({
@@ -31,20 +30,11 @@ export function addLayer(id, data, index,
     'layout': {},
     'paint': {
       'line-color': lineColor,
-      'line-width': lineWidth
+      'line-width': lineWidth,
+      'line-opacity': lineOpacity
      }
   });
 
-  map.addLayer({
-    'id': lineId2,
-    'type': 'line',
-    'source': id,
-    'paint': {
-      'line-color': fillColor,
-      'line-width': 2
-    },
-    "filter": ["==", highlight, ""]
-  });
 
   map.addLayer({
     'id': fillId,
@@ -57,39 +47,12 @@ export function addLayer(id, data, index,
     }
   });
 
-  map.addLayer({
-    'id': fillId2,
-    'type': 'fill',
-    'source': id,
-    'paint': {
-      'fill-color': fillColor,
-      'fill-opacity': 0.3,
-      'fill-outline-color': '#000'
-    },
-    "filter": ["==", highlight, ""]
-  });
-
-//  map.addLayer({
-//    'id': 'points',
-//    'type': 'symbol',
-//    'source': id,
-//    'layout': {
-//      // get the title name from the source's "title" property
-//      'text-field': ['get', 'utm_number'],
-//      'text-font': [
-//        'Open Sans Semibold',
-//        'Arial Unicode MS Bold'
-//      ],
-//      'text-offset': [0, 0],
-//      'text-anchor': 'top',
-//      'text-size': 12
-//    }
-//  });
   // Create a popup, but don't add it to the map yet.
   const popup = new mapboxgl.Popup({
     closeButton: false,
     closeOnClick: false
   });
+
   // When the user moves their mouse over the fill layer, we'll update the
   // feature state for the feature under the mouse.
   map.on('mousemove', fillId, (e) => {
@@ -110,7 +73,7 @@ export function addLayer(id, data, index,
 
       // Display a popup with the name of area
       popup.setLngLat(e.lngLat)
-      .setText(e.features[0].properties[highlight])
+      .setText(e.features[0].properties[hover_property])
       .addTo(map);
     }
   });
@@ -179,24 +142,18 @@ export function addLayer(id, data, index,
   }
 };
 
-// export function setData(id, data) {
-//   console.log('setting data in ' + id);
-//   console.log(data);
-//   var source = map.getSource(id);
-//   source.setData(data);
-// }
 
 export function setSelectedIndex(id, index) {
   const features = map.querySourceFeatures(id, {sourceLayer: id});
   for (let i = 0; i < features.length; i++) {
     if (features[i].id == index) {
       map.setFeatureState(
-        { source: id, id: i },
+        { source: id, id: features[i].id },
         { selected: true, active: true }
       );
     } else {
       map.setFeatureState(
-        { source: id, id: i },
+        { source: id, id: features[i].id },
         { selected: false, active: true }
       );
     }
@@ -205,18 +162,14 @@ export function setSelectedIndex(id, index) {
 
 export function activate(id,
                          lineColor,
-                         lineWidth,
-                         lineStyle,
-                         lineOpacity,
-                         fillColor,
-                         fillOpacity,                         
+                         fillColor,                   
                          lineColorActive,
                          fillColorActive) {
 
   const features = map.querySourceFeatures(id, {sourceLayer: id});
   for (let i = 0; i < features.length; i++) {
     map.setFeatureState(
-      { source: id, id: i },
+      { source: id, id: features[i].id },
       { active: true }
     );
   }
@@ -229,10 +182,6 @@ export function activate(id,
       ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
       fillColorActive,
       fillColor]);                          
-    map.setPaintProperty(id, 'circle-radius', ['case',
-      ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
-      circleRadiusActive,
-      circleRadius]);
   }                           
 }
 
@@ -267,9 +216,4 @@ export function deactivate(id,
       circleRadiusActive,
       circleRadius]);                          
   }
-}
-
-export function highlightData(id, highlight, value) {
-  map.setFilter(id + ".line2", ["==", highlight, value])
-  map.setFilter(id + ".fill2", ["==", highlight, value])
 }
