@@ -124,6 +124,10 @@ class Layer:
             elif type == "circle":
                 from .geojson_layer_circle import GeoJSONLayerCircle
                 self.layer[layer_id] = GeoJSONLayerCircle(self.mapbox, layer_id, map_id, **kwargs)
+            
+            elif type == "line":
+                from .geojson_layer_line import GeoJSONLayerLine
+                self.layer[layer_id] = GeoJSONLayerLine(self.mapbox, layer_id, map_id, **kwargs)
 
             elif type == "draw":
                 from .draw_layer import DrawLayer
