@@ -27,6 +27,11 @@ class WebPage(QtWidgets.QWidget):
 
         view.load(QtCore.QUrl(element.url))
 
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.reload)
+        self.timer.setSingleShot(True)
+        self.timer.start(500)
+
     def set(self):
         pass
 
@@ -34,3 +39,10 @@ class WebPage(QtWidgets.QWidget):
         resize_factor = self.element.gui.resize_factor
         x0, y0, wdt, hgt = self.element.get_position()
         self.view.setGeometry(x0, y0, wdt, hgt)
+
+    def reload(self):
+        self.view.load(QtCore.QUrl(self.element.url))
+
+    def set_url(self, url):
+        self.element.url = url.replace('\\', '/')
+        self.view.load(QtCore.QUrl(self.element.url))

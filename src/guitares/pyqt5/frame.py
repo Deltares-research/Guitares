@@ -39,9 +39,10 @@ class Frame(QFrame):
     def set_geometry(self):
 
         resize_factor = self.element.gui.resize_factor
+        button_size = 12
         x0, y0, wdt, hgt = self.element.get_position()
         if self.element.collapse:
-            wdt = wdt + 24
+            wdt = wdt + button_size
         self.setGeometry(x0, y0, wdt, hgt)
 
         # Text widget
@@ -52,10 +53,11 @@ class Frame(QFrame):
             self.text_widget.setAlignment(QtCore.Qt.AlignTop)
 
         # Push button
+        button_size = 16
         if self.element.collapse:
-            wdtp = 24
-            hgtp = 24
-            x0p = wdt - 24
+            wdtp = button_size
+            hgtp = button_size
+            x0p = wdt - button_size
             y0p = int(0.5 * hgt - 0.5 * hgtp)
             self.pushbutton.setGeometry(x0p, y0p, wdtp, hgtp)
 
@@ -63,12 +65,12 @@ class Frame(QFrame):
         collapsable = False
         if hasattr(self.element.parent, "style"):
             if self.element.parent.style == "panel" and self.element.parent.collapse:
-                pwdt = self.element.parent.widget.geometry().width() - 24
+                pwdt = self.element.parent.widget.geometry().width() - button_size
                 phgt = self.element.parent.widget.geometry().height()
                 if self.element.parent.collapsed:
-                    arrow_file = os.path.join(self.element.gui.image_path, "icons8-triangle-arrow-24_black_left.png")
+                    arrow_file = os.path.join(self.element.gui.image_path, "icons8-triangle-arrow-16_white_left.png")
                 else:
-                    arrow_file = os.path.join(self.element.gui.image_path, "icons8-triangle-arrow-24_black_right.png")
+                    arrow_file = os.path.join(self.element.gui.image_path, "icons8-triangle-arrow-16_white_right.png")
                 arrow_file = arrow_file.replace(os.sep, '/')
                 self.element.parent.widget.pushbutton.setStyleSheet(
                     "background-image : url(" + arrow_file + "); border: none")

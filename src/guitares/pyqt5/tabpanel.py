@@ -27,13 +27,20 @@ class TabPanel(QTabWidget):
         # Now call the select method
         if tabs[indx].module:
             if hasattr(tabs[indx].module, "select"):
-                tabs[indx].module.select()
+                try:
+                    tabs[indx].module.select()
+                except:
+                    traceback.print_exc()
+
         # Also check if there are tab panels in this tab. If so, execute select for active tab.
         if tabs[indx].elements:
             for element in tabs[indx].elements:
                 if element.style == "tabpanel":
                     j = element.widget.currentIndex()
-                    element.widget.select_tab(j)
+                    try:
+                        element.widget.select_tab(j)
+                    except:
+                        traceback.print_exc()
         # Update GUI
         self.element.window.update()
 
