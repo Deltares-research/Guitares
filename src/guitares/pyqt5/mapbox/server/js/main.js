@@ -177,6 +177,10 @@ export function showLayer(id) {
 	// Show layer
 	if (map.getLayer(id)) {
     map.setLayoutProperty(id, 'visibility', 'visible');
+    var legend = document.getElementById("legend" + id);
+    if (legend) {
+      legend.style.visibility = 'visible';
+    }  
   }
 }
 
@@ -184,6 +188,10 @@ export function hideLayer(id) {
 	// Show layer
 	if (map.getLayer(id)) {
   	map.setLayoutProperty(id, 'visibility', 'none');
+    var legend = document.getElementById("legend" + id);
+    if (legend) {
+      legend.style.visibility = 'hidden';
+    }  
   }
 }
 
@@ -250,6 +258,12 @@ export function setProjection(projection) {
 export function setLayerStyle(style) {
   map.setStyle('mapbox://styles/mapbox/' + style);
   map.once('idle', () => { addDummyLayer(); layerStyleSet(); });
+  var legends = document.getElementsByClassName("overlay_legend")
+  if (legends) {
+    for (const legend of legends) {
+      legend.remove();
+    }
+  }
 }
 
 export function setTerrain(trueOrFalse, exaggeration) {

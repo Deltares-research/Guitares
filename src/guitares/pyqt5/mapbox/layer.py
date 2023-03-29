@@ -137,6 +137,10 @@ class Layer:
                 from .raster_layer import RasterLayer
                 self.layer[layer_id] = RasterLayer(self.mapbox, layer_id, map_id, **kwargs)
 
+            elif type == "raster_from_tiles":
+                from .raster_from_tiles_layer import RasterFromTilesLayer
+                self.layer[layer_id] = RasterFromTilesLayer(self.mapbox, layer_id, map_id, **kwargs)
+
             elif type == "deck_geojson":
                 from .deck_geojson_layer import DeckGeoJSONLayer
                 self.layer[layer_id] = DeckGeoJSONLayer(self.mapbox, layer_id, map_id, **kwargs)
