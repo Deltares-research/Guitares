@@ -182,6 +182,8 @@ class Window:
                                 # And now add the elements in this tab
                                 self.set_elements(tab.elements)
                     elif element.style == "panel":
+                        # Set the dependencies
+                        element.set_dependencies()
                         # Check if this frame has elements
                         if element.elements:
                             # Set elements in this frame

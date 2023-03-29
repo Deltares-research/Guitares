@@ -292,6 +292,8 @@ class Element:
         if self.style != "radiobuttongroup": # Cannot set radiobutton group to visible
             if self.widget:
                 self.widget.setVisible(True)
+        else:
+            self.widget.set_visible(True)        
 
     def set_geometry(self):
         self.widget.set_geometry()
@@ -345,31 +347,32 @@ class Element:
 
     def set_dependencies(self):
         for dependency in self.dependencies:
-            okay = dependency.get()
+
+            true_or_false = dependency.get()
+            
             if dependency.action == "visible":
-                if okay:
-                    self.widget.setVisible(True)
-                    if hasattr(self.widget, "text_widget"):
-                        self.widget.text_widget.setVisible(True)
-                else:
-                    self.widget.setVisible(False)
-                    if hasattr(self.widget, "text_widget"):
-                        self.widget.text_widget.setVisible(False)
+
+                if self.style == "radiobuttongroup": # Cannot set radiobutton group directly
+                    self.widget.set_visible(true_or_false)        
+                else:    
+                    if self.widget:
+                        self.widget.setVisible(true_or_false)
+                        if hasattr(self.widget, "text_widget"):
+                            self.widget.text_widget.setVisible(true_or_false)
+
             elif dependency.action == "enable":
-                if okay:
-                    self.widget.setEnabled(True)
-                    self.widget.setStyleSheet("")
-                    if hasattr(self.widget, "text_widget"):
-                        self.widget.text_widget.setVisible(True)
-                else:
-                    self.widget.setEnabled(False)
-                    if hasattr(self.widget, "text_widget"):
-                        self.widget.text_widget.setVisible(False)
+
+                if self.style == "radiobuttongroup": # Cannot set radiobutton group directly
+                    self.widget.set_enabled(true_or_false)        
+                else:    
+                    if self.widget:
+                        self.widget.setEnabled(true_or_false)
+                        if hasattr(self.widget, "text_widget"):
+                            self.widget.text_widget.setEnabled(true_or_false)
+
             elif dependency.action == "check":
-                if okay:
-                    self.widget.setChecked(True)
-                else:
-                    self.widget.setChecked(False)
+
+                self.widget.setChecked(true_or_false)
 
     def clear_tab(self, index):
         self.widget.clear_tab(index)
