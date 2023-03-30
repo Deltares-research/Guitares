@@ -1,16 +1,13 @@
 from .layer import Layer
 from geopandas import GeoDataFrame
 
+
 class GeoJSONLayerHeatmap(Layer):
     def __init__(self, mapbox, id, map_id, **kwargs):
         super().__init__(mapbox, id, map_id, **kwargs)
         pass
 
-    def set_data(self,
-                 data,
-                 density_property = ""
-                 ):
-
+    def set_data(self, data, density_property=""):
         self.data = data
         self.density_property = density_property
 
@@ -20,26 +17,30 @@ class GeoJSONLayerHeatmap(Layer):
             if len(data) == 0:
                 data = GeoDataFrame()
 
-        # Remove existing layer        
+        # Remove existing layer
         self.remove()
 
-        # Add new layer        
-        self.mapbox.runjs("./js/geojson_layer_heatmap.js", "addLayer", arglist=[self.map_id,
-                                                                                         data,
-                                                                                         self.max_zoom,
-                                                                                         density_property,
-                                                                                         ])
+        # Add new layer
+        self.mapbox.runjs(
+            "./js/geojson_layer_heatmap.js",
+            "addLayer",
+            arglist=[
+                self.map_id,
+                data,
+                self.max_zoom,
+                density_property,
+            ],
+        )
 
     def redraw(self):
         if isinstance(self.data, GeoDataFrame):
-            self.set_data(self.data, self.index)
+            self.set_data(self.data, self.density_property)
 
     def activate(self):
         self.active = True
 
     def deactivate(self):
         self.active = False
-
 
     def clear(self):
         self.active = False
