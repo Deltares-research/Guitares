@@ -15,7 +15,7 @@ class GeoJSONLayerCircle(Layer):
 
     def set_data(self,
                  data,
-                 hover_property = ""
+                 hover_property = "", 
                  ):
 
         # Make sure this is not an empty GeoDataFrame
@@ -31,6 +31,7 @@ class GeoJSONLayerCircle(Layer):
         self.mapbox.runjs("./js/geojson_layer_circle.js", "addLayer", arglist=[self.map_id,
                                                                                data.to_crs(4326),
                                                                                hover_property,
+                                                                               self.min_zoom,
                                                                                self.line_color,
                                                                                self.line_width,
                                                                                self.line_opacity,

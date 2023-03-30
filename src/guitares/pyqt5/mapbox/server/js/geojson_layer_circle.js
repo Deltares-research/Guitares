@@ -1,6 +1,6 @@
 import { map , mapboxgl } from '/js/main.js';
 
-export function addLayer(id, data, hover_property,
+export function addLayer(id, data, hover_property,   min_zoom, 
   lineColor, 
   lineWidth, 
   lineOpacity, 
@@ -19,6 +19,7 @@ export function addLayer(id, data, hover_property,
     'id': id,
     'type': 'circle',
     'source': id,
+    'minzoom': min_zoom,
     'paint': {
       'circle-color': fillColor,
       'circle-stroke-width': lineWidth,

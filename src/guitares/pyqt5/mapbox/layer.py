@@ -49,6 +49,9 @@ class Layer:
 
         self.selection_type = "single"
 
+        self.min_zoom = 0
+        self.max_zoom = 22
+
         for key, value in kwargs.items():
             setattr(self, key, value)
 
@@ -120,6 +123,14 @@ class Layer:
             elif type == "polygon_selector":
                 from .geojson_layer_polygon_selector import GeoJSONLayerPolygonSelector
                 self.layer[layer_id] = GeoJSONLayerPolygonSelector(self.mapbox, layer_id, map_id, **kwargs)
+
+            elif type == "choropleth":
+                from .geojson_layer_choropleth import GeoJSONLayerChoropleth
+                self.layer[layer_id] = GeoJSONLayerChoropleth(self.mapbox, layer_id, map_id, **kwargs)
+            
+            elif type == "heatmap":
+                from .geojson_layer_heatmap import GeoJSONLayerHeatmap
+                self.layer[layer_id] = GeoJSONLayerHeatmap(self.mapbox, layer_id, map_id, **kwargs)
 
             elif type == "circle":
                 from .geojson_layer_circle import GeoJSONLayerCircle
