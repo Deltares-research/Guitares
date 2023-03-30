@@ -51,3 +51,13 @@ class RadioButtonGroup(QButtonGroup):
                                           int(yll + i * 20 * resize_factor),
                                           wdt,
                                           int(20 * resize_factor))
+
+    def set_enabled(self, true_or_false):
+        nbuttons = len(self.element.option_value.list)
+        for i in range(nbuttons):
+            self.buttons()[i].setEnabled(true_or_false)
+
+    def set_visible(self, true_or_false):
+        nbuttons = len(self.element.option_value.list)
+        for i in range(nbuttons):
+            self.buttons()[i].setVisible(true_or_false)

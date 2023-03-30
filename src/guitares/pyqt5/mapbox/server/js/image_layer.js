@@ -26,26 +26,28 @@ export function addLayer(fileName, id, bounds, colorbar) {
       'raster-opacity',0.5
     );
 
-    // Legend
-    const legend     = document.createElement("div");
-    legend.id        = "legend" + id;
-    legend.className = "overlay_legend";
-    var newSpan = document.createElement('span');
-    newSpan.class = 'title';
-    newSpan.innerHTML = '<b>' + colorbar["title"] + '</b>';
-    legend.appendChild(newSpan);
-    legend.appendChild(document.createElement("br"));
-    for (let i = 0; i < colorbar["contour"].length; i++) {
-    let cnt = colorbar["contour"][i]
-        var newI = document.createElement('i');
-        newI.setAttribute('style','background:' + cnt["color"]);
-        legend.appendChild(newI);
+    if (colorbar) { 
+        // Legend
+        const legend     = document.createElement("div");
+        legend.id        = "legend" + id;
+        legend.className = "overlay_legend";
         var newSpan = document.createElement('span');
-        newSpan.innerHTML = cnt["text"];
+        newSpan.class = 'title';
+        newSpan.innerHTML = '<b>' + colorbar["title"] + '</b>';
         legend.appendChild(newSpan);
         legend.appendChild(document.createElement("br"));
+        for (let i = 0; i < colorbar["contour"].length; i++) {
+        let cnt = colorbar["contour"][i]
+            var newI = document.createElement('i');
+            newI.setAttribute('style','background:' + cnt["color"]);
+            legend.appendChild(newI);
+            var newSpan = document.createElement('span');
+            newSpan.innerHTML = cnt["text"];
+            legend.appendChild(newSpan);
+            legend.appendChild(document.createElement("br"));
+        }
+        document.body.appendChild(legend);
     }
-    document.body.appendChild(legend);
 }
 
 export function updateLayer(fileName, id, bounds, colorbar) {
@@ -60,29 +62,36 @@ export function updateLayer(fileName, id, bounds, colorbar) {
         ]
     });
 
-    // Legend
-    var legend = document.getElementById("legend" + id);
-    if (legend) {
-        legend.remove();
-    }
-    var legend     = document.createElement("div");
-    legend.id        = "legend" + id;
-    legend.className = "overlay_legend";
-    var newSpan = document.createElement('span');
-    newSpan.class = 'title';
-    newSpan.innerHTML = '<b>' + colorbar["title"] + '</b>';
-    legend.appendChild(newSpan);
-    legend.appendChild(document.createElement("br"));
-    for (let i = 0; i < colorbar["contour"].length; i++) {
-    let cnt = colorbar["contour"][i]
-        var newI = document.createElement('i');
-        newI.setAttribute('style','background:' + cnt["color"]);
-        legend.appendChild(newI);
+    if (colorbar) { 
+        // Legend
+        var legend = document.getElementById("legend" + id);
+        if (legend) {
+            legend.remove();
+        }
+        var legend     = document.createElement("div");
+        legend.id        = "legend" + id;
+        legend.className = "overlay_legend";
         var newSpan = document.createElement('span');
-        newSpan.innerHTML = cnt["text"];
+        newSpan.class = 'title';
+        newSpan.innerHTML = '<b>' + colorbar["title"] + '</b>';
         legend.appendChild(newSpan);
         legend.appendChild(document.createElement("br"));
+        for (let i = 0; i < colorbar["contour"].length; i++) {
+        let cnt = colorbar["contour"][i]
+            var newI = document.createElement('i');
+            newI.setAttribute('style','background:' + cnt["color"]);
+            legend.appendChild(newI);
+            var newSpan = document.createElement('span');
+            newSpan.innerHTML = cnt["text"];
+            legend.appendChild(newSpan);
+            legend.appendChild(document.createElement("br"));
+        }
+        document.body.appendChild(legend);
     }
-    document.body.appendChild(legend);
 }
 
+export function setOpacity(id, opacity) {
+    map.setPaintProperty(id,
+      'raster-opacity', opacity
+    );
+}
