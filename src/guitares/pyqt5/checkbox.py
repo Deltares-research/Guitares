@@ -23,9 +23,9 @@ class CheckBox(QCheckBox):
         name   = self.element.variable
         val    = self.element.getvar(group, name)
         if val == True:
-            self.setChecked = True
+            self.setChecked(True)
         else:
-            self.setChecked = False
+            self.setChecked(False)
 
     def callback(self, state):
         group = self.element.variable_group
