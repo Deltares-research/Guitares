@@ -35,6 +35,8 @@ class GeoJSONLayerHeatmap(Layer):
     def redraw(self):
         if isinstance(self.data, GeoDataFrame):
             self.set_data(self.data, self.density_property)
+        if not self.visible:
+            self.hide()
 
     def activate(self):
         self.active = True

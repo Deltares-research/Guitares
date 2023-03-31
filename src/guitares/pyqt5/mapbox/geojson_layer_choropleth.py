@@ -78,7 +78,9 @@ class GeoJSONLayerChoropleth(Layer):
     def redraw(self):
         if isinstance(self.data, GeoDataFrame):
             self.set_data(self.data, self.hover_property, self.color_property)
-
+        if not self.visible:
+            self.hide()
+            
     def activate(self):
         self.active = True
 

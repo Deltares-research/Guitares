@@ -167,9 +167,11 @@ class Layer:
 
     def show(self):
         self.set_visibility(True)
+        self.visible = True
 
     def hide(self):
         self.set_visibility(False)
+        self.visible = False
 
     def set_visibility(self, true_or_false):
         # Make a list of all layers
