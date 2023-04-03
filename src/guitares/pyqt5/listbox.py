@@ -29,17 +29,16 @@ class ListBox(QListWidget):
             label.setStyleSheet("background: transparent; border: none")
 
             self.text_widget = label
+        
+        if self.element.multiselection:
+            self.setSelectionMode(3)
 
         # First call back to change the variable
         self.clicked.connect(self.callback)
-#        self.itemSelectionChanged.connect(self.callback)
-#        self.currentRowChanged.connect(self.callback)
 
         self.set_geometry()
 
     def set(self):
-
-        current_index = self.currentRow() 
 
         # First check if items need to be updated. This is only necessary when "option_string" is a dict
         if self.element.option_string.variable:
@@ -50,10 +49,10 @@ class ListBox(QListWidget):
         for x in range(self.count()):
             items.append(self.item(x))
 
-        # Get value
+        # Get value(s)
         val = self.element.getvar(self.element.variable_group, self.element.variable)
 
-        # Now get the values
+        # Now get the options
         if self.element.select == "item":
             if self.element.option_value.variable:
                 name  = self.element.option_value.variable
@@ -64,34 +63,72 @@ class ListBox(QListWidget):
             else:
                 vals = self.element.option_value.list
 
-            if val in vals:
-                index = vals.index(val)
+
+        if self.element.multiselection:
+            for index, item in enumerate(items):
+                if self.element.select == "item":
+                    if vals[index] in val:   
+                        item.setSelected(True)
+                    else:
+                        item.setSelected(False)
+                else:
+                    if index in val:   
+                        item.setSelected(True)
+                    else:
+                        item.setSelected(False)
+
+        else:    
+
+#            current_index = self.currentRow() 
+
+            # Now get the values
+            if self.element.select == "item":
+                if val in vals:
+                    index = vals.index(val)
+                else:
+                    index = 0
+                    print(self.element.variable + ' not found !')
             else:
-                index = 0
-                print(self.element.variable + ' not found !')
-
-        else:
-            index = val
-
-        # print("current_index=" + str(current_index))
-        # print("index=" + str(index))
-        # if index != current_index:
-        self.setCurrentItem(items[index])
+                index = val
+            self.setCurrentItem(items[index])
 
     def callback(self):
-        index = self.currentRow()
-        if self.element.select == "item":
-            if self.element.option_value.variable:
-                name = self.element.option_value.variable
-                group = self.element.option_value.variable_group
-                vals = self.element.getvar(group, name)
-                if not vals:
-                    vals = [""]
+
+        if self.element.multiselection:
+
+            newval  = []
+
+            if self.element.select == "item":
+                if self.element.option_value.variable:
+                    name = self.element.option_value.variable
+                    group = self.element.option_value.variable_group
+                    vals = self.element.getvar(group, name)
+                    if not vals:
+                        vals = [""]
+                else:
+                    vals = self.element.option_value.list
+
+            for indx in self.selectedIndexes():
+                if self.element.select == "item":
+                    newval.append(vals[indx.row()])
+                else:
+                    newval.append(indx.row())    
+
+        else:    
+
+            index = self.currentRow()
+            if self.element.select == "item":
+                if self.element.option_value.variable:
+                    name = self.element.option_value.variable
+                    group = self.element.option_value.variable_group
+                    vals = self.element.getvar(group, name)
+                    if not vals:
+                        vals = [""]
+                else:
+                    vals = self.element.option_value.list
+                newval = vals[index]
             else:
-                vals = self.element.option_value.list
-            newval = vals[index]
-        else:
-            newval = index
+                newval = index
 
         name  = self.element.variable
         group = self.element.variable_group

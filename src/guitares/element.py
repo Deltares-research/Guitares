@@ -74,6 +74,7 @@ class Element:
         self.collapsed = False
         self.fraction_collapsed = 1.0
         self.fraction_expanded = 0.5
+        self.multiselection = False
 
         # Now update element attributes based on dict
 
@@ -176,6 +177,8 @@ class Element:
             self.fraction_collapsed = dct["fraction_collapsed"]
         if "fraction_expanded" in dct:
             self.fraction_expanded = dct["fraction_expanded"]
+        if "multiselection" in dct:
+            self.multiselection = dct["multiselection"]
 
         if "dependency" in dct:
             for dep in dct["dependency"]:
