@@ -37,7 +37,11 @@ class PopupMenu(QComboBox):
 
         self.set_geometry()
 
+        self.execute_callback = True
+
     def set(self):
+
+        self.execute_callback = False
 
         if self.element.select == "item":
             if self.element.option_value:
@@ -52,16 +56,24 @@ class PopupMenu(QComboBox):
                     index = self.element.option_value.list.index(val)
                     self.setCurrentIndex(index)
         else:
-            name = self.element.option_value.variable
-            group = self.element.option_value.variable_group
+            name = self.element.variable
+            group = self.element.variable_group
             index = self.element.getvar(group, name)
             self.setCurrentIndex(index)
 
+        self.execute_callback = True
+
     def callback(self):
+
+        if not self.execute_callback:
+            return
+        
         i = self.currentIndex()
-        newval = i
-        if not self.element.option_value.variable:
+        if self.element.select == "item":
             newval = self.element.option_value.list[i]
+        else:
+            newval = i
+
         name  = self.element.variable
         group = self.element.variable_group
         self.element.setvar(group, name, newval)

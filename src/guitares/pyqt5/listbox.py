@@ -34,11 +34,16 @@ class ListBox(QListWidget):
             self.setSelectionMode(3)
 
         # First call back to change the variable
-        self.clicked.connect(self.callback)
+        self.itemSelectionChanged.connect(self.callback)
+#        self.itemClicked.connect(self.callback)
 
         self.set_geometry()
 
+        self.execute_callback = True
+
     def set(self):
+
+        self.execute_callback = False
 
         # First check if items need to be updated. This is only necessary when "option_string" is a dict
         if self.element.option_string.variable:
@@ -79,8 +84,6 @@ class ListBox(QListWidget):
 
         else:    
 
-#            current_index = self.currentRow() 
-
             # Now get the values
             if self.element.select == "item":
                 if val in vals:
@@ -92,7 +95,12 @@ class ListBox(QListWidget):
                 index = val
             self.setCurrentItem(items[index])
 
+        self.execute_callback = True    
+
     def callback(self):
+
+        if not self.execute_callback:
+            return
 
         if self.element.multiselection:
 
@@ -143,8 +151,10 @@ class ListBox(QListWidget):
             traceback.print_exc()
 
     def add_items(self):
+
         # Delete existing items
         self.clear()
+
         if self.element.option_string.variable:
             group = self.element.option_string.variable_group
             name  = self.element.option_string.variable
