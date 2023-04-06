@@ -45,7 +45,11 @@ class WebPage(QtWidgets.QWidget):
         self.view.setGeometry(x0, y0, wdt, hgt)
 
     def reload(self):
-        self.view.load(QtCore.QUrl(self.element.url))
+        if type(self.element.url) == str:
+            url = self.element.url
+        else:
+            url = self.element.getvar(self.element.url.variable_group, self.element.url.variable)    
+        self.view.load(QtCore.QUrl(url))
 
     def set_url(self, url):
         self.element.url = url.replace('\\', '/')
