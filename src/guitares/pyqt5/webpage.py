@@ -29,6 +29,7 @@ class WebPage(QtWidgets.QWidget):
             url = self.element.url
         else:
             url = self.element.getvar(element.url.variable_group, element.url.variable)    
+        url = url.replace('\\', '/')
         view.load(QtCore.QUrl(url))
 
         self.timer = QtCore.QTimer()
@@ -49,6 +50,7 @@ class WebPage(QtWidgets.QWidget):
             url = self.element.url
         else:
             url = self.element.getvar(self.element.url.variable_group, self.element.url.variable)    
+        url = url.replace('\\', '/')
         self.view.load(QtCore.QUrl(url))
 
     def set_url(self, url):
