@@ -12,7 +12,18 @@ class CheckBox(QCheckBox):
         self.setVisible(True)
 
         if element.text:
-            self.setText(element.text)
+            if type(element.text) == str:
+                txt = element.text
+            else:
+                txt = self.element.getvar(element.text.variable_group, element.text.variable)    
+            self.setText(txt)    
+
+        if self.element.tooltip:
+            if type(self.element.tooltip) == str:
+                txt = self.element.tooltip
+            else:
+                txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
+            self.setToolTip(txt)
 
         self.stateChanged.connect(self.callback)
 
@@ -26,6 +37,10 @@ class CheckBox(QCheckBox):
             self.setChecked = True
         else:
             self.setChecked = False
+        if type(self.element.text) != str:
+            self.setText(self.element.getvar(self.element.text.variable_group, self.element.text.variable))   
+        if type(self.element.tooltip) != str:
+            self.setToolTip(self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable))
 
     def callback(self, state):
         group = self.element.variable_group

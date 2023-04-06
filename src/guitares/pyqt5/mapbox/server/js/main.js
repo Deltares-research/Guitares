@@ -291,3 +291,36 @@ function addDummyLayer() {
     }
   });
 }
+
+export function compare() {
+
+  console.log("Comparing ...")
+
+  var main_map = document.getElementById("map")
+  main_map.style.display = 'none';
+
+  const compareMap1 = new mapboxgl.Map({
+    container: 'compare1',
+    // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
+    style: 'mapbox://styles/mapbox/light-v11',
+    center: [0, 0],
+    zoom: 0
+  });
+     
+  const compareMap2 = new mapboxgl.Map({
+    container: 'compare2',
+    style: 'mapbox://styles/mapbox/dark-v11',
+    center: [0, 0],
+    zoom: 0
+  });
+     
+  // A selector or reference to HTML element
+  const container = '#comparison-container';
+     
+  const map = new mapboxgl.Compare(compareMap1, compareMap2, container, {
+  // Set this to enable comparing two maps by mouse movement:
+  // mousemove: true
+  });
+
+
+}

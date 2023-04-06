@@ -25,7 +25,11 @@ class WebPage(QtWidgets.QWidget):
         page = WebEnginePage(view, element.gui.js_messages)
         view.setPage(page)
 
-        view.load(QtCore.QUrl(element.url))
+        if type(self.element.url) == str:
+            url = self.element.url
+        else:
+            url = self.element.getvar(element.url.variable_group, element.url.variable)    
+        view.load(QtCore.QUrl(url))
 
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.reload)
