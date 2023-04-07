@@ -29,15 +29,30 @@ class PopupMenu(QComboBox):
                         element.option_value[i] = int(val)
 
         if element.text:
-            label = QLabel(element.text, element.parent.widget)
+            if type(element.text) == str:
+                txt = element.text
+            else:
+                txt = self.element.getvar(element.text.variable_group, element.text.variable)    
+            label = QLabel(txt, element.parent.widget)
             label.setStyleSheet("background: transparent; border: none")
             self.text_widget = label
+
+        if self.element.tooltip:
+            if type(self.element.tooltip) == str:
+                txt = self.element.tooltip
+            else:
+                txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
+            self.setToolTip(txt)
 
         self.currentIndexChanged.connect(self.callback)
 
         self.set_geometry()
 
+        self.execute_callback = True
+
     def set(self):
+
+        self.execute_callback = False
 
         if self.element.select == "item":
             if self.element.option_value:
@@ -52,16 +67,32 @@ class PopupMenu(QComboBox):
                     index = self.element.option_value.list.index(val)
                     self.setCurrentIndex(index)
         else:
-            name = self.element.option_value.variable
-            group = self.element.option_value.variable_group
+            name = self.element.variable
+            group = self.element.variable_group
             index = self.element.getvar(group, name)
             self.setCurrentIndex(index)
 
+        if type(self.element.text) != str:
+            txt = self.element.getvar(self.element.text.variable_group, self.element.text.variable)
+            self.text_widget.setText(txt)
+
+        if type(self.element.tooltip) != str:
+            txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
+            self.setToolTip(txt)
+
+        self.execute_callback = True
+
     def callback(self):
+
+        if not self.execute_callback:
+            return
+        
         i = self.currentIndex()
-        newval = i
-        if not self.element.option_value.variable:
+        if self.element.select == "item":
             newval = self.element.option_value.list[i]
+        else:
+            newval = i
+
         name  = self.element.variable
         group = self.element.variable_group
         self.element.setvar(group, name, newval)

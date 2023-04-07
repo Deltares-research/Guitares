@@ -12,11 +12,25 @@ class DateEdit(QDateTimeEdit):
 
         self.setCalendarPopup(True)
         self.setDisplayFormat("yyyy-MM-dd hh:mm:ss")
+
         if element.text:
-            label = QLabel(element.text, element.parent.widget)
+            if type(element.text) == str:
+                txt = element.text
+            else:
+                txt = self.element.getvar(element.text.variable_group, element.text.variable)    
+            label = QLabel(txt, element.parent.widget)
             label.setStyleSheet("background: transparent; border: none")
+            if not element.enable:
+                label.setEnabled(False)
             self.text_widget = label
             label.setVisible(True)
+
+        if self.element.tooltip:
+            if type(self.element.tooltip) == str:
+                txt = self.element.tooltip
+            else:
+                txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
+            self.setToolTip(txt)
 
         self.editingFinished.connect(self.callback)
 
@@ -29,6 +43,14 @@ class DateEdit(QDateTimeEdit):
         dtstr = val.strftime("%Y-%m-%d %H:%M:%S")
         qtDate = QtCore.QDateTime.fromString(dtstr, 'yyyy-MM-dd hh:mm:ss')
         self.setDateTime(qtDate)
+
+        if type(self.element.text) != str:
+            txt = self.element.getvar(self.element.text.variable_group, self.element.text.variable)
+            self.text_widget.setText(txt)
+
+        if type(self.element.tooltip) != str:
+            txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
+            self.setToolTip(txt)
 
 
     def callback(self):
