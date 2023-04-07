@@ -98,6 +98,9 @@ class MapBox(QtWidgets.QWidget):
         x0, y0, wdt, hgt = self.element.get_position()
         self.view.setGeometry(x0, y0, wdt, hgt)
 
+    def take_screenshot(self, output_file):
+        self.view.grab().save(output_file, b'PNG')
+
     @QtCore.pyqtSlot(str)
     def mapReady(self, coords):
         coords = json.loads(coords)

@@ -56,3 +56,6 @@ class WebPage(QtWidgets.QWidget):
     def set_url(self, url):
         self.element.url = url.replace('\\', '/')
         self.view.load(QtCore.QUrl(self.element.url))
+
+    def take_screenshot(self, output_file):
+        self.view.grab().save(output_file, b'PNG')
