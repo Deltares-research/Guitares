@@ -1,0 +1,36 @@
+window:
+  title: table
+  width: 200
+  height: 200
+  module: callbacks
+  variable_group: table
+element:
+- style: table
+  position:
+    x: 10
+    y: 10
+    width: -10
+    height: 150
+  text: Table
+  text_position: above
+  variable: selected_row
+  option_value:
+    variable: dataframe
+  method: select
+- style: text
+  position:
+    x: 20
+    y: 170
+    width: 150
+    height: 20
+  variable: response
+- style: pushbutton
+  text: "change data"
+  position:
+    x: 120
+    y: 170
+    width: 50
+    height: 20
+  method: button
+
+  
