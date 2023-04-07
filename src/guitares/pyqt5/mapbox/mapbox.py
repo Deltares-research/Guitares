@@ -221,6 +221,9 @@ class MapBox(QtWidgets.QWidget):
         for layer in layers:
             layer.redraw()
 
+    def compare(self):
+        self.runjs("/js/main.js", "compare",  arglist=[])
+
     def runjs(self, module, function, arglist=None):
         if not arglist:
             arglist = []

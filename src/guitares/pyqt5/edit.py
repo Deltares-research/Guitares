@@ -20,12 +20,23 @@ class Edit(QLineEdit):
         self.setVisible(True)
 
         if element.text:
-            label = QLabel(element.text, element.parent.widget)
+            if type(element.text) == str:
+                txt = element.text
+            else:
+                txt = self.element.getvar(element.text.variable_group, element.text.variable)    
+            label = QLabel(txt, element.parent.widget)
             label.setStyleSheet("background: transparent; border: none")
             if not element.enable:
                 label.setEnabled(False)
             self.text_widget = label
             label.setVisible(True)
+
+        if self.element.tooltip:
+            if type(self.element.tooltip) == str:
+                txt = self.element.tooltip
+            else:
+                txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
+            self.setToolTip(txt)
 
         self.editingFinished.connect(self.callback)
 
@@ -38,6 +49,14 @@ class Edit(QLineEdit):
         self.string = str(val)
         self.setText(str(val))
         self.setStyleSheet("")
+
+        if type(self.element.text) != str:
+            txt = self.element.getvar(self.element.text.variable_group, self.element.text.variable)
+            self.text_widget.setText(txt)
+
+        if type(self.element.tooltip) != str:
+            txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
+            self.setToolTip(txt)
 
     def callback(self):
         self.okay = True
@@ -86,9 +105,13 @@ class Edit(QLineEdit):
         x0, y0, wdt, hgt = self.element.get_position()
         self.setGeometry(x0, y0, wdt, hgt)
         if self.element.text:
+            if type(self.element.text) != str:
+                txt = self.element.getvar(self.element.text.variable_group, self.element.text.variable)
+            else:
+                txt = self.element.text    
             label = self.text_widget
             fm = label.fontMetrics()
-            wlab = int(fm.size(0, self.element.text).width())
+            wlab = int(fm.size(0, txt).width())
             if self.element.text_position == "above-center" or self.element.text_position == "above":
                 label.setAlignment(QtCore.Qt.AlignCenter)
                 label.setGeometry(x0, int(y0 - 20 * resize_factor), wdt, int(20 * resize_factor))

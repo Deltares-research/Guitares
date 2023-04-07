@@ -5,7 +5,7 @@ import traceback
 class PushButton(QPushButton):
 
     def __init__(self, element):
-        super().__init__(element.text, element.parent.widget)
+        super().__init__("", element.parent.widget)
 
         self.element = element
 
@@ -13,13 +13,28 @@ class PushButton(QPushButton):
 
         if element.icon:
             self.setIcon(QIcon(element.icon))
-        if element.tooltip:
-            self.setToolTip(element.tooltip)
+
+        if element.text:
+            if type(element.text) == str:
+                txt = element.text
+            else:
+                txt = self.element.getvar(element.text.variable_group, element.text.variable)    
+            self.setText(txt)    
+
+        if self.element.tooltip:
+            if type(self.element.tooltip) == str:
+                txt = self.element.tooltip
+            else:
+                txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
+            self.setToolTip(txt)
 
         self.set_geometry()
 
     def set(self):
-        pass
+        if type(self.element.text) != str:
+            self.setText(self.element.getvar(self.element.text.variable_group, self.element.text.variable))   
+        if type(self.element.tooltip) != str:
+            self.setToolTip(self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable))
 
 
     def callback(self):

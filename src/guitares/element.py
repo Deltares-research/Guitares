@@ -74,6 +74,7 @@ class Element:
         self.collapsed = False
         self.fraction_collapsed = 1.0
         self.fraction_expanded = 0.5
+        self.multiselection = False
 
         # Now update element attributes based on dict
 
@@ -120,10 +121,10 @@ class Element:
         if "text" in dct:
             if type(dct["text"]) == dict:
                 self.text = Text(self.variable_group)
-                if "variable" in dct:
-                    self.text.variable(dct["variable"])
-                if "variable_group" in dct:
-                    self.text.variable_group(dct["variable_group"])
+                if "variable" in dct["text"]:
+                    self.text.variable = dct["text"]["variable"]
+                if "variable_group" in dct["text"]:
+                    self.text.variable_group = dct["text"]["variable_group"]
             else:
                 self.text = dct["text"]
         if "text_position" in dct:
@@ -131,10 +132,10 @@ class Element:
         if "tooltip" in dct:
             if type(dct["tooltip"]) == dict:
                 self.tooltip = Text(self.variable_group)
-                if "variable" in dct:
-                    self.tooltip.variable(dct["variable"])
-                if "variable_group" in dct:
-                    self.tooltip.variable_group(dct["variable_group"])
+                if "variable" in dct["tooltip"]:
+                    self.tooltip.variable = dct["tooltip"]["variable"]
+                if "variable_group" in dct["tooltip"]:
+                    self.tooltip.variable_group = dct["tooltip"]["variable_group"]
             else:
                 self.tooltip = dct["tooltip"]
 
@@ -167,7 +168,14 @@ class Element:
         if "filter" in dct:
             self.filter = dct["filter"]
         if "url" in dct:
-            self.url = dct["url"]
+            if type(dct["url"]) == dict:
+                self.url = Text(self.variable_group)
+                if "variable" in dct["url"]:
+                    self.url.variable = dct["url"]["variable"]
+                if "variable_group" in dct["url"]:
+                    self.url.variable_group = dct["url"]["variable_group"]
+            else:
+                self.url = dct["url"]
         if "collapse" in dct:
             self.collapse = dct["collapse"]
         if "collapsed" in dct:
@@ -176,6 +184,8 @@ class Element:
             self.fraction_collapsed = dct["fraction_collapsed"]
         if "fraction_expanded" in dct:
             self.fraction_expanded = dct["fraction_expanded"]
+        if "multiselection" in dct:
+            self.multiselection = dct["multiselection"]
 
         if "dependency" in dct:
             for dep in dct["dependency"]:
@@ -292,7 +302,7 @@ class Element:
         else:
             print("Element style " + self.style + " not recognized!")
 
-        # And set the values
+        # And set the visibility
         if self.style != "radiobuttongroup": # Cannot set radiobutton group to visible
             if self.widget:
                 self.widget.setVisible(True)

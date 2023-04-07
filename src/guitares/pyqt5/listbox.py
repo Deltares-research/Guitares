@@ -24,22 +24,38 @@ class ListBox(QListWidget):
                         element.option_value[i] = int(val)
 
         if element.text:
-            label = QLabel(element.text, element.parent.widget)
-
+            if type(element.text) == str:
+                txt = element.text
+            else:
+                txt = self.element.getvar(element.text.variable_group, element.text.variable)    
+            label = QLabel(txt, element.parent.widget)
             label.setStyleSheet("background: transparent; border: none")
-
+            if not element.enable:
+                label.setEnabled(False)
             self.text_widget = label
+            label.setVisible(True)
+
+        if self.element.tooltip:
+            if type(self.element.tooltip) == str:
+                txt = self.element.tooltip
+            else:
+                txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
+            self.setToolTip(txt)
+        
+        if self.element.multiselection:
+            self.setSelectionMode(3)
 
         # First call back to change the variable
-        self.clicked.connect(self.callback)
-#        self.itemSelectionChanged.connect(self.callback)
-#        self.currentRowChanged.connect(self.callback)
+        self.itemSelectionChanged.connect(self.callback)
+#        self.itemClicked.connect(self.callback)
 
         self.set_geometry()
 
+        self.execute_callback = True
+
     def set(self):
 
-        current_index = self.currentRow() 
+        self.execute_callback = False
 
         # First check if items need to be updated. This is only necessary when "option_string" is a dict
         if self.element.option_string.variable:
@@ -50,10 +66,10 @@ class ListBox(QListWidget):
         for x in range(self.count()):
             items.append(self.item(x))
 
-        # Get value
+        # Get value(s)
         val = self.element.getvar(self.element.variable_group, self.element.variable)
 
-        # Now get the values
+        # Now get the options
         if self.element.select == "item":
             if self.element.option_value.variable:
                 name  = self.element.option_value.variable
@@ -64,34 +80,83 @@ class ListBox(QListWidget):
             else:
                 vals = self.element.option_value.list
 
-            if val in vals:
-                index = vals.index(val)
+
+        if self.element.multiselection:
+            for index, item in enumerate(items):
+                if self.element.select == "item":
+                    if vals[index] in val:   
+                        item.setSelected(True)
+                    else:
+                        item.setSelected(False)
+                else:
+                    if index in val:   
+                        item.setSelected(True)
+                    else:
+                        item.setSelected(False)
+
+        else:    
+
+            # Now get the values
+            if self.element.select == "item":
+                if val in vals:
+                    index = vals.index(val)
+                else:
+                    index = 0
+                    print(self.element.variable + ' not found !')
             else:
-                index = 0
-                print(self.element.variable + ' not found !')
+                index = val
+            self.setCurrentItem(items[index])
 
-        else:
-            index = val
+        self.execute_callback = True    
 
-        # print("current_index=" + str(current_index))
-        # print("index=" + str(index))
-        # if index != current_index:
-        self.setCurrentItem(items[index])
+        if type(self.element.text) != str:
+            txt = self.element.getvar(self.element.text.variable_group, self.element.text.variable)
+            self.text_widget.setText(txt)
+
+        if type(self.element.tooltip) != str:
+            txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
+            self.setToolTip(txt)
 
     def callback(self):
-        index = self.currentRow()
-        if self.element.select == "item":
-            if self.element.option_value.variable:
-                name = self.element.option_value.variable
-                group = self.element.option_value.variable_group
-                vals = self.element.getvar(group, name)
-                if not vals:
-                    vals = [""]
+
+        if not self.execute_callback:
+            return
+
+        if self.element.multiselection:
+
+            newval  = []
+
+            if self.element.select == "item":
+                if self.element.option_value.variable:
+                    name = self.element.option_value.variable
+                    group = self.element.option_value.variable_group
+                    vals = self.element.getvar(group, name)
+                    if not vals:
+                        vals = [""]
+                else:
+                    vals = self.element.option_value.list
+
+            for indx in self.selectedIndexes():
+                if self.element.select == "item":
+                    newval.append(vals[indx.row()])
+                else:
+                    newval.append(indx.row())    
+
+        else:    
+
+            index = self.currentRow()
+            if self.element.select == "item":
+                if self.element.option_value.variable:
+                    name = self.element.option_value.variable
+                    group = self.element.option_value.variable_group
+                    vals = self.element.getvar(group, name)
+                    if not vals:
+                        vals = [""]
+                else:
+                    vals = self.element.option_value.list
+                newval = vals[index]
             else:
-                vals = self.element.option_value.list
-            newval = vals[index]
-        else:
-            newval = index
+                newval = index
 
         name  = self.element.variable
         group = self.element.variable_group
@@ -106,8 +171,10 @@ class ListBox(QListWidget):
             traceback.print_exc()
 
     def add_items(self):
+
         # Delete existing items
         self.clear()
+
         if self.element.option_string.variable:
             group = self.element.option_string.variable_group
             name  = self.element.option_string.variable
