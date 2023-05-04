@@ -14,6 +14,7 @@ class Layer:
         self.index     = None
         self.select    = None
         self.crs       = 4326
+        self.hover_param = "name"
 
         self.line_color     = "dodgerblue"
         self.line_width     = 2
@@ -92,14 +93,14 @@ class Layer:
         else:
             return None
 
-    def add_layer(self, layer_id, type=None, **kwargs):
+    def add_layer(self, layer_id, type=None, mode="active", **kwargs):
 
         map_id = self.map_id + "." + layer_id
 
         if type == None:
 
             # Add containing layer
-            self.layer[layer_id] = Layer(self.mapbox, layer_id, map_id)
+            self.layer[layer_id] = Layer(self.mapbox, layer_id, map_id, mode=mode)
             self.layer[layer_id].parent = self
             return self.layer[layer_id]
         
@@ -120,6 +121,10 @@ class Layer:
             elif type == "polygon_selector":
                 from .geojson_layer_polygon_selector import GeoJSONLayerPolygonSelector
                 self.layer[layer_id] = GeoJSONLayerPolygonSelector(self.mapbox, layer_id, map_id, **kwargs)
+
+            elif type == "line_selector":
+                from .geojson_layer_line_selector import GeoJSONLayerLineSelector
+                self.layer[layer_id] = GeoJSONLayerLineSelector(self.mapbox, layer_id, map_id, **kwargs)
 
             elif type == "circle":
                 from .geojson_layer_circle import GeoJSONLayerCircle
@@ -151,6 +156,8 @@ class Layer:
 
             self.layer[layer_id].type = type
             self.layer[layer_id].parent = self
+            self.layer[layer_id].mode = mode
+
             return self.layer[layer_id]
 
 

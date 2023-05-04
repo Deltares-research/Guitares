@@ -39,7 +39,7 @@ class PushButton(QPushButton):
 
     def callback(self):
         try:
-            if self.element.callback:
+            if self.element.callback and self.underMouse():
                 self.element.callback(self)
                 # Update GUI
                 self.element.window.update()

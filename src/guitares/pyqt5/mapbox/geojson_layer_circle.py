@@ -23,13 +23,15 @@ class GeoJSONLayerCircle(Layer):
             # Data is GeoDataFrame
             if len(data) == 0:
                 data = GeoDataFrame()
+            else:
+                data = data.to_crs(4326)    
 
         # Remove existing layer        
         self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id])
 
         # Add new layer        
         self.mapbox.runjs("./js/geojson_layer_circle.js", "addLayer", arglist=[self.map_id,
-                                                                               data.to_crs(4326),
+                                                                               data,
                                                                                hover_property,
                                                                                self.line_color,
                                                                                self.line_width,

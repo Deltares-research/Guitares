@@ -158,17 +158,20 @@ class MapBox(QtWidgets.QWidget):
                 layer.select(json.loads(feature_props))
 
 #    @QtCore.pyqtSlot(str, str, str)
-    @QtCore.pyqtSlot(str, str)
-    def featureDrawn(self, feature_collection, feature_id):
-        self.active_draw_layer.feature_drawn(json.loads(feature_collection), feature_id)
+    @QtCore.pyqtSlot(str, str, str)
+    def featureDrawn(self, feature_collection, feature_id, layer_id):
+        layer = find_layer_by_id(layer_id, self.layer)
+        layer.feature_drawn(json.loads(feature_collection), feature_id)
 
-    @QtCore.pyqtSlot(str, str)
-    def featureModified(self, feature_collection, feature_id):
-        self.active_draw_layer.feature_modified(json.loads(feature_collection), feature_id)
+    @QtCore.pyqtSlot(str, str, str)
+    def featureModified(self, feature_collection, feature_id, layer_id):
+        layer = find_layer_by_id(layer_id, self.layer)
+        layer.feature_modified(json.loads(feature_collection), feature_id)
 
-    @QtCore.pyqtSlot(str, str)
-    def featureSelected(self, feature_collection, feature_id):
-        self.active_draw_layer.feature_selected(json.loads(feature_collection), feature_id)
+    @QtCore.pyqtSlot(str, str, str)
+    def featureSelected(self, feature_collection, feature_id, layer_id):
+        layer = find_layer_by_id(layer_id, self.layer)
+        layer.feature_selected(json.loads(feature_collection), feature_id)
 
     def get_extent(self):
         js_string = "import('/js/main.js').then(module => {module.getExtent()});"

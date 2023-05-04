@@ -306,7 +306,10 @@ class Element:
             self.widget.set_visible(True)        
 
     def set_geometry(self):
-        self.widget.set_geometry()
+        try:
+            self.widget.set_geometry()
+        except:
+            pass    
 
     def get_position(self):
 

@@ -11,6 +11,13 @@ export function addLayer(id, data,
   let lineId = id + ".line"
   let circleId = id + ".circle"
 
+  // Remove source
+  var mapSource = map.getSource(id);
+  if(typeof mapSource !== 'undefined') {
+    map.removeSource(id);
+  }
+  
+  console.log('adding source ' + id)
   map.addSource(id, {
     type: 'geojson',
     data: data
@@ -28,20 +35,21 @@ export function addLayer(id, data,
      }
   });
   
-  map.addLayer({
-    'id': circleId,
-    'type': 'circle',
-    'source': id,
-    'paint': {
-      'circle-color': fillColor,
-      'circle-stroke-width': lineWidth,
-      'circle-stroke-color': lineColor,
-      'circle-stroke-opacity': lineOpacity,
-      'circle-radius': circleRadius,
-      'circle-opacity': fillOpacity
-    }
-  });
-
+  if (circleRadius>0) {
+    map.addLayer({
+      'id': circleId,
+      'type': 'circle',
+      'source': id,
+      'paint': {
+        'circle-color': fillColor,
+        'circle-stroke-width': lineWidth,
+        'circle-stroke-color': lineColor,
+        'circle-stroke-opacity': lineOpacity,
+        'circle-radius': circleRadius,
+        'circle-opacity': fillOpacity
+      }
+    });
+  }
 };
 
 export function setData(id, data) {

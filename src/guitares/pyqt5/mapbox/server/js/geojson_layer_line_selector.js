@@ -7,83 +7,43 @@ export function addLayer(id,
                          lineWidth,
                          lineStyle,
                          lineOpacity,
-                         fillColor,
-                         fillOpacity,                         
-                         circleRadius,
-                         lineColorActive,
-                         fillColorActive,
-                         circleRadiusActive,
+                         lineColorSelected,
+                         lineWidthSelected,
+                         lineStyleSelected,
+                         lineOpacitySelected,
+                         hoverParam,
                          selectionOption) {
 
   let hoveredId = null;
-//  let selectedId = null;
 
   var selectedFeatures = []
-  // map.loadImage('./js/img/cross-marker-48-green.png',
-  //   (error, image) => {
-  //      if (error) throw error;
-  //        map.addImage('custom-marker', image);
-  //   }
-  // );
 
   map.addSource(id, {
     type: 'geojson',
     data: data
   });
 
-//const marker = new map.Marker({draggable: true});
-
-//  map.addLayer({
-//    'id': 'points',
-//    'type': 'symbol',
-//    'source': id
-//  });
-
   // Add a symbol layer
   map.addLayer({
     'id': id,
-    'type': 'circle',
+    'type': 'line',
     'source': id,
     'paint': {      
-      'circle-stroke-color': ['case',
+      'line-color': ['case',
                                ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
-                               lineColorActive,
+                               lineColorSelected,
                                lineColor],
-      'circle-color': ['case',
-                        ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
-                        fillColorActive,
-                        fillColor],
-      'circle-stroke-width': lineWidth,
-      'circle-radius': ['case',
-                         ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
-                         circleRadiusActive,
-                         circleRadius],
-      'circle-opacity': fillOpacity
+      'line-width': ['case',
+                               ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
+                               lineWidthSelected,
+                               lineWidth]
+
     }
   });
 
   map.once('idle', () => {
     setSelectedIndex(id, index);
   });
-
-//  // Add a symbol layer
-//  map.addLayer({
-//    'id': 'points',
-//    'type': 'symbol',
-//    'source': id,
-//    'layout': {
-//      'icon-image': 'custom-marker',
-//      'icon-size': 0.25,
-//      // get name from the source's "name" property
-//      'text-field': ['get', 'name'],
-//      'text-font': [
-//        'Open Sans Semibold',
-//        'Arial Unicode MS Bold'
-//      ],
-//      'text-offset': [0, 0.5],
-//      'text-anchor': 'top'
-//    }
-//  });
 
   // Create a popup, but don't add it to the map yet.
   const popup = new mapboxgl.Popup({
@@ -93,22 +53,21 @@ export function addLayer(id,
 
   map.on('mouseenter', id, (e) => {
 
-//    const feature_state = map.getFeatureState({ source: id, sourceLayer: id, id: e.features[0].id })
-//    const feature_state = map.getFeatureState({ source: id, id: e.features[0].id })
-//    console.log(feature_state.active)
     if (map.getFeatureState({ source: id, id: e.features[0].id }).active) { 
 
       // Change the cursor style as a UI indicator.
       map.getCanvas().style.cursor = 'pointer';
 
-      // Copy coordinates array.
-      const coordinates = e.features[0].geometry.coordinates.slice();
-      var description   = e.features[0].properties.name;
+
+      var description   = e.features[0].properties[hoverParam];
+
 
       if (e.features[0].properties.hasOwnProperty('hover_popup_width')) {  
 	    	popup.setMaxWidth(e.features[0].properties.hover_popup_width);
       }
 
+      // Copy coordinates array.
+      const coordinates = e.lngLat;
       // Ensure that if the map is zoomed out such that multiple
       // copies of the feature are visible, the popup appears
       // over the copy being pointed to.
@@ -128,9 +87,10 @@ export function addLayer(id,
       popup.remove();
   });
 
-  // When the user moves their mouse over a circle marker, we'll update the
+  // When the user moves their mouse over a line, we'll update the
   // feature state for the feature under the mouse.
   map.on('mousemove', id, (e) => {
+
     if (e.features.length > 0) {
       if (map.getFeatureState({ source: id, id: e.features[0].id }).active) { 
         if (hoveredId !== null) {
@@ -148,7 +108,7 @@ export function addLayer(id,
     }
   });
 
-  // When the mouse leaves the fill layer, update the feature state of the
+  // When the mouse leaves the line, update the feature state of the
   // previously hovered feature.
   map.on('mouseleave', id, () => {
     if (hoveredId !== null) {
@@ -161,7 +121,7 @@ export function addLayer(id,
   });
 
   if (selectionOption == "single") {
-    map.on('click', id, (e) => {     
+    map.on('click', id, (e) => {
       if (map.getFeatureState({ source: id, id: e.features[0].id }).active) { 
         setSelectedIndex(id, e.features[0].id);
         featureClicked(id, e.features[0]);
@@ -210,16 +170,14 @@ export function setSelectedIndex(id, index) {
 }
 
 export function activate(id,
-                         lineColor,
-                         lineWidth,
-                         lineStyle,
-                         lineOpacity,
-                         fillColor,
-                         fillOpacity,                         
-                         circleRadius,
-                         lineColorActive,
-                         fillColorActive,
-                         circleRadiusActive) {
+    lineColor,
+    lineWidth,
+    lineStyle,
+    lineOpacity,
+    lineColorSelected,
+    lineWidthSelected,
+    lineStyleSelected,
+    lineOpacitySelected) {
 
   const features = map.querySourceFeatures(id, {sourceLayer: id});
   for (let i = 0; i < features.length; i++) {
@@ -229,18 +187,10 @@ export function activate(id,
     );
   }
   if (map.getLayer(id)) {  
-    map.setPaintProperty(id, 'circle-stroke-color', ['case',
+    map.setPaintProperty(id, 'line-color', ['case',
       ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
-      lineColorActive,
+      lineColorSelected,
       lineColor]);                          
-    map.setPaintProperty(id, 'circle-color', ['case',
-      ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
-      fillColorActive,
-      fillColor]);                          
-    map.setPaintProperty(id, 'circle-radius', ['case',
-      ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
-      circleRadiusActive,
-      circleRadius]);
   }                           
 }
 
@@ -248,13 +198,7 @@ export function deactivate(id,
   lineColor,
   lineWidth,
   lineStyle,
-  lineOpacity,
-  fillColor,
-  fillOpacity,                         
-  circleRadius,
-  lineColorActive,
-  fillColorActive,
-  circleRadiusActive) {
+  lineOpacity) {
 
   const features = map.querySourceFeatures(id, {sourceLayer: id});
   for (let i = 0; i < features.length; i++) {
@@ -264,17 +208,6 @@ export function deactivate(id,
     );
   }  
   if (map.getLayer(id)) {  
-    map.setPaintProperty(id, 'circle-stroke-color', ['case',
-      ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
-      lineColor,
-      lineColor]);                          
-    map.setPaintProperty(id, 'circle-color', ['case',
-      ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
-      fillColor,
-      fillColor]);                          
-    map.setPaintProperty(id, 'circle-radius', ['case',
-      ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
-      circleRadius,
-      circleRadius]);                          
+    map.setPaintProperty(id, 'line-color', lineColor);                          
   }
 }

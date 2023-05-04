@@ -15,6 +15,8 @@ import threading
 from PyQt5.QtWidgets import QApplication
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QMessageBox
+from .pyqt5.dialog import dialog
 
 from http.server import HTTPServer as BaseHTTPServer, SimpleHTTPRequestHandler
 
@@ -159,6 +161,24 @@ class GUI:
             okay = True
             data = self.popup_data
         return okay, data
+
+    def dialog(self, text, type="warning", title=""):
+        return dialog(self.window.widget, text, type=type, title=title)
+
+    def dialog_ok_cancel(self, text, title=" "):
+        return dialog(self.window.widget, text, type="question", title=title)
+
+    def dialog_yes_no(self, text, title=" "):
+        return dialog(self.window.widget, text, type="question_yes_no", title=title)
+
+    def dialog_warning(self, text, title="Warning"):
+        dialog(self.window.widget, text, type="warning", title=title)
+
+    def dialog_info(self, text, title=" "):
+        dialog(self.window.widget, text, type="info", title=title)
+
+    def dialog_critical(self, text, title="Critical"):
+        dialog(self.window.widget, text, type="critical", title=title)
 
     def read_gui_config(self, path, file_name):
         suffix = Path(path).joinpath(file_name).suffix

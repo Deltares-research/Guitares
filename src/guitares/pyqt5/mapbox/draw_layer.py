@@ -92,7 +92,6 @@ class DrawLayer(Layer):
         self.add_feature(feature_id, shape, geometry)
 
     def draw(self):
-        self.mapbox.active_draw_layer = self
         if self.shape == "polygon":
             self.mapbox.runjs("./js/draw.js", "drawPolygon", arglist=[self.map_id])
         elif self.shape == "polyline":

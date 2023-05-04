@@ -20,15 +20,19 @@ class GeoJSONLayerCircleSelector(Layer):
             # Data is GeoDataFrame
             if len(data) == 0:
                 data = GeoDataFrame()
+            # Make sure there is an index column
+            data["index"] = range(len(data))
+
 
         # Remove existing layer        
         self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id])
-        # Add new layer        
+
+        # Add new layer
         indices = []
         indices.extend(range(len(data)))
         data["index"] = indices
         self.mapbox.runjs("./js/geojson_layer_circle_selector.js", "addLayer", arglist=[self.map_id,
-                                                                                        data,
+                                                                                        data.to_crs(4326),
                                                                                         index,
                                                                                         self.line_color,
                                                                                         self.line_width,
@@ -42,6 +46,9 @@ class GeoJSONLayerCircleSelector(Layer):
                                                                                         self.circle_radius_selected,
                                                                                         self.selection_type])
 
+        if self.mode == "inactive":
+            self.deactivate()
+         
     def set_selected_index(self, index):
         self.mapbox.runjs("/js/geojson_layer_circle_selector.js", "setSelectedIndex", arglist=[self.map_id, index])
 

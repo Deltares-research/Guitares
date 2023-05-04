@@ -113,7 +113,7 @@ function polygonCreated(e) {
   }
   addToFeatureList(id, 'polygon', activeLayerId);
   var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
-  featureDrawn(JSON.stringify(featureCollection), id);
+  featureDrawn(JSON.stringify(featureCollection), id, activeLayerId);
 }
 
 function polygonUpdated(e) {
@@ -121,7 +121,7 @@ function polygonUpdated(e) {
   var id = feature["id"];
   var coordString = JSON.stringify(feature.geometry.coordinates);
   var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
-  featureModified(JSON.stringify(featureCollection), id);
+  featureModified(JSON.stringify(featureCollection), id, activeLayerId);
 }
 
 function polygonSelectionChanged(e) {
@@ -132,7 +132,7 @@ function polygonSelectionChanged(e) {
     activateDirectSelectMode(id);
     activeLayerId        = getFeatureProps(id).layerId;
     var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
-    featureSelected(JSON.stringify(featureCollection), id);
+    featureSelected(JSON.stringify(featureCollection), id, activeLayerId);
   }
 }
 
@@ -158,7 +158,7 @@ function polylineCreated(e) {
   }
   addToFeatureList(id, 'polyline', activeLayerId);
   var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
-  featureDrawn(JSON.stringify(featureCollection), id);
+  featureDrawn(JSON.stringify(featureCollection), id, activeLayerId);
 }
 
 function polylineUpdated(e) {
@@ -166,7 +166,7 @@ function polylineUpdated(e) {
   var id = feature["id"];
   var coordString = JSON.stringify(feature.geometry.coordinates);
   var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
-  featureModified(JSON.stringify(featureCollection), id);
+  featureModified(JSON.stringify(featureCollection), id, activeLayerId);
 }
 
 function polylineSelectionChanged(e) {
@@ -177,7 +177,7 @@ function polylineSelectionChanged(e) {
     activateDirectSelectMode(id);
     activeLayerId        = getFeatureProps(id).layerId;
     var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
-    featureSelected(JSON.stringify(featureCollection), id);
+    featureSelected(JSON.stringify(featureCollection), id, activeLayerId);
   }
 }
 
@@ -203,7 +203,7 @@ function rectangleCreated(e) {
   }
   addToFeatureList(id, 'rectangle', activeLayerId);
   var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
-  featureDrawn(JSON.stringify(featureCollection), id);
+  featureDrawn(JSON.stringify(featureCollection), id, activeLayerId);
 }
 
 function rectangleUpdated(e) {
@@ -211,7 +211,7 @@ function rectangleUpdated(e) {
   var id = feature["id"];
   var coordString = JSON.stringify(feature.geometry.coordinates);
   var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
-  featureModified(JSON.stringify(featureCollection), id);
+  featureModified(JSON.stringify(featureCollection), id, activeLayerId);
 }
 
 function rectangleSelectionChanged(e) {
@@ -222,7 +222,7 @@ function rectangleSelectionChanged(e) {
     activateScaleRotateMode(id);
     activeLayerId        = getFeatureProps(id).layerId;
     var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
-    featureSelected(JSON.stringify(featureCollection), id);
+    featureSelected(JSON.stringify(featureCollection), id, activeLayerId);
   }
 }
 

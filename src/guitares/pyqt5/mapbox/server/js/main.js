@@ -49,9 +49,9 @@ new QWebChannel(qt.webChannelTransport, function (channel) {
     mapMoved          = function() { MapBox.mapMoved(jsonString)};
     getMapExtent      = function() { MapBox.getMapExtent(jsonString)};
     featureClicked    = function(featureId, featureProps) { MapBox.featureClicked(featureId, JSON.stringify(featureProps))};
-    featureDrawn      = function(featureCollection, featureId) { MapBox.featureDrawn(featureCollection, featureId)};
-    featureModified   = function(featureCollection, featureId) { MapBox.featureModified(featureCollection, featureId)};
-    featureSelected   = function(featureCollection, featureId) { MapBox.featureSelected(featureCollection, featureId)};
+    featureDrawn      = function(featureCollection, featureId, layerId) { MapBox.featureDrawn(featureCollection, featureId, layerId)};
+    featureModified   = function(featureCollection, featureId, layerId) { MapBox.featureModified(featureCollection, featureId, layerId)};
+    featureSelected   = function(featureCollection, featureId, layerId) { MapBox.featureSelected(featureCollection, featureId, layerId)};
     pointClicked      = function(coords) { MapBox.pointClicked(JSON.stringify(coords))};
     layerStyleSet     = function() { MapBox.layerStyleSet('')};
   }
@@ -157,20 +157,42 @@ function onMoveEnd(evt) {
 
 
 export function removeLayer(id) {
+
   // Remove layer
   var mapLayer = map.getLayer(id);
   if(typeof mapLayer !== 'undefined') {
-    // Remove map layer & source.
+    // Remove map layer
+    console.log('removing ' + id)
     map.removeLayer(id);
   }
+
+  var mapLayer = map.getLayer(id + '.line');
+  if(typeof mapLayer !== 'undefined') {
+    // Remove map layer
+    console.log('removing ' + id + '.line')
+    map.removeLayer(id + '.line');
+    console.log('done removing ' + id + '.line')
+  }
+
+  var mapLayer = map.getLayer(id + '.circle');
+  if(typeof mapLayer !== 'undefined') {
+    // Remove map layer
+    console.log('removing ' + id + '.circle')
+    map.removeLayer(id + '.circle');
+  }
+
+  // Remove source
   var mapSource = map.getSource(id);
   if(typeof mapSource !== 'undefined') {
+    console.log('removing source ' + id)
     map.removeSource(id);
   }
+
   var legend = document.getElementById("legend" + id);
   if (legend) {
     legend.remove();
   }
+
 }
 
 export function showLayer(id) {
