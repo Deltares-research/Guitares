@@ -34,9 +34,10 @@ class CheckBox(QCheckBox):
         name   = self.element.variable
         val    = self.element.getvar(group, name)
         if val == True:
-            self.setChecked = True
+            self.setChecked(True)
         else:
-            self.setChecked = False
+            self.setChecked(False)
+            
         if type(self.element.text) != str:
             self.setText(self.element.getvar(self.element.text.variable_group, self.element.text.variable))   
         if type(self.element.tooltip) != str:

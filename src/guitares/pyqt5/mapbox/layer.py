@@ -50,6 +50,9 @@ class Layer:
 
         self.selection_type = "single"
 
+        self.min_zoom = 0
+        self.max_zoom = 22
+
         for key, value in kwargs.items():
             setattr(self, key, value)
 
@@ -126,6 +129,14 @@ class Layer:
                 from .geojson_layer_line_selector import GeoJSONLayerLineSelector
                 self.layer[layer_id] = GeoJSONLayerLineSelector(self.mapbox, layer_id, map_id, **kwargs)
 
+            elif type == "choropleth":
+                from .geojson_layer_choropleth import GeoJSONLayerChoropleth
+                self.layer[layer_id] = GeoJSONLayerChoropleth(self.mapbox, layer_id, map_id, **kwargs)
+            
+            elif type == "heatmap":
+                from .geojson_layer_heatmap import GeoJSONLayerHeatmap
+                self.layer[layer_id] = GeoJSONLayerHeatmap(self.mapbox, layer_id, map_id, **kwargs)
+
             elif type == "circle":
                 from .geojson_layer_circle import GeoJSONLayerCircle
                 self.layer[layer_id] = GeoJSONLayerCircle(self.mapbox, layer_id, map_id, **kwargs)
@@ -163,9 +174,11 @@ class Layer:
 
     def show(self):
         self.set_visibility(True)
+        self.visible = True
 
     def hide(self):
         self.set_visibility(False)
+        self.visible = False
 
     def set_visibility(self, true_or_false):
         # Make a list of all layers

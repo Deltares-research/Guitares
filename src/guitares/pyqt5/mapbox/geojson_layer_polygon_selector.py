@@ -62,7 +62,7 @@ class GeoJSONLayerPolygonSelector(Layer):
 
     def redraw(self):
         if isinstance(self.data, GeoDataFrame):
-            self.set_data(self.data, self.index)
+            self.set_data(self.data, self.index, self.hover_property)
 
     def activate(self):
         self.active = True

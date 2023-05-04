@@ -22,9 +22,7 @@ class GeoJSONLayerLine(Layer):
             if len(data) == 0:
                 data = GeoDataFrame()
 
-        # Remove existing layer        
-        self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id])
-
+        self.remove()
         # Add new layer        
         self.mapbox.runjs("./js/geojson_layer_line.js", "addLayer", arglist=[self.map_id,
                                                                                data.to_crs(4326),
@@ -34,6 +32,15 @@ class GeoJSONLayerLine(Layer):
                                                                                self.fill_color,
                                                                                self.fill_opacity,
                                                                                self.circle_radius])
+    def remove(self):    
+        # Remove existing layer        
+        self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id + ".line"])
+        self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id + ".circle"])
+        self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id])
+
+    def redraw(self):
+        if isinstance(self.data, GeoDataFrame):
+            self.set_data(self.data)
 
     def activate(self):
         self.mapbox.runjs("./js/geojson_layer_line.js", "setPaintProperties", arglist=[self.map_id,

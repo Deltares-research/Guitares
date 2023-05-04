@@ -269,6 +269,10 @@ class Element:
             from .pyqt5.listbox import ListBox
             self.widget = ListBox(self)
 
+        elif self.style == "table":
+            from .pyqt5.table import Table
+            self.widget = Table(self)
+
         elif self.style == "checkbox":
             from .pyqt5.checkbox import CheckBox
             self.widget = CheckBox(self)
