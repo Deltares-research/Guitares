@@ -54,6 +54,9 @@ class PopupMenu(QComboBox):
 
         self.execute_callback = False
 
+        if self.element.option_string.variable:
+            self.add_items()
+
         if self.element.select == "item":
             if self.element.option_value:
                 if self.element.option_value.variable:
@@ -126,3 +129,20 @@ class PopupMenu(QComboBox):
                                   int(y0 + 5 * self.element.gui.resize_factor),
                                   wlab,
                                   int(20 * resize_factor))
+
+    def add_items(self):
+
+        # Delete existing items
+        self.clear()
+
+        if self.element.option_string.variable:
+            group = self.element.option_string.variable_group
+            name  = self.element.option_string.variable
+            v     = self.element.getvar(group, name)
+            if not v:
+                v = [""]
+            for itxt, txt in enumerate(v):
+                self.insertItem(itxt, txt)
+        else:
+            for itxt, txt in enumerate(self.element.option_string.list):
+                self.insertItem(itxt, txt)

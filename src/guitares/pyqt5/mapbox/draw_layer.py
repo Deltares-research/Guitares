@@ -177,6 +177,9 @@ class DrawLayer(Layer):
                     break
             self.mapbox.runjs("./js/draw.js", "deleteFeature", arglist=[feature_id])
 
+    def delete_from_map(self):
+        self.clear()
+
     def clear(self):
         self.active = False
         # Loop through draw features
