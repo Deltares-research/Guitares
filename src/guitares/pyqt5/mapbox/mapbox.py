@@ -8,13 +8,16 @@ from geopandas import GeoDataFrame
 
 from .layer import Layer, list_layers, find_layer_by_id
 
+
 class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
     def __init__(self, view, print_messages):
         super().__init__(view)
         self.print_messages = print_messages
+
     def javaScriptConsoleMessage(self, level, message, lineNumber, sourceID):
         if self.print_messages:
             print("javaScriptConsoleMessage: ", level, message, lineNumber, sourceID)
+
 
 class MapBox(QtWidgets.QWidget):
     def __init__(self, element):
@@ -25,7 +28,6 @@ class MapBox(QtWidgets.QWidget):
 
         url = "http://localhost:" + str(self.gui.server_port) + "/"
         self.url = url
-
 
         # while True:
         #     try:
@@ -50,8 +52,9 @@ class MapBox(QtWidgets.QWidget):
 
         self.server_path = self.gui.server_path
 
-
-        self.setGeometry(0, 0, -1, -1) # this is necessary because otherwise an invisible widget sits over the top left hand side of the screen and block the menu
+        self.setGeometry(
+            0, 0, -1, -1
+        )  # this is necessary because otherwise an invisible widget sits over the top left hand side of the screen and block the menu
 
         view = self.view = QtWebEngineWidgets.QWebEngineView(element.parent.widget)
         channel = self.channel = QtWebChannel.QWebChannel()
@@ -83,7 +86,6 @@ class MapBox(QtWidgets.QWidget):
         self.timer.setSingleShot(True)
         self.timer.start(1000)
 
-
     def reload(self):
         print("Reloading ...")
         self.view.page().setWebChannel(self.channel)
@@ -99,7 +101,7 @@ class MapBox(QtWidgets.QWidget):
         self.view.setGeometry(x0, y0, wdt, hgt)
 
     def take_screenshot(self, output_file):
-        self.view.grab().save(output_file, b'PNG')
+        self.view.grab().save(output_file, b"PNG")
 
     @QtCore.pyqtSlot(str)
     def mapReady(self, coords):
@@ -157,7 +159,6 @@ class MapBox(QtWidgets.QWidget):
             if layer.select:
                 layer.select(json.loads(feature_props))
 
-#    @QtCore.pyqtSlot(str, str, str)
     @QtCore.pyqtSlot(str, str, str)
     def featureDrawn(self, feature_collection, feature_id, layer_id):
         layer = find_layer_by_id(layer_id, self.layer)
@@ -185,28 +186,28 @@ class MapBox(QtWidgets.QWidget):
         self.runjs("/js/main.js", "setCenter", arglist=[lon, lat])
 
     def set_zoom(self, zoom):
-        self.runjs("/js/main.js", "setZoom",  arglist=[zoom])
+        self.runjs("/js/main.js", "setZoom", arglist=[zoom])
 
     def fit_bounds(self, lon1, lat1, lon2, lat2):
-        self.runjs("/js/main.js", "fitBounds",  arglist=[lon1, lat1, lon2, lat2])
+        self.runjs("/js/main.js", "fitBounds", arglist=[lon1, lat1, lon2, lat2])
 
     def jump_to(self, lon, lat, zoom):
-        self.runjs("/js/main.js", "jumpTo",  arglist=[lon, lat, zoom])
+        self.runjs("/js/main.js", "jumpTo", arglist=[lon, lat, zoom])
 
     def fly_to(self, lon, lat, zoom):
-        self.runjs("/js/main.js", "flyTo",  arglist=[lon, lat, zoom])
+        self.runjs("/js/main.js", "flyTo", arglist=[lon, lat, zoom])
 
     def set_projection(self, projection):
-        self.runjs("/js/main.js", "setProjection",  arglist=[projection])
+        self.runjs("/js/main.js", "setProjection", arglist=[projection])
 
     def set_layer_style(self, style):
-        self.runjs("/js/main.js", "setLayerStyle",  arglist=[style])
+        self.runjs("/js/main.js", "setLayerStyle", arglist=[style])
 
     def set_terrain(self, true_or_false, exaggeration):
-        self.runjs("/js/main.js", "setTerrain",  arglist=[true_or_false, exaggeration])
+        self.runjs("/js/main.js", "setTerrain", arglist=[true_or_false, exaggeration])
 
     def set_mouse_default(self):
-        self.runjs("/js/draw.js", "setMouseDefault",  arglist=[])
+        self.runjs("/js/draw.js", "setMouseDefault", arglist=[])
 
     def add_layer(self, layer_id):
         # Adds a container layer
@@ -220,7 +221,7 @@ class MapBox(QtWidgets.QWidget):
     def list_layers(self):
         # Return a list with all layers
         return list_layers(self.layer)
-    
+
     def redraw_layers(self):
         # Redraw all layers (after map style has changed)
         layers = self.list_layers()
@@ -228,7 +229,7 @@ class MapBox(QtWidgets.QWidget):
             layer.redraw()
 
     def compare(self):
-        self.runjs("/js/main.js", "compare",  arglist=[])
+        self.runjs("/js/main.js", "compare", arglist=[])
 
     def runjs(self, module, function, arglist=None):
         if not arglist:
@@ -251,11 +252,11 @@ class MapBox(QtWidgets.QWidget):
             elif isinstance(arg, GeoDataFrame):
                 if len(arg) == 0:
                     string = string + "{}"
-                else:    
+                else:
                     string = string + arg.to_json()
             else:
                 string = string + "'" + arg + "'"
-            if iarg<len(arglist) - 1:
+            if iarg < len(arglist) - 1:
                 string = string + ","
         string = string + ")});"
         # print("JS String")

@@ -174,6 +174,14 @@ export function removeLayer(id) {
     console.log('done removing ' + id + '.line')
   }
 
+  var mapLayer = map.getLayer(id + '.fill');
+  if(typeof mapLayer !== 'undefined') {
+    // Remove map layer
+    console.log('removing ' + id + '.fill')
+    map.removeLayer(id + '.line');
+    console.log('done removing ' + id + '.fill')
+  }
+
   var mapLayer = map.getLayer(id + '.circle');
   if(typeof mapLayer !== 'undefined') {
     // Remove map layer

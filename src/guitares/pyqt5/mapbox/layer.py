@@ -79,7 +79,13 @@ class Layer:
 
     def delete(self):
         # Delete this layer and all nested layers from map
-        self.delete_from_map()
+        if self.layer:
+            # Container layer
+            layers = list_layers(self.layer)
+            for layer in layers:
+                layer.delete_from_map()
+        else:        
+            self.delete_from_map()
 
         # Remove layer from layer dict
         self.parent.layer.pop(self.id)
@@ -89,6 +95,12 @@ class Layer:
 
     def clear(self):
         pass
+        # # Works for container layers. Removes all layers with this layer.
+        # if self.layer:
+        #     # Container layer
+        #     layers = list_layers(self.layer)
+        #     for layer in layers:
+        #         layer.delete()
 
     def get(self, layer_id):
         if layer_id in self.layer:
@@ -97,6 +109,10 @@ class Layer:
             return None
 
     def add_layer(self, layer_id, type=None, mode="active", **kwargs):
+
+        if layer_id in self.layer:
+            # Layer already exists
+            return self.layer[layer_id]
 
         map_id = self.map_id + "." + layer_id
 
@@ -112,10 +128,6 @@ class Layer:
             if self.type != "container":
                 print("Error! Can not add layer to layer of type : " + self.type)
                 return None
-
-            if layer_id in self.layer:
-                # Layer already exists
-                return self.layer[layer_id]
 
             if type == "circle_selector":
                 from .geojson_layer_circle_selector import GeoJSONLayerCircleSelector

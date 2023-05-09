@@ -45,8 +45,8 @@ function modeChanged(e) {
 function selectionChanged(e) {
   var feature=e.features[0];
   if (feature) {
-    var id = feature["id"];
-    var featureProps = getFeatureProps(id)
+    var featureId = feature["id"];
+    var featureProps = getFeatureProps(featureId)
     if (featureProps.shape == "polygon") {
       polygonSelectionChanged(e);
     }
@@ -62,20 +62,23 @@ function selectionChanged(e) {
 function featureUpdated(e) {
   var feature=e.features[0];
   if (feature) {
-    var id = feature["id"];
-    var featureProps = getFeatureProps(id)
+    var featureId = feature["id"];
+    var featureProps = getFeatureProps(featureId);
     if (featureProps.shape == "polygon") {
       polygonUpdated(e);
     }
     if (featureProps.shape == "rectangle") {
       rectangleUpdated(e);
     }
+    if (featureProps.shape == "polyline") {
+      polylineUpdated(e);
+    }
   }
 }
 
-function activateScaleRotateMode(id) {
+function activateScaleRotateMode(featureId) {
   draw.changeMode('scale_rotate_mode', {
-    featureId: id,
+    featureId: featureId,
     canScale: true,
     canRotate: true, // only rotation enabled
     canTrash: false, // disable feature delete
@@ -87,52 +90,53 @@ function activateScaleRotateMode(id) {
   });
 }
 
-function activateDirectSelectMode(id) {
-  draw.changeMode('direct_select', {featureId: id});
+function activateDirectSelectMode(featureId) {
+  draw.changeMode('direct_select', {featureId: featureId});
 }
 
 /// POLYGON \\\
 
-export function drawPolygon(id) {
+export function drawPolygon(layerId) {
   setDrawEvents();
-  activeLayerId        = id;
-  setLayerMode(id, 'active');
+  activeLayerId = layerId;
+  setLayerMode(layerId, 'active');
   draw.changeMode('draw_polygon');
   map.off('draw.create', createListener);
-  createListener = polygonCreated
+  createListener = polygonCreated;
   map.on('draw.create', createListener);
 }
 
 function polygonCreated(e) {
-  var feature=e.features[0];
-  var id = feature["id"];
-  var coordString = JSON.stringify(feature.geometry.coordinates);
-  var layerProps = getLayerProps(activeLayerId)
+  var feature = e.features[0];
+  var featureId = feature["id"];
+  var layerProps = getLayerProps(activeLayerId);
   for (const [key, value] of Object.entries(layerProps.paintProps)) {
-    draw.setFeatureProperty(id, key, value);
+    draw.setFeatureProperty(featureId, key, value);
   }
-  addToFeatureList(id, 'polygon', activeLayerId);
+  addToFeatureList(featureId, activeLayerId, "polygon", feature.geometry);
+  updateInactiveLayerGeometry(activeLayerId);
   var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
-  featureDrawn(JSON.stringify(featureCollection), id, activeLayerId);
+  featureDrawn(JSON.stringify(featureCollection), featureId, activeLayerId);
 }
 
 function polygonUpdated(e) {
   var feature=e.features[0];
-  var id = feature["id"];
-  var coordString = JSON.stringify(feature.geometry.coordinates);
+  var featureId = feature["id"];
   var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
-  featureModified(JSON.stringify(featureCollection), id, activeLayerId);
+  setGeometryInFeatureList(featureId, feature.geometry); 
+  updateInactiveLayerGeometry(activeLayerId);
+  featureModified(JSON.stringify(featureCollection), featureId, activeLayerId);
 }
 
 function polygonSelectionChanged(e) {
   var feature=e.features[0];
   if (feature) {
     // Determine what sort of shape this is
-    var id = feature["id"];
-    activateDirectSelectMode(id);
-    activeLayerId        = getFeatureProps(id).layerId;
+    var featureId = feature["id"];
+    activateDirectSelectMode(featureId);
+    activeLayerId        = getFeatureProps(featureId).layerId;
     var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
-    featureSelected(JSON.stringify(featureCollection), id, activeLayerId);
+    featureSelected(JSON.stringify(featureCollection), featureId, activeLayerId);
   }
 }
 
@@ -151,28 +155,27 @@ export function drawPolyline(id) {
 function polylineCreated(e) {
   var feature=e.features[0];
   var id = feature["id"];
-  var coordString = JSON.stringify(feature.geometry.coordinates);
   var layerProps = getLayerProps(activeLayerId)
   for (const [key, value] of Object.entries(layerProps.paintProps)) {
     draw.setFeatureProperty(id, key, value);
   }
-  addToFeatureList(id, 'polyline', activeLayerId);
+  addToFeatureList(id, activeLayerId, 'polyline', feature.geometry);
   var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
   featureDrawn(JSON.stringify(featureCollection), id, activeLayerId);
 }
 
 function polylineUpdated(e) {
   var feature=e.features[0];
-  var id = feature["id"];
-  var coordString = JSON.stringify(feature.geometry.coordinates);
+  var featureId = feature["id"];
   var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
-  featureModified(JSON.stringify(featureCollection), id, activeLayerId);
+  setGeometryInFeatureList(featureId, feature.geometry); 
+  updateInactiveLayerGeometry(activeLayerId);
+  featureModified(JSON.stringify(featureCollection), featureId, activeLayerId);
 }
 
 function polylineSelectionChanged(e) {
   var feature=e.features[0];
   if (feature) {
-    // Determine what sort of shape this is
     var id = feature["id"];
     activateDirectSelectMode(id);
     activeLayerId        = getFeatureProps(id).layerId;
@@ -189,29 +192,29 @@ export function drawRectangle(id) {
   setLayerMode(id, 'active');
   draw.changeMode('draw_rectangle');
   map.off('draw.create', createListener);
-  createListener = rectangleCreated
+  createListener = rectangleCreated;
   map.on('draw.create', createListener);
 }
 
 function rectangleCreated(e) {
   var feature=e.features[0];
   var id = feature["id"];
-  var coordString = JSON.stringify(feature.geometry.coordinates);
   var layerProps = getLayerProps(activeLayerId);
   for (const [key, value] of Object.entries(layerProps.paintProps)) {
     draw.setFeatureProperty(id, key, value);
   }
-  addToFeatureList(id, 'rectangle', activeLayerId);
+  addToFeatureList(id, activeLayerId, 'rectangle', feature.geometry);
   var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
   featureDrawn(JSON.stringify(featureCollection), id, activeLayerId);
 }
 
 function rectangleUpdated(e) {
   var feature=e.features[0];
-  var id = feature["id"];
-  var coordString = JSON.stringify(feature.geometry.coordinates);
+  var featureId = feature["id"];
   var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
-  featureModified(JSON.stringify(featureCollection), id, activeLayerId);
+  setGeometryInFeatureList(featureId, feature.geometry); 
+  updateInactiveLayerGeometry(activeLayerId);
+  featureModified(JSON.stringify(featureCollection), featureId, activeLayerId);
 }
 
 function rectangleSelectionChanged(e) {
@@ -228,38 +231,29 @@ function rectangleSelectionChanged(e) {
 
 /// FEATURES \\\
 
-export function addFeature(id, shape, geometry, layerId) {
-
+export function addFeature(featureCollection, layerId) {
+  setDrawEvents();
+  // Geometry comes in as a feature collection
+  var geometry = featureCollection.features[0].geometry;
   var layerProps = getLayerProps(layerId);
-
   if (layerProps == null) {
     console.log("No draw layer found with ID " + layerId)
     return
   }
-
-  if (layerProps.mode == "active") {
-    // Mode was inactive or invisible, but now active
-    addActiveFeature(id, geometry, layerProps.paintProps)
-
-  } else {
-
-    addInactiveFeature(id, geometry, layerProps.paintProps)
-
-    // Set opacity
-    if (layerProps.mode == "inactive") {
-      map.setLayoutProperty(id, 'visibility', 'visible');
-    } else {
-      map.setLayoutProperty(id, 'visibility', 'none');
-    }
-  }
-
-  addToFeatureList(id, shape, layerId);
-
+  // Make random featureId 
+  var featureId = makeid(15);
+  // Plot feature and add to feature list
+  plotFeature(featureId, geometry, layerProps.paintProps);
+  addToFeatureList(featureId, layerId, layerProps.shape, geometry);
+  // Update geometry of inactive layer 
+  updateInactiveLayerGeometry(layerId);
+  // Set the layer mode
+  setLayerMode(layerId, layerProps.mode);
 }
 
-export function addActiveFeature(id, geometry, paintProps) {
+function plotFeature(featureId, geometry, paintProps) {
   var feature = {
-    id: id,
+    id: featureId,
     type: 'Feature',
     properties: {},
     geometry: geometry
@@ -267,120 +261,44 @@ export function addActiveFeature(id, geometry, paintProps) {
   draw.add(feature);
   // Loop through paint props
   for (const [key, value] of Object.entries(paintProps)) {
-    draw.setFeatureProperty(id, key, value);
+    draw.setFeatureProperty(featureId, key, value);
   }
 }
 
-export function addInactiveFeature(id, geometry, paintProps) {
-
-  map.addSource(id, {
-    'type': 'geojson',
-    'data': {'type': 'Feature', 'geometry': geometry}
-  });
-//  var shape = geometry.type
-  if (geometry.type == 'LineString') {
-    map.addLayer({
-      'id': id,
-      'type': 'line',
-      'source': id,
-      'layout': {},
-      'paint': {
-        'line-color': paintProps.polyline_line_color,
-        'line-width': paintProps.polyline_line_width,
-        'line-opacity': paintProps.polyline_line_opacity
-      }
-    });
-  }
-  if (geometry.type == 'Polygon') {
-    map.addLayer({
-      'id': id,
-      'type': 'fill',
-      'source': id,
-      'layout': {},
-      'paint': {
-//        'line-color': paintProps.polygon_line_color,
-//        'line-width': paintProps.polygon_line_width,
-//        'line-opacity': paintProps.polygon_line_opacity,
-        'fill-color': paintProps.polygon_fill_color,
-        'fill-opacity': paintProps.polygon_fill_opacity
-      }
-    });
-  }
+export function deleteFeature(featureId) {
+  var layerId = getFeatureProps(featureId).layerId;
+  draw.delete(featureId);
+  removeFromFeatureList(featureId);
+  updateInactiveLayerGeometry(layerId);
 }
 
-export function deleteFeature(id) {
-  // Used when feature is to be completely removed
-  if (map.getLayer(id)) {
-    map.removeLayer(id);
-  }
-  if (map.getSource(id)) {
-    map.removeSource(id);
-  }
-  // active features
-  draw.delete(id);
-  removeFromFeatureList(id);
-}
-
-export function setFeatureMode(id, mode) {
-
-  var featureProps = getFeatureProps(id);
-  var layerProps   = getLayerProps(featureProps.layerId);
-  var currentMode  = layerProps.mode;
-  var paintProps   = layerProps.paintProps;
-
-  if (currentMode == mode) {
-    // Layer is already in requested mode
-    return
-  }
-
-  // First get feature geometry
-  if (currentMode == "active") {
-    var geometry = draw.get(id).geometry
-    // Delete active feature
-    draw.delete(id);
-  }
-  else {
-    var geometry = map.getSource(id)._data.geometry;
-    // And now delete geojson layer
-    if (map.getLayer(id)) {
-      map.removeLayer(id);
-    }
-    if (map.getSource(id)) {
-      map.removeSource(id);
-    }
-  }
-  if (mode == "active") {
-    // Mode was inactive or invisible
-    addActiveFeature(id, geometry, paintProps)
-  } else { // Inactive or invisible mode
-    addInactiveFeature(id, geometry, paintProps)
-    // Set opacity
-    if (mode == "inactive") {
-      map.setLayoutProperty(id, 'visibility', 'visible');
-    } else {
-      map.setLayoutProperty(id, 'visibility', 'none');
-    }
-  }
-}
-
-export function activateFeature(id) {
+export function activateFeature(featureId) {
   // Called from other script
-  draw.changeMode('simple_select', { featureIds: [id] })
-  var featureProps = getFeatureProps(id)
+  draw.changeMode('simple_select', { featureIds: [featureId] })
+  var featureProps = getFeatureProps(featureId)
   if (featureProps.shape == "polygon" || featureProps.shape == "polyline") {
-    activateDirectSelectMode(id);
+    activateDirectSelectMode(featureId);
   }
   if (featureProps.shape == "rectangle") {
-    activateScaleRotateMode(id);
+    activateScaleRotateMode(featureId);
   }
 }
 
-function addToFeatureList(featureId, shape, layerId) {
+function addToFeatureList(featureId, layerId, shape, geometry) {
   featureList.push({
     featureId: featureId,
     shape: shape,
-    layerId: layerId
+    layerId: layerId,
+    geometry: geometry
   });
+}
+
+function setGeometryInFeatureList(featureId, geometry) {
+  for (let i = 0; i < featureList.length; i++) {
+    if (featureList[i].featureId == featureId) {
+      featureList[i].geometry = geometry;
+    }
+  }
 }
 
 function removeFromFeatureList(featureId) {
@@ -396,14 +314,7 @@ function getFeatureProps(featureId) {
 
 function getFeatureCollectionInActiveLayer(activeLayerId) {
   // Feature collection with all features (of every layer)
-//  console.log("GETTING COLLECTION")
-//  console.log("layer=" + activeLayerId);
   var featureCollection = draw.getAll();
-  for (let i = 0; i < featureCollection.features.length; i++) {
-//    console.log(i)
-//    console.log(featureCollection.features[i].id)
-//    console.log(featureCollection.features[i].geometry.type)
-  }
   // Make list with features in active layer
   var featureIdsInLayer = [];
   for (let i = 0; i < featureList.length; i++) {
@@ -411,22 +322,10 @@ function getFeatureCollectionInActiveLayer(activeLayerId) {
       featureIdsInLayer.push(featureList[i].featureId);
     }
   }
-//  console.log("features in layer")
-//  console.log(featureIdsInLayer)
-//  console.log("DROPPING")
   var nfeat = featureCollection.features.length;
-//  var j
   for (let i = 0; i < nfeat; i++) {
-//    j = nfeat - i - 1
-//      console.log("i= " + i)
-//      console.log("j= " + j)
-//    console.log("features in collection")
-//    console.log(featureCollection.features[j].id)
     if (featureIdsInLayer.includes(featureCollection.features[nfeat - i - 1].id) == false) {
-//      console.log("dropping " + featureCollection.features[j].id)
       featureCollection.features.splice(nfeat - i - 1, 1);
-    } else {
-//      console.log("keeping " + featureCollection.features[j].id)
     }
   }
   return featureCollection
@@ -435,46 +334,108 @@ function getFeatureCollectionInActiveLayer(activeLayerId) {
 
 /// LAYERS \\\
 
-export function addLayer(id, mode, paintProps) {
+export function addLayer(layerId, mode, paintProps, shape) {
+
   // Check if this layer already exists
-  var props = getLayerProps(id);
+  var props = getLayerProps(layerId);
   if (props != null) {
     return
   }
-  addToLayerList(id, mode, paintProps);
+  addToLayerList(layerId, mode, paintProps, shape);
+
+  // Add inactive layer 
+  map.addSource(layerId, {
+    'type': 'geojson'
+  });  
+  if (shape == 'polyline' || shape == "polygon" || shape == "rectangle") {
+    map.addLayer({
+      'id': layerId + ".line",
+      'type': 'line',
+      'source': layerId,
+      'layout': {},
+      'paint': {
+        'line-color': paintProps.polyline_line_color,
+        'line-width': paintProps.polyline_line_width,
+        'line-opacity': paintProps.polyline_line_opacity
+      }
+    });
+  }
+  if (shape == 'polygon' || shape == "rectangle") {
+    map.addLayer({
+      'id': layerId + ".fill",
+      'type': 'fill',
+      'source': layerId,
+      'layout': {},
+      'paint': {
+        'fill-color': paintProps.polygon_fill_color,
+        'fill-opacity': paintProps.polygon_fill_opacity
+      }
+    });
+  }
+}
+
+function updateInactiveLayerGeometry(layerId) {
+  var featureCollection = getFeatureCollectionInActiveLayer(layerId);
+  map.getSource(layerId).setData(featureCollection);
 }
 
 export function deleteLayer(layerId) {
   // Loop through features in layer
   for (let i = 0; i < featureList.length; i++) {
-    if (featureList[i].layer == layerId) {
-      deleteFeature(featureList[i].featureId)
+    if (featureList[i].layerId == layerId) {
+      deleteFeature(featureList[i].featureId);
     }
   }
+  // Delete inactive layer
+  map.removeLayer(layerId + ".line");
+  map.removeLayer(layerId + ".fill");
+  map.removeSource(layerId);
   removeFromLayerList(layerId);
 }
 
 export function setLayerMode(layerId, mode) {
   var layerProps   = getLayerProps(layerId);
-  if (layerProps == null) {return}
-  if (layerProps.mode == mode) {
-    // Layer is already in requested mode
+  if (layerProps == null) {
     return
   }
-  // Loop through features in layer
-  for (let i = 0; i < featureList.length; i++) {
-    if (featureList[i].layerId == layerId) {
-      setFeatureMode(featureList[i].featureId, mode)
+  if (mode == "active") {
+    // Plot features
+    // Loop through features in layer
+    for (let i = 0; i < featureList.length; i++) {
+      if (featureList[i].layerId == layerId) {
+        // This feature is part of this layer
+        var featureId = featureList[i].featureId;
+        var geometry = featureList[i].geometry;
+        var paintProps = layerProps.paintProps;
+        plotFeature(featureId, geometry, paintProps);
+      }
     }
   }
-  setLayerProps(layerId, "mode", mode)
+  else {
+    // Delete features
+    for (let i = 0; i < featureList.length; i++) {
+      if (featureList[i].layerId == layerId) {
+        draw.delete(featureList[i].featureId);
+      }
+    }  
+  }
+  setLayerProps(layerId, "mode", mode);
+  // Set visibility for inactive layer 
+  if (mode == "inactive") {
+    map.setLayoutProperty(layerId + ".line", 'visibility', 'visible');
+    map.setLayoutProperty(layerId + ".fill", 'visibility', 'visible');
+  } else {
+    map.setLayoutProperty(layerId + ".line", 'visibility', 'none');
+    map.setLayoutProperty(layerId + ".fill", 'visibility', 'none');
+  }
+
 }
 
-function addToLayerList(layerId, mode, paintProps) {
+function addToLayerList(layerId, mode, paintProps, shape) {
   // Check if layer already exists
   var index = layerList.findIndex(v => v.layerId === layerId);
   if (index < 0) {
-    layerList.push({layerId: layerId, mode: mode, paintProps: paintProps})
+    layerList.push({layerId: layerId, mode: mode, paintProps: paintProps, shape: shape})
   }
 }
 
@@ -499,4 +460,16 @@ function setLayerProps(layerId, key, val) {
 
 export function setMouseDefault() {
   draw.changeMode('simple_select', { featureIds: [] })
+}
+
+function makeid(length) {
+  let result = '';
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const charactersLength = characters.length;
+  let counter = 0;
+  while (counter < length) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    counter += 1;
+  }
+  return result;
 }
