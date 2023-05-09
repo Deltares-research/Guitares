@@ -162,8 +162,8 @@ class GUI:
             data = self.popup_data
         return okay, data
 
-    def dialog(self, text, type="warning", title=""):
-        return dialog(self.window.widget, text, type=type, title=title)
+    def dialog(self, text, type="warning", title="", button_text=None):
+        return dialog(self.window.widget, text, type=type, title=title, button_text=button_text)
 
     def dialog_ok_cancel(self, text, title=" "):
         return dialog(self.window.widget, text, type="question", title=title)

@@ -174,6 +174,17 @@ class MapBox(QtWidgets.QWidget):
         layer = find_layer_by_id(layer_id, self.layer)
         layer.feature_selected(json.loads(feature_collection), feature_id)
 
+    @QtCore.pyqtSlot(str)
+    def featureDeselected(self, layer_id):
+        layer = find_layer_by_id(layer_id, self.layer)
+        if layer:
+            layer.feature_deselected()
+
+    @QtCore.pyqtSlot(str, str, str)
+    def featureAdded(self, feature_collection, feature_id, layer_id):
+        layer = find_layer_by_id(layer_id, self.layer)
+        layer.feature_added(json.loads(feature_collection), feature_id)
+
     def get_extent(self):
         js_string = "import('/js/main.js').then(module => {module.getExtent()});"
         self.view.page().runJavaScript(js_string)

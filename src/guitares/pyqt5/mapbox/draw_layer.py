@@ -20,6 +20,7 @@ class DrawLayer(Layer):
         create=None,
         modify=None,
         select=None,
+        deselect=None,
         polygon_line_color="dodgerblue",
         polygon_line_width=2,
         polygon_line_style="-",
@@ -48,6 +49,7 @@ class DrawLayer(Layer):
         self.create = create
         self.modify = modify
         self.select = select
+        self.deselect = deselect
 
         # Get Hex values for colors
         self.paint_props = {}
@@ -112,20 +114,12 @@ class DrawLayer(Layer):
         elif self.shape == "rectangle":
             self.mapbox.runjs("./js/draw.js", "drawRectangle", arglist=[self.map_id])
 
-    def feature_drawn(self, feature_collection, feature_id):
+    def set_gdf(self, feature_collection):
         for feature in feature_collection["features"]:
             feature["properties"]["id"] = feature["id"]
         gdf = gpd.GeoDataFrame.from_features(feature_collection, crs=4326).to_crs(
             self.crs
         )
-        feature_index = None
-        if len(gdf) > 0:
-            indx = gdf.index[gdf["id"] == feature_id].tolist()
-            if indx:
-                feature_index = indx[0]
-        if feature_index is None:
-            print("Could not find feature ...")
-            return
         if self.shape == "rectangle":
             x0, y0, dx, dy, rotation = get_rectangle_geometry(gdf["geometry"])
             # Add columns with geometry info
@@ -135,51 +129,46 @@ class DrawLayer(Layer):
             gdf["dy"] = dy
             gdf["rotation"] = rotation
         self.gdf = gdf
+
+    def get_feature_index(self, feature_id):
+        feature_index = None
+        if len(self.gdf) > 0:
+            indx = self.gdf.index[self.gdf["id"] == feature_id].tolist()
+            if indx:
+                feature_index = indx[0]
+        if feature_index is None:
+            print("Could not find feature ...")
+        return feature_index
+
+    def get_feature_id(self, feature_index):
+        feature_id = None
+        if len(self.gdf) > 0 and len(self.gdf) <= feature_index + 1:
+            feature_id = self.gdf.loc[feature_index, "id"]
+        return feature_id
+
+    def feature_drawn(self, feature_collection, feature_id):
+        self.set_gdf(feature_collection)
         if self.create:
-            self.create(gdf, feature_index, feature_id)
+            feature_index = self.get_feature_index(feature_id)
+            self.create(self.gdf, feature_index, feature_id)
+
+    def feature_added(self, feature_collection, feature_id):
+        self.set_gdf(feature_collection)
 
     def feature_modified(self, feature_collection, feature_id):
-        for feature in feature_collection["features"]:
-            feature["properties"]["id"] = feature["id"]
-        gdf = gpd.GeoDataFrame.from_features(feature_collection, crs=4326).to_crs(
-            self.crs
-        )
-        feature_index = None
-        if len(gdf) > 0:
-            indx = gdf.index[gdf["id"] == feature_id].tolist()
-            if indx:
-                feature_index = indx[0]
-        if feature_index is None:
-            print("Could not find feature ...")
-            return
-        if self.shape == "rectangle":
-            x0, y0, dx, dy, rotation = get_rectangle_geometry(gdf["geometry"])
-            # Add columns with geometry info
-            gdf["x0"] = x0
-            gdf["y0"] = y0
-            gdf["dx"] = dx
-            gdf["dy"] = dy
-            gdf["rotation"] = rotation
-        self.gdf = gdf
+        self.set_gdf(feature_collection)
         if self.modify:
-            self.modify(gdf, feature_index, feature_id)
+            feature_index = self.get_feature_index(feature_id)
+            self.modify(self.gdf, feature_index, feature_id)
 
     def feature_selected(self, feature_collection, feature_id):
-        for feature in feature_collection["features"]:
-            feature["properties"]["id"] = feature["id"]
-        gdf = gpd.GeoDataFrame.from_features(feature_collection, crs=4326).to_crs(
-            self.crs
-        )
-        feature_index = None
-        if len(gdf) > 0:
-            indx = gdf.index[gdf["id"] == feature_id].tolist()
-            if indx:
-                feature_index = indx[0]
-        if feature_index is None:
-            print("Could not find feature ...")
-            return
         if self.select:
+            feature_index = self.get_feature_index(feature_id)
             self.select(feature_index)
+
+    def feature_deselected(self):
+        if self.deselect:
+            self.deselect()
 
     def activate_feature(self, feature_id):
         if self.mode != "active":
@@ -188,6 +177,9 @@ class DrawLayer(Layer):
                 "./js/draw.js", "setLayerMode", arglist=[self.map_id, self.mode]
             )
         self.mapbox.runjs("./js/draw.js", "activateFeature", arglist=[feature_id])
+
+    def set_feature_geometry(self, feature_id, geom):        
+        self.mapbox.runjs("./js/draw.js", "setFeatureGeometry", arglist=[self.map_id, feature_id, geom])
 
     def delete_feature(self, feature_id):
         if feature_id:  # Could also be None

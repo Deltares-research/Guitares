@@ -7,7 +7,9 @@ let mapMoved;
 let getMapExtent;
 export let featureDrawn;
 export let featureSelected;
+export let featureDeselected;
 export let featureModified;
+export let featureAdded;
 export let jsonString;
 export let featureClicked;
 export let pointClicked;
@@ -52,6 +54,8 @@ new QWebChannel(qt.webChannelTransport, function (channel) {
     featureDrawn      = function(featureCollection, featureId, layerId) { MapBox.featureDrawn(featureCollection, featureId, layerId)};
     featureModified   = function(featureCollection, featureId, layerId) { MapBox.featureModified(featureCollection, featureId, layerId)};
     featureSelected   = function(featureCollection, featureId, layerId) { MapBox.featureSelected(featureCollection, featureId, layerId)};
+    featureAdded      = function(featureCollection, featureId, layerId) { MapBox.featureAdded(featureCollection, featureId, layerId)};
+    featureDeselected = function(layerId) { MapBox.featureDeselected(layerId)};
     pointClicked      = function(coords) { MapBox.pointClicked(JSON.stringify(coords))};
     layerStyleSet     = function() { MapBox.layerStyleSet('')};
   }

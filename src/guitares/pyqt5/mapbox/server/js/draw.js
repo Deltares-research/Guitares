@@ -1,6 +1,6 @@
 let MapboxDraw = mpbox.import_mapbox_draw()
 
-import { map, featureDrawn, featureSelected, featureModified } from '/js/main.js';
+import { map, featureDrawn, featureSelected, featureModified, featureAdded, featureDeselected } from '/js/main.js';
 import { DrawRectangle } from '/js/mapbox-gl-draw-rectangle-mode.js';
 import { drawStyles } from '/js/draw_styles.js'
 import { SRMode, SRCenter } from '/js/mapbox_gl_draw_scale_rotate_mode.js'
@@ -10,6 +10,7 @@ var featureList = []
 var layerList = []
 let activeLayerId
 let modes
+let selectedFeatureId
 
 // Add extra modes
 modes = MapboxDraw.modes;
@@ -46,6 +47,12 @@ function selectionChanged(e) {
   var feature=e.features[0];
   if (feature) {
     var featureId = feature["id"];
+    console.log("Selected " + featureId)
+    if (featureId == selectedFeatureId) {
+      // This feature was already selected
+      return
+    }
+    selectedFeatureId = featureId;
     var featureProps = getFeatureProps(featureId)
     if (featureProps.shape == "polygon") {
       polygonSelectionChanged(e);
@@ -55,7 +62,10 @@ function selectionChanged(e) {
     }
     if (featureProps.shape == "rectangle") {
       rectangleSelectionChanged(e);
-    }
+    }    
+  } else {
+    console.log("Active Layer = " + activeLayerId);
+    featureDeselected(activeLayerId);
   }
 }
 
@@ -131,7 +141,6 @@ function polygonUpdated(e) {
 function polygonSelectionChanged(e) {
   var feature=e.features[0];
   if (feature) {
-    // Determine what sort of shape this is
     var featureId = feature["id"];
     activateDirectSelectMode(featureId);
     activeLayerId        = getFeatureProps(featureId).layerId;
@@ -233,6 +242,7 @@ function rectangleSelectionChanged(e) {
 
 export function addFeature(featureCollection, layerId) {
   setDrawEvents();
+  activeLayerId = layerId;
   // Geometry comes in as a feature collection
   var geometry = featureCollection.features[0].geometry;
   var layerProps = getLayerProps(layerId);
@@ -249,6 +259,8 @@ export function addFeature(featureCollection, layerId) {
   updateInactiveLayerGeometry(layerId);
   // Set the layer mode
   setLayerMode(layerId, layerProps.mode);
+  var featureCollection = getFeatureCollectionInActiveLayer(layerId);
+  featureAdded(JSON.stringify(featureCollection), featureId, layerId);
 }
 
 function plotFeature(featureId, geometry, paintProps) {
@@ -275,6 +287,8 @@ export function deleteFeature(featureId) {
 export function activateFeature(featureId) {
   // Called from other script
   draw.changeMode('simple_select', { featureIds: [featureId] })
+  selectedFeatureId = featureId;
+  activeLayerId = getFeatureProps(featureId).layerId;
   var featureProps = getFeatureProps(featureId)
   if (featureProps.shape == "polygon" || featureProps.shape == "polyline") {
     activateDirectSelectMode(featureId);
@@ -301,6 +315,17 @@ function setGeometryInFeatureList(featureId, geometry) {
   }
 }
 
+export function setFeatureGeometry(layerId, featureId, featureCollection) {
+  // Update geometry of feature
+  var geometry = featureCollection.features[0].geometry;
+  var layerProps = getLayerProps(layerId);
+  setGeometryInFeatureList(featureId, geometry);
+  updateInactiveLayerGeometry(layerId);
+  if (layerProps.mode == "active") {
+    console.log("Also update editable features");
+  }
+}
+
 function removeFromFeatureList(featureId) {
   featureList.splice(featureList.findIndex(v => v.featureId === featureId), 1);
 }
@@ -312,13 +337,13 @@ function getFeatureProps(featureId) {
   return props
 }
 
-function getFeatureCollectionInActiveLayer(activeLayerId) {
+function getFeatureCollectionInActiveLayer(layerId) {
   // Feature collection with all features (of every layer)
   var featureCollection = draw.getAll();
   // Make list with features in active layer
   var featureIdsInLayer = [];
   for (let i = 0; i < featureList.length; i++) {
-    if (featureList[i].layerId == activeLayerId) {
+    if (featureList[i].layerId == layerId) {
       featureIdsInLayer.push(featureList[i].featureId);
     }
   }
