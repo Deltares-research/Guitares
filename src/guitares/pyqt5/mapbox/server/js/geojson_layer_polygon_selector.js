@@ -1,8 +1,8 @@
 import { map, featureClicked, mapboxgl} from '/js/main.js';
 
-export function addLayer(id, 
-  data, 
-  index, 
+export function addLayer(id,
+  data,
+  index,
   hover_property,
   lineColor,
   lineWidth,
@@ -19,7 +19,7 @@ export function addLayer(id,
 
   map.addSource(id, {
     type: 'geojson',
-    data: data, 
+    data: data,
     promoteId: hover_property
   });
 
@@ -81,6 +81,7 @@ export function addLayer(id,
   // When the mouse leaves the fill layer, update the feature state of the
   // previously hovered feature.
   map.on('mouseleave', fillId, () => {
+	map.getCanvas().style.cursor = '';
     if (hoveredId !== null) {
       map.setFeatureState(
         { source: id, id: hoveredId },
@@ -162,7 +163,7 @@ export function setSelectedIndex(id, index) {
 
 export function activate(id,
                          lineColor,
-                         fillColor,                   
+                         fillColor,
                          lineColorActive,
                          fillColorActive) {
 
@@ -173,16 +174,16 @@ export function activate(id,
       { active: true }
     );
   }
-  if (map.getLayer(id)) {  
+  if (map.getLayer(id)) {
     map.setPaintProperty(id, 'circle-stroke-color', ['case',
       ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
       lineColorActive,
-      lineColor]);                          
+      lineColor]);
     map.setPaintProperty(id, 'circle-color', ['case',
       ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
       fillColorActive,
-      fillColor]);                          
-  }                           
+      fillColor]);
+  }
 }
 
 export function deactivate(id,
@@ -191,7 +192,7 @@ export function deactivate(id,
   lineStyle,
   lineOpacity,
   fillColor,
-  fillOpacity,                         
+  fillOpacity,
   lineColorActive,
   fillColorActive) {
 
@@ -201,19 +202,19 @@ export function deactivate(id,
       { source: id, id: i },
       { active: false }
     );
-  }  
-  if (map.getLayer(id)) {  
+  }
+  if (map.getLayer(id)) {
     map.setPaintProperty(id, 'circle-stroke-color', ['case',
       ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
       lineColorActive,
-      lineColor]);                          
+      lineColor]);
     map.setPaintProperty(id, 'circle-color', ['case',
       ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
       fillColorActive,
-      fillColor]);                          
+      fillColor]);
     map.setPaintProperty(id, 'circle-radius', ['case',
       ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
       circleRadiusActive,
-      circleRadius]);                          
+      circleRadius]);
   }
 }

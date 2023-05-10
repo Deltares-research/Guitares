@@ -33,6 +33,9 @@ class MainWindow(QMainWindow):
 
     def resizeEvent(self, event):
         self.window.resize_elements(self.window.elements)
+        if self.window.statusbar:
+            self.window.statusbar.set_geometry()
 
     def closeEvent(self, event):
         QApplication.quit()        
+

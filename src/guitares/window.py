@@ -1,8 +1,9 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QStatusBar, QLabel, QFrame
 import importlib
 
 from guitares.element import Element
 from guitares.menu import Menu
+from guitares.statusbar import StatusBar
 
 class MenuBar:
     def __init__(self):
@@ -42,6 +43,8 @@ class Window:
         self.elements = []
         self.menus    = []
         self.toolbar  = []
+        self.statusbar = {}
+        self.statusbar_fields = []
 
         if self.type == "popup":
             # Add OK and Cancel elements
@@ -55,6 +58,11 @@ class Window:
 
         self.add_elements_to_tree(config_dict["element"], self, self)
         self.add_menu_to_tree(self.menus, config_dict["menu"], self)
+
+        if "statusbar" in config_dict:
+            if config_dict["statusbar"]:
+                for field in config_dict["statusbar"]["field"]:
+                    self.statusbar_fields.append(field["width"])
 
     def add_elements_to_tree(self, dcts, parent, window):
         parent.elements = []
@@ -108,6 +116,7 @@ class Window:
             central_widget.setLayout(layout)
             window.setCentralWidget(central_widget)
             self.widget = central_widget
+            self.window_widget = window
 
         else:
 
@@ -120,6 +129,10 @@ class Window:
 
         # Add elements
         self.add_elements(self.elements)
+
+        # Add status bar 
+        if self.statusbar_fields:
+            self.add_statusbar(window, self.statusbar_fields)
 
         # Set elements
         self.update()
@@ -268,3 +281,6 @@ class Window:
             if item:
                 return item
         return None
+
+    def add_statusbar(self, window, widths):
+        self.statusbar = StatusBar(window, widths)

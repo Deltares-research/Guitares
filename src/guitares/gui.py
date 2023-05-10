@@ -191,6 +191,7 @@ class GUI:
         config["toolbar"] = {}
         config["menu"] = []
         config["element"] = []
+        config["statusbar"] = {}
         if "window" in d:
             config["window"] = d["window"]
         if "toolbar" in d:
@@ -201,6 +202,8 @@ class GUI:
         if "element" in d:
             # Recursively read elements
             config["element"] = self.read_gui_elements(path, file_name)
+        if "statusbar" in d:
+            config["statusbar"] = d["statusbar"]
         return config
 
     def read_gui_elements(self, path, file_name):
