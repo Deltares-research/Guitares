@@ -1,4 +1,4 @@
-import { map, featureClicked, mapboxgl} from '/js/main.js';
+import { map, featureClicked, mapboxgl, layers } from '/js/main.js';
 
 export function addLayer(id,
   data,
@@ -11,16 +11,22 @@ export function addLayer(id,
   fillOpacity,
   selectionOption) {
 
-  let selectedId = null
   let hoveredId = null
   let fillId = id + ".fill"
   let lineId = id + ".line"
   var selectedFeatures = []
 
+  layers[id] = {}
+  layers[id].data = data; 
+  layers[id].mode = "active"; 
+
+  // Select first index
+  selectByIndex(id, 0);
+
   map.addSource(id, {
     type: 'geojson',
     data: data,
-    promoteId: hover_property
+    promoteId: "id"
   });
 
   map.addLayer({
@@ -32,9 +38,12 @@ export function addLayer(id,
       'line-color': lineColor,
       'line-width': lineWidth,
       'line-opacity': lineOpacity
-     }
+     },
+     'layout': {
+      // Make the layer visible by default.
+      'visibility': 'visible'
+      }
   });
-
 
   map.addLayer({
     'id': fillId,
@@ -44,13 +53,28 @@ export function addLayer(id,
       'fill-color': fillColor,
       'fill-opacity': ['case', ['any', ['boolean', ['feature-state', 'hover'], false], ['boolean', ['feature-state', 'selected'], false]], fillOpacity, 0.0],
       'fill-outline-color': 'transparent'
-    }
+    },
+    'layout': {
+     // Make the layer visible by default.
+     'visibility': 'visible'
+     }
   });
+
+  updateFeatureState(id);
 
   // Create a popup, but don't add it to the map yet.
   const popup = new mapboxgl.Popup({
     closeButton: false,
     closeOnClick: false
+  });
+
+  // Update feature state after moving
+  //map.on('moveend', moveEnd(id));
+  map.on('moveend', () => {
+    const vis = map.getLayoutProperty(lineId, 'visibility');
+    if (vis == "visible") {
+      updateFeatureState(id);
+    }
   });
 
   // When the user moves their mouse over the fill layer, we'll update the
@@ -70,7 +94,6 @@ export function addLayer(id,
         { source: id, id: hoveredId },
         { hover: true }
       );
-
       // Display a popup with the name of area
       popup.setLngLat(e.lngLat)
       .setText(e.features[0].properties[hover_property])
@@ -95,16 +118,8 @@ export function addLayer(id,
   if (selectionOption == "single") {
     map.on('click', fillId, (e) => {
       if (e.features.length > 0) {
-        // Set previous selected to False
-        map.setFeatureState(
-          { source: id, id: selectedId },
-          { selected: false }
-        );
-        selectedId = e.features[0].id
-        map.setFeatureState(
-          { source: id, id: e.features[0].id },
-          { selected: true }
-        );
+        selectByIndex(id, e.features[0].id);
+        // And call main.js
         featureClicked(id, e.features[0]);
       };
     });
@@ -114,66 +129,63 @@ export function addLayer(id,
         var featureState = map.getFeatureState({ source: id, id: e.features[0].id });
         if (featureState.selected) {
           // Was selected, now deselect
-          map.setFeatureState(
-            { source: id, id: e.features[0].id },
-            { selected: false }
-          );
+          deselectByIndex(id, e.features[0].id);
           selectedFeatures.pop(e.features[0]);
         } else {
           // Select
-          map.setFeatureState(
-            { source: id, id: e.features[0].id },
-            { selected: true }
-          );
+          selectByIndex(id, e.features[0].id);
           selectedFeatures.push(e.features[0]);
         };
-        // Now make a list of all selected features
-//        var selectedFeatureProperties = []
-//        selectedFeatures.forEach((feature) => {
-//          var featureState = map.getFeatureState({ source: id, id: feature.id });
-//          if (featureState.selected) {
-//            selectedFeatureProperties.push(feature);
-//          }
-//        });
+        // And call main.js
         featureClicked(id, selectedFeatures);
       };
     });
-
-
   }
 };
 
+export function selectByIndex(layerId, index) {
+  for (let i = 0; i < layers[layerId].data.features.length; i++) {
+    if (i == index) {
+      layers[layerId].data.features[i].selected = true
+    } else {
+      layers[layerId].data.features[i].selected = false
+    }
+  }
+  // And update the feature state
+  updateFeatureState(layerId);
+}
 
-export function setSelectedIndex(id, index) {
-  const features = map.querySourceFeatures(id, {sourceLayer: id});
-  for (let i = 0; i < features.length; i++) {
-    if (features[i].id == index) {
+// Set active and selected feature states
+function updateFeatureState(layerId) {
+  if (layers[layerId].mode == "active") {
+    var active = true;
+  } else {
+    var active = false;
+  }
+  const features = map.querySourceFeatures(layerId, {sourceLayer: layerId});
+  for (let i = 0; i < features.length; i++) {    
+    const id = features[i].id;
+    if (layers[layerId].data.features[id].selected) {
       map.setFeatureState(
-        { source: id, id: features[i].id },
-        { selected: true, active: true }
+        { source: layerId, id: id },
+        { selected: true, active: active }
       );
     } else {
       map.setFeatureState(
-        { source: id, id: features[i].id },
-        { selected: false, active: true }
+        { source: layerId, id: id },
+        { selected: false, active: active }
       );
     }
-  }
+  }  
 }
 
+// Set colors to active and update feature state
 export function activate(id,
                          lineColor,
                          fillColor,
                          lineColorActive,
                          fillColorActive) {
-
-  const features = map.querySourceFeatures(id, {sourceLayer: id});
-  for (let i = 0; i < features.length; i++) {
-    map.setFeatureState(
-      { source: id, id: features[i].id },
-      { active: true }
-    );
-  }
+  layers[layerId].mode = "active"
   if (map.getLayer(id)) {
     map.setPaintProperty(id, 'circle-stroke-color', ['case',
       ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
@@ -184,8 +196,10 @@ export function activate(id,
       fillColorActive,
       fillColor]);
   }
+  updateFeatureState(id);
 }
 
+// Set colors to inactive and update feature state
 export function deactivate(id,
   lineColor,
   lineWidth,
@@ -194,15 +208,8 @@ export function deactivate(id,
   fillColor,
   fillOpacity,
   lineColorActive,
-  fillColorActive) {
-
-  const features = map.querySourceFeatures(id, {sourceLayer: id});
-  for (let i = 0; i < features.length; i++) {
-    map.setFeatureState(
-      { source: id, id: i },
-      { active: false }
-    );
-  }
+  fillColorActive) {  
+  layers[layerId].mode = "inactive"
   if (map.getLayer(id)) {
     map.setPaintProperty(id, 'circle-stroke-color', ['case',
       ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
@@ -216,5 +223,34 @@ export function deactivate(id,
       ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
       circleRadiusActive,
       circleRadius]);
+  }
+  updateFeatureState(id);
+}
+
+export function remove(id) {
+  // Remove line layer
+  var mapLayer = map.getLayer(id + '.line');
+  if(typeof mapLayer !== 'undefined') {
+    map.removeLayer(id + '.line');
+  }
+  // Remove fill layer
+  var mapLayer = map.getLayer(id + '.fill');
+  if(typeof mapLayer !== 'undefined') {
+    map.removeLayer(id + '.line');
+  }
+  // Remove source
+  var mapSource = map.getSource(id);
+  if(typeof mapSource !== 'undefined') {
+    map.removeSource(id);
+  }
+  map.off('moveend', moveEnd(layerId));
+}
+
+function moveEnd(layerId) {
+  console.log(layerId);
+  const vis = map.getLayoutProperty(layerId + '.line', 'visibility');
+  console.log(vis);
+  if (vis == "visible") {
+    updateFeatureState(layerId);
   }
 }

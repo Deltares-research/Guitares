@@ -24,7 +24,7 @@ class GeoJSONLayerPolygonSelector(Layer):
         # Remove existing layer        
         self.remove()
 
-        # Add new layer        
+        # Add new layer
         self.mapbox.runjs("./js/geojson_layer_polygon_selector.js", "addLayer", arglist=[self.map_id,
                                                                                          data,
                                                                                          index,
@@ -39,6 +39,14 @@ class GeoJSONLayerPolygonSelector(Layer):
     def set_selected_index(self, index):
         self.index = index
         self.mapbox.runjs("/js/geojson_layer_polygon_selector.js", "setSelectedIndex", arglist=[self.map_id, index])
+
+    def select_by_index(self, index):
+        # self.index = index
+        self.mapbox.runjs("/js/geojson_layer_polygon_selector.js", "selectByIndex", arglist=[self.map_id, index])
+
+    def select_by_id(self, id):
+        # self.index = index
+        self.mapbox.runjs("/js/geojson_layer_polygon_selector.js", "selectById", arglist=[self.map_id, id])
 
     def activate(self):
         self.active = True

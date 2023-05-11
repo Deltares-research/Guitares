@@ -14,6 +14,9 @@ export let jsonString;
 export let featureClicked;
 export let pointClicked;
 export let layerStyleSet;
+export let layers;
+
+
 
 console.log('Adding MapBox map ...')
 
@@ -61,6 +64,7 @@ new QWebChannel(qt.webChannelTransport, function (channel) {
   }
 });
 
+layers = new Object();
 
 map.on('load', () => {
   console.log('Mapbox loaded !');
@@ -205,6 +209,13 @@ export function removeLayer(id) {
     legend.remove();
   }
 
+  map.off('moveend', () => {
+    const vis = map.getLayoutProperty(lineId, 'visibility');
+    if (vis == "visible") {
+      updateFeatureState(id);
+    }
+  });
+
 }
 
 export function showLayer(id) {
@@ -219,14 +230,17 @@ export function showLayer(id) {
 }
 
 export function hideLayer(id) {
-	// Show layer
+	// Hide layer
 	if (map.getLayer(id)) {
   	map.setLayoutProperty(id, 'visibility', 'none');
     var legend = document.getElementById("legend" + id);
     if (legend) {
       legend.style.visibility = 'hidden';
     }  
+  } else {
+    console.log("While hiding, layer " + id + " not found !");
   }
+
 }
 
 export function getExtent() {

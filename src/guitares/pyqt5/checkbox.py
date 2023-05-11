@@ -50,17 +50,16 @@ class CheckBox(QCheckBox):
             val = True
         else:
             val = False
-        self.element.setvar(group, name, True)
+        self.element.setvar(group, name, val)
         try:
             if self.isEnabled() and self.element.callback:
                 self.element.callback(val, self)
-                # Update GUI
-                self.element.window.update()
+            # Update GUI
+            self.element.window.update()
         except:
             traceback.print_exc()
 
     def set_geometry(self):
-        resize_factor = self.element.gui.resize_factor
         x0, y0, wdt, hgt = self.element.get_position()
         self.setGeometry(x0, y0, wdt, hgt)
 
