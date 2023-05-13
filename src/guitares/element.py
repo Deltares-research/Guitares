@@ -296,6 +296,11 @@ class Element:
         elif self.style == "mapbox":
             from .pyqt5.mapbox.mapbox import MapBox
             self.widget = MapBox(self)
+
+        elif self.style == "mapbox_compare":
+            from .pyqt5.mapbox.mapbox_compare import MapBoxCompare
+            self.widget = MapBoxCompare(self)
+
         elif self.style == "webpage":
             from .pyqt5.webpage import WebPage
             self.widget = WebPage(self)
@@ -371,6 +376,9 @@ class Element:
 
                 if self.style == "radiobuttongroup": # Cannot set radiobutton group directly
                     self.widget.set_visible(true_or_false)        
+                elif self.style == "mapbox" or self.style == "mapbox_compare":
+                    if self.widget.ready:
+                        self.widget.view.setVisible(true_or_false)        
                 else:    
                     if self.widget:
                         self.widget.setVisible(true_or_false)

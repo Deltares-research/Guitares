@@ -15,6 +15,7 @@ class Layer:
         self.select    = None
         self.crs       = 4326
         self.hover_param = "name"
+        self.side      = "a"  # only for compare maps
 
         self.line_color     = "dodgerblue"
         self.line_width     = 2

@@ -78,6 +78,7 @@ class MapBox(QtWidgets.QWidget):
 
         self.layer = {}
         self.map_extent = None
+        self.map_center = None
         self.map_moved = None
         self.point_clicked_callback = None
 
@@ -132,7 +133,8 @@ class MapBox(QtWidgets.QWidget):
     @QtCore.pyqtSlot(str)
     def mapMoved(self, coords):
         coords = json.loads(coords)
-        self.map_extent = coords
+        self.map_extent = coords[0:2]
+        self.map_center = coords[2:5]
         # Loop through layers to update each
         layers = list_layers(self.layer)
         for layer in layers:
@@ -150,6 +152,11 @@ class MapBox(QtWidgets.QWidget):
     def getMapExtent(self, coords):
         coords = json.loads(coords)
         self.map_extent = coords
+
+    @QtCore.pyqtSlot(str)
+    def getMapCenter(self, coords):
+        coords = json.loads(coords)
+        self.map_center = coords
 
     @QtCore.pyqtSlot(str, str)
     def featureClicked(self, layer_id, feature_props):
@@ -187,6 +194,10 @@ class MapBox(QtWidgets.QWidget):
 
     def get_extent(self):
         js_string = "import('/js/main.js').then(module => {module.getExtent()});"
+        self.view.page().runJavaScript(js_string)
+
+    def get_center(self):
+        js_string = "import('/js/main.js').then(module => {module.getCenter()});"
         self.view.page().runJavaScript(js_string)
 
     def click_point(self, callback):
