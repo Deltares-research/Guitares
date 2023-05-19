@@ -14,7 +14,7 @@ class Layer:
         self.index     = None
         self.select    = None
         self.crs       = 4326
-        self.hover_param = "name"
+        self.hover_property = "name"
         self.side      = "a"  # only for compare maps
 
         self.line_color     = "dodgerblue"
@@ -89,7 +89,10 @@ class Layer:
             self.delete_from_map()
 
         # Remove layer from layer dict
-        self.parent.layer.pop(self.id)
+        if self.parent:
+            self.parent.layer.pop(self.id)
+        else:
+            self.mapbox.layer.pop(self.id)
 
     def delete_from_map(self):
         self.mapbox.runjs("/js/main.js", "removeLayer", arglist=[self.map_id])
@@ -183,7 +186,14 @@ class Layer:
             self.layer[layer_id].mode = mode
 
             return self.layer[layer_id]
-
+ 
+    def layer_added(self):
+        print("Layer " + self.map_id + " added")
+        if self.mode == "inactive":
+            self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id])
+            self.deactivate()
+        elif self.mode == "invisible":    
+            self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id])
 
     def show(self):
         self.set_visibility(True)
@@ -225,7 +235,7 @@ class Layer:
                     self.deactivate()
                 else:    
                     self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id])
-                self.mode = mode
+            self.mode = mode
 
     def redraw(self):
         print("Cannot redraw layer of type " + self.type)

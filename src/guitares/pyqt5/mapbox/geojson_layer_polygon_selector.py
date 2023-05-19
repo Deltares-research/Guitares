@@ -41,15 +41,15 @@ class GeoJSONLayerPolygonSelector(Layer):
         self.mapbox.runjs("/js/geojson_layer_polygon_selector.js", "setSelectedIndex", arglist=[self.map_id, index])
 
     def select_by_index(self, index):
-        # self.index = index
         self.mapbox.runjs("/js/geojson_layer_polygon_selector.js", "selectByIndex", arglist=[self.map_id, index])
 
     def select_by_id(self, id):
-        # self.index = index
         self.mapbox.runjs("/js/geojson_layer_polygon_selector.js", "selectById", arglist=[self.map_id, id])
 
-    def activate(self):
+    def activate(self):        
         self.active = True
+        if self.data is None:
+            return
         self.mapbox.runjs("./js/geojson_layer_polygon_selector.js", "activate", arglist=[self.map_id,
                                                                                          self.line_color,
                                                                                          self.fill_color,
@@ -58,6 +58,8 @@ class GeoJSONLayerPolygonSelector(Layer):
   
     def deactivate(self):
         self.active = False
+        if self.data is None:
+            return
         self.mapbox.runjs("./js/geojson_layer_circle_selector.js", "deactivate", arglist=[self.map_id,
                                                                                           self.line_color_inactive,
                                                                                           self.line_width_inactive,
@@ -72,12 +74,11 @@ class GeoJSONLayerPolygonSelector(Layer):
         if isinstance(self.data, GeoDataFrame):
             self.set_data(self.data, self.index, self.hover_property)
 
-    def activate(self):
-        self.active = True
+    # def activate(self):
+    #     self.active = True
 
-    def deactivate(self):
-        self.active = False
-
+    # def deactivate(self):
+    #     self.active = False
 
     def clear(self):
         self.active = False

@@ -47,11 +47,6 @@ function selectionChanged(e) {
   var feature=e.features[0];
   if (feature) {
     var featureId = feature["id"];
-    console.log("Selected " + featureId)
-    if (featureId == selectedFeatureId) {
-      // This feature was already selected
-      return
-    }
     selectedFeatureId = featureId;
     var featureProps = getFeatureProps(featureId)
     if (featureProps.shape == "polygon") {
@@ -64,7 +59,6 @@ function selectionChanged(e) {
       rectangleSelectionChanged(e);
     }    
   } else {
-    console.log("Active Layer = " + activeLayerId);
     featureDeselected(activeLayerId);
   }
 }
@@ -89,8 +83,10 @@ function featureUpdated(e) {
 function activateScaleRotateMode(featureId) {
   draw.changeMode('scale_rotate_mode', {
     featureId: featureId,
+//    canScale: false,
+//    canRotate: false, // only rotation enabled
     canScale: true,
-    canRotate: true, // only rotation enabled
+    canRotate: getLayerProps(activeLayerId).paintProps.rotate, // only rotation enabled
     canTrash: false, // disable feature delete
     rotatePivot: SRCenter.Center, // rotate around center
     scaleCenter: SRCenter.Opposite, // scale around opposite vertex
@@ -114,6 +110,8 @@ export function drawPolygon(layerId) {
   map.off('draw.create', createListener);
   createListener = polygonCreated;
   map.on('draw.create', createListener);
+  map.getCanvas().style.cursor = 'pointer';
+
 }
 
 function polygonCreated(e) {
@@ -229,7 +227,6 @@ function rectangleUpdated(e) {
 function rectangleSelectionChanged(e) {
   var feature=e.features[0];
   if (feature) {
-    // Determine what sort of shape this is
     var id = feature["id"];
     activateScaleRotateMode(id);
     activeLayerId        = getFeatureProps(id).layerId;
@@ -259,7 +256,11 @@ export function addFeature(featureCollection, layerId) {
   updateInactiveLayerGeometry(layerId);
   // Set the layer mode
   setLayerMode(layerId, layerProps.mode);
-  var featureCollection = getFeatureCollectionInActiveLayer(layerId);
+  if (layerProps.mode == "active") {
+    var featureCollection = getFeatureCollectionInActiveLayer(layerId);
+  } else {
+    var featureCollection = getFeatureCollectionInInactiveLayer(layerId);
+  }
   featureAdded(JSON.stringify(featureCollection), featureId, layerId);
 }
 
@@ -321,9 +322,6 @@ export function setFeatureGeometry(layerId, featureId, featureCollection) {
   var layerProps = getLayerProps(layerId);
   setGeometryInFeatureList(featureId, geometry);
   updateInactiveLayerGeometry(layerId);
-  if (layerProps.mode == "active") {
-    console.log("Also update editable features");
-  }
 }
 
 function removeFromFeatureList(featureId) {
@@ -351,6 +349,25 @@ function getFeatureCollectionInActiveLayer(layerId) {
   for (let i = 0; i < nfeat; i++) {
     if (featureIdsInLayer.includes(featureCollection.features[nfeat - i - 1].id) == false) {
       featureCollection.features.splice(nfeat - i - 1, 1);
+    }
+  }
+  return featureCollection
+}
+
+function getFeatureCollectionInInactiveLayer(layerId) {
+  // Feature collection with all features
+  var featureCollection = {}
+  featureCollection.type = "FeatureCollection"
+  featureCollection.features = []
+  for (let i = 0; i < featureList.length; i++) {
+    if (featureList[i].layerId == layerId) {
+      var feature = {}
+      feature.type = "Feature"
+      feature.properties = {}
+      feature.properties["id"] = featureList[i].featureId;
+      feature.id = featureList[i].featureId;
+      feature.geometry = featureList[i].geometry;
+      featureCollection.features.push(feature);
     }
   }
   return featureCollection

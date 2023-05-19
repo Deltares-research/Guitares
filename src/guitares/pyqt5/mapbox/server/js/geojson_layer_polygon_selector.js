@@ -69,7 +69,6 @@ export function addLayer(id,
   });
 
   // Update feature state after moving
-  //map.on('moveend', moveEnd(id));
   map.on('moveend', () => {
     const vis = map.getLayoutProperty(lineId, 'visibility');
     if (vis == "visible") {
@@ -209,7 +208,7 @@ export function deactivate(id,
   fillOpacity,
   lineColorActive,
   fillColorActive) {  
-  layers[layerId].mode = "inactive"
+  layers[id].mode = "inactive"
   if (map.getLayer(id)) {
     map.setPaintProperty(id, 'circle-stroke-color', ['case',
       ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],

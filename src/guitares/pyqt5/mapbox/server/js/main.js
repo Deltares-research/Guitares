@@ -15,9 +15,8 @@ export let jsonString;
 export let featureClicked;
 export let pointClicked;
 export let layerStyleSet;
+export let layerAdded;
 export let layers;
-
-
 
 console.log('Adding MapBox map ...');
 
@@ -63,8 +62,13 @@ new QWebChannel(qt.webChannelTransport, function (channel) {
     featureDeselected = function(layerId) { MapBox.featureDeselected(layerId)};
     pointClicked      = function(coords) { MapBox.pointClicked(JSON.stringify(coords))};
     layerStyleSet     = function() { MapBox.layerStyleSet('')};
+    layerAdded        = function(layerId) { MapBox.layerAdded(layerId)};
+    moveOn();  
   }
 });
+
+function moveOn() {
+  // Continue on after QWebChannel has loaded 
 
 layers = new Object();
 
@@ -139,6 +143,7 @@ map.on('moveend', () => {
     onMoveEnd();
 });
 
+};
 
 function mapLoaded(evt) {
   // Get the map extents and tell Python Mapbox object that we're ready
@@ -174,37 +179,36 @@ export function removeLayer(id) {
   var mapLayer = map.getLayer(id);
   if(typeof mapLayer !== 'undefined') {
     // Remove map layer
-    console.log('removing ' + id)
     map.removeLayer(id);
   }
 
   var mapLayer = map.getLayer(id + '.line');
   if(typeof mapLayer !== 'undefined') {
     // Remove map layer
-    console.log('removing ' + id + '.line')
+ //   console.log('removing ' + id + '.line')
     map.removeLayer(id + '.line');
-    console.log('done removing ' + id + '.line')
+ //   console.log('done removing ' + id + '.line')
   }
 
   var mapLayer = map.getLayer(id + '.fill');
   if(typeof mapLayer !== 'undefined') {
     // Remove map layer
-    console.log('removing ' + id + '.fill')
+  //  console.log('removing ' + id + '.fill')
     map.removeLayer(id + '.line');
-    console.log('done removing ' + id + '.fill')
+  //  console.log('done removing ' + id + '.fill')
   }
 
   var mapLayer = map.getLayer(id + '.circle');
   if(typeof mapLayer !== 'undefined') {
     // Remove map layer
-    console.log('removing ' + id + '.circle')
+//    console.log('removing ' + id + '.circle')
     map.removeLayer(id + '.circle');
   }
 
   // Remove source
   var mapSource = map.getSource(id);
   if(typeof mapSource !== 'undefined') {
-    console.log('removing source ' + id)
+//    console.log('removing source ' + id)
     map.removeSource(id);
   }
 
@@ -220,6 +224,11 @@ export function removeLayer(id) {
     }
   });
 
+}
+
+export function setMouseDefault() {
+  map.getCanvas().style.cursor = '';
+  map.off('click', onPointClicked);
 }
 
 export function showLayer(id) {
@@ -265,15 +274,20 @@ export function getCenter() {
 
 export function clickPoint() {
   map.getCanvas().style.cursor = 'crosshair'
-  map.once('click', function(e) {
-    var coordinates = e.lngLat;
-    onPointClicked(coordinates);
-  });
+//  map.once('click', function(e) { onPointClicked(e) });
+  map.once('click', onPointClicked);
+  map.once('contextmenu', onPointRightClicked);
 }
 
-function onPointClicked(coordinates) {
+function onPointClicked(e) {
   map.getCanvas().style.cursor = '';
-  pointClicked(coordinates);
+  pointClicked(e.lngLat);
+}
+
+function onPointRightClicked(e) {
+  map.getCanvas().style.cursor = '';
+  console.log("point right clicked");
+  map.off('click', onPointClicked);
 }
 
 export function setCenter(lon, lat) {

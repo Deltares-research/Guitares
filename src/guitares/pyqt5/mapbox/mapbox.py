@@ -1,13 +1,10 @@
-import os
 from PyQt5 import QtWebEngineWidgets
 from PyQt5 import QtCore, QtWidgets, QtWebChannel
 import json
-from urllib.request import urlopen
-import urllib
 from geopandas import GeoDataFrame
+from pandas import DataFrame
 
 from .layer import Layer, list_layers, find_layer_by_id
-
 
 class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
     def __init__(self, view, print_messages):
@@ -28,25 +25,6 @@ class MapBox(QtWidgets.QWidget):
 
         url = "http://localhost:" + str(self.gui.server_port) + "/"
         self.url = url
-
-        # while True:
-        #     try:
-        #
-        #         print("Finding server ...")
-        #
-        #         url = "http://localhost:" + str(server_port) + "/"
-        #         self.url = url
-        #
-        #         urllib.request.urlcleanup()
-        #         request = urllib.request.urlopen(url)
-        #         response = request.read().decode('utf-8')
-        #
-        #         print("Found server running at port 3000 ...")
-        #
-        #         break
-        #
-        #     except:
-        #         print("Waiting for server ...")
 
         self.ready = False
 
@@ -70,9 +48,7 @@ class MapBox(QtWidgets.QWidget):
 
         view.load(QtCore.QUrl(url))
 
-        # file_path = os.path.join(self.server_path, "index.html")
-        # local_url = QtCore.QUrl.fromLocalFile(file_path)
-        # view.load(local_url)
+        view.loadFinished.connect(self.load_finished)
 
         self.callback_module = element.module
 
@@ -82,16 +58,8 @@ class MapBox(QtWidgets.QWidget):
         self.map_moved = None
         self.point_clicked_callback = None
 
-        self.timer = QtCore.QTimer()
-        self.timer.timeout.connect(self.reload)
-        self.timer.setSingleShot(True)
-        self.timer.start(1000)
-
-    def reload(self):
-        print("Reloading ...")
-        self.view.page().setWebChannel(self.channel)
-        self.channel.registerObject("MapBox", self)
-        self.view.load(QtCore.QUrl(self.url))
+    def load_finished(self):
+        print("Load Finished")    
 
     def set(self):
         pass
@@ -110,14 +78,19 @@ class MapBox(QtWidgets.QWidget):
         self.ready = True
         self.map_extent = coords
         if hasattr(self.callback_module, "map_ready"):
-            self.callback_module.map_ready()
-        if hasattr(self.gui.module, "on_map_ready"):
-            self.gui.module.on_map_ready()
+            self.callback_module.map_ready(self)
+        # if hasattr(self.gui.module, "on_map_ready"):
+        #     self.gui.module.on_map_ready(self)
 
     @QtCore.pyqtSlot(str)
     def layerStyleSet(self, coords):
         print("Layer style changed.")
         self.redraw_layers()
+
+    @QtCore.pyqtSlot(str)
+    def layerAdded(self, layer_id):
+        layer = find_layer_by_id(layer_id, self.layer)
+        layer.layer_added()
 
     @QtCore.pyqtSlot(str)
     def mouseMoved(self, coords):
@@ -140,7 +113,7 @@ class MapBox(QtWidgets.QWidget):
         for layer in layers:
             layer.update()
         if hasattr(self.callback_module, "map_moved"):
-            self.callback_module.map_moved(coords)
+            self.callback_module.map_moved(coords, self)
 
     @QtCore.pyqtSlot(str)
     def pointClicked(self, coords):
@@ -164,7 +137,7 @@ class MapBox(QtWidgets.QWidget):
         layer = find_layer_by_id(layer_id, self.layer)
         if hasattr(layer, "select"):
             if layer.select:
-                layer.select(json.loads(feature_props))
+                layer.select(json.loads(feature_props), self)
 
     @QtCore.pyqtSlot(str, str, str)
     def featureDrawn(self, feature_collection, feature_id, layer_id):
@@ -229,6 +202,7 @@ class MapBox(QtWidgets.QWidget):
         self.runjs("/js/main.js", "setTerrain", arglist=[true_or_false, exaggeration])
 
     def set_mouse_default(self):
+        self.runjs("/js/main.js", "setMouseDefault", arglist=[])
         self.runjs("/js/draw.js", "setMouseDefault", arglist=[])
 
     def add_layer(self, layer_id):
@@ -275,12 +249,14 @@ class MapBox(QtWidgets.QWidget):
                 if len(arg) == 0:
                     string = string + "{}"
                 else:
+                    # Need to remove timeseries from geodataframe
+                    for (columnName, columnData) in arg.items():                    
+                        if isinstance(columnData[0], DataFrame):
+                            arg = arg.drop([columnName], axis=1)
                     string = string + arg.to_json()
             else:
                 string = string + "'" + arg + "'"
             if iarg < len(arglist) - 1:
                 string = string + ","
         string = string + ")});"
-        # print("JS String")
-        # print(string)
         self.view.page().runJavaScript(string)

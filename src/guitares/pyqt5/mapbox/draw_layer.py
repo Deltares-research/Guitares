@@ -21,6 +21,7 @@ class DrawLayer(Layer):
         modify=None,
         select=None,
         deselect=None,
+        rotate=True,
         polygon_line_color="dodgerblue",
         polygon_line_width=2,
         polygon_line_style="-",
@@ -68,6 +69,7 @@ class DrawLayer(Layer):
         self.paint_props["circle_fill_color"] = mcolors.to_hex(circle_fill_color)
         self.paint_props["circle_fill_opacity"] = circle_fill_opacity
         self.paint_props["circle_radius"] = circle_radius
+        self.paint_props["rotate"] = rotate
 
         # Add this layer
         self.mapbox.runjs(
@@ -90,10 +92,12 @@ class DrawLayer(Layer):
             self.set_mode("invisible")
 
     def add_feature(self, geometry):
-        self.mapbox.runjs("./js/draw.js", "addFeature", arglist=[geometry, self.map_id])
+        # Loop through features
+        for index, row in geometry.iterrows():
+            gdf = gpd.GeoDataFrame(geometry=[row["geometry"]])
+            self.mapbox.runjs("./js/draw.js", "addFeature", arglist=[gdf, self.map_id])
 
-    def add_rectangle(self, feature_id, x0, y0, lenx, leny, rotation):
-        shape = "rectangle"
+    def add_rectangle(self, x0, y0, lenx, leny, rotation):
         lon_point_list = [x0, x0 + lenx, x0 + lenx, x0, x0]
         lat_point_list = [y0, y0, y0 + leny, y0 + leny, y0]
         polygon_crs = Polygon(zip(lon_point_list, lat_point_list))
@@ -102,9 +106,8 @@ class DrawLayer(Layer):
             self.crs, pyproj.CRS(4326), always_xy=True
         ).transform
         polygon_wgs84 = transform(project, polygon_crs)
-        json_string = shapely.to_geojson(polygon_wgs84)
-        geometry = json.loads(json_string)
-        self.add_feature(feature_id, shape, geometry)
+        gdf = gpd.GeoDataFrame(geometry=[polygon_wgs84])
+        self.add_feature(gdf)
 
     def draw(self):
         if self.shape == "polygon":
@@ -154,6 +157,10 @@ class DrawLayer(Layer):
 
     def feature_added(self, feature_collection, feature_id):
         self.set_gdf(feature_collection)
+        if self.create:
+            feature_index = self.get_feature_index(feature_id)
+            self.create(self.gdf, feature_index, feature_id)
+        self.set_mode(self.mode)
 
     def feature_modified(self, feature_collection, feature_id):
         self.set_gdf(feature_collection)
@@ -191,11 +198,14 @@ class DrawLayer(Layer):
             self.mapbox.runjs("./js/draw.js", "deleteFeature", arglist=[feature_id])
 
     def delete_from_map(self):
-        self.clear()
-
-    def clear(self):
         self.active = False
         self.mapbox.runjs("./js/draw.js", "deleteLayer", arglist=[self.map_id])
+        self.gdf = gpd.GeoDataFrame()
+#        self.clear()
+
+    def clear(self):
+        for index, row in self.gdf.iterrows():
+            self.mapbox.runjs("./js/draw.js", "deleteFeature", arglist=[row["id"]])
         self.gdf = gpd.GeoDataFrame()
 
     def get_gdf(self, id=None):
