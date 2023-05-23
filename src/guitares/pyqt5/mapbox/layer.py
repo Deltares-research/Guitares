@@ -165,6 +165,10 @@ class Layer:
                 from .draw_layer import DrawLayer
                 self.layer[layer_id] = DrawLayer(self.mapbox, layer_id, map_id, **kwargs)
 
+            elif type == "image":
+                from .image_layer import ImageLayer
+                self.layer[layer_id] = ImageLayer(self.mapbox, layer_id, map_id, **kwargs)
+
             elif type == "raster":
                 from .raster_layer import RasterLayer
                 self.layer[layer_id] = RasterLayer(self.mapbox, layer_id, map_id, **kwargs)
