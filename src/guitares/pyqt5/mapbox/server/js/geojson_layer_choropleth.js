@@ -8,7 +8,8 @@ export function addLayer(id,
   lineColor,
   lineWidth,
   lineOpacity,
-  fillOpacity) {
+  fillOpacity,
+  scaler) {
 
   let fillId = id + ".fill"
   let lineId = id + ".line"
@@ -29,7 +30,11 @@ export function addLayer(id,
       'line-color': lineColor,
       'line-width': lineWidth,
       'line-opacity': lineOpacity
-     }
+     },
+     'layout': {
+      // Make the layer visible by default.
+      'visibility': 'visible'
+      }
   });
 
 
@@ -45,13 +50,17 @@ export function addLayer(id,
       ['get', color_property],
       // This should all not be hard0-coded and provided with input
       0,
-      '#22f702',
-      1,
-      '#fffc51',
-      3,
-      '#fed976',
-      6,
-      '#ff2b20',
+      '#FFFFFF',
+      0.1,
+      '#FFFFCC',
+      0.1*scaler,
+      '#FFFF33',
+      0.3*scaler,
+      '#FFB266',
+      0.5*scaler,
+      '#FF3333',
+      0.8*scaler,
+      '#990000',
     ],
     'fill-opacity': fillOpacity
     }

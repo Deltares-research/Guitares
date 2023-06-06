@@ -12,6 +12,7 @@ class GeoJSONLayerChoropleth(Layer):
         data,
         hover_property="",
         color_property="",
+        scaler=None
     ):
         self.data = data
         self.hover_property = hover_property
@@ -40,6 +41,7 @@ class GeoJSONLayerChoropleth(Layer):
                 self.line_width,
                 self.line_opacity,
                 self.fill_opacity,
+                scaler
             ],
         )
 
