@@ -8,18 +8,21 @@ class GeoJSONLayerPolygonSelector(Layer):
 
     def set_data(self,
                  data,
-                 index = "",
-                 hover_property = ""):
+                 index):
 
         self.data = data
         self.index = index
-        self.hover_property = hover_property
+#        self.hover_property = hover_property
 
         # Make sure this is not an empty GeoDataFrame
         if isinstance(data, GeoDataFrame):
             # Data is GeoDataFrame
             if len(data) == 0:
                 data = GeoDataFrame()
+
+        indices = []
+        indices.extend(range(len(data)))
+        data["index"] = indices
 
         # Remove existing layer        
         self.remove()
@@ -28,7 +31,7 @@ class GeoJSONLayerPolygonSelector(Layer):
         self.mapbox.runjs("./js/geojson_layer_polygon_selector.js", "addLayer", arglist=[self.map_id,
                                                                                          data,
                                                                                          index,
-                                                                                         hover_property,
+                                                                                         self.hover_property,
                                                                                          self.line_color,
                                                                                          self.line_width,
                                                                                          self.line_opacity,

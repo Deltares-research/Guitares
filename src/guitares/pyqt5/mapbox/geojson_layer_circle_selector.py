@@ -9,7 +9,6 @@ class GeoJSONLayerCircleSelector(Layer):
     def set_data(self,
                  data,
                  index,
-                 legend_title="",
                  crs=None):
 
         self.data = data

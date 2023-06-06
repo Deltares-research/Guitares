@@ -59,7 +59,7 @@ class ProgressDialog(QProgressDialog):
     def __init__(self, window, text, title, nmax):
         super().__init__(text, "Abort", 0, nmax, window)
         self.setWindowModality(QtCore.Qt.WindowModal)
-        self.setMinimumDuration(1)
+#        self.setMinimum(1)
         self.setMaximum(nmax)
         self.setWindowTitle(title)
         self.time_elapsed = QLabel("Time elapsed :", self)
@@ -68,10 +68,12 @@ class ProgressDialog(QProgressDialog):
         self.time_remaining.setGeometry(15, 85, 200, 20)
         self.t0 = time.time()
         self.nmax = nmax
-        self.show()
+        self.setMinimumDuration(0)
+        self.setValue(0)
+#        self.show()
 
     def set_value(self, i):
-        self.setValue(i + 1)
+        self.setValue(i)
         t = time.time()
         dt = t - self.t0
         if dt > 60.0:
@@ -91,11 +93,18 @@ class ProgressDialog(QProgressDialog):
             tmin = int(trem / 60)
             tsec = trem - tmin * 60.0
             new_string = (
-                "Time elapsed : " + str(int(tmin)) + "m " + str(int(tsec)) + "s"
+                "Est. time remaining : " + str(int(tmin)) + "m " + str(int(tsec)) + "s"
             )
         else:
             new_string = "Est. time remaining : " + str(int(trem)) + "s"
         self.time_remaining.setText(new_string)
+
+    def set_text(self, text):
+        self.setLabelText(text)
+
+    def set_maximum(self, nmax):
+        self.nmax = nmax
+        self.setMaximum(nmax)
 
     def was_canceled(self):
         return self.wasCanceled()

@@ -3,6 +3,7 @@ from PyQt5 import QtCore, QtWidgets, QtWebChannel
 import json
 from geopandas import GeoDataFrame
 from pandas import DataFrame
+from pyproj import CRS, Transformer
 
 from .layer import Layer, list_layers, find_layer_by_id
 
@@ -27,6 +28,7 @@ class MapBox(QtWidgets.QWidget):
         self.url = url
 
         self.ready = False
+        self.crs   = CRS(4326)
 
         self.server_path = self.gui.server_path
 
@@ -42,6 +44,7 @@ class MapBox(QtWidgets.QWidget):
 
         page = WebEnginePage(view, self.gui.js_messages)
         view.setPage(page)
+
         view.page().setWebChannel(channel)
 
         channel.registerObject("MapBox", self)
@@ -100,8 +103,8 @@ class MapBox(QtWidgets.QWidget):
         layers = list_layers(self.layer)
         for layer in layers:
             layer.update()
-        if hasattr(self.callback_module, "map_moved"):
-            self.callback_module.map_moved(coords)
+        if hasattr(self.callback_module, "mouse_moved"):
+            self.callback_module.mouse_moved(coords)
 
     @QtCore.pyqtSlot(str)
     def mapMoved(self, coords):
@@ -118,8 +121,17 @@ class MapBox(QtWidgets.QWidget):
     @QtCore.pyqtSlot(str)
     def pointClicked(self, coords):
         coords = json.loads(coords)
+        # Transform to local crs
+        if self.crs.to_epsg() != 4326:
+            transformer = Transformer.from_crs(4326,
+                                            self.crs,
+                                            always_xy=True)
+            x, y = transformer.transform(coords["lng"], coords["lat"])
+        else:
+            x = coords["lng"]    
+            y = coords["lat"]    
         if self.point_clicked_callback:
-            self.point_clicked_callback(coords)
+            self.point_clicked_callback(x, y)
 
     @QtCore.pyqtSlot(str)
     def getMapExtent(self, coords):

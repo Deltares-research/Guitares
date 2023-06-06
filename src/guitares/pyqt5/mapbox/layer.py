@@ -98,13 +98,15 @@ class Layer:
         self.mapbox.runjs("/js/main.js", "removeLayer", arglist=[self.map_id])
 
     def clear(self):
-        pass
-        # # Works for container layers. Removes all layers with this layer.
-        # if self.layer:
-        #     # Container layer
-        #     layers = list_layers(self.layer)
-        #     for layer in layers:
-        #         layer.delete()
+        # Clear this layer and all nested layers from map
+        if self.layer:
+            # Container layer
+            layers = list_layers(self.layer)
+            for layer in layers:
+                layer.clear()
+        else:        
+            self.delete_from_map()
+            self.data = None
 
     def get(self, layer_id):
         if layer_id in self.layer:

@@ -1,4 +1,8 @@
+console.log('Importing MapBox ...');
+
 export let mapboxgl = mpbox.import_mapbox_gl()
+
+console.log('Importing MapBox Draw ...');
 
 import { draw, setDrawEvents } from '/js/draw.js';
 
@@ -18,9 +22,13 @@ export let layerStyleSet;
 export let layerAdded;
 export let layers;
 
-console.log('Adding MapBox map ...');
+//console.log('Adding MapBox map ...');
+
+console.log('Setting MapBox token ...');
 
 mapboxgl.accessToken = mapbox_token;
+
+console.log('Adding map ...');
 
 export const map = new mapboxgl.Map({
   container: 'map', // container ID
@@ -31,6 +39,8 @@ export const map = new mapboxgl.Map({
 //  projection: 'globe' // display the map as a 3D globe
   projection: 'mercator' // display the map as a 3D globe
 });
+
+console.log('Adding controls ...');
 
 map.scrollZoom.setWheelZoomRate(1 / 200);
 
@@ -44,7 +54,10 @@ const scale = new mapboxgl.ScaleControl({
 });
 map.addControl(scale, 'bottom-left');
 
+
 export const marker = new mapboxgl.Marker({draggable: true});
+
+console.log('Adding WebChannel ...');
 
 // Web Channel
 new QWebChannel(qt.webChannelTransport, function (channel) {
@@ -64,8 +77,13 @@ new QWebChannel(qt.webChannelTransport, function (channel) {
     layerStyleSet     = function() { MapBox.layerStyleSet('')};
     layerAdded        = function(layerId) { MapBox.layerAdded(layerId)};
     moveOn();  
+  } else {  
+    console.log("typeof MapBox is undefined !!!");
   }
 });
+
+console.log("Done in main.js");
+
 
 function moveOn() {
   // Continue on after QWebChannel has loaded 
@@ -194,7 +212,7 @@ export function removeLayer(id) {
   if(typeof mapLayer !== 'undefined') {
     // Remove map layer
   //  console.log('removing ' + id + '.fill')
-    map.removeLayer(id + '.line');
+    map.removeLayer(id + '.fill');
   //  console.log('done removing ' + id + '.fill')
   }
 

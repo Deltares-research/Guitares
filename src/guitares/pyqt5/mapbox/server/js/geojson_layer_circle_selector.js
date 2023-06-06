@@ -14,7 +14,6 @@ export function addLayer(id,
                          data,
                          index,
                          hovprop,
-
                          lineColor,
                          lineWidth,
                          lineStyle,
@@ -139,8 +138,6 @@ function mouseLeave(e) {
 }
 
 function moveEnd(layerId) {
-//  console.log("move ended!!!")
-//  console.log(layerId)
   const vis = map.getLayoutProperty(layerId, 'visibility');
   if (vis == "visible") {
     updateFeatureState(layerId);
@@ -188,7 +185,6 @@ export function selectByIndex(layerId, index) {
   // And update the feature state
   updateFeatureState(layerId);
 }
-
 
 // Set active and selected feature states
 function updateFeatureState(layerId) {
