@@ -465,12 +465,17 @@ export function setLayerMode(layerId, mode) {
   // Set visibility for inactive layer 
   if (mode == "inactive") {
     map.setLayoutProperty(layerId + ".line", 'visibility', 'visible');
-    map.setLayoutProperty(layerId + ".fill", 'visibility', 'visible');
+    var fillLayer = map.getLayer(layerId + '.fill');
+    if(typeof fillLayer !== 'undefined') {  
+      map.setLayoutProperty(layerId + ".fill", 'visibility', 'visible');
+    }  
   } else {
     map.setLayoutProperty(layerId + ".line", 'visibility', 'none');
-    map.setLayoutProperty(layerId + ".fill", 'visibility', 'none');
+    var fillLayer = map.getLayer(layerId + '.fill');
+    if(typeof fillLayer !== 'undefined') {  
+      map.setLayoutProperty(layerId + ".fill", 'visibility', 'none');
+    }  
   }
-
 }
 
 function addToLayerList(layerId, mode, paintProps, shape) {
