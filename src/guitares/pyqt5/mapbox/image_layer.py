@@ -35,12 +35,17 @@ class ImageLayer(Layer):
         xlim = [coords[0][0], coords[1][0]]
         ylim = [coords[0][1], coords[1][1]]
         width = self.mapbox.view.geometry().width()
-        self.data.map_overlay(fname, xlim=xlim, ylim=ylim, width=width)
-        return xlim, ylim
+        okay = self.data.map_overlay(fname, xlim=xlim, ylim=ylim, width=width)
+        if okay:
+            return xlim, ylim
+        else:
+            return None, None
 
     def update(self):
         if hasattr(self.data, "map_overlay"):
             xlim, ylim = self.make_overlay()
+            if xlim is None:
+                return
             bounds = [[xlim[0], xlim[1]], [ylim[0], ylim[1]]]
             bounds_string = "[[" + str(bounds[0][0]) + "," + str(bounds[0][1]) + "],[" + str(bounds[1][0]) + "," + str(bounds[1][1]) + "]]"
             overlay_file = "./overlays/" + self.file_name
@@ -115,7 +120,13 @@ class ImageLayer(Layer):
         js_string = "import('/js/main.js').then(module => {module.removeLayer('" + self.map_id + "')});"
         self.mapbox.view.page().runJavaScript(js_string)
 
-        xlim, ylim = self.make_overlay()
+        try:
+            xlim, ylim = self.make_overlay()
+            if xlim is None:
+                return
+        except:
+            print("Something went wrong with map overlay : " + self.map_id)
+            return
         bounds = [[xlim[0], xlim[1]], [ylim[0], ylim[1]]]
         bounds_string = "[[" + str(bounds[0][0]) + "," + str(bounds[0][1]) + "],[" + str(bounds[1][0]) + "," + str(bounds[1][1]) + "]]"
         overlay_file = "./overlays/" + self.file_name

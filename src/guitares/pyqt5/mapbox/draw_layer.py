@@ -93,9 +93,15 @@ class DrawLayer(Layer):
             # Make layer invisible
             self.set_mode("invisible")
 
-    def add_feature(self, geometry):
+    def set_data(self, gdf):
+        self.clear()
+        self.add_feature(gdf)
+
+    def add_feature(self, gdf):
         # Loop through features
-        for index, row in geometry.iterrows():
+        if len(gdf) == 0:
+            return
+        for index, row in gdf.to_crs(4326).iterrows():
             gdf = gpd.GeoDataFrame(geometry=[row["geometry"]])
             self.mapbox.runjs("./js/draw.js", "addFeature", arglist=[gdf, self.map_id])
 
