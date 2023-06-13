@@ -72,7 +72,7 @@ class MapBox(QtWidgets.QWidget):
         pass
 
     def set_geometry(self):
-        resize_factor = self.element.gui.resize_factor
+#        resize_factor = self.element.gui.resize_factor
         x0, y0, wdt, hgt = self.element.get_position()
         self.view.setGeometry(x0, y0, wdt, hgt)
 
@@ -84,7 +84,7 @@ class MapBox(QtWidgets.QWidget):
         coords = json.loads(coords)
         self.ready = True
         self.map_extent = coords
-        if hasattr(self.callback_module, "map_ready"):
+        if hasattr(self.callback_module, "map_ready") and self.nr_attempts == 1:
             self.callback_module.map_ready(self)
         # if hasattr(self.gui.module, "on_map_ready"):
         #     self.gui.module.on_map_ready(self)
