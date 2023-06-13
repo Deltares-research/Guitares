@@ -22,6 +22,7 @@ class GUI:
                  icon=None,
                  server_path=None,
                  server_port=3000,
+                 server_nodejs=False,
                  js_messages=True,
                  copy_mapbox_server_folder=True,
                  mapbox_token_file="mapbox_token.txt"):
@@ -40,6 +41,7 @@ class GUI:
         self.server_path = server_path
         self.server_port = server_port
         self.server_thread = None
+        self.server_nodejs = server_nodejs
         self.js_messages = js_messages
         self.popup_data = None
         self.resize_factor = 1.0        
@@ -76,7 +78,7 @@ class GUI:
                 fid = open(os.path.join(server_path, "mapbox_token.js"), "w")
                 fid.write("mapbox_token = '" + mapbox_token[0].strip() + "';")
                 fid.close()
-            start_server(server_path, port=server_port)    
+            start_server(server_path, port=server_port, node=self.server_nodejs)    
 
     def show_splash(self):
         if self.framework == "pyqt5" and self.splash_file:

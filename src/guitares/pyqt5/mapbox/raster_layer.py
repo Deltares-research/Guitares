@@ -149,9 +149,8 @@ class RasterLayer(Layer):
                            dy=dy * 50000,
                            vert_exag=10.0,
                            blend_mode="soft")
-            rgb = rgb[:, :, 0:3] * 255
+            rgb = rgb * 255
             rgb = rgb.astype(np.uint8)
-
 
             # First create rasterio image
             res = (x[-1] - x[0]) / (x.size - 1)
@@ -163,7 +162,7 @@ class RasterLayer(Layer):
                 driver='GTiff',
                 height=y.size,
                 width=x.size,
-                count=3,
+                count=4,
                 dtype=rgb.dtype,
                 crs=src_crs,
                 transform=transform,
@@ -171,6 +170,7 @@ class RasterLayer(Layer):
             src.write(rgb[:,:,0], 1)
             src.write(rgb[:,:,1], 2)
             src.write(rgb[:,:,2], 3)
+            src.write(rgb[:,:,3], 4)
 
             # Let's convert it to web mercator
             transform, width, height = calculate_default_transform(
@@ -202,11 +202,12 @@ class RasterLayer(Layer):
                                           dst.bounds[2],
                                           dst.bounds[3])
 
-                rgb = np.empty([dst.height, dst.width, 3], dtype=np.uint8)
+                rgb = np.empty([dst.height, dst.width, 4], dtype=np.uint8)
                 rgb[:,:,0] = dst.read(1)
                 rgb[:,:,1] = dst.read(2)
                 rgb[:,:,2] = dst.read(3)
-                im = Image.fromarray(rgb, "RGB")
+                rgb[:,:,3] = dst.read(4)
+                im = Image.fromarray(rgb, "RGBA")
 
                 overlay_file = "./overlays/" + self.file_name
                 im.save(os.path.join(self.mapbox.server_path, "overlays", self.file_name))

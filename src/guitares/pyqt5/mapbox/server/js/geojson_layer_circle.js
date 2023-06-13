@@ -6,7 +6,8 @@ export function addLayer(id, data, hover_property,   min_zoom,
   lineOpacity, 
   fillColor, 
   fillOpacity, 
-  circleRadius) 
+  circleRadius,
+  visibility) 
   
   {
   map.addSource(id, {
@@ -30,6 +31,8 @@ export function addLayer(id, data, hover_property,   min_zoom,
     }
   });
 
+  map.setLayoutProperty(id, 'visibility', visibility);
+
   if (hover_property !== ""){
 
   // Create a popup, but don't add it to the map yet.
@@ -37,6 +40,7 @@ export function addLayer(id, data, hover_property,   min_zoom,
     closeButton: false,
     closeOnClick: false
     });
+
 
   map.on('mouseenter', id, (e) => {
     // Change the cursor style as a UI indicator.
@@ -89,3 +93,4 @@ export function setPaintProperties(id,
     map.setPaintProperty(id, 'circle-radius', circleRadius);  
   }
 }
+

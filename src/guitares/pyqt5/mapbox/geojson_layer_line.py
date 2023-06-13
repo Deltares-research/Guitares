@@ -16,13 +16,17 @@ class GeoJSONLayerLine(Layer):
     def set_data(self,
                  data):
 
+        self.remove()
+
         # Make sure this is not an empty GeoDataFrame
         if isinstance(data, GeoDataFrame):
             # Data is GeoDataFrame
             if len(data) == 0:
-                data = GeoDataFrame()
+                return
+        else:
+            print("Data is not a GeoDataFrame")
+            return    
 
-        self.remove()
         # Add new layer        
         self.mapbox.runjs("./js/geojson_layer_line.js", "addLayer", arglist=[self.map_id,
                                                                                data.to_crs(4326),

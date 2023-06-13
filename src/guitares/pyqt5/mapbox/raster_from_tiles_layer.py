@@ -22,8 +22,8 @@ from .layer import Layer
 from cht.tiling.tiling import make_floodmap_overlay
 
 class RasterFromTilesLayer(Layer):
-    def __init__(self, mapbox, id, map_id):
-        super().__init__(mapbox, id, map_id)
+    def __init__(self, mapbox, id, map_id, **kwargs):
+        super().__init__(mapbox, id, map_id, **kwargs)
         self.active = False
         self.type   = "raster_from_tiles"
         self.new    = True
@@ -110,15 +110,26 @@ class RasterFromTilesLayer(Layer):
         clrmap_string = clrbar.to_json()
 #        clrmap_string = ""
 
-        if self.new:
-#            self.mapbox.runjs("./js/image_layer.js", "addLayer", arglist=[overlay_url, self.map_id, bounds_string, clrmap_string])
-            js_string = "import('/js/image_layer.js').then(module => {module.addLayer('" + overlay_url + "','" + self.map_id + "'," + bounds_string + "," + clrmap_string + ")});"
-            self.mapbox.view.page().runJavaScript(js_string)
-        else:
-#            self.mapbox.runjs("./js/image_layer.js", "updateLayer", arglist=[overlay_url, self.map_id, bounds_string, clrmap_string])
-            js_string = "import('/js/image_layer.js').then(module => {module.updateLayer('" + overlay_url + "','" + self.map_id + "'," + bounds_string + "," + clrmap_string + ")});"
-            self.mapbox.view.page().runJavaScript(js_string)
-        self.mapbox.runjs("./js/image_layer.js", "setOpacity", arglist=[self.map_id, self.data["opacity"]])
+        if type(self.mapbox).__name__ == "MapBox": 
+            # Regulare map box
+            if self.new:
+                js_string = "import('/js/image_layer.js').then(module => {module.addLayer('" + overlay_url + "','" + self.map_id + "'," + bounds_string + "," + clrmap_string + ")});"
+                self.mapbox.view.page().runJavaScript(js_string)
+            else:
+                js_string = "import('/js/image_layer.js').then(module => {module.updateLayer('" + overlay_url + "','" + self.map_id + "'," + bounds_string + "," + clrmap_string + ")});"
+                self.mapbox.view.page().runJavaScript(js_string)
+            self.mapbox.runjs("./js/image_layer.js", "setOpacity", arglist=[self.map_id, self.data["opacity"]])
+        elif type(self.mapbox == "MapBoxCompare"): 
+            # Regulare map box
+            if self.new:
+                js_string = "import('/js/image_layer_compare.js').then(module => {module.addLayer('" + overlay_url + "','" + self.map_id + "'," + bounds_string + "," + clrmap_string + ",'" + self.side + "')});"
+                self.mapbox.view.page().runJavaScript(js_string)
+#                self.mapbox.runjs("/js/image_layer_compare.js", "addLayer", arglist=[overlay_url, self.map_id, bounds_string, clrmap_string, self.side])
+            else:
+                js_string = "import('/js/image_layer_compare.js').then(module => {module.updateLayer('" + overlay_url + "','" + self.map_id + "'," + bounds_string + "," + clrmap_string + ",'" + self.side + "')});"
+                self.mapbox.view.page().runJavaScript(js_string)
+#                self.mapbox.runjs("/js/image_layer_compare.js", "updateLayer", arglist=[overlay_url, self.map_id, bounds_string, clrmap_string, self.side])
+            self.mapbox.runjs("./js/image_layer_compare.js", "setOpacity", arglist=[self.map_id, self.data["opacity"], self.side])
 
         self.new = False
 

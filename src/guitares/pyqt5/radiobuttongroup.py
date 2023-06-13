@@ -30,6 +30,11 @@ class RadioButtonGroup(QButtonGroup):
         group = self.element.variable_group
         name = self.element.variable
         values = self.element.option_value.list
+
+        if self.element.getvar(group, name) == values[button.id]:
+            # Value has not changed
+            return
+
         self.element.setvar(group, name, values[button.id])
 
         try:
