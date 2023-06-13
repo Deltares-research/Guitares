@@ -21,6 +21,8 @@ class DrawLayer(Layer):
         modify=None,
         select=None,
         deselect=None,
+        add=None,
+        rotate=True,
         polygon_line_color="dodgerblue",
         polygon_line_width=2,
         polygon_line_style="-",
@@ -46,10 +48,11 @@ class DrawLayer(Layer):
             "active"  # Draw layers can have three modes: active, inactive, invisible
         )
         self.gdf = gpd.GeoDataFrame()
-        self.create = create
-        self.modify = modify
-        self.select = select
+        self.create   = create
+        self.modify   = modify
+        self.select   = select
         self.deselect = deselect
+        self.add      = add
 
         # Get Hex values for colors
         self.paint_props = {}
@@ -68,6 +71,7 @@ class DrawLayer(Layer):
         self.paint_props["circle_fill_color"] = mcolors.to_hex(circle_fill_color)
         self.paint_props["circle_fill_opacity"] = circle_fill_opacity
         self.paint_props["circle_radius"] = circle_radius
+        self.paint_props["rotate"] = rotate
 
         # Add this layer
         self.mapbox.runjs(
@@ -89,22 +93,42 @@ class DrawLayer(Layer):
             # Make layer invisible
             self.set_mode("invisible")
 
-    def add_feature(self, geometry):
-        self.mapbox.runjs("./js/draw.js", "addFeature", arglist=[geometry, self.map_id])
+    def set_data(self, gdf):
+        self.clear()
+        self.add_feature(gdf)
 
-    def add_rectangle(self, feature_id, x0, y0, lenx, leny, rotation):
-        shape = "rectangle"
-        lon_point_list = [x0, x0 + lenx, x0 + lenx, x0, x0]
-        lat_point_list = [y0, y0, y0 + leny, y0 + leny, y0]
-        polygon_crs = Polygon(zip(lon_point_list, lat_point_list))
+    def add_feature(self, gdf):
+        # Loop through features
+        if len(gdf) == 0:
+            return
+        for index, row in gdf.to_crs(4326).iterrows():
+            gdf = gpd.GeoDataFrame(geometry=[row["geometry"]])
+            self.mapbox.runjs("./js/draw.js", "addFeature", arglist=[gdf, self.map_id])
+
+    def add_rectangle(self, x0, y0, lenx, leny, rotation):
+        x = [x0]
+        y = [y0]
+        x.append(x[0] + lenx * math.cos(math.pi*rotation/180))
+        y.append(y[0] + lenx * math.sin(math.pi*rotation/180))
+        x.append(x[1] + leny * math.cos(math.pi*(rotation + 90.0)/180))
+        y.append(y[1] + leny * math.sin(math.pi*(rotation + 90.0)/180))
+        x.append(x[2] + lenx * math.cos(math.pi*(rotation + 180.0)/180))
+        y.append(y[2] + lenx * math.sin(math.pi*(rotation + 180.0)/180))
+        x.append(x0)
+        y.append(y0)
+        polygon_crs = Polygon(zip(x, y))
         # Transform to WGS 84
         project = pyproj.Transformer.from_crs(
-            self.crs, pyproj.CRS(4326), always_xy=True
+            self.mapbox.crs, pyproj.CRS(4326), always_xy=True
         ).transform
         polygon_wgs84 = transform(project, polygon_crs)
-        json_string = shapely.to_geojson(polygon_wgs84)
-        geometry = json.loads(json_string)
-        self.add_feature(feature_id, shape, geometry)
+        gdf = gpd.GeoDataFrame(geometry=[polygon_wgs84])
+        self._x0 = x0
+        self._y0 = y0
+        self._dx = lenx
+        self._dy = leny
+        self._rotation = math.pi*rotation/180
+        self.add_feature(gdf)
 
     def draw(self):
         if self.shape == "polygon":
@@ -114,20 +138,27 @@ class DrawLayer(Layer):
         elif self.shape == "rectangle":
             self.mapbox.runjs("./js/draw.js", "drawRectangle", arglist=[self.map_id])
 
-    def set_gdf(self, feature_collection):
+    def set_gdf(self, feature_collection, compute_geometry=True):
         for feature in feature_collection["features"]:
             feature["properties"]["id"] = feature["id"]
         gdf = gpd.GeoDataFrame.from_features(feature_collection, crs=4326).to_crs(
-            self.crs
+            self.mapbox.crs
         )
         if self.shape == "rectangle":
-            x0, y0, dx, dy, rotation = get_rectangle_geometry(gdf["geometry"])
-            # Add columns with geometry info
-            gdf["x0"] = x0
-            gdf["y0"] = y0
-            gdf["dx"] = dx
-            gdf["dy"] = dy
-            gdf["rotation"] = rotation
+            if compute_geometry:
+                x0, y0, dx, dy, rotation = get_rectangle_geometry(gdf["geometry"])
+                # Add columns with geometry info
+                gdf["x0"] = x0
+                gdf["y0"] = y0
+                gdf["dx"] = dx
+                gdf["dy"] = dy
+                gdf["rotation"] = rotation
+            else:
+                gdf["x0"] = self._x0
+                gdf["y0"] = self._y0
+                gdf["dx"] = self._dx
+                gdf["dy"] = self._dy
+                gdf["rotation"] = self._rotation
         self.gdf = gdf
 
     def get_feature_index(self, feature_id):
@@ -153,7 +184,11 @@ class DrawLayer(Layer):
             self.create(self.gdf, feature_index, feature_id)
 
     def feature_added(self, feature_collection, feature_id):
-        self.set_gdf(feature_collection)
+        self.set_gdf(feature_collection, compute_geometry=False)
+        self.set_mode(self.mode)
+        if self.add:
+            feature_index = self.get_feature_index(feature_id)
+            self.add(self.gdf, feature_index, feature_id)
 
     def feature_modified(self, feature_collection, feature_id):
         self.set_gdf(feature_collection)
@@ -191,11 +226,14 @@ class DrawLayer(Layer):
             self.mapbox.runjs("./js/draw.js", "deleteFeature", arglist=[feature_id])
 
     def delete_from_map(self):
-        self.clear()
-
-    def clear(self):
         self.active = False
         self.mapbox.runjs("./js/draw.js", "deleteLayer", arglist=[self.map_id])
+        self.gdf = gpd.GeoDataFrame()
+#        self.clear()
+
+    def clear(self):
+        for index, row in self.gdf.iterrows():
+            self.mapbox.runjs("./js/draw.js", "deleteFeature", arglist=[row["id"]])
         self.gdf = gpd.GeoDataFrame()
 
     def get_gdf(self, id=None):
@@ -215,9 +253,11 @@ def get_rectangle_geometry(geoms):
     rotation = []
     for geom in geoms:
         xx, yy = geom.exterior.coords.xy
-        x0.append(xx[0])
-        y0.append(yy[0])
-        dx.append(xx[1] - xx[0])
-        dy.append(yy[2] - yy[1])
-        rotation.append(math.atan2(yy[1] - yy[0], xx[1] - xx[0]))
+        x0.append(float(xx[0]))
+        y0.append(float(yy[0]))
+        lenx = math.sqrt(float(xx[1] - xx[0])**2 + float(yy[1] - yy[0])**2)
+        leny = math.sqrt(float(xx[2] - xx[1])**2 + float(yy[2] - yy[1])**2)
+        dx.append(lenx)
+        dy.append(leny)
+        rotation.append(float((math.atan2(yy[1] - yy[0], xx[1] - xx[0]))))
     return x0, y0, dx, dy, rotation
