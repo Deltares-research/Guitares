@@ -102,7 +102,7 @@ class DrawLayer(Layer):
         if len(gdf) == 0:
             return
         for index, row in gdf.to_crs(4326).iterrows():
-            gdf = gpd.GeoDataFrame(geometry=[row["geometry"]])
+            gdf = gpd.GeoDataFrame(geometry=[row["geometry"]], crs=4326)
             self.mapbox.runjs("./js/draw.js", "addFeature", arglist=[gdf, self.map_id])
 
     def add_rectangle(self, x0, y0, lenx, leny, rotation):
@@ -122,7 +122,7 @@ class DrawLayer(Layer):
             self.mapbox.crs, pyproj.CRS(4326), always_xy=True
         ).transform
         polygon_wgs84 = transform(project, polygon_crs)
-        gdf = gpd.GeoDataFrame(geometry=[polygon_wgs84])
+        gdf = gpd.GeoDataFrame(geometry=[polygon_wgs84], crs=4326)
         self._x0 = x0
         self._y0 = y0
         self._dx = lenx
@@ -182,6 +182,15 @@ class DrawLayer(Layer):
         if self.create:
             feature_index = self.get_feature_index(feature_id)
             self.create(self.gdf, feature_index, feature_id)
+        if self.shape == "rectangle" and not self.mapbox.crs.is_geographic:
+            feature_index = self.get_feature_index(feature_id)
+            x0 = self.gdf.loc[feature_index, "x0"]  
+            y0 = self.gdf.loc[feature_index, "y0"]
+            lenx = self.gdf.loc[feature_index, "dx"]
+            leny = self.gdf.loc[feature_index, "dy"]
+            rotation = self.gdf.loc[feature_index, "rotation"]*180/math.pi
+            self.delete_feature(feature_id)
+            self.add_rectangle(x0, y0, lenx, leny, rotation)
 
     def feature_added(self, feature_collection, feature_id):
         self.set_gdf(feature_collection, compute_geometry=False)
@@ -259,5 +268,9 @@ def get_rectangle_geometry(geoms):
         leny = math.sqrt(float(xx[2] - xx[1])**2 + float(yy[2] - yy[1])**2)
         dx.append(lenx)
         dy.append(leny)
-        rotation.append(float((math.atan2(yy[1] - yy[0], xx[1] - xx[0]))))
+        rot = float((math.atan2(yy[1] - yy[0], xx[1] - xx[0])))
+        if abs(rot*180/math.pi) < 1.0:
+            rot = 0.0
+        rotation.append(rot)
+
     return x0, y0, dx, dy, rotation

@@ -23,6 +23,7 @@ class MapBox(QtWidgets.QWidget):
 
         self.gui = element.gui
         self.element = element
+        self.nr_attempts = 0
 
         url = "http://localhost:" + str(self.gui.server_port) + "/"
         self.url = url
@@ -63,6 +64,9 @@ class MapBox(QtWidgets.QWidget):
 
     def load_finished(self):
         print("Load Finished")    
+        if self.nr_attempts == 0:
+            self.view.reload()
+            self.nr_attempts += 1
 
     def set(self):
         pass

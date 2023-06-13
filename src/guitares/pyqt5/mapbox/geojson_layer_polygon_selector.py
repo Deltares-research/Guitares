@@ -12,7 +12,6 @@ class GeoJSONLayerPolygonSelector(Layer):
 
         self.data = data
         self.index = index
-#        self.hover_property = hover_property
 
         # Make sure this is not an empty GeoDataFrame
         if isinstance(data, GeoDataFrame):
@@ -43,6 +42,12 @@ class GeoJSONLayerPolygonSelector(Layer):
         self.index = index
         self.mapbox.runjs("/js/geojson_layer_polygon_selector.js", "setSelectedIndex", arglist=[self.map_id, index])
 
+    def set_hover_property(self, hover_property):
+        data = self.data
+        index = self.index
+        self.hover_property = hover_property
+        self.set_data(data, index)
+
     def select_by_index(self, index):
         self.mapbox.runjs("/js/geojson_layer_polygon_selector.js", "selectByIndex", arglist=[self.map_id, index])
 
@@ -53,7 +58,7 @@ class GeoJSONLayerPolygonSelector(Layer):
         self.active = True
         if self.data is None:
             return
-        self.mapbox.runjs("./js/geojson_layer_polygon_selector.js", "activate", arglist=[self.map_id,
+        self.mapbox.runjs("/js/geojson_layer_polygon_selector.js", "activate", arglist=[self.map_id,
                                                                                          self.line_color,
                                                                                          self.fill_color,
                                                                                          self.line_color_selected,
