@@ -1,9 +1,13 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QStatusBar, QLabel, QFrame
 import importlib
+import os
+import pathlib
 
 from guitares.element import Element
 from guitares.menu import Menu
 from guitares.statusbar import StatusBar
+
+from guitares.dialog import window_dialog
 
 class MenuBar:
     def __init__(self):
@@ -284,3 +288,69 @@ class Window:
 
     def add_statusbar(self, window, widths):
         self.statusbar = StatusBar(window, widths)
+
+    def dialog_ok_cancel(self, text, title=" "):
+        return window_dialog(self, text, type="question", title=title)
+
+    def dialog_yes_no(self, text, title=" "):
+        return window_dialog(self, text, type="question_yes_no", title=title)
+
+    def dialog_warning(self, text, title="Warning"):
+        window_dialog(self, text, type="warning", title=title)
+
+    def dialog_info(self, text, title=" "):
+        window_dialog(self, text, type="info", title=title)
+
+    def dialog_critical(self, text, title="Critical"):
+        window_dialog(self, text, type="critical", title=title)
+
+    def dialog_progress(self, text, nmax, title=" "):
+        dlg = window_dialog(self, text, title=title, type="progress", nmax=nmax)
+        return dlg
+
+    def dialog_wait(self, text, title=" "):
+        dlg = window_dialog(self, text, title=title, type="wait")
+        return dlg
+
+    def dialog_open_file(self, text, filter, path=None, file_name=None, selected_filter=None, allow_directory_change=True):
+        if path == None:
+            path = os.getcwd()
+        results = window_dialog(self, text, type="open_file", path=path, file_name=file_name, filter=filter, selected_filter=selected_filter)
+        full_name = results[0]
+        if not full_name:
+            return "", "", "", "", ""
+        fltr = results[1]
+        pth = pathlib.Path(full_name)
+        if not allow_directory_change:
+            if str(pth.parent) != path:
+                self.dialog_warning("Sorry, you cannot select a file from another directory !")
+                return "", "", "", "", ""
+        path = str(pth.parent)
+        name = pth.name
+        ext = pth.suffix
+        return full_name, path, name, ext, fltr
+
+    def dialog_save_file(self, text, filter, path=None, file_name=None, selected_filter=None, allow_directory_change=True):
+        if path == None:
+            path = os.getcwd()
+        results = window_dialog(self, text, type="save_file", path=path, file_name=file_name, filter=filter, selected_filter=selected_filter)
+        full_name = results[0]
+        if not full_name:
+            return "", "", "", "", ""
+        fltr = results[1]
+        pth = pathlib.Path(full_name)
+        if not allow_directory_change:
+            if str(pth.parent) != path:
+                self.dialog_warning("Sorry, you cannot save this file to another directory !")
+                return "", "", "", "", ""
+        path = str(pth.parent)
+        name = pth.name
+        ext = pth.suffix
+        return full_name, path, name, ext, fltr
+
+    def dialog_select_path(self, text, path=None):
+        new_path = window_dialog(self, text, filter=filter, type="select_path", path=path)
+        return new_path
+ 
+    def dialog_string(self, text, title=" "):
+        return window_dialog(self, text, type="string", title=title)

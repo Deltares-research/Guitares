@@ -1,10 +1,15 @@
+console.log('Importing MapBox ...');
+
 export let mapboxgl = mpbox.import_mapbox_gl()
+
+console.log('Importing MapBox Draw ...');
 
 import { draw, setDrawEvents } from '/js/draw.js';
 
 let mapReady;
 let mapMoved;
 let getMapExtent;
+let getMapCenter;
 export let featureDrawn;
 export let featureSelected;
 export let featureDeselected;
@@ -14,13 +19,16 @@ export let jsonString;
 export let featureClicked;
 export let pointClicked;
 export let layerStyleSet;
+export let layerAdded;
 export let layers;
 
+//console.log('Adding MapBox map ...');
 
-
-console.log('Adding MapBox map ...')
+console.log('Setting MapBox token ...');
 
 mapboxgl.accessToken = mapbox_token;
+
+console.log('Adding map ...');
 
 export const map = new mapboxgl.Map({
   container: 'map', // container ID
@@ -31,6 +39,8 @@ export const map = new mapboxgl.Map({
 //  projection: 'globe' // display the map as a 3D globe
   projection: 'mercator' // display the map as a 3D globe
 });
+
+console.log('Adding controls ...');
 
 map.scrollZoom.setWheelZoomRate(1 / 200);
 
@@ -44,7 +54,10 @@ const scale = new mapboxgl.ScaleControl({
 });
 map.addControl(scale, 'bottom-left');
 
+
 export const marker = new mapboxgl.Marker({draggable: true});
+
+console.log('Adding WebChannel ...');
 
 // Web Channel
 new QWebChannel(qt.webChannelTransport, function (channel) {
@@ -53,6 +66,7 @@ new QWebChannel(qt.webChannelTransport, function (channel) {
     mapReady          = function() { MapBox.mapReady(jsonString)};
     mapMoved          = function() { MapBox.mapMoved(jsonString)};
     getMapExtent      = function() { MapBox.getMapExtent(jsonString)};
+    getMapCenter      = function() { MapBox.getMapCenter(jsonString)};
     featureClicked    = function(featureId, featureProps) { MapBox.featureClicked(featureId, JSON.stringify(featureProps))};
     featureDrawn      = function(featureCollection, featureId, layerId) { MapBox.featureDrawn(featureCollection, featureId, layerId)};
     featureModified   = function(featureCollection, featureId, layerId) { MapBox.featureModified(featureCollection, featureId, layerId)};
@@ -61,8 +75,18 @@ new QWebChannel(qt.webChannelTransport, function (channel) {
     featureDeselected = function(layerId) { MapBox.featureDeselected(layerId)};
     pointClicked      = function(coords) { MapBox.pointClicked(JSON.stringify(coords))};
     layerStyleSet     = function() { MapBox.layerStyleSet('')};
+    layerAdded        = function(layerId) { MapBox.layerAdded(layerId)};
+    moveOn();  
+  } else {  
+    console.log("typeof MapBox is undefined !!!");
   }
 });
+
+console.log("Done in main.js");
+
+
+function moveOn() {
+  // Continue on after QWebChannel has loaded 
 
 layers = new Object();
 
@@ -137,6 +161,7 @@ map.on('moveend', () => {
     onMoveEnd();
 });
 
+};
 
 function mapLoaded(evt) {
   // Get the map extents and tell Python Mapbox object that we're ready
@@ -158,7 +183,9 @@ function onMoveEnd(evt) {
     var ne = extent.getNorthEast();
     var bottomLeft = [sw["lng"], sw["lat"]];
     var topRight   = [ne["lng"], ne["lat"]];
-    jsonString = JSON.stringify([bottomLeft, topRight]);
+    var center = map.getCenter();
+    var zoom = map.getZoom();
+    jsonString = JSON.stringify([bottomLeft, topRight, center["lng"], center["lat"], zoom]);
     mapMoved();
 }
 
@@ -170,37 +197,36 @@ export function removeLayer(id) {
   var mapLayer = map.getLayer(id);
   if(typeof mapLayer !== 'undefined') {
     // Remove map layer
-    console.log('removing ' + id)
     map.removeLayer(id);
   }
 
   var mapLayer = map.getLayer(id + '.line');
   if(typeof mapLayer !== 'undefined') {
     // Remove map layer
-    console.log('removing ' + id + '.line')
+ //   console.log('removing ' + id + '.line')
     map.removeLayer(id + '.line');
-    console.log('done removing ' + id + '.line')
+ //   console.log('done removing ' + id + '.line')
   }
 
   var mapLayer = map.getLayer(id + '.fill');
   if(typeof mapLayer !== 'undefined') {
     // Remove map layer
-    console.log('removing ' + id + '.fill')
-    map.removeLayer(id + '.line');
-    console.log('done removing ' + id + '.fill')
+  //  console.log('removing ' + id + '.fill')
+    map.removeLayer(id + '.fill');
+  //  console.log('done removing ' + id + '.fill')
   }
 
   var mapLayer = map.getLayer(id + '.circle');
   if(typeof mapLayer !== 'undefined') {
     // Remove map layer
-    console.log('removing ' + id + '.circle')
+//    console.log('removing ' + id + '.circle')
     map.removeLayer(id + '.circle');
   }
 
   // Remove source
   var mapSource = map.getSource(id);
   if(typeof mapSource !== 'undefined') {
-    console.log('removing source ' + id)
+//    console.log('removing source ' + id)
     map.removeSource(id);
   }
 
@@ -218,6 +244,11 @@ export function removeLayer(id) {
 
 }
 
+export function setMouseDefault() {
+  map.getCanvas().style.cursor = '';
+  map.off('click', onPointClicked);
+}
+
 export function showLayer(id) {
 	// Show layer
 	if (map.getLayer(id)) {
@@ -225,7 +256,7 @@ export function showLayer(id) {
     var legend = document.getElementById("legend" + id);
     if (legend) {
       legend.style.visibility = 'visible';
-    }  
+    }
   }
 }
 
@@ -236,11 +267,8 @@ export function hideLayer(id) {
     var legend = document.getElementById("legend" + id);
     if (legend) {
       legend.style.visibility = 'hidden';
-    }  
-  } else {
-    console.log("While hiding, layer " + id + " not found !");
+    }
   }
-
 }
 
 export function getExtent() {
@@ -255,17 +283,29 @@ export function getExtent() {
     getMapExtent();
 }
 
-export function clickPoint() {
-  map.getCanvas().style.cursor = 'crosshair'
-  map.once('click', function(e) {
-    var coordinates = e.lngLat;
-    onPointClicked(coordinates);
-  });
+export function getCenter() {
+  var center = map.getCenter();
+  var zoom = map.getZoom();
+  jsonString = JSON.stringify([center["lng"], center["lat"], zoom]);
+  getMapCenter();
 }
 
-function onPointClicked(coordinates) {
+export function clickPoint() {
+  map.getCanvas().style.cursor = 'crosshair'
+//  map.once('click', function(e) { onPointClicked(e) });
+  map.once('click', onPointClicked);
+  map.once('contextmenu', onPointRightClicked);
+}
+
+function onPointClicked(e) {
   map.getCanvas().style.cursor = '';
-  pointClicked(coordinates);
+  pointClicked(e.lngLat);
+}
+
+function onPointRightClicked(e) {
+  map.getCanvas().style.cursor = '';
+  console.log("point right clicked");
+  map.off('click', onPointClicked);
 }
 
 export function setCenter(lon, lat) {
@@ -338,37 +378,4 @@ function addDummyLayer() {
       'line-width': 1
     }
   });
-}
-
-export function compare() {
-
-  console.log("Comparing ...")
-
-  var main_map = document.getElementById("map")
-  main_map.style.display = 'none';
-
-  const compareMap1 = new mapboxgl.Map({
-    container: 'compare1',
-    // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
-    style: 'mapbox://styles/mapbox/light-v11',
-    center: [0, 0],
-    zoom: 0
-  });
-     
-  const compareMap2 = new mapboxgl.Map({
-    container: 'compare2',
-    style: 'mapbox://styles/mapbox/dark-v11',
-    center: [0, 0],
-    zoom: 0
-  });
-     
-  // A selector or reference to HTML element
-  const container = '#comparison-container';
-     
-  const map = new mapboxgl.Compare(compareMap1, compareMap2, container, {
-  // Set this to enable comparing two maps by mouse movement:
-  // mousemove: true
-  });
-
-
 }

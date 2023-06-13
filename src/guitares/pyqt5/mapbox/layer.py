@@ -14,7 +14,8 @@ class Layer:
         self.index     = None
         self.select    = None
         self.crs       = 4326
-        self.hover_param = "name"
+        self.hover_property = "name"
+        self.side      = "a"  # only for compare maps
 
         self.line_color     = "dodgerblue"
         self.line_width     = 2
@@ -88,19 +89,24 @@ class Layer:
             self.delete_from_map()
 
         # Remove layer from layer dict
-        self.parent.layer.pop(self.id)
+        if self.parent:
+            self.parent.layer.pop(self.id)
+        else:
+            self.mapbox.layer.pop(self.id)
 
     def delete_from_map(self):
         self.mapbox.runjs("/js/main.js", "removeLayer", arglist=[self.map_id])
 
     def clear(self):
-        pass
-        # # Works for container layers. Removes all layers with this layer.
-        # if self.layer:
-        #     # Container layer
-        #     layers = list_layers(self.layer)
-        #     for layer in layers:
-        #         layer.delete()
+        # Clear this layer and all nested layers from map
+        if self.layer:
+            # Container layer
+            layers = list_layers(self.layer)
+            for layer in layers:
+                layer.clear()
+        else:        
+            self.delete_from_map()
+            self.data = None
 
     def get(self, layer_id):
         if layer_id in self.layer:
@@ -161,6 +167,10 @@ class Layer:
                 from .draw_layer import DrawLayer
                 self.layer[layer_id] = DrawLayer(self.mapbox, layer_id, map_id, **kwargs)
 
+            elif type == "image":
+                from .image_layer import ImageLayer
+                self.layer[layer_id] = ImageLayer(self.mapbox, layer_id, map_id, **kwargs)
+
             elif type == "raster":
                 from .raster_layer import RasterLayer
                 self.layer[layer_id] = RasterLayer(self.mapbox, layer_id, map_id, **kwargs)
@@ -182,7 +192,14 @@ class Layer:
             self.layer[layer_id].mode = mode
 
             return self.layer[layer_id]
-
+ 
+    def layer_added(self):
+        print("Layer " + self.map_id + " added")
+        if self.mode == "inactive":
+            self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id])
+            self.deactivate()
+        elif self.mode == "invisible":    
+            self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id])
 
     def show(self):
         self.set_visibility(True)
@@ -224,7 +241,7 @@ class Layer:
                     self.deactivate()
                 else:    
                     self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id])
-                self.mode = mode
+            self.mode = mode
 
     def redraw(self):
         print("Cannot redraw layer of type " + self.type)

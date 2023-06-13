@@ -31,6 +31,11 @@ class GeoJSONLayerCircle(Layer):
         # Remove existing layer        
         self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id])
 
+        if self.mode == "invisible":
+            visibility = "none"
+        else:
+            visibility = "visible"    
+
         # Add new layer        
         self.mapbox.runjs("./js/geojson_layer_circle.js", "addLayer", arglist=[self.map_id,
                                                                                data,
@@ -41,7 +46,9 @@ class GeoJSONLayerCircle(Layer):
                                                                                self.line_opacity,
                                                                                self.fill_color,
                                                                                self.fill_opacity,
-                                                                               self.circle_radius])
+                                                                               self.circle_radius,
+                                                                               visibility])
+
 
     def redraw(self):
         if isinstance(self.data, GeoDataFrame):
