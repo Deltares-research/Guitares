@@ -1,26 +1,16 @@
 import os
 import yaml
-import importlib
-import time
-import sched
 import sys
 import copy
 import shutil
 
 from pathlib import Path
 import toml
-from urllib.request import urlopen
-from urllib.error import *
-import threading
 from PyQt5.QtWidgets import QApplication
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtWidgets import QFileDialog
-from PyQt5.QtWidgets import QMessageBox
-from .pyqt5.dialog import dialog
-
-from http.server import HTTPServer as BaseHTTPServer, SimpleHTTPRequestHandler
 
 from guitares.window import Window
+from guitares.server import start_server
 
 class GUI:
     def __init__(self, module,
@@ -49,9 +39,16 @@ class GUI:
         self.server_thread = None
         self.server_path = server_path
         self.server_port = server_port
+        self.server_thread = None
         self.js_messages = js_messages
         self.popup_data = None
-        self.resize_factor = 1.0
+        self.resize_factor = 1.0        
+
+        QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
+        self.qtapp = QApplication(sys.argv)
+
+        # Show splash screen
+        self.show_splash()
 
         if not self.config_path:
             self.config_path = os.getcwd()
@@ -71,9 +68,6 @@ class GUI:
                     shutil.rmtree(server_path)
                 # Now copy over folder from mapbox
                 shutil.copytree(mpboxpth, server_path)
-            thr = threading.Thread(target=run_server, args=(server_path, server_port), daemon=True)
-            thr.start()
-
             # Read mapbox token and store in js file in server path
             if os.path.exists(os.path.join(self.config_path, mapbox_token_file)):
                 fid = open(os.path.join(self.config_path, mapbox_token_file), "r")
@@ -82,7 +76,7 @@ class GUI:
                 fid = open(os.path.join(server_path, "mapbox_token.js"), "w")
                 fid.write("mapbox_token = '" + mapbox_token[0].strip() + "';")
                 fid.close()
-
+            start_server(server_path, port=server_port)    
 
     def show_splash(self):
         if self.framework == "pyqt5" and self.splash_file:
@@ -95,11 +89,7 @@ class GUI:
 
     def build(self):
 
-        QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
-        app = QApplication(sys.argv)
-
-        # # Show splash screen
-        self.show_splash()
+        app = self.qtapp
 
         # Set the icon
         app.setWindowIcon(QtGui.QIcon(self.icon))
@@ -112,16 +102,14 @@ class GUI:
 
         # Make window object
         self.window = Window(self.config, self)
-
         window_widget = self.window.build()
-
 
         # Call on_build method after building window
         if hasattr(self.module, "on_build"):
             self.module.on_build()
             
-        # # Close splash screen before GUI is initiated
-        self.close_splash()
+        # # # Close splash screen before GUI is initiated
+        # self.close_splash()
 
         app.exec_()
 
@@ -161,24 +149,6 @@ class GUI:
             okay = True
             data = self.popup_data
         return okay, data
-
-    def dialog(self, text, type="warning", title="", button_text=None):
-        return dialog(self.window.widget, text, type=type, title=title, button_text=button_text)
-
-    def dialog_ok_cancel(self, text, title=" "):
-        return dialog(self.window.widget, text, type="question", title=title)
-
-    def dialog_yes_no(self, text, title=" "):
-        return dialog(self.window.widget, text, type="question_yes_no", title=title)
-
-    def dialog_warning(self, text, title="Warning"):
-        dialog(self.window.widget, text, type="warning", title=title)
-
-    def dialog_info(self, text, title=" "):
-        dialog(self.window.widget, text, type="info", title=title)
-
-    def dialog_critical(self, text, title="Critical"):
-        dialog(self.window.widget, text, type="critical", title=title)
 
     def read_gui_config(self, path, file_name):
         suffix = Path(path).joinpath(file_name).suffix
@@ -226,16 +196,6 @@ class GUI:
                         tab["element"] = []
         return element
 
-    def open_file_name(self, text, filter):
-        fname = QFileDialog.getOpenFileName(None, text, "", filter)
-        if fname:
-            fname = fname[0]
-        return fname
-
-    def select_path(self, old_path):
-        new_path = QFileDialog.getExistingDirectory(None, "Select a directory")
-        return new_path
-
     def quit(self):
         QApplication.quit()
 
@@ -243,23 +203,3 @@ def yaml2dict(file_name):
     file = open(file_name,"r")
     dct = yaml.load(file, Loader=yaml.FullLoader)
     return dct
-
-class HTTPHandler(SimpleHTTPRequestHandler):
-    """This handler uses server.base_path instead of always using os.getcwd()"""
-    def translate_path(self, path):
-        path = SimpleHTTPRequestHandler.translate_path(self, path)
-        relpath = os.path.relpath(path, os.getcwd())
-        fullpath = os.path.join(self.server.base_path, relpath)
-        return fullpath
-
-class HTTPServer(BaseHTTPServer):
-    """The main server, you pass in base_path which is the path you want to serve requests from"""
-    def __init__(self, base_path, server_address, RequestHandlerClass=HTTPHandler):
-        self.base_path = base_path
-        BaseHTTPServer.__init__(self, server_address, RequestHandlerClass)
-
-def run_server(server_path, server_port):
-    print("Server path : " + server_path)
-    httpd = HTTPServer(server_path, ("", server_port))
-    httpd.serve_forever()
-
