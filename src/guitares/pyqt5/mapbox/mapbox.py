@@ -61,6 +61,17 @@ class MapBox(QtWidgets.QWidget):
         self.map_moved = None
         self.point_clicked_callback = None
 
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.reload)
+        self.timer.setSingleShot(True)
+        self.timer.start(1000)
+
+    def reload(self):
+        print("Reloading ...")
+        self.view.page().setWebChannel(self.channel)
+        self.channel.registerObject("MapBox", self)
+        self.view.load(QtCore.QUrl(self.url))
+
     def load_finished(self):
         print("Load Finished")    
 
@@ -103,8 +114,8 @@ class MapBox(QtWidgets.QWidget):
         layers = list_layers(self.layer)
         for layer in layers:
             layer.update()
-        if hasattr(self.callback_module, "mouse_moved"):
-            self.callback_module.mouse_moved(coords)
+        if hasattr(self.callback_module, "map_moved"):
+            self.callback_module.map_moved(coords)
 
     @QtCore.pyqtSlot(str)
     def mapMoved(self, coords):
