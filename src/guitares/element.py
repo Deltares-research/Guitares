@@ -186,6 +186,8 @@ class Element:
             self.fraction_expanded = dct["fraction_expanded"]
         if "multiselection" in dct:
             self.multiselection = dct["multiselection"]
+        if "enable" in dct:
+            self.enable = dct["enable"]
 
         if "dependency" in dct:
             for dep in dct["dependency"]:
@@ -223,7 +225,8 @@ class Element:
                     tab.variable_group = tab_dct["variable_group"]
                 if "module" in tab_dct:
                     try:
-                        tab.module = importlib.import_module(tab_dct["module"])
+                        if tab_dct["module"]:
+                            tab.module = importlib.import_module(tab_dct["module"])
                     except:
                         print("Error! Module " + tab_dct["module"] + " could not be imported!")
                 self.tabs.append(tab)
@@ -296,6 +299,11 @@ class Element:
         elif self.style == "mapbox":
             from .pyqt5.mapbox.mapbox import MapBox
             self.widget = MapBox(self)
+
+        elif self.style == "mapbox_compare":
+            from .pyqt5.mapbox.mapbox_compare import MapBoxCompare
+            self.widget = MapBoxCompare(self)
+
         elif self.style == "webpage":
             from .pyqt5.webpage import WebPage
             self.widget = WebPage(self)
@@ -364,21 +372,19 @@ class Element:
 
     def set_dependencies(self):
         for dependency in self.dependencies:
-
             true_or_false = dependency.get()
-            
             if dependency.action == "visible":
-
                 if self.style == "radiobuttongroup": # Cannot set radiobutton group directly
                     self.widget.set_visible(true_or_false)        
+                elif self.style == "mapbox" or self.style == "mapbox_compare":
+                    if self.widget.ready:
+                        self.widget.view.setVisible(true_or_false)        
                 else:    
                     if self.widget:
                         self.widget.setVisible(true_or_false)
                         if hasattr(self.widget, "text_widget"):
                             self.widget.text_widget.setVisible(true_or_false)
-
             elif dependency.action == "enable":
-
                 if self.style == "radiobuttongroup": # Cannot set radiobutton group directly
                     self.widget.set_enabled(true_or_false)        
                 else:    
@@ -386,10 +392,13 @@ class Element:
                         self.widget.setEnabled(true_or_false)
                         if hasattr(self.widget, "text_widget"):
                             self.widget.text_widget.setEnabled(true_or_false)
-
             elif dependency.action == "check":
-
                 self.widget.setChecked(true_or_false)
+        if self.enable == False:        
+            if self.widget:
+                self.widget.setEnabled(False)
+                if hasattr(self.widget, "text_widget"):
+                    self.widget.text_widget.setEnabled(False)
 
     def clear_tab(self, index):
         self.widget.clear_tab(index)
