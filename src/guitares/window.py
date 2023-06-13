@@ -295,6 +295,9 @@ class Window:
     def dialog_yes_no(self, text, title=" "):
         return window_dialog(self, text, type="question_yes_no", title=title)
 
+    def dialog_custom(self, text, title=" ", button_text=None):
+        return window_dialog(self, text, type="custom", title=title, button_text=button_text)
+
     def dialog_warning(self, text, title="Warning"):
         window_dialog(self, text, type="warning", title=title)
 
