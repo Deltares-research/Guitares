@@ -4,6 +4,7 @@ import json
 from geopandas import GeoDataFrame
 from pandas import DataFrame
 from pyproj import CRS, Transformer
+import sched
 
 from .layer import Layer, list_layers, find_layer_by_id
 
@@ -23,7 +24,8 @@ class MapBox(QtWidgets.QWidget):
 
         self.gui = element.gui
         self.element = element
-        self.nr_attempts = 0
+        self.nr_load_attempts = 0
+        self.nr_map_ready = 0
 
         url = "http://localhost:" + str(self.gui.server_port) + "/"
         self.url = url
@@ -63,16 +65,23 @@ class MapBox(QtWidgets.QWidget):
         self.point_clicked_callback = None
 
     def load_finished(self):
-        print("Load Finished")    
-        if self.nr_attempts == 0:
-            self.view.reload()
-            self.nr_attempts += 1
+        print("Load Finished")   
+        self.timer=QtCore.QTimer()
+        self.timer.timeout.connect(self.check_ready)
+        self.timer.start(5000)
+
+    def check_ready(self):
+        self.timer.stop()
+        if not self.ready:
+            print("Map not ready. Reloading ...")
+            self.view.reload()            
+        else:
+            print("Map is ready")    
 
     def set(self):
         pass
 
     def set_geometry(self):
-#        resize_factor = self.element.gui.resize_factor
         x0, y0, wdt, hgt = self.element.get_position()
         self.view.setGeometry(x0, y0, wdt, hgt)
 
@@ -84,10 +93,9 @@ class MapBox(QtWidgets.QWidget):
         coords = json.loads(coords)
         self.ready = True
         self.map_extent = coords
-        if hasattr(self.callback_module, "map_ready") and self.nr_attempts == 1:
+        self.nr_map_ready += 1
+        if hasattr(self.callback_module, "map_ready") and self.nr_map_ready == 1:
             self.callback_module.map_ready(self)
-        # if hasattr(self.gui.module, "on_map_ready"):
-        #     self.gui.module.on_map_ready(self)
 
     @QtCore.pyqtSlot(str)
     def layerStyleSet(self, coords):
