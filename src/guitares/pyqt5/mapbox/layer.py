@@ -15,6 +15,7 @@ class Layer:
         self.select    = None
         self.crs       = 4326
         self.hover_property = "name"
+        self.color_property = "value"
         self.side      = "a"  # only for compare maps
 
         self.line_color     = "dodgerblue"
@@ -53,6 +54,7 @@ class Layer:
 
         self.min_zoom = 0
         self.max_zoom = 22
+        self.zoom_switch = 999
 
         for key, value in kwargs.items():
             setattr(self, key, value)

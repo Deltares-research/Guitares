@@ -14,11 +14,12 @@ from pyproj import CRS, Transformer
 from .layer import Layer
 
 class DatashaderChoroplethLayer(Layer):
-    def __init__(self, mapbox, id, map_id):
-        super().__init__(mapbox, id, map_id)
+    def __init__(self, mapbox, id, map_id, **kwargs):
+        super().__init__(mapbox, id, map_id, **kwargs)
         self.active = False
         self.type   = "image"
         self.file_name = map_id + ".png"
+        self.layer_mode = "raster"
 
     def activate(self):
         self.active = True
@@ -78,18 +79,78 @@ class DatashaderChoroplethLayer(Layer):
         return xlim0, ylim0
 
     def update(self):
+
         if self.data is None:
             return
-        xlim, ylim = self.make_overlay()
-        if xlim is None:
-            return
-        bounds = [[xlim[0], xlim[1]], [ylim[0], ylim[1]]]
-        bounds_string = "[[" + str(bounds[0][0]) + "," + str(bounds[0][1]) + "],[" + str(bounds[1][0]) + "," + str(bounds[1][1]) + "]]"
-        overlay_file = "./overlays/" + self.file_name
-        js_string = "import('/js/image_layer.js').then(module => {module.updateLayer('" + overlay_file + "','" + self.map_id + "'," + bounds_string + ","")});"
-        self.mapbox.view.page().runJavaScript(js_string)
-        js_string = "import('/js/image_layer.js').then(module => {module.setOpacity('" + self.map_id + "', 1.0)});"
-        self.mapbox.view.page().runJavaScript(js_string)
+
+        if self.layer_mode == "vector": 
+            # Remove old layer  
+            self.mapbox.runjs("./js/main.js",
+                                "removeLayer",
+                                arglist=[self.map_id])
+
+        if self.mapbox.zoom < self.zoom_switch:
+                
+            xlim, ylim = self.make_overlay()
+            if xlim is None:
+                return
+            bounds = [[xlim[0], xlim[1]], [ylim[0], ylim[1]]]
+            bounds_string = "[[" + str(bounds[0][0]) + "," + str(bounds[0][1]) + "],[" + str(bounds[1][0]) + "," + str(bounds[1][1]) + "]]"
+            overlay_file = "./overlays/" + self.file_name
+
+            if self.layer_mode == "vector": 
+                # Changing vector to raster so add new layer
+                js_string = "import('/js/image_layer.js').then(module => {module.addLayer('" + overlay_file + "','" + self.map_id + "'," + bounds_string + ","")});"
+                self.mapbox.view.page().runJavaScript(js_string)
+                # self.mapbox.runjs("./js/image_layer.js",
+                #                   "addLayer",
+                #                   arglist=[overlay_file, self.map_id, bounds_string])
+            else:    
+                # Just update layer
+                js_string = "import('/js/image_layer.js').then(module => {module.updateLayer('" + overlay_file + "','" + self.map_id + "'," + bounds_string + ","")});"
+                self.mapbox.view.page().runJavaScript(js_string)
+                js_string = "import('/js/image_layer.js').then(module => {module.setOpacity('" + self.map_id + "', 1.0)});"
+                self.mapbox.view.page().runJavaScript(js_string)
+
+            self.layer_mode = "raster"
+
+        else:
+
+            # Zoomed in enough so plot geojson vector data
+
+            coords = self.mapbox.map_extent
+            xl0 = coords[0][0]
+            xl1 = coords[1][0]
+            yl0 = coords[0][1]
+            yl1 = coords[1][1]            
+            # Limits WGS 84 
+            gdf = self.gdf.cx[xl0:xl1, yl0:yl1]
+
+            # Remove old layer  
+            self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id])
+
+            # color_property = 'Dmg Total'
+            # hover_property = 'Dmg Total'
+            scaler = 1.0
+
+            # Add new layer
+            self.mapbox.runjs(
+                "./js/geojson_layer_choropleth.js",
+                "addLayer",
+                arglist=[
+                    self.map_id,
+                    gdf,
+                    self.min_zoom,
+                    self.hover_property,
+                    self.color_property,
+                    self.line_color,
+                    self.line_width,
+                    self.line_opacity,
+                    self.fill_opacity,
+                    scaler
+                ],
+            )
+            self.layer_mode = "vector"
 
     def set_data(self,
                  data,
@@ -103,15 +164,13 @@ class DatashaderChoroplethLayer(Layer):
 
         if type(data) == str:
             # Read geodataframe from shape file
-            self.data = read_dataframe(data)
-            self.data.set_crs(4326)
-            self.data = self.data.to_crs(3857)
+            self.gdf = read_dataframe(data)
         else:    
             # data has to be geodataframe
-            self.data = data
+            self.gdf = data
 
-        # Convert to spatialpandas geodataframe
-        self.data = sp.GeoDataFrame(self.data)
+        # Convert to spatialpandas geodataframe in wweb mercator
+        self.data = sp.GeoDataFrame(self.gdf.set_crs(4326).to_crs(3857))
 
         try:
             xlim, ylim = self.make_overlay()

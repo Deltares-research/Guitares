@@ -123,6 +123,7 @@ class MapBox(QtWidgets.QWidget):
         coords = json.loads(coords)
         self.map_extent = coords[0:2]
         self.map_center = coords[2:5]
+        self.zoom = coords[4]
         # Loop through layers to update each
         layers = list_layers(self.layer)
         for layer in layers:
@@ -275,7 +276,7 @@ class MapBox(QtWidgets.QWidget):
                 else:
                     # Need to remove timeseries from geodataframe
                     for (columnName, columnData) in arg.items():                    
-                        if isinstance(columnData[0], DataFrame):
+                        if isinstance(columnData.iloc[0], DataFrame):
                             arg = arg.drop([columnName], axis=1)
                     string = string + arg.to_json()
             else:
