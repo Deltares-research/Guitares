@@ -1,3 +1,4 @@
+from guitares.pyqt5.mapbox.colorbar import ColorBar
 from .layer import Layer
 from geopandas import GeoDataFrame
 
@@ -12,11 +13,15 @@ class GeoJSONLayerChoropleth(Layer):
         data,
         hover_property="",
         color_property="",
-        scaler=None
+        color_values=None,
+        legend_title="",
+
     ):
         self.data = data
         self.hover_property = hover_property
         self.color_property = color_property
+        self.color_values = color_values
+        self.legend_title = legend_title
 
         # Make sure this is not an empty GeoDataFrame
         if isinstance(data, GeoDataFrame):
@@ -27,21 +32,25 @@ class GeoJSONLayerChoropleth(Layer):
         # Remove existing layer
         self.remove()
 
+        #         
+        clrbar = ColorBar(color_values=self.color_values, legend_title=self.legend_title)
+        clrbar.make(0.0, 0.0)
+        clrbar.to_json()
+
         # Add new layer
         self.mapbox.runjs(
             "./js/geojson_layer_choropleth.js",
             "addLayer",
             arglist=[
                 self.map_id,
-                data,
+                self.data,
                 self.min_zoom,
-                hover_property,
-                color_property,
+                self.hover_property,
+                self.color_property,
                 self.line_color,
                 self.line_width,
                 self.line_opacity,
                 self.fill_opacity,
-                scaler
             ],
         )
 

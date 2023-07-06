@@ -1,6 +1,11 @@
 import { map, featureClicked, mapboxgl} from '/js/main.js';
 
-export function addLayer(id, 
+function numberWithCommas(x) {
+  return x.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+}
+
+export function addLayer(
+  id, 
   data, 
   min_zoom, 
   hover_property, // do more than one
@@ -9,7 +14,8 @@ export function addLayer(id,
   lineWidth,
   lineOpacity,
   fillOpacity,
-  scaler) {
+  colormap
+  ) {
 
   let fillId = id + ".fill"
   let lineId = id + ".line"
@@ -19,25 +25,7 @@ export function addLayer(id,
     data: data, 
     promoteId: hover_property
   });
-
-  map.addLayer({
-    'id': lineId,
-    'type': 'line',
-    'source': id,
-    'layout': {},
-    'minzoom': min_zoom,
-    'paint': {
-      'line-color': lineColor,
-      'line-width': lineWidth,
-      'line-opacity': lineOpacity
-     },
-     'layout': {
-      // Make the layer visible by default.
-      'visibility': 'visible'
-      }
-  });
-
-
+  let scaler = 1000000
   map.addLayer({
     'id': fillId,
     'type': 'fill',
@@ -45,11 +33,11 @@ export function addLayer(id,
     'minzoom': min_zoom,
     'paint': {
       'fill-color': [
-      'interpolate',
-      ['linear'],
+      'step',
       ['get', color_property],
       // This should all not be hard0-coded and provided with input
-      0,
+      '#F5F5F5',
+      0.01,
       '#FFFFFF',
       0.1,
       '#FFFFCC',
@@ -80,7 +68,7 @@ export function addLayer(id,
     if (e.features.length > 0) {
       // Display a popup with the name of area
       popup.setLngLat(e.lngLat)
-      .setText(hover_property + ": " + e.features[0].properties[hover_property])
+      .setText(hover_property + ": " + numberWithCommas(e.features[0].properties[hover_property]))
       .addTo(map);
     }
   });
@@ -89,6 +77,23 @@ export function addLayer(id,
   // previously hovered feature.
   map.on('mouseleave', fillId, () => {
     popup.remove();
+  });
+
+  map.addLayer({
+    'id': lineId,
+    'type': 'line',
+    'source': id,
+    'layout': {},
+    'minzoom': min_zoom,
+    'paint': {
+      'line-color': lineColor,
+      'line-width': lineWidth,
+      'line-opacity': lineOpacity
+     },
+     'layout': {
+      // Make the layer visible by default.
+      'visibility': 'visible'
+      }
   });
 
 };
