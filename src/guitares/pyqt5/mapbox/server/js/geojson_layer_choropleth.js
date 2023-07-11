@@ -14,7 +14,9 @@ export function addLayer(
   lineWidth,
   lineOpacity,
   fillOpacity,
-  colormap
+  scaler,
+  legend_title,
+  unit
   ) {
 
   let fillId = id + ".fill"
@@ -25,7 +27,7 @@ export function addLayer(
     data: data, 
     promoteId: hover_property
   });
-  let scaler = 1000000
+ 
   map.addLayer({
     'id': fillId,
     'type': 'fill',
@@ -36,23 +38,57 @@ export function addLayer(
       'step',
       ['get', color_property],
       // This should all not be hard0-coded and provided with input
-      '#F5F5F5',
-      0.01,
-      '#FFFFFF',
-      0.1,
-      '#FFFFCC',
+      '#EEF5E8',
+      0.000001*scaler,
+      '#FEE3C4',
+      0.02*scaler,
+      '#FED7AB',
+      0.05*scaler,
+      '#FCCC96',
       0.1*scaler,
-      '#FFFF33',
-      0.3*scaler,
-      '#FFB266',
-      0.5*scaler,
-      '#FF3333',
-      0.8*scaler,
-      '#990000',
+      '#F8AB54',
+      0.2*scaler,
+      '#FB9420',
+      0.4*scaler,
+      '#FB2807',
+      1*scaler,
+      '#B8220A',
     ],
     'fill-opacity': fillOpacity
     }
   });
+
+  // Legend
+  var legendItems = [
+    { style: '#EEF5E8', label: '0 ' + unit},
+    { style: '#FEE3C4', label: '0 - ' + numberWithCommas(0.02*scaler) + ' ' + unit},
+    { style: '#FED7AB', label: numberWithCommas(0.02*scaler) + ' - ' + numberWithCommas(0.05*scaler) + ' ' + unit},
+    { style: '#FCCC96', label: numberWithCommas(0.05*scaler) + ' - ' + numberWithCommas(0.1*scaler) + ' ' + unit},
+    { style: '#F8AB54', label: numberWithCommas(0.1*scaler) + ' - ' + numberWithCommas(0.2*scaler) + ' ' + unit},
+    { style: '#FB9420', label: numberWithCommas(0.2*scaler) + ' - ' + numberWithCommas(0.4*scaler) + ' ' + unit},
+    { style: '#FB2807', label: numberWithCommas(0.4*scaler) + ' - ' + numberWithCommas(1*scaler) + ' ' + unit},
+    { style: '#B8220A', label: '> ' + numberWithCommas(1*scaler) + ' ' + unit},
+  ];
+  var legend     = document.createElement("div");
+  legend.id        = "legend" + id;
+  legend.className = "choropleth_legend";
+  var newSpan = document.createElement('span');
+  newSpan.class = 'title';
+  newSpan.innerHTML = '<b>' + legend_title + '</b>';
+  legend.appendChild(newSpan);
+  legend.appendChild(document.createElement("br"));
+  for (let i = 0; i < legendItems.length; i++) {
+  let cnt = legendItems[i]
+      var newI = document.createElement('i');
+      newI.setAttribute('style','background:' + cnt["style"]);
+      legend.appendChild(newI);
+      var newSpan = document.createElement('span');
+      newSpan.innerHTML = cnt["label"];
+      legend.appendChild(newSpan);
+      legend.appendChild(document.createElement("br"));
+  }
+  document.body.appendChild(legend);
+
 
   // Create a popup, but don't add it to the map yet.
   const popup = new mapboxgl.Popup({
@@ -68,7 +104,7 @@ export function addLayer(
     if (e.features.length > 0) {
       // Display a popup with the name of area
       popup.setLngLat(e.lngLat)
-      .setText(hover_property + ": " + numberWithCommas(e.features[0].properties[hover_property]))
+      .setText(hover_property + ": " + numberWithCommas(e.features[0].properties[hover_property]) + " " + unit)
       .addTo(map);
     }
   });
@@ -99,60 +135,60 @@ export function addLayer(
 };
 
 
-export function activate(id,
-                         lineColor,
-                         fillColor,                   
-                         lineColorActive,
-                         fillColorActive) {
+// export function activate(id,
+//                          lineColor,
+//                          fillColor,                   
+//                          lineColorActive,
+//                          fillColorActive) {
 
-  const features = map.querySourceFeatures(id, {sourceLayer: id});
-  for (let i = 0; i < features.length; i++) {
-    map.setFeatureState(
-      { source: id, id: features[i].id },
-      { active: true }
-    );
-  }
-  if (map.getLayer(id)) {  
-    map.setPaintProperty(id, 'circle-stroke-color', ['case',
-      ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
-      lineColorActive,
-      lineColor]);                          
-    map.setPaintProperty(id, 'circle-color', ['case',
-      ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
-      fillColorActive,
-      fillColor]);                          
-  }                           
-}
+//   const features = map.querySourceFeatures(id, {sourceLayer: id});
+//   for (let i = 0; i < features.length; i++) {
+//     map.setFeatureState(
+//       { source: id, id: features[i].id },
+//       { active: true }
+//     );
+//   }
+//   if (map.getLayer(id)) {  
+//     map.setPaintProperty(id, 'circle-stroke-color', ['case',
+//       ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
+//       lineColorActive,
+//       lineColor]);                          
+//     map.setPaintProperty(id, 'circle-color', ['case',
+//       ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
+//       fillColorActive,
+//       fillColor]);                          
+//   }                           
+// }
 
-export function deactivate(id,
-  lineColor,
-  lineWidth,
-  lineStyle,
-  lineOpacity,
-  fillColor,
-  fillOpacity,                         
-  lineColorActive,
-  fillColorActive) {
+// export function deactivate(id,
+//   lineColor,
+//   lineWidth,
+//   lineStyle,
+//   lineOpacity,
+//   fillColor,
+//   fillOpacity,                         
+//   lineColorActive,
+//   fillColorActive) {
 
-  const features = map.querySourceFeatures(id, {sourceLayer: id});
-  for (let i = 0; i < features.length; i++) {
-    map.setFeatureState(
-      { source: id, id: i },
-      { active: false }
-    );
-  }  
-  if (map.getLayer(id)) {  
-    map.setPaintProperty(id, 'circle-stroke-color', ['case',
-      ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
-      lineColorActive,
-      lineColor]);                          
-    map.setPaintProperty(id, 'circle-color', ['case',
-      ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
-      fillColorActive,
-      fillColor]);                          
-    map.setPaintProperty(id, 'circle-radius', ['case',
-      ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
-      circleRadiusActive,
-      circleRadius]);                          
-  }
-}
+//   const features = map.querySourceFeatures(id, {sourceLayer: id});
+//   for (let i = 0; i < features.length; i++) {
+//     map.setFeatureState(
+//       { source: id, id: i },
+//       { active: false }
+//     );
+//   }  
+//   if (map.getLayer(id)) {  
+//     map.setPaintProperty(id, 'circle-stroke-color', ['case',
+//       ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
+//       lineColorActive,
+//       lineColor]);                          
+//     map.setPaintProperty(id, 'circle-color', ['case',
+//       ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
+//       fillColorActive,
+//       fillColor]);                          
+//     map.setPaintProperty(id, 'circle-radius', ['case',
+//       ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
+//       circleRadiusActive,
+//       circleRadius]);                          
+//   }
+// }

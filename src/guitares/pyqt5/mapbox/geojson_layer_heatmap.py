@@ -1,3 +1,4 @@
+import time
 from .layer import Layer
 from geopandas import GeoDataFrame
 
@@ -15,22 +16,24 @@ class GeoJSONLayerHeatmap(Layer):
         if isinstance(data, GeoDataFrame):
             # Data is GeoDataFrame
             if len(data) == 0:
-                data = GeoDataFrame()
+                self.data = GeoDataFrame()
 
         # Remove existing layer
         self.remove()
 
+        t0 = time.time()
         # Add new layer
         self.mapbox.runjs(
             "./js/geojson_layer_heatmap.js",
             "addLayer",
             arglist=[
                 self.map_id,
-                data,
+                self.data,
                 self.max_zoom,
-                density_property,
+                self.density_property,
             ],
         )
+        print(f"{time.time() - t0} to parse heatmap geojson to mapbox")
 
     def redraw(self):
         if isinstance(self.data, GeoDataFrame):

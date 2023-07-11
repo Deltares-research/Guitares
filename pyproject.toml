@@ -25,6 +25,9 @@ dependencies = [
     "pyyaml",
     "pyqt5",
     "pyqtwebengine",
+    "datashader",
+    "spatialpandas",
+    "pyogrio"
 ]
 
 [tool.setuptools.package-data]
