@@ -5,7 +5,6 @@ import datashader.transfer_functions as tf
 from datashader.utils import export_image
 import spatialpandas as sp
 from pyogrio import read_dataframe
-import time
 from pyproj import Transformer
 
 
@@ -36,7 +35,6 @@ class DatashaderChoroplethLayer(Layer):
         self.mapbox.view.page().runJavaScript(js_string)
 
     def make_overlay(self):
-        t0 = time.time()
         width = self.mapbox.view.geometry().width()
 
         file_name = os.path.join(self.mapbox.server_path, "overlays", self.file_name)
@@ -80,7 +78,6 @@ class DatashaderChoroplethLayer(Layer):
         name = os.path.splitext(name)[0]
         export_image(img, name, export_path=path)
 
-        print(f"{time.time() - t0} to make overlay")
         return xlim0, ylim0
 
     def update(self):
@@ -193,19 +190,15 @@ class DatashaderChoroplethLayer(Layer):
         )
         self.mapbox.view.page().runJavaScript(js_string)
 
-        t0 = time.time()
         if type(data) == str:
             # Read geodataframe from shape file
             self.gdf = read_dataframe(data)
         else:
             # data has to be geodataframe
             self.gdf = data
-        print(f"{time.time() - t0} to load the dataframe")
 
-        t0 = time.time()
         # Convert to spatialpandas geodataframe in wweb mercator
         self.data = sp.GeoDataFrame(self.gdf.set_crs(4326).to_crs(3857))
-        print(f"{time.time() - t0} to convert the dataframe")
 
         try:
             xlim, ylim = self.make_overlay()
