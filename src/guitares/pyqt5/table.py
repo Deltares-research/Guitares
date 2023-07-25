@@ -7,8 +7,10 @@ from enum import Enum
 
 import pandas as pd
 
+
 class DataFrameModel(QtCore.QAbstractTableModel):
-    """ Class to create table view from dataframe"""
+    """Class to create table view from dataframe"""
+
     DtypeRole = QtCore.Qt.UserRole + 1000
     ValueRole = QtCore.Qt.UserRole + 1001
 
@@ -27,7 +29,12 @@ class DataFrameModel(QtCore.QAbstractTableModel):
     dataFrame = QtCore.pyqtProperty(pd.DataFrame, fget=dataFrame, fset=setDataFrame)
 
     @QtCore.pyqtSlot(int, QtCore.Qt.Orientation, result=str)
-    def headerData(self, section: int, orientation: QtCore.Qt.Orientation, role: int = QtCore.Qt.DisplayRole):
+    def headerData(
+        self,
+        section: int,
+        orientation: QtCore.Qt.Orientation,
+        role: int = QtCore.Qt.DisplayRole,
+    ):
         if role == QtCore.Qt.DisplayRole:
             if orientation == QtCore.Qt.Horizontal:
                 return self._dataframe.columns[section]
@@ -46,8 +53,10 @@ class DataFrameModel(QtCore.QAbstractTableModel):
         return self._dataframe.columns.size
 
     def data(self, index, role=QtCore.Qt.DisplayRole):
-        if not index.isValid() or not (0 <= index.row() < self.rowCount() \
-            and 0 <= index.column() < self.columnCount()):
+        if not index.isValid() or not (
+            0 <= index.row() < self.rowCount()
+            and 0 <= index.column() < self.columnCount()
+        ):
             return QtCore.QVariant()
         row = self._dataframe.index[index.row()]
         col = self._dataframe.columns[index.column()]
@@ -64,16 +73,18 @@ class DataFrameModel(QtCore.QAbstractTableModel):
 
     def roleNames(self):
         roles = {
-            QtCore.Qt.DisplayRole: b'display',
-            DataFrameModel.DtypeRole: b'dtype',
-            DataFrameModel.ValueRole: b'value'
+            QtCore.Qt.DisplayRole: b"display",
+            DataFrameModel.DtypeRole: b"dtype",
+            DataFrameModel.ValueRole: b"value",
         }
         return roles
-    
+
     def sort(self, column, order):
         colname = self._dataframe.columns.tolist()[column]
         self.layoutAboutToBeChanged.emit()
-        self._dataframe.sort_values(colname, ascending= order == QtCore.Qt.AscendingOrder, inplace=True)
+        self._dataframe.sort_values(
+            colname, ascending=order == QtCore.Qt.AscendingOrder, inplace=True
+        )
         self._dataframe.reset_index(inplace=True, drop=True)
         self.layoutChanged.emit()
 
@@ -84,8 +95,10 @@ class SelectionTable(Enum):
     MultiSelection = 2
     ExtendedSelection = 3
 
+
 class Table(QTableView):
     """Table pyqt Element"""
+
     def __init__(self, element):
         super().__init__(element.parent.widget)
         self.element = element
@@ -103,21 +116,23 @@ class Table(QTableView):
         # Connect callback when event happens
         self.clicked.connect(self.callback)
         # self.selectionModel().selectionChanged.connect(self.callback)
-        
+
         self.set_geometry()
-        
+
         # This allows for whole row selection and not individual cells
         self.setSelectionBehavior(QTableView.SelectRows)
 
         # Set selection mode
         selection_type = None
-        if hasattr(self.element, 'selection_type'):
+        if hasattr(self.element, "selection_type"):
             selection_type = getattr(SelectionTable, element.selection_type, None)
         self.multi_selection = False
         if selection_type:
             self.setSelectionMode(selection_type.value)
-            if selection_type == SelectionTable.MultiSelection or \
-                selection_type == SelectionTable.ExtendedSelection:
+            if (
+                selection_type == SelectionTable.MultiSelection
+                or selection_type == SelectionTable.ExtendedSelection
+            ):
                 self.multi_selection = True
 
         self.execute_callback = True
@@ -136,13 +151,13 @@ class Table(QTableView):
                 self.selectRow(i)
         else:
             self.selectRow(index[0])
-        
-        self.execute_callback = True    
+
+        self.execute_callback = True
 
     def callback(self):
         indexes = [index.row() for index in self.selectionModel().selectedRows()]
 
-        name  = self.element.variable
+        name = self.element.variable
         group = self.element.variable_group
         self.element.setvar(group, name, indexes)
 
@@ -157,8 +172,12 @@ class Table(QTableView):
     def add_items(self):
         self.clearSpans()
         # Only way to set dataframe is by variable
-        model = DataFrameModel(self.element.getvar(self.element.option_value.variable_group, 
-                                                   self.element.option_value.variable))
+        model = DataFrameModel(
+            self.element.getvar(
+                self.element.option_value.variable_group,
+                self.element.option_value.variable,
+            )
+        )
         self.setModel(model)
         self.setSortingEnabled(True)
         # self.sortByColumn(0, QtCore.SortOrder())
@@ -173,16 +192,25 @@ class Table(QTableView):
             label = self.text_widget
             fm = label.fontMetrics()
             wlab = int(fm.size(0, self.element.text).width())
-            if self.element.text_position == "above-center" or self.element.text_position == "above":
+            if (
+                self.element.text_position == "above-center"
+                or self.element.text_position == "above"
+            ):
                 label.setAlignment(QtCore.Qt.AlignCenter)
-                label.setGeometry(x0, int(y0 - 20 * resize_factor), wdt, int(20 * resize_factor))
+                label.setGeometry(
+                    x0, int(y0 - 20 * resize_factor), wdt, int(20 * resize_factor)
+                )
             elif self.element.text_position == "above-left":
                 label.setAlignment(QtCore.Qt.AlignLeft)
-                label.setGeometry(x0, int(y0 - 20 * resize_factor), wlab, int(20 * resize_factor))
+                label.setGeometry(
+                    x0, int(y0 - 20 * resize_factor), wlab, int(20 * resize_factor)
+                )
             else:
                 # Assuming left
                 label.setAlignment(QtCore.Qt.AlignRight)
-                label.setGeometry(int(x0 - wlab - 3 * resize_factor),
-                                  int(y0 + 5 * self.element.gui.resize_factor),
-                                  wlab,
-                                  int(20 * resize_factor))
+                label.setGeometry(
+                    int(x0 - wlab - 3 * resize_factor),
+                    int(y0 + 5 * self.element.gui.resize_factor),
+                    wlab,
+                    int(20 * resize_factor),
+                )

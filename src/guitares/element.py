@@ -3,39 +3,43 @@ from PyQt5 import QtCore
 
 from guitares.dependencies import Dependency, DependencyCheck
 
+
 class Position:
     def __init__(self):
-        self.x      = 0
-        self.y      = 0
-        self.width  = 10
+        self.x = 0
+        self.y = 0
+        self.width = 10
         self.height = 10
+
 
 class Text:
     def __init__(self, variable_group):
-        self.variable       = ""
+        self.variable = ""
         self.variable_group = variable_group
+
 
 class OptionValue:
     def __init__(self, variable_group):
-        self.list           = []
-        self.variable       = ""
+        self.list = []
+        self.variable = ""
         self.variable_group = variable_group
+
 
 class OptionString:
     def __init__(self, variable_group):
-        self.list           = []
-        self.variable       = ""
+        self.list = []
+        self.variable = ""
         self.variable_group = variable_group
 
 
 class Tab:
     def __init__(self, variable_group, module):
-        self.text           = ""
-        self.module         = ""
+        self.text = ""
+        self.module = ""
         self.variable_group = variable_group
-        self.module         = module
-        self.elements       = []
-        self.gui            = None
+        self.module = module
+        self.elements = []
+        self.gui = None
 
 
 class Element:
@@ -59,7 +63,7 @@ class Element:
         self.text_position = "left"
         self.tooltip = ""
         self.type = str
-        self.gui    = window.gui
+        self.gui = window.gui
         self.getvar = window.gui.getvar
         self.setvar = window.gui.setvar
         self.window = window
@@ -102,9 +106,9 @@ class Element:
                     print("Error! Could not import module " + dct["module"])
         if "method" in dct:
             self.method = dct["method"]
-        if hasattr(self.method, '__call__'):
-             # Callback function is already defined as method
-             self.callback = self.method
+        if hasattr(self.method, "__call__"):
+            # Callback function is already defined as method
+            self.callback = self.method
         else:
             if self.module and self.method:
                 if hasattr(self.module, self.method):
@@ -113,7 +117,9 @@ class Element:
                     print("Error! Could not find method " + self.method)
         if self.variable_group in self.gui.variables:
             if self.variable in self.gui.variables[self.variable_group]:
-                self.type = type(self.gui.variables[self.variable_group][self.variable]["value"])
+                self.type = type(
+                    self.gui.variables[self.variable_group][self.variable]["value"]
+                )
 
         # "title" for backward compatibility
         if "title" in dct:
@@ -148,7 +154,9 @@ class Element:
                 if "variable" in dct["option_value"]:
                     self.option_value.variable = dct["option_value"]["variable"]
                 if "variable_group" in dct["option_value"]:
-                    self.option_value.variable_group = dct["option_value"]["variable_group"]
+                    self.option_value.variable_group = dct["option_value"][
+                        "variable_group"
+                    ]
             else:
                 # It's a list
                 self.option_value.list = dct["option_value"]
@@ -158,7 +166,9 @@ class Element:
                 if "variable" in dct["option_string"]:
                     self.option_string.variable = dct["option_string"]["variable"]
                 if "variable_group" in dct["option_string"]:
-                    self.option_string.variable_group = dct["option_string"]["variable_group"]
+                    self.option_string.variable_group = dct["option_string"][
+                        "variable_group"
+                    ]
             else:
                 # It's a list
                 self.option_string.list = dct["option_string"]
@@ -190,7 +200,7 @@ class Element:
             self.enable = dct["enable"]
         if "selection_type" in dct:
             self.selection_type = dct["selection_type"]
-            
+
         if "dependency" in dct:
             for dep in dct["dependency"]:
                 dependency = Dependency()
@@ -230,109 +240,128 @@ class Element:
                         if tab_dct["module"]:
                             tab.module = importlib.import_module(tab_dct["module"])
                     except Exception as e:
-                        print("Error! Module " + tab_dct["module"] + " could not be imported!")
+                        print(
+                            "Error! Module "
+                            + tab_dct["module"]
+                            + " could not be imported!"
+                        )
                         print(e)
                 self.tabs.append(tab)
 
     def add(self):
-        
         if self.style == "tabpanel":
             from .pyqt5.tabpanel import TabPanel
+
             self.widget = TabPanel(self)
 
         elif self.style == "panel":
             # Add frame
             from .pyqt5.frame import Frame
+
             self.widget = Frame(self)
 
         elif self.style == "dual_frame":
             # Add dual frame
             from .pyqt5.dual_frame import DualFrame
-            self.widget = DualFrame(self)
 
+            self.widget = DualFrame(self)
 
         elif self.style == "pushbutton":
             from .pyqt5.pushbutton import PushButton
+
             self.widget = PushButton(self)
 
         elif self.style == "edit":
             from .pyqt5.edit import Edit
+
             self.widget = Edit(self)
 
         elif self.style == "datetimeedit":
             from .pyqt5.date_edit import DateEdit
+
             self.widget = DateEdit(self)
 
         elif self.style == "text":
             from .pyqt5.text import Text
+
             self.widget = Text(self)
 
         elif self.style == "popupmenu":
             from .pyqt5.popupmenu import PopupMenu
+
             self.widget = PopupMenu(self)
 
         elif self.style == "listbox":
             from .pyqt5.listbox import ListBox
+
             self.widget = ListBox(self)
 
         elif self.style == "table":
             from .pyqt5.table import Table
+
             self.widget = Table(self)
 
         elif self.style == "checkbox":
             from .pyqt5.checkbox import CheckBox
+
             self.widget = CheckBox(self)
 
         elif self.style == "radiobuttongroup":
             from .pyqt5.radiobuttongroup import RadioButtonGroup
+
             self.widget = RadioButtonGroup(self)
 
         elif self.style == "slider":
             from .pyqt5.slider import Slider
+
             self.widget = Slider(self)
 
         elif self.style == "pushselectfile":
             from .pyqt5.pushopenfile import PushOpenFile
+
             self.widget = PushOpenFile(self)
 
         elif self.style == "pushsavefile":
             from .pyqt5.pushsavefile import PushSaveFile
+
             self.widget = PushSaveFile(self)
 
         elif self.style == "mapbox":
             from .pyqt5.mapbox.mapbox import MapBox
+
             self.widget = MapBox(self)
 
         elif self.style == "mapbox_compare":
             from .pyqt5.mapbox.mapbox_compare import MapBoxCompare
+
             self.widget = MapBoxCompare(self)
 
         elif self.style == "webpage":
             from .pyqt5.webpage import WebPage
+
             self.widget = WebPage(self)
         else:
             print("Element style " + self.style + " not recognized!")
 
         # And set the visibility
-        if self.style != "radiobuttongroup": # Cannot set radiobutton group to visible
+        if self.style != "radiobuttongroup":  # Cannot set radiobutton group to visible
             if self.widget:
                 self.widget.setVisible(True)
         else:
-            self.widget.set_visible(True)        
+            self.widget.set_visible(True)
 
     def set_geometry(self):
         try:
             self.widget.set_geometry()
         except:
-            pass    
+            pass
 
     def get_position(self):
-
         position = self.position
         resize_factor = self.gui.resize_factor
         parent = self.parent.widget
 
-            # TO DO: relative positions!
+        # TO DO: relative positions!
         pwdt = parent.geometry().width()
         phgt = parent.geometry().height()
 
@@ -341,29 +370,29 @@ class Element:
         wdt = position.width * resize_factor
         hgt = position.height * resize_factor
 
-        if x0>0:
-            if wdt>0:
+        if x0 > 0:
+            if wdt > 0:
                 pass
             else:
                 wdt = pwdt - x0 + wdt
         else:
-            if wdt>0:
+            if wdt > 0:
                 x0 = pwdt - wdt + x0
             else:
                 x0 = pwdt + x0
                 wdt = pwdt - x0 + wdt
 
-        if y0>0:
-            if hgt>0:
+        if y0 > 0:
+            if hgt > 0:
                 y0 = phgt - (y0 + hgt)
             else:
-                y0 = - hgt
+                y0 = -hgt
                 hgt = phgt - position.y * resize_factor + hgt
         else:
-            if hgt>0:
+            if hgt > 0:
                 y0 = phgt - hgt
             else:
-                hgt = - y0 - hgt
+                hgt = -y0 - hgt
                 y0 = phgt - (y0 + hgt)
 
         x0 = int(x0)
@@ -377,27 +406,31 @@ class Element:
         for dependency in self.dependencies:
             true_or_false = dependency.get()
             if dependency.action == "visible":
-                if self.style == "radiobuttongroup": # Cannot set radiobutton group directly
-                    self.widget.set_visible(true_or_false)        
+                if (
+                    self.style == "radiobuttongroup"
+                ):  # Cannot set radiobutton group directly
+                    self.widget.set_visible(true_or_false)
                 elif self.style == "mapbox" or self.style == "mapbox_compare":
                     if self.widget.ready:
-                        self.widget.view.setVisible(true_or_false)        
-                else:    
+                        self.widget.view.setVisible(true_or_false)
+                else:
                     if self.widget:
                         self.widget.setVisible(true_or_false)
                         if hasattr(self.widget, "text_widget"):
                             self.widget.text_widget.setVisible(true_or_false)
             elif dependency.action == "enable":
-                if self.style == "radiobuttongroup": # Cannot set radiobutton group directly
-                    self.widget.set_enabled(true_or_false)        
-                else:    
+                if (
+                    self.style == "radiobuttongroup"
+                ):  # Cannot set radiobutton group directly
+                    self.widget.set_enabled(true_or_false)
+                else:
                     if self.widget:
                         self.widget.setEnabled(true_or_false)
                         if hasattr(self.widget, "text_widget"):
                             self.widget.text_widget.setEnabled(true_or_false)
             elif dependency.action == "check":
                 self.widget.setChecked(true_or_false)
-        if self.enable == False:        
+        if self.enable == False:
             if self.widget:
                 self.widget.setEnabled(False)
                 if hasattr(self.widget, "text_widget"):
