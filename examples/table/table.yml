@@ -3,7 +3,7 @@ window:
   width: 200
   height: 200
   module: callbacks
-  variable_group: table
+  variable_group: table  
 element:
 - style: table
   position:
@@ -17,6 +17,7 @@ element:
   option_value:
     variable: dataframe
   method: select
+  selection_type: 'SingleSelection'
 - style: text
   position:
     x: 20
