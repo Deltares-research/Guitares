@@ -3,6 +3,8 @@ from PyQt5.QtWidgets import QLabel
 from PyQt5 import QtCore
 import traceback
 
+from enum import Enum
+
 import pandas as pd
 
 class DataFrameModel(QtCore.QAbstractTableModel):
@@ -75,6 +77,13 @@ class DataFrameModel(QtCore.QAbstractTableModel):
         self._dataframe.reset_index(inplace=True, drop=True)
         self.layoutChanged.emit()
 
+
+class SelectionTable(Enum):
+    NoSelection = 0
+    SingleSelection = 1
+    MultiSelection = 2
+    ExtendedSelection = 3
+
 class Table(QTableView):
     """Table pyqt Element"""
     def __init__(self, element):
@@ -95,11 +104,21 @@ class Table(QTableView):
         self.clicked.connect(self.callback)
         # self.selectionModel().selectionChanged.connect(self.callback)
         
-
         self.set_geometry()
         
         # This allows for whole row selection and not individual cells
         self.setSelectionBehavior(QTableView.SelectRows)
+
+        # Set selection mode
+        selection_type = None
+        if hasattr(self.element, 'selection_type'):
+            selection_type = getattr(SelectionTable, element.selection_type, None)
+        self.multi_selection = False
+        if selection_type:
+            self.setSelectionMode(selection_type.value)
+            if selection_type == SelectionTable.MultiSelection or \
+                selection_type == SelectionTable.ExtendedSelection:
+                self.multi_selection = True
 
         self.execute_callback = True
 
@@ -110,7 +129,13 @@ class Table(QTableView):
 
         # Get value
         index = self.element.getvar(self.element.variable_group, self.element.variable)
-        self.selectRow(index[0])
+
+        # In case of multi selection, index is a list
+        if len(index) > 1 and self.multi_selection:
+            for i in index:
+                self.selectRow(i)
+        else:
+            self.selectRow(index[0])
         
         self.execute_callback = True    
 

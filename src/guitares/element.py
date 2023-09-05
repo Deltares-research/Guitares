@@ -188,7 +188,9 @@ class Element:
             self.multiselection = dct["multiselection"]
         if "enable" in dct:
             self.enable = dct["enable"]
-
+        if "selection_type" in dct:
+            self.selection_type = dct["selection_type"]
+            
         if "dependency" in dct:
             for dep in dct["dependency"]:
                 dependency = Dependency()
@@ -227,8 +229,9 @@ class Element:
                     try:
                         if tab_dct["module"]:
                             tab.module = importlib.import_module(tab_dct["module"])
-                    except:
+                    except Exception as e:
                         print("Error! Module " + tab_dct["module"] + " could not be imported!")
+                        print(e)
                 self.tabs.append(tab)
 
     def add(self):
