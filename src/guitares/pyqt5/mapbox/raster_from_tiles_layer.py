@@ -19,7 +19,7 @@ from .colorbar import ColorBar
 
 from .layer import Layer
 
-from cht.tiling.tiling import make_floodmap_overlay
+from cht_tiling.tiling import make_floodmap_overlay
 
 class RasterFromTilesLayer(Layer):
     def __init__(self, mapbox, id, map_id, **kwargs):
