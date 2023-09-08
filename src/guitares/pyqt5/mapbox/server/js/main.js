@@ -352,6 +352,12 @@ export function setLayerStyle(style) {
       legend.remove();
     }
   }
+  var legends = document.getElementsByClassName("choropleth_legend")
+  if (legends) {
+    for (const legend of legends) {
+      legend.remove();
+    }
+  }
 }
 
 export function setTerrain(trueOrFalse, exaggeration) {

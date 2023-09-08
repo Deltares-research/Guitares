@@ -15,7 +15,7 @@ class GeoJSONLayerHeatmap(Layer):
         if isinstance(data, GeoDataFrame):
             # Data is GeoDataFrame
             if len(data) == 0:
-                data = GeoDataFrame()
+                self.data = GeoDataFrame()
 
         # Remove existing layer
         self.remove()
@@ -26,9 +26,9 @@ class GeoJSONLayerHeatmap(Layer):
             "addLayer",
             arglist=[
                 self.map_id,
-                data,
+                self.data,
                 self.max_zoom,
-                density_property,
+                self.density_property,
             ],
         )
 

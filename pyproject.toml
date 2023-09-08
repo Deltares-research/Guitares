@@ -26,6 +26,9 @@ dependencies = [
     "pyqt5",
     "pyqtwebengine",
     "cht_tiling @ git+https://github.com/Deltares/cht_tiling.git",
+    "datashader",
+    "spatialpandas",
+    "pyogrio"
 ]
 
 [tool.setuptools.package-data]
