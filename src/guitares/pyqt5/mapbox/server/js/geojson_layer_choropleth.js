@@ -1,7 +1,15 @@
-import { map, featureClicked, mapboxgl} from '/js/main.js';
+import {map, mapboxgl} from '/js/main.js';
+
+function absVal(integer) {
+  return integer < 0 ? -integer : integer;
+}
 
 function numberWithCommas(x) {
-  return x.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+  if (x == 0) {
+    return x.toString()
+  } else {
+    return x.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+  }
 }
 
 export function addLayer(
@@ -18,9 +26,22 @@ export function addLayer(
   legend_title,
   unit
   ) {
-
+  
   let fillId = id + ".fill"
   let lineId = id + ".line"
+  // Always remove the layer first to avoid an error
+  if (map.getSource(id)) {
+    map.removeSource(id);
+  }
+
+  if (map.getLayer(fillId)) {
+    map.removeLayer(fillId);
+  }
+
+  if (map.getLayer(lineId)) {
+    map.removeLayer(lineId);
+  }
+
 
   map.addSource(id, {
     type: 'geojson',
@@ -89,25 +110,30 @@ export function addLayer(
   }
   document.body.appendChild(legend);
 
-
   // Create a popup, but don't add it to the map yet.
   const popup = new mapboxgl.Popup({
     closeButton: false,
     closeOnClick: false
   });
 
-  // When the user moves their mouse over the fill layer, we'll update the
-  // feature state for the feature under the mouse.
-  map.on('mousemove', fillId, (e) => {
+  function onHover(e) {
     // Change the cursor style as a UI indicator.
     map.getCanvas().style.cursor = 'pointer';
     if (e.features.length > 0) {
-      // Display a popup with the name of area
-      popup.setLngLat(e.lngLat)
-      .setText(hover_property + ": " + numberWithCommas(e.features[0].properties[hover_property]) + " " + unit)
-      .addTo(map);
+      if (e.features[0].properties[hover_property]) {
+        // Display a popup with the name of area
+        popup.setLngLat(e.lngLat)
+        .setText(hover_property + ": " 
+        + numberWithCommas(e.features[0].properties[hover_property]) 
+        + " " + unit)
+        .addTo(map);
+      }
     }
-  });
+  }
+
+  // When the user moves their mouse over the fill layer, we'll update the
+  // feature state for the feature under the mouse.
+  map.on('mousemove', fillId, onHover);
 
   // When the mouse leaves the fill layer, update the feature state of the
   // previously hovered feature.
