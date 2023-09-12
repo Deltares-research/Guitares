@@ -18,7 +18,6 @@ class GeoJSONLayerChoropleth(Layer):
         legend_title="",
         unit="",
     ):
-        self.data = data
         self.hover_property = hover_property
         self.color_property = color_property
         self.scaler = scaler
@@ -31,6 +30,8 @@ class GeoJSONLayerChoropleth(Layer):
             # Data is GeoDataFrame
             if len(data) == 0:
                 data = GeoDataFrame()
+            if data.crs != 4326:
+                data = data.to_crs(4326)
             self.gdf = data
         else:
             # Read geodataframe from shape file
@@ -130,8 +131,8 @@ class GeoJSONLayerChoropleth(Layer):
         )
 
     def redraw(self):
-        if isinstance(self.data, GeoDataFrame):
-            self.set_data(self.data, self.hover_property, self.color_property)
+        if isinstance(self.gdf, GeoDataFrame):
+            self.set_data(self.gdf, self.hover_property, self.color_property)
         if not self.visible:
             self.hide()
 
@@ -157,6 +158,7 @@ class GeoJSONLayerChoropleth(Layer):
             self.mapbox.runjs(
                 "/js/main.js", "showLayer", arglist=[self.map_id + ".line"]
             )
+            self.visible = True
         else:
             self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id])
             self.mapbox.runjs(
@@ -165,3 +167,5 @@ class GeoJSONLayerChoropleth(Layer):
             self.mapbox.runjs(
                 "/js/main.js", "hideLayer", arglist=[self.map_id + ".line"]
             )
+            self.visible = False
+        self.update()
