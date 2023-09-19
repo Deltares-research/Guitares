@@ -111,7 +111,7 @@ class RasterFromTilesLayer(Layer):
 #        clrmap_string = ""
 
         if type(self.mapbox).__name__ == "MapBox": 
-            # Regulare map box
+            # Regular map box
             if self.new:
                 js_string = "import('/js/image_layer.js').then(module => {module.addLayer('" + overlay_url + "','" + self.map_id + "'," + bounds_string + "," + clrmap_string + ")});"
                 self.mapbox.view.page().runJavaScript(js_string)
@@ -120,7 +120,7 @@ class RasterFromTilesLayer(Layer):
                 self.mapbox.view.page().runJavaScript(js_string)
             self.mapbox.runjs("./js/image_layer.js", "setOpacity", arglist=[self.map_id, self.data["opacity"]])
         elif type(self.mapbox == "MapBoxCompare"): 
-            # Regulare map box
+            # Compare map box
             if self.new:
                 js_string = "import('/js/image_layer_compare.js').then(module => {module.addLayer('" + overlay_url + "','" + self.map_id + "'," + bounds_string + "," + clrmap_string + ",'" + self.side + "')});"
                 self.mapbox.view.page().runJavaScript(js_string)

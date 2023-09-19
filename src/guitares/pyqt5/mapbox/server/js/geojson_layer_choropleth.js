@@ -24,7 +24,8 @@ export function addLayer(
   fillOpacity,
   scaler,
   legend_title,
-  unit
+  unit,
+  legend_position
   ) {
   
   let fillId = id + ".fill"
@@ -92,7 +93,8 @@ export function addLayer(
   ];
   var legend     = document.createElement("div");
   legend.id        = "legend" + id;
-  legend.className = "choropleth_legend";
+  //legend.className = "choropleth_legend";
+  legend.className = legend_position;
   var newSpan = document.createElement('span');
   newSpan.class = 'title';
   newSpan.innerHTML = '<b>' + legend_title + '</b>';

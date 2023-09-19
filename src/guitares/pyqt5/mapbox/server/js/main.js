@@ -253,23 +253,35 @@ export function showLayer(id) {
 	// Show layer
 	if (map.getLayer(id)) {
     map.setLayoutProperty(id, 'visibility', 'visible');
-    var legend = document.getElementById("legend" + id);
-    if (legend) {
-      legend.style.visibility = 'visible';
-    }
   }
+  showLegend(id);
 }
 
 export function hideLayer(id) {
 	// Hide layer
 	if (map.getLayer(id)) {
   	map.setLayoutProperty(id, 'visibility', 'none');
-    var legend = document.getElementById("legend" + id);
-    if (legend) {
-      legend.style.visibility = 'hidden';
-    }
+  }
+  hideLegend(id);
+}
+
+export function showLegend(id) {
+	// Show legend
+  var legend = document.getElementById("legend" + id);
+  if (legend) {
+    legend.style.visibility = 'visible';
   }
 }
+
+export function hideLegend(id) {
+	// Hide layer
+  var legend = document.getElementById("legend" + id);
+  if (legend) {
+    legend.style.visibility = 'hidden';
+  }
+}
+
+
 
 export function getExtent() {
 	// Called after moving map ended

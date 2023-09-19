@@ -17,6 +17,7 @@ class Layer:
         self.hover_property = "name"
         self.color_property = "value"
         self.side      = "a"  # only for compare maps
+        self.legend_position = "bottom-right" # Options are "top-left", "top-right", "bottom-left", "bottom-right"
 
         self.line_color     = "dodgerblue"
         self.line_width     = 2

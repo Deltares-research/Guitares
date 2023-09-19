@@ -31,6 +31,7 @@ export function addLayer(fileName, id, bounds, colorbar) {
         const legend     = document.createElement("div");
         legend.id        = "legend" + id;
         legend.className = "overlay_legend";
+//        legend.className = legend_position;
         var newSpan = document.createElement('span');
         newSpan.class = 'title';
         newSpan.innerHTML = '<b>' + colorbar["title"] + '</b>';
@@ -71,6 +72,7 @@ export function updateLayer(fileName, id, bounds, colorbar) {
         var legend     = document.createElement("div");
         legend.id        = "legend" + id;
         legend.className = "overlay_legend";
+//        legend.className = legend_position;
         var newSpan = document.createElement('span');
         newSpan.class = 'title';
         newSpan.innerHTML = '<b>' + colorbar["title"] + '</b>';
@@ -87,6 +89,25 @@ export function updateLayer(fileName, id, bounds, colorbar) {
             legend.appendChild(document.createElement("br"));
         }
         document.body.appendChild(legend);
+        // Now check for layer visibility 
+        var viz = map.getLayoutProperty(id, 'visibility');
+        console.log('Layer ' + id + ' visibility is ' + viz);
+        if (viz == 'visible') {
+            legend.style.visibility = 'visible';
+        } else {
+            legend.style.visibility = 'hidden';
+        }
+      }
+    }
+    
+    export function hideLayer(id) {
+        // Hide layer
+        if (map.getLayer(id)) {
+          map.setLayoutProperty(id, 'visibility', 'none');
+        var legend = document.getElementById("legend" + id);
+        if (legend) {
+          legend.style.visibility = 'hidden';
+        }
     }
 }
 
