@@ -6,17 +6,18 @@ class Layer:
         self.mapbox    = mapbox
         self.id        = id
         self.map_id    = map_id
+        self.visible   = True
+        self.active    = True
         self.type      = "container"
         self.layer     = {}
         self.parent    = None
-        self.mode      = "active"
+#        self.mode      = "active"
         self.data      = None
         self.index     = None
         self.select    = None
         self.crs       = 4326
         self.hover_property = "name"
         self.color_property = "value"
-        self.side      = "a"  # only for compare maps
         self.legend_position = "bottom-right" # Options are "top-left", "top-right", "bottom-left", "bottom-right"
 
         self.line_color     = "dodgerblue"
@@ -57,6 +58,19 @@ class Layer:
         self.max_zoom = 22
         self.zoom_switch = 999
 
+        self.decimals = 1
+
+        self.big_data = False
+
+        if type(self.mapbox).__name__ == "MapBox":
+            # Regular mapbox
+            self.main_js = "/js/main.js"
+            self.side    = "main"
+        elif type(self.mapbox).__name__ == "MapBoxCompare":
+            # Compare mapbox
+            self.main_js = "/js/compare.js"
+            self.side = "a"
+
         for key, value in kwargs.items():
             setattr(self, key, value)
 
@@ -79,6 +93,7 @@ class Layer:
 
 
     def update(self):
+        # This layer does not get updated when zooming in or out
         pass
 
     def delete(self):
@@ -87,8 +102,10 @@ class Layer:
             # Container layer
             layers = list_layers(self.layer)
             for layer in layers:
-                layer.delete_from_map()
+                layer.delete()
+#                layer.delete_from_map()
         else:        
+#            self.mapbox.runjs(self.main_js, "removeLayer", arglist=[self.map_id, self.side])
             self.delete_from_map()
 
         # Remove layer from layer dict
@@ -98,7 +115,7 @@ class Layer:
             self.mapbox.layer.pop(self.id)
 
     def delete_from_map(self):
-        self.mapbox.runjs("/js/main.js", "removeLayer", arglist=[self.map_id])
+        self.mapbox.runjs(self.main_js, "removeLayer", arglist=[self.map_id, self.side])
 
     def clear(self):
         # Clear this layer and all nested layers from map
@@ -108,6 +125,7 @@ class Layer:
             for layer in layers:
                 layer.clear()
         else:        
+#            self.mapbox.runjs(self.main_js, "removeLayer", arglist=[self.map_id, self.side])
             self.delete_from_map()
             self.data = None
 
@@ -117,7 +135,8 @@ class Layer:
         else:
             return None
 
-    def add_layer(self, layer_id, type=None, mode="active", **kwargs):
+#    def add_layer(self, layer_id, type=None, mode="active", **kwargs):
+    def add_layer(self, layer_id, type=None, **kwargs):
 
         if layer_id in self.layer:
             # Layer already exists
@@ -128,7 +147,8 @@ class Layer:
         if type == None:
 
             # Add containing layer
-            self.layer[layer_id] = Layer(self.mapbox, layer_id, map_id, mode=mode)
+            self.layer[layer_id] = Layer(self.mapbox, layer_id, map_id)
+#            self.layer[layer_id] = Layer(self.mapbox, layer_id, map_id, mode=mode)
             self.layer[layer_id].parent = self
             return self.layer[layer_id]
         
@@ -196,59 +216,94 @@ class Layer:
 
             self.layer[layer_id].type = type
             self.layer[layer_id].parent = self
-            self.layer[layer_id].mode = mode
+#            self.layer[layer_id].mode = mode
 
             return self.layer[layer_id]
  
     def layer_added(self):
-        print("Layer " + self.map_id + " added")
-        if self.mode == "inactive":
-            self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id])
+        # This function is called after a layer is added to the map
+        # It is used to set the visibility and activity of the layer, but only if they are False
+        # if self.mode == "inactive":
+        #     self.mapbox.runjs(self.main_js, "showLayer", arglist=[self.map_id, self.side])
+        #     self.deactivate()
+        # elif self.mode == "invisible":    
+        #     self.mapbox.runjs(self.main_js, "hideLayer", arglist=[self.map_id, self.side])
+        if not self.visible:
+            self.hide()
+        if not self.active:
             self.deactivate()
-        elif self.mode == "invisible":    
-            self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id])
 
     def show(self):
-        self.set_visibility(True)
         self.visible = True
+        self.set_visibility(True)
 
     def hide(self):
-        self.set_visibility(False)
         self.visible = False
+        self.set_visibility(False)
 
     def set_visibility(self, true_or_false):
-        # Make a list of all layers
         if self.layer:
             # Container layer
+            # Make a list of all layers
             layers = list_layers(self.layer)
             for layer in layers:
                 layer.set_visibility(true_or_false)
         else:
-            if true_or_false:
-                self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id])
+            # Data layer
+            if true_or_false and self.visible:
+                self.mapbox.runjs(self.main_js, "showLayer", arglist=[self.map_id, self.side])
             else:
-                self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id])
+                self.mapbox.runjs(self.main_js, "hideLayer", arglist=[self.map_id, self.side])
 
-    def set_mode(self, mode):
-        # Make a list of all layers
+    def activate(self):
+        # Only called for layers that do not have a activate function in the subclass
+        self.active = True
+        if self.layer:
+            self.set_activity(True)
+
+    def deactivate(self):
+        # Only called for layers that do not have a deactivate function in the subclass
+        self.active = False    
+        if self.layer:
+            self.set_activity(False)
+
+    def set_activity(self, true_or_false):
         if self.layer:
             # Container layer
-            self.mode = mode
+            # Make a list of all layers
             layers = list_layers(self.layer)
-            for layer in layers:                
-                layer.set_mode(mode)
+            for layer in layers:
+                layer.set_activity(true_or_false)
         else:
-            # Only change if mode has changed
-            if self.mode != mode:
-                if mode == "active":
-                    self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id])
-                    self.activate()
-                elif mode == "inactive":
-                    self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id])
-                    self.deactivate()
-                else:    
-                    self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id])
-            self.mode = mode
+            # Data layer
+            if true_or_false and self.activate:
+                self.activate()
+            else:
+                self.deactivate()
+
+    # def set_mode(self, mode):
+    #     # Make a list of all layers
+    #     if self.layer:
+    #         # Container layer
+    #         self.mode = mode
+    #         layers = list_layers(self.layer)
+    #         for layer in layers:                
+    #             layer.set_mode(mode)
+    #     else:
+    #         # Only change if mode has changed
+    #         if self.mode != mode:
+    #             if mode == "active":
+    #                 self.visible = True
+    #                 self.mapbox.runjs(self.main_js, "showLayer", arglist=[self.map_id, self.side])
+    #                 self.activate()
+    #             elif mode == "inactive":
+    #                 self.visible = True
+    #                 self.mapbox.runjs(self.main_js, "showLayer", arglist=[self.map_id, self.side])
+    #                 self.deactivate()
+    #             else: # Invisible   
+    #                 self.visible = False
+    #                 self.mapbox.runjs(self.main_js, "hideLayer", arglist=[self.map_id, self.side])
+    #         self.mode = mode
 
     def redraw(self):
         print("Cannot redraw layer of type " + self.type)

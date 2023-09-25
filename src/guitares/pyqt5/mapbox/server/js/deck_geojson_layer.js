@@ -1,7 +1,7 @@
 //let deck = mpbox.import_deck();
 // Deck changes the mouse cursor. Need to fix this. Maybe with something like https://github.com/visgl/deck.gl/issues/3522
 
-import { map } from './main.js';
+//import { map } from './main.js';
 
 var layerList = []
 

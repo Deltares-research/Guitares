@@ -1,4 +1,5 @@
-import { map, featureClicked, mapboxgl, layers, layerAdded } from '/js/main.js';
+//import { map, featureClicked, mapboxgl, layers, layerAdded } from '/js/main.js';
+//import { layerAdded } from '/js/main.js';
 
 let hover_property
 let hoveredId = null;
@@ -21,13 +22,23 @@ export function addLayer(id,
   fillOpacity,
   selectionOption) {
 
-  console.log("hovprop " + hovprop)  
   hover_property = hovprop
 
   let hoveredId = null
   let fillId = id + ".fill"
   let lineId = id + ".line"
-//  var selectedFeatures = []
+  // Always remove old layers first to avoid errors
+  if (map.getLayer(fillId)) {
+    map.removeLayer(fillId);
+  }
+  if (map.getLayer(lineId)) {
+    map.removeLayer(lineId);
+  }
+  if (map.getSource(id)) {
+    map.removeSource(id);
+  }
+
+  //  var selectedFeatures = []
 
   layers[id] = {}
   layers[id].data = data; 
@@ -215,7 +226,7 @@ function mouseLeave(e) {
 }
 
 function moveEnd(layerId) {
-  const vis = map.getLayoutProperty(layerId, 'visibility');
+  const vis = map.getLayoutProperty(layerId + '.fill', 'visibility');
   if (vis == "visible") {
     updateFeatureState(layerId);
   }

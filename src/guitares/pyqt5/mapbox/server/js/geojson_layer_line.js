@@ -1,4 +1,4 @@
-import { map } from '/js/main.js';
+//import { map } from '/js/main.js';
 
 export function addLayer(id, data,   
   lineColor, 

@@ -1,6 +1,7 @@
 let MapboxDraw = mpbox.import_mapbox_draw()
 
-import { map, featureDrawn, featureSelected, featureModified, featureAdded, featureDeselected } from '/js/main.js';
+//import { map, featureDrawn, featureSelected, featureModified, featureAdded, featureDeselected } from '/js/main.js';
+import { featureDrawn, featureSelected, featureModified, featureAdded, featureDeselected } from '/js/main.js';
 import { DrawRectangle } from '/js/mapbox-gl-draw-rectangle-mode.js';
 import { drawStyles } from '/js/draw_styles.js'
 import { SRMode, SRCenter } from '/js/mapbox_gl_draw_scale_rotate_mode.js'
@@ -429,8 +430,14 @@ export function deleteLayer(layerId) {
     }
   }
   // Delete inactive layer
-  map.removeLayer(layerId + ".line");
-  map.removeLayer(layerId + ".fill");
+  if (map.getLayer(layerId + ".line")) {
+    map.removeLayer(layerId + ".line");
+  }
+  if (map.getLayer(layerId + ".fill")) {
+    map.removeLayer(layerId + ".fill");
+  }  
+//  map.removeLayer(layerId + ".line");
+//  map.removeLayer(layerId + ".fill");
   map.removeSource(layerId);
   removeFromLayerList(layerId);
 }

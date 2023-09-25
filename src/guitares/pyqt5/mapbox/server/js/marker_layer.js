@@ -1,5 +1,3 @@
-import { map } from './main.js';
-
 export function addMarkerLayer(geojson, markerFile, id) {
 
 	layerID = id;
@@ -75,7 +73,5 @@ export function addMarkerLayer(geojson, markerFile, id) {
 
         }
     );
-
 //    layerAdded();
-
 }

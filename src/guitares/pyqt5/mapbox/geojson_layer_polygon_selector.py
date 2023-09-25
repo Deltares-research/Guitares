@@ -23,8 +23,8 @@ class GeoJSONLayerPolygonSelector(Layer):
         indices.extend(range(len(data)))
         data["index"] = indices
 
-        # Remove existing layer        
-        self.remove()
+        # # Remove existing layer        
+        # self.remove()
 
         # Add new layer
         self.mapbox.runjs("./js/geojson_layer_polygon_selector.js", "addLayer", arglist=[self.map_id,
@@ -42,6 +42,8 @@ class GeoJSONLayerPolygonSelector(Layer):
         self.index = index
         self.mapbox.runjs("/js/geojson_layer_polygon_selector.js", "setSelectedIndex", arglist=[self.map_id, index])
 
+    # Probably should not have a separate function for this
+    # Can also done with layer.hover_property = "name" and then layer.redraw() 
     def set_hover_property(self, hover_property):
         data = self.data
         index = self.index
@@ -54,7 +56,7 @@ class GeoJSONLayerPolygonSelector(Layer):
     def select_by_id(self, id):
         self.mapbox.runjs("/js/geojson_layer_polygon_selector.js", "selectById", arglist=[self.map_id, id])
 
-    def activate(self):        
+    def activate(self):
         self.active = True
         if self.data is None:
             return
@@ -79,8 +81,11 @@ class GeoJSONLayerPolygonSelector(Layer):
                                                                                           self.fill_color_selected_inactive])
 
     def redraw(self):
+        # Called when the map style is changed
         if isinstance(self.data, GeoDataFrame):
-            self.set_data(self.data, self.index, self.hover_property)
+            self.set_data(self.data, self.index)
+        if not self.visible:
+            self.hide()
 
     # def activate(self):
     #     self.active = True
@@ -88,22 +93,22 @@ class GeoJSONLayerPolygonSelector(Layer):
     # def deactivate(self):
     #     self.active = False
 
-    def clear(self):
-        self.active = False
-        self.remove()
+    # def clear(self):
+    #     self.active = False
+    #     self.remove()
 
-    def remove(self):
-        self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id + ".fill"])
-        self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id + ".line"])
-        self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id])
+    # def remove(self):
+    #     self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id + ".fill"])
+    #     self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id + ".line"])
+    #     self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id])
 
-    def update(self):
-        pass
+    # def update(self):
+    #     pass
 
-    def set_visibility(self, true_or_false):
-        if true_or_false:
-            self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id + ".fill"])
-            self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id + ".line"])
-        else:
-            self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".fill"])
-            self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".line"])
+    # def set_visibility(self, true_or_false):
+    #     if true_or_false and self.visible:
+    #         self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id + ".fill"])
+    #         self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id + ".line"])
+    #     else:
+    #         self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".fill"])
+    #         self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".line"])

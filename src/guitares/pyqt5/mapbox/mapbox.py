@@ -266,9 +266,9 @@ class MapBox(QtWidgets.QWidget):
             elif isinstance(arg, float):
                 string = string + str(arg)
             elif isinstance(arg, dict):
-                string = string + json.dumps(arg)
+                string = string + json.dumps(arg).replace('"',"'")
             elif isinstance(arg, list):
-                string = string + "[]"
+                string = string + json.dumps(arg).replace('"',"'")
             elif isinstance(arg, GeoDataFrame):
                 if len(arg) == 0:
                     string = string + "{}"
