@@ -14,8 +14,8 @@ class GeoJSONLayerCircleSelector(Layer):
         self.data = data
         self.index = index
 
-        # Remove existing layer
-        self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id])
+        # # Remove existing layer
+        # self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id])
 
         # Make sure this is not an empty GeoDataFrame
         if isinstance(data, GeoDataFrame):

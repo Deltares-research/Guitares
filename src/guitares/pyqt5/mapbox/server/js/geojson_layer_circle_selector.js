@@ -28,6 +28,14 @@ export function addLayer(id,
 
                          selectionOption) {
 
+  // Always remove old layer and source first to avoid errors
+  if (map.getLayer(id)) {
+    map.removeLayer(id);
+  }
+  if (map.getSource(id)) {
+    map.removeSource(id);
+  }
+
   hover_property = hovprop
 
   var selectedFeatures = []

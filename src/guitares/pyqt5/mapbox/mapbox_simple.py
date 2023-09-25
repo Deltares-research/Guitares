@@ -18,7 +18,7 @@ class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
             print("javaScriptConsoleMessage: ", level, message, lineNumber, sourceID)
 
 
-class MapBox(QtWidgets.QWidget):
+class MapBoxSimple(QtWidgets.QWidget):
     def __init__(self, element):
         super().__init__(element.parent.widget)
 
@@ -27,7 +27,7 @@ class MapBox(QtWidgets.QWidget):
         self.nr_load_attempts = 0
         self.nr_map_ready = 0
 
-        url = "http://localhost:" + str(self.gui.server_port) + "/"
+        url = "http://localhost:" + str(self.gui.server_port) + "/" + "mapbox_simple.html"
         self.url = url
 
         self.ready = False
@@ -50,11 +50,11 @@ class MapBox(QtWidgets.QWidget):
 
         view.page().setWebChannel(channel)
 
-        channel.registerObject("MapBox", self)
+        channel.registerObject("MapBoxSimple", self)
 
         view.load(QtCore.QUrl(url))
 
-        view.loadFinished.connect(self.load_finished)
+#        view.loadFinished.connect(self.load_finished)
 
         self.callback_module = element.module
 
@@ -97,8 +97,6 @@ class MapBox(QtWidgets.QWidget):
         self.nr_map_ready += 1
         if hasattr(self.callback_module, "map_ready") and self.nr_map_ready == 1:
             self.callback_module.map_ready(self)
-        # Set dependencies now (the first time, the map probably wasn't ready yet)    
-        self.element.set_dependencies()    
 
     @QtCore.pyqtSlot(str)
     def layerStyleSet(self, coords):

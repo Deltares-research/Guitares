@@ -25,8 +25,8 @@ class GeoJSONLayerLineSelector(Layer):
             # Make sure there is an index column
             data["index"] = range(len(data))
 
-        # Remove existing layer        
-        self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id])
+        # # Remove existing layer        
+        # self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id])
 
         # Add new layer        
         self.mapbox.runjs("./js/geojson_layer_line_selector.js", "addLayer", arglist=[self.map_id,
@@ -43,7 +43,9 @@ class GeoJSONLayerLineSelector(Layer):
                                                                                self.hover_param,
                                                                                self.selection_type])
 
-        if self.mode == "inactive":
+        # if self.mode == "inactive":
+        #     self.deactivate()
+        if not self.active:
             self.deactivate()
 
     def set_selected_index(self, index):
