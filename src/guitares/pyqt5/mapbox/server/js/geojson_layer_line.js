@@ -11,7 +11,13 @@ export function addLayer(id, data,
   let lineId = id + ".line"
   let circleId = id + ".circle"
 
-  // Remove source
+  // Always remove old layer and source first to avoid errors
+  if (map.getLayer(lineId)) {
+    map.removeLayer(lineId);
+  }
+  if (map.getLayer(circleId)) {
+    map.removeLayer(circleId);
+  }
   var mapSource = map.getSource(id);
   if(typeof mapSource !== 'undefined') {
     map.removeSource(id);

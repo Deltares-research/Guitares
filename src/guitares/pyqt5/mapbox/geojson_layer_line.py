@@ -16,7 +16,7 @@ class GeoJSONLayerLine(Layer):
     def set_data(self,
                  data):
 
-        self.remove()
+        # self.remove()
 
         # Make sure this is not an empty GeoDataFrame
         if isinstance(data, GeoDataFrame):
@@ -36,11 +36,11 @@ class GeoJSONLayerLine(Layer):
                                                                                self.fill_color,
                                                                                self.fill_opacity,
                                                                                self.circle_radius])
-    def remove(self):    
-        # Remove existing layer        
-        self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id + ".line"])
-        self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id + ".circle"])
-        self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id])
+    # def remove(self):    
+    #     # Remove existing layer        
+    #     self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id + ".line"])
+    #     self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id + ".circle"])
+    #     self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id])
 
     def redraw(self):
         if isinstance(self.data, GeoDataFrame):
@@ -64,11 +64,11 @@ class GeoJSONLayerLine(Layer):
                                                                                          self.fill_opacity_inactive,
                                                                                          self.circle_radius_inactive])
 
-    def set_visibility(self, true_or_false):
-        if true_or_false:
-            self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id + ".line"])
-            self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id + ".circle"])
-        else:
-            self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".line"])
-            self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".circle"])
+    # def set_visibility(self, true_or_false):
+    #     if true_or_false:
+    #         self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id + ".line"])
+    #         self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id + ".circle"])
+    #     else:
+    #         self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".line"])
+    #         self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".circle"])
 

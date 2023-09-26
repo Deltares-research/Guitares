@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QDateTimeEdit
 from PyQt5.QtWidgets import QLabel
 from PyQt5 import QtCore
 import traceback
+import datetime
 
 class DateEdit(QDateTimeEdit):
 
@@ -40,6 +41,9 @@ class DateEdit(QDateTimeEdit):
         group = self.element.variable_group
         name  = self.element.variable
         val   = self.element.getvar(group, name)
+        if type(val) == str:
+            # Value is a string. Need to convert to datetime using Python datetime.
+            val = datetime.datetime.strptime(val, "%Y%m%d %H%M%S")
         dtstr = val.strftime("%Y-%m-%d %H:%M:%S")
         qtDate = QtCore.QDateTime.fromString(dtstr, 'yyyy-MM-dd hh:mm:ss')
         self.setDateTime(qtDate)
@@ -54,11 +58,14 @@ class DateEdit(QDateTimeEdit):
 
 
     def callback(self):
-        newval = self.dateTime().toPyDateTime()
-        # Do some range checking here ...
-        # Update value in variable dict
         group = self.element.variable_group
         name  = self.element.variable
+        newval = self.dateTime().toPyDateTime()
+        if type(self.element.getvar(group, name)) == str:
+            # Expected value is a string. Need to convert to newval to string.
+            newval = newval.strftime("%Y%m%d %H%M%S")
+        # Do some range checking here ...
+        # Update value in variable dict
         self.element.setvar(group, name, newval)
         self.okay = True
         try:
