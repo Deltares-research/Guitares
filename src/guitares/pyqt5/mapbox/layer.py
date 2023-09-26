@@ -167,6 +167,9 @@ class Layer:
             elif type == "datashader_choropleth":
                 from .datashader_choropleth_layer import DatashaderChoroplethLayer
                 self.layer[layer_id] = DatashaderChoroplethLayer(self.mapbox, layer_id, map_id, **kwargs)
+            elif type == "cyclone_track":
+                from .cyclone_track_layer import CycloneTrackLayer
+                self.layer[layer_id] = CycloneTrackLayer(self.mapbox, layer_id, map_id, **kwargs)
 
             else:
                 print("Error! Layer type " + self.type + " not recognized!")
