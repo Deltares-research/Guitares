@@ -242,6 +242,16 @@ class Layer:
             else:
                 self.mapbox.runjs(self.main_js, "hideLayer", arglist=[self.map_id, self.side])
 
+    def get_visibility(self):
+        # Loop up through the layer hierarchy to determine if the layer is visible
+        if self.visible:
+            if self.parent:
+                return self.parent.get_visibility()
+            else:
+                return True
+        else:
+            return False    
+
     def activate(self):
         # Only called for layers that do not have a activate function in the subclass
         self.active = True

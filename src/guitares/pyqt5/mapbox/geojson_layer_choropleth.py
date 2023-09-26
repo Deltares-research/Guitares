@@ -48,7 +48,7 @@ class GeoJSONLayerChoropleth(Layer):
             self.update()
 
     def update(self):
-        if self.big_data and self.visible:
+        if self.big_data and self.get_visibility():
             # Using big data algorithm
             if self.mapbox.zoom > self.min_zoom:
                 # Zoomed in
@@ -121,13 +121,5 @@ class GeoJSONLayerChoropleth(Layer):
     def redraw(self):
         if isinstance(self.gdf, GeoDataFrame):
             self.set_data(self.gdf)
-        if not self.visible:
+        if not self.get_visibility():
             self.hide()
-
-    # def clear(self):
-    #     self.active = False
-    #     self.remove()
-
-    # def remove(self):
-    #     # The layers need to be actually removed, or the source cannot be removed!
-    #     self.mapbox.runjs(self.main_js, "removeLayer", arglist=[self.map_id, self.side])
