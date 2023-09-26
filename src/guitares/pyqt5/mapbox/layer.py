@@ -2,10 +2,10 @@ import matplotlib.colors as mcolors
 
 class Layer:
     def __init__(self, mapbox, id, map_id, **kwargs):
-
         self.mapbox    = mapbox
         self.id        = id
         self.map_id    = map_id
+        self.map_ids   = [map_id]
         self.visible   = True
         self.active    = True
         self.type      = "container"
@@ -19,7 +19,7 @@ class Layer:
         self.hover_property = "name"
         self.color_property = "value"
         self.legend_position = "bottom-right" # Options are "top-left", "top-right", "bottom-left", "bottom-right"
-
+        # Active paint properties
         self.line_color     = "dodgerblue"
         self.line_width     = 2
         self.line_style     = "-"
@@ -27,7 +27,7 @@ class Layer:
         self.fill_color     = "dodgerblue"
         self.fill_opacity   = 1.0
         self.circle_radius  = 4
-
+        # Inactive paint properties
         self.line_color_inactive    = "lightgrey"
         self.line_width_inactive    = 2
         self.line_style_inactive    = "-"
@@ -35,7 +35,7 @@ class Layer:
         self.fill_color_inactive    = "lightgrey"
         self.fill_opacity_inactive  = 0.0
         self.circle_radius_inactive = 2
-
+        # Selected paint properties 
         self.line_color_selected    = "dodgerblue"
         self.line_width_selected    = 2
         self.line_style_selected    = "-"
@@ -43,7 +43,7 @@ class Layer:
         self.fill_color_selected    = "red"
         self.fill_opacity_selected  = 1.0
         self.circle_radius_selected = 5
-
+        # Selected inactive paint properties
         self.line_color_selected_inactive    = "lightgrey"
         self.line_width_selected_inactive    = 2
         self.line_style_selected_inactive    = "-"
@@ -53,15 +53,16 @@ class Layer:
         self.circle_radius_selected_inactive = 2
 
         self.selection_type = "single"
-
         self.min_zoom = 0
         self.max_zoom = 22
         self.zoom_switch = 999
-
         self.decimals = 1
-
         self.big_data = False
 
+        # Cyclone track layer
+        self.show_icons = True
+
+        # Determine which main.js file to use 
         if type(self.mapbox).__name__ == "MapBox":
             # Regular mapbox
             self.main_js = "/js/main.js"
@@ -71,9 +72,11 @@ class Layer:
             self.main_js = "/js/compare.js"
             self.side = "a"
 
+        # Set attributes based on kwargs 
         for key, value in kwargs.items():
             setattr(self, key, value)
 
+        # Convert colors to hex
         if self.line_color != "transparent": 
             self.line_color = mcolors.to_hex(self.line_color)
         if self.fill_color != "transparent": 
@@ -91,51 +94,6 @@ class Layer:
         if self.fill_color_selected_inactive != "transparent": 
             self.fill_color_selected_inactive = mcolors.to_hex(self.fill_color_selected_inactive)
 
-
-    def update(self):
-        # This layer does not get updated when zooming in or out
-        pass
-
-    def delete(self):
-        # Delete this layer and all nested layers from map
-        if self.layer:
-            # Container layer
-            layers = list_layers(self.layer)
-            for layer in layers:
-                layer.delete()
-#                layer.delete_from_map()
-        else:        
-#            self.mapbox.runjs(self.main_js, "removeLayer", arglist=[self.map_id, self.side])
-            self.delete_from_map()
-
-        # Remove layer from layer dict
-        if self.parent:
-            self.parent.layer.pop(self.id)
-        else:
-            self.mapbox.layer.pop(self.id)
-
-    def delete_from_map(self):
-        self.mapbox.runjs(self.main_js, "removeLayer", arglist=[self.map_id, self.side])
-
-    def clear(self):
-        # Clear this layer and all nested layers from map
-        if self.layer:
-            # Container layer
-            layers = list_layers(self.layer)
-            for layer in layers:
-                layer.clear()
-        else:        
-#            self.mapbox.runjs(self.main_js, "removeLayer", arglist=[self.map_id, self.side])
-            self.delete_from_map()
-            self.data = None
-
-    def get(self, layer_id):
-        if layer_id in self.layer:
-            return self.layer[layer_id]
-        else:
-            return None
-
-#    def add_layer(self, layer_id, type=None, mode="active", **kwargs):
     def add_layer(self, layer_id, type=None, **kwargs):
 
         if layer_id in self.layer:
@@ -221,17 +179,46 @@ class Layer:
             return self.layer[layer_id]
  
     def layer_added(self):
-        # This function is called after a layer is added to the map
-        # It is used to set the visibility and activity of the layer, but only if they are False
-        # if self.mode == "inactive":
-        #     self.mapbox.runjs(self.main_js, "showLayer", arglist=[self.map_id, self.side])
-        #     self.deactivate()
-        # elif self.mode == "invisible":    
-        #     self.mapbox.runjs(self.main_js, "hideLayer", arglist=[self.map_id, self.side])
+        # This function is called after a layer is added to the map (is it always called? not right now)
         if not self.visible:
             self.hide()
         if not self.active:
             self.deactivate()
+
+    def update(self):
+        # This method is called when map zoom or pan is changed
+        # For certain layers, this method is overridden in the subclass
+        pass
+
+    def delete(self):
+        # Delete this layer and all nested layers from map
+        if self.layer:
+            # Container layer
+            layers = list_layers(self.layer)
+            for layer in layers:
+                layer.delete()
+        else:        
+            self.delete_from_map()
+
+        # Remove layer from layer dict
+        if self.parent:
+            self.parent.layer.pop(self.id)
+        else:
+            self.mapbox.layer.pop(self.id)
+
+    def clear(self):
+        # Clear this layer and all nested layers from map
+        if self.layer:
+            # Container layer
+            layers = list_layers(self.layer)
+            for layer in layers:
+                layer.clear()
+        else:        
+            self.delete_from_map()
+            self.data = None
+
+    def delete_from_map(self):
+        self.mapbox.runjs(self.main_js, "removeLayer", arglist=[self.map_id, self.side])
 
     def show(self):
         self.visible = True
@@ -281,6 +268,12 @@ class Layer:
             else:
                 self.deactivate()
 
+    def get(self, layer_id):
+        if layer_id in self.layer:
+            return self.layer[layer_id]
+        else:
+            return None
+
     # def set_mode(self, mode):
     #     # Make a list of all layers
     #     if self.layer:
@@ -306,7 +299,9 @@ class Layer:
     #         self.mode = mode
 
     def redraw(self):
-        print("Cannot redraw layer of type " + self.type)
+        # This method is called when the layers style is changed
+        # For most layers, this method is overridden in the subclass
+        pass
 
 def list_layers(layer_dict, layer_type="all", layer_list=None):
     if not layer_list:

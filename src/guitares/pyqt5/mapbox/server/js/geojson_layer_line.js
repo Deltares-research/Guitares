@@ -1,5 +1,3 @@
-//import { map } from '/js/main.js';
-
 export function addLayer(id, data,   
   lineColor, 
   lineWidth, 
@@ -23,7 +21,6 @@ export function addLayer(id, data,
     map.removeSource(id);
   }
   
-  console.log('adding source ' + id)
   map.addSource(id, {
     type: 'geojson',
     data: data
@@ -59,8 +56,6 @@ export function addLayer(id, data,
 };
 
 export function setData(id, data) {
-  // console.log('setting data in ' + id);
-  // console.log(data);
   var source = map.getSource(id);
   source.setData(data);
 }

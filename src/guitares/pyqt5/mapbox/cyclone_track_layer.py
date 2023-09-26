@@ -38,23 +38,23 @@ class CycloneTrackLayer(Layer):
             pc = row['pc']
             if vmax<64.0:
                 cat = "TS"
-                icon = "Tropical_storm_icon_c2.png"
+                icon = "./icons/tropical_storm_icon_24x48.png"
             elif vmax<83.0:
                 cat = "1"
-                icon = "Category_1_hurricane_icon_c2.png"
+                icon = "./icons/category_1_hurricane_icon_24x48.png"
             elif vmax<96.0:    
                 cat = "2"
-                icon = "Category_2_hurricane_icon_c2.png"
+                icon = "./icons/category_2_hurricane_icon_24x48.png"
             elif vmax<113.0:    
                 cat = "3"
-                icon = "Category_3_hurricane_icon_c2.png"
+                icon = "./icons/category_3_hurricane_icon_24x48.png"
             elif vmax<137.0:    
                 cat = "4"
-                icon = "Category_4_hurricane_icon_c2.png"
+                icon = "./icons/category_4_hurricane_icon_24x48.png"
             else:    
                 cat = "5"
-                icon = "Category_5_hurricane_icon_c2.png"
-            row["icon"] = icon
+                icon = "./icons/category_5_hurricane_icon_24x48.png"
+            row["icon_url"] = icon
             # Make html (&#9; is tab)
             html = 'Time: &#9;' + timestr + '<br />' + \
                    'Category: &#9;' + cat + ' &#9;' + '<br />' + \
@@ -69,20 +69,29 @@ class CycloneTrackLayer(Layer):
         # Add LineString to GeoDataFrame
         data = data.append({"geometry": line}, ignore_index=True)
 
-        # Add new layer        
-        self.mapbox.runjs("./js/geojson_layer.js", "addLayer", arglist=[self.map_id,
-                                                                        data.to_crs(4326),
-                                                                        self.line_color,
-                                                                        self.line_width,
-                                                                        self.line_opacity,
-                                                                        self.fill_color,
-                                                                        self.fill_opacity,
-                                                                        self.circle_radius])
-    # def remove(self):    
-    #     # Remove existing layer        
-    #     self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id + ".line"])
-    #     self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id + ".circle"])
-    #     self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id])
+        # This is a composite layer with a line and icons
+
+        # First add the line layer
+        id = self.map_id + ".track_line"
+        self.mapbox.runjs("./js/geojson_layer_line.js", "addLayer", arglist=[id,
+                                                                             data.to_crs(4326),
+                                                                             self.line_color,
+                                                                             self.line_width,
+                                                                             self.line_opacity,
+                                                                             self.fill_color,
+                                                                             self.fill_opacity,
+                                                                             0])
+
+        # First add the line layer
+        id = self.map_id + ".track_points"
+        self.mapbox.runjs("./js/marker_layer.js", "addLayer", arglist=[self.map_id,
+                                                                       data.to_crs(4326),
+                                                                       self.line_color,
+                                                                       self.line_width,
+                                                                       self.line_opacity,
+                                                                       self.fill_color,
+                                                                       self.fill_opacity,
+                                                                       self.circle_radius])
 
     def redraw(self):
         if isinstance(self.data, GeoDataFrame):
@@ -90,27 +99,28 @@ class CycloneTrackLayer(Layer):
 
     def activate(self):
         self.mapbox.runjs("./js/geojson_layer_line.js", "setPaintProperties", arglist=[self.map_id,
-                                                                                         self.line_color,
-                                                                                         self.line_width,
-                                                                                         self.line_opacity,
-                                                                                         self.fill_color,
-                                                                                         self.fill_opacity,
-                                                                                         self.circle_radius])
+                                                                                       self.line_color,
+                                                                                       self.line_width,
+                                                                                       self.line_opacity,
+                                                                                       self.fill_color,
+                                                                                       self.fill_opacity,
+                                                                                       self.circle_radius])
   
     def deactivate(self):
         self.mapbox.runjs("./js/geojson_layer_line.js", "setPaintProperties", arglist=[self.map_id,
-                                                                                         self.line_color_inactive,
-                                                                                         self.line_width_inactive,
-                                                                                         self.line_opacity_inactive,
-                                                                                         self.fill_color_inactive,
-                                                                                         self.fill_opacity_inactive,
-                                                                                         self.circle_radius_inactive])
+                                                                                       self.line_color_inactive,
+                                                                                       self.line_width_inactive,
+                                                                                       self.line_opacity_inactive,
+                                                                                       self.fill_color_inactive,
+                                                                                       self.fill_opacity_inactive,
+                                                                                       self.circle_radius_inactive])
 
     def set_visibility(self, true_or_false):
+        # This is a composite layer. set_visibility overrides method in Layer class
         if true_or_false:
-            self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id + ".line"])
-            self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id + ".circle"])
+            self.mapbox.runjs(self.main_js, "showLayer", arglist=[self.map_id + ".track_line", self.side])
+            self.mapbox.runjs(self.main_js, "showLayer", arglist=[self.map_id + ".track_points", self.side])
         else:
-            self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".line"])
-            self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".circle"])
+            self.mapbox.runjs(self.main_js, "hideLayer", arglist=[self.map_id + ".track_line", self.side])
+            self.mapbox.runjs(self.main_js, "hideLayer", arglist=[self.map_id + ".track_points", self.side])
 
