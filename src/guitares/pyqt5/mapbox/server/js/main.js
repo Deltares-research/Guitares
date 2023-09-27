@@ -1,9 +1,8 @@
 console.log('Importing MapBox ...');
-
-export let mapboxgl = mpbox.import_mapbox_gl()
+//export let mapboxgl = mpbox.import_mapbox_gl()
+mapboxgl = mpbox.import_mapbox_gl()
 
 console.log('Importing MapBox Draw ...');
-
 import { draw, setDrawEvents } from '/js/draw.js';
 
 let mapReady;
@@ -16,22 +15,17 @@ export let featureDeselected;
 export let featureModified;
 export let featureAdded;
 export let jsonString;
-export let featureClicked;
+//export let featureClicked;
 export let pointClicked;
 export let layerStyleSet;
-export let layerAdded;
-export let layers;
-
-//console.log('Adding MapBox map ...');
-
-console.log('Setting MapBox token ...');
+//export let layerAdded;
+//export let layers;
 
 mapboxgl.accessToken = mapbox_token;
 
-console.log('Adding map ...');
-
-export const map = new mapboxgl.Map({
-  container: 'map', // container ID
+//export const map = new mapboxgl.Map({
+map = new mapboxgl.Map({
+    container: 'map', // container ID
   style: 'mapbox://styles/mapbox/streets-v11', // style URL
 //  style: 'mapbox://styles/mapbox/light-v11', // style URL
   center: [0.0, 0.0], // starting position [lng, lat]
@@ -40,20 +34,15 @@ export const map = new mapboxgl.Map({
   projection: 'mercator' // display the map as a 3D globe
 });
 
-console.log('Adding controls ...');
-
 map.scrollZoom.setWheelZoomRate(1 / 200);
-
 const nav = new mapboxgl.NavigationControl({
   visualizePitch: true
 });
 map.addControl(nav, 'top-left');
-
 const scale = new mapboxgl.ScaleControl({
   maxWidth: 80
 });
 map.addControl(scale, 'bottom-left');
-
 
 export const marker = new mapboxgl.Marker({draggable: true});
 
@@ -76,17 +65,8 @@ new QWebChannel(qt.webChannelTransport, function (channel) {
     pointClicked      = function(coords) { MapBox.pointClicked(JSON.stringify(coords))};
     layerStyleSet     = function() { MapBox.layerStyleSet('')};
     layerAdded        = function(layerId) { MapBox.layerAdded(layerId)};
-    moveOn();  
-  } else {  
-    console.log("typeof MapBox is undefined !!!");
   }
 });
-
-console.log("Done in main.js");
-
-
-function moveOn() {
-  // Continue on after QWebChannel has loaded 
 
 layers = new Object();
 
@@ -154,14 +134,13 @@ map.on('style.load', () => {
       },
       labelLayerId
   );
-
 });
 
 map.on('moveend', () => {
     onMoveEnd();
 });
 
-};
+//};
 
 function mapLoaded(evt) {
   // Get the map extents and tell Python Mapbox object that we're ready
@@ -173,7 +152,6 @@ function mapLoaded(evt) {
   jsonString = JSON.stringify([bottomLeft, topRight]);
   mapReady();
 }
-
 
 function onMoveEnd(evt) {
 	// Called after moving map ended
@@ -189,58 +167,46 @@ function onMoveEnd(evt) {
     mapMoved();
 }
 
-
-
-export function removeLayer(id) {
-
+export function removeLayer(id, side) {
+  // Remove the layer, source and legend etc.
   // Remove layer
   var mapLayer = map.getLayer(id);
   if(typeof mapLayer !== 'undefined') {
     // Remove map layer
     map.removeLayer(id);
   }
-
   var mapLayer = map.getLayer(id + '.line');
   if(typeof mapLayer !== 'undefined') {
     // Remove map layer
- //   console.log('removing ' + id + '.line')
     map.removeLayer(id + '.line');
- //   console.log('done removing ' + id + '.line')
   }
-
   var mapLayer = map.getLayer(id + '.fill');
   if(typeof mapLayer !== 'undefined') {
     // Remove map layer
-  //  console.log('removing ' + id + '.fill')
     map.removeLayer(id + '.fill');
-  //  console.log('done removing ' + id + '.fill')
   }
-
   var mapLayer = map.getLayer(id + '.circle');
   if(typeof mapLayer !== 'undefined') {
     // Remove map layer
-//    console.log('removing ' + id + '.circle')
     map.removeLayer(id + '.circle');
   }
-
   // Remove source
   var mapSource = map.getSource(id);
   if(typeof mapSource !== 'undefined') {
-//    console.log('removing source ' + id)
     map.removeSource(id);
   }
-
   var legend = document.getElementById("legend" + id);
   if (legend) {
     legend.remove();
   }
 
-  map.off('moveend', () => {
-    const vis = map.getLayoutProperty(lineId, 'visibility');
-    if (vis == "visible") {
-      updateFeatureState(id);
-    }
-  });
+//  // What is this doing here?
+//  map.off('moveend', () => {
+//    const vis = map.getLayoutProperty(lineId, 'visibility');
+//    if (vis == "visible") {
+//      updateFeatureState(id);
+//    }
+//  });
 
 }
 
@@ -249,27 +215,63 @@ export function setMouseDefault() {
   map.off('click', onPointClicked);
 }
 
-export function showLayer(id) {
+export function showLayer(id, side) {
 	// Show layer
 	if (map.getLayer(id)) {
     map.setLayoutProperty(id, 'visibility', 'visible');
-    var legend = document.getElementById("legend" + id);
-    if (legend) {
-      legend.style.visibility = 'visible';
-    }
   }
+  var map_id = id + '.line'
+	if (map.getLayer(map_id)) {
+  	map.setLayoutProperty(map_id, 'visibility', 'visible');
+  }
+  var map_id = id + '.fill'
+	if (map.getLayer(map_id)) {
+  	map.setLayoutProperty(map_id, 'visibility', 'visible');
+  }
+  var map_id = id + '.circle'
+	if (map.getLayer(map_id)) {
+  	map.setLayoutProperty(map_id, 'visibility', 'visible');
+  }
+  showLegend(id);
 }
 
-export function hideLayer(id) {
+export function hideLayer(id, side) {
 	// Hide layer
 	if (map.getLayer(id)) {
   	map.setLayoutProperty(id, 'visibility', 'none');
-    var legend = document.getElementById("legend" + id);
-    if (legend) {
-      legend.style.visibility = 'hidden';
-    }
+  }
+  var map_id = id + '.line'
+	if (map.getLayer(map_id)) {
+  	map.setLayoutProperty(map_id, 'visibility', 'none');
+  }
+  var map_id = id + '.fill'
+	if (map.getLayer(map_id)) {
+  	map.setLayoutProperty(map_id, 'visibility', 'none');
+  }
+  var map_id = id + '.circle'
+	if (map.getLayer(map_id)) {
+  	map.setLayoutProperty(map_id, 'visibility', 'none');
+  }
+  hideLegend(id);
+}
+
+export function showLegend(id) {
+	// Show legend
+  var legend = document.getElementById("legend" + id);
+  if (legend) {
+    legend.style.visibility = 'visible';
   }
 }
+
+export function hideLegend(id) {
+	// Hide layer
+  var legend = document.getElementById("legend" + id);
+  if (legend) {
+    legend.style.visibility = 'hidden';
+  }
+}
+
+
 
 export function getExtent() {
 	// Called after moving map ended

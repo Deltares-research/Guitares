@@ -1,15 +1,19 @@
-import { map , mapboxgl } from '/js/main.js';
-
 export function addLayer(id, data, hover_property,   min_zoom, 
   lineColor, 
   lineWidth, 
   lineOpacity, 
   fillColor, 
   fillOpacity, 
-  circleRadius,
-  visibility) 
+  circleRadius) {  
+
+  // Always remove old layer and source first to avoid errors
+  if (map.getLayer(id)) {
+    map.removeLayer(id);
+  }
+  if (map.getSource(id)) {
+    map.removeSource(id);
+  }
   
-  {
   map.addSource(id, {
     type: 'geojson',
     data: data
@@ -31,7 +35,7 @@ export function addLayer(id, data, hover_property,   min_zoom,
     }
   });
 
-  map.setLayoutProperty(id, 'visibility', visibility);
+  map.setLayoutProperty(id, 'visibility', 'visible');
 
   if (hover_property !== ""){
 

@@ -1,17 +1,3 @@
-import {map, mapboxgl} from '/js/main.js';
-
-function absVal(integer) {
-  return integer < 0 ? -integer : integer;
-}
-
-function numberWithCommas(x) {
-  if (x == 0) {
-    return x.toString()
-  } else {
-    return x.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
-  }
-}
-
 export function addLayer(
   id, 
   data, 
@@ -24,32 +10,38 @@ export function addLayer(
   fillOpacity,
   scaler,
   legend_title,
-  unit
+  unit,
+  legend_position,
+  side
   ) {
-  
+
+  var mp = getMap(side);
+
   let fillId = id + ".fill"
   let lineId = id + ".line"
-  // Always remove the layer first to avoid an error
-  if (map.getSource(id)) {
-    map.removeSource(id);
+
+  // Always remove old layers first to avoid errors
+  if (mp.getLayer(fillId)) {
+    mp.removeLayer(fillId);
+  }
+  if (mp.getLayer(lineId)) {
+    mp.removeLayer(lineId);
+  }
+  if (mp.getSource(id)) {
+    mp.removeSource(id);
+  }
+  var legend = document.getElementById("legend" + id);
+  if (legend) {
+    legend.parentNode.removeChild(legend);
   }
 
-  if (map.getLayer(fillId)) {
-    map.removeLayer(fillId);
-  }
-
-  if (map.getLayer(lineId)) {
-    map.removeLayer(lineId);
-  }
-
-
-  map.addSource(id, {
+  mp.addSource(id, {
     type: 'geojson',
     data: data, 
     promoteId: hover_property
   });
  
-  map.addLayer({
+  mp.addLayer({
     'id': fillId,
     'type': 'fill',
     'source': id,
@@ -79,6 +71,23 @@ export function addLayer(
     }
   });
 
+  mp.addLayer({
+    'id': lineId,
+    'type': 'line',
+    'source': id,
+    'layout': {},
+    'minzoom': min_zoom,
+    'paint': {
+      'line-color': lineColor,
+      'line-width': lineWidth,
+      'line-opacity': lineOpacity
+     },
+     'layout': {
+      // Make the layer visible by default.
+      'visibility': 'visible'
+      }
+  });
+
   // Legend
   var legendItems = [
     { style: '#EEF5E8', label: '0 ' + unit},
@@ -92,7 +101,8 @@ export function addLayer(
   ];
   var legend     = document.createElement("div");
   legend.id        = "legend" + id;
-  legend.className = "choropleth_legend";
+  //legend.className = "choropleth_legend";
+  legend.className = legend_position;
   var newSpan = document.createElement('span');
   newSpan.class = 'title';
   newSpan.innerHTML = '<b>' + legend_title + '</b>';
@@ -118,7 +128,7 @@ export function addLayer(
 
   function onHover(e) {
     // Change the cursor style as a UI indicator.
-    map.getCanvas().style.cursor = 'pointer';
+    mp.getCanvas().style.cursor = 'pointer';
     if (e.features.length > 0) {
       if (e.features[0].properties[hover_property]) {
         // Display a popup with the name of area
@@ -126,39 +136,41 @@ export function addLayer(
         .setText(hover_property + ": " 
         + numberWithCommas(e.features[0].properties[hover_property]) 
         + " " + unit)
-        .addTo(map);
+        .addTo(mp);
       }
     }
   }
 
   // When the user moves their mouse over the fill layer, we'll update the
   // feature state for the feature under the mouse.
-  map.on('mousemove', fillId, onHover);
+  mp.on('mousemove', fillId, onHover);
 
   // When the mouse leaves the fill layer, update the feature state of the
   // previously hovered feature.
-  map.on('mouseleave', fillId, () => {
+  mp.on('mouseleave', fillId, () => {
     popup.remove();
-  });
-
-  map.addLayer({
-    'id': lineId,
-    'type': 'line',
-    'source': id,
-    'layout': {},
-    'minzoom': min_zoom,
-    'paint': {
-      'line-color': lineColor,
-      'line-width': lineWidth,
-      'line-opacity': lineOpacity
-     },
-     'layout': {
-      // Make the layer visible by default.
-      'visibility': 'visible'
-      }
-  });
+  });  
 
 };
+
+function absVal(integer) {
+  return integer < 0 ? -integer : integer;
+}
+
+function numberWithCommas(x) {
+  if (x == 0) {
+    return x.toString()
+  } else {
+    return x.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+  }
+}
+
+function getMap(side) {
+  // Return the map object for the given side
+  if (side == "a") { return mapA }
+  else if (side == "b") { return mapB }
+  else { return map }
+}
 
 
 // export function activate(id,

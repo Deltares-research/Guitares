@@ -1,4 +1,5 @@
-import { map, featureClicked, layerAdded, mapboxgl, layers } from '/js/main.js';
+//import { map, featureClicked, layerAdded, mapboxgl, layers } from '/js/main.js';
+//import { layerAdded } from '/js/main.js';
 
 let hover_property
 let hoveredId = null;
@@ -26,6 +27,14 @@ export function addLayer(id,
                          circleRadiusActive,
 
                          selectionOption) {
+
+  // Always remove old layer and source first to avoid errors
+  if (map.getLayer(id)) {
+    map.removeLayer(id);
+  }
+  if (map.getSource(id)) {
+    map.removeSource(id);
+  }
 
   hover_property = hovprop
 

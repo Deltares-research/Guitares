@@ -97,6 +97,8 @@ class MapBox(QtWidgets.QWidget):
         self.nr_map_ready += 1
         if hasattr(self.callback_module, "map_ready") and self.nr_map_ready == 1:
             self.callback_module.map_ready(self)
+        # Set dependencies now (the first time, the map probably wasn't ready yet)    
+        self.element.set_dependencies()    
 
     @QtCore.pyqtSlot(str)
     def layerStyleSet(self, coords):
@@ -266,9 +268,9 @@ class MapBox(QtWidgets.QWidget):
             elif isinstance(arg, float):
                 string = string + str(arg)
             elif isinstance(arg, dict):
-                string = string + json.dumps(arg)
+                string = string + json.dumps(arg).replace('"',"'")
             elif isinstance(arg, list):
-                string = string + "[]"
+                string = string + json.dumps(arg).replace('"',"'")
             elif isinstance(arg, GeoDataFrame):
                 if len(arg) == 0:
                     string = string + "{}"

@@ -1,8 +1,9 @@
 from PyQt5.QtWidgets import QTableView
-from PyQt5.QtCore import QSortFilterProxyModel
+from PyQt5.QtCore import QSortFilterProxyModel, QItemSelection, QItemSelectionModel
 from PyQt5.QtWidgets import QLabel
 from PyQt5 import QtCore
 import traceback
+import os
 
 from enum import Enum
 
@@ -91,10 +92,14 @@ class DataFrameModel(QtCore.QAbstractTableModel):
 
 
 class SelectionTable(Enum):
-    NoSelection = 0
-    SingleSelection = 1
-    MultiSelection = 2
-    ExtendedSelection = 3
+    # NoSelection = 0
+    # SingleSelection = 1
+    # MultiSelection = 2
+    # ExtendedSelection = 3
+    none = 0
+    single = 1
+    multiple = 2
+    extended = 3
 
 
 class TableView(QTableView):
@@ -115,13 +120,21 @@ class TableView(QTableView):
 
         # If the header is clicked, the table is sorted and header_clicker is called
         if self.element.sortable:
-            self.horizontalHeader().sectionClicked.connect(self.header_clicked)
             self.setSortingEnabled(True)
+            self.horizontalHeader().sectionClicked.connect(self.header_clicked)
+            # Make sure that the sorting direction is shown
             self.horizontalHeader().setSortIndicatorShown(True)
-
-#        self.horizontalHeader().setStyleSheet('QHeaderView::down-arrow { subcontrol-position: center right}')
-        # self.selectionModel().selectionChanged.connect(self.callback)
-        # Make sure that the sorting direction is shown
+            # Should really move this next bit to the stylesheet
+            down_arrow_file = os.path.join(self.element.gui.image_path, "icons8-triangle-arrow-16_white_down.png")
+            down_arrow_file = down_arrow_file.replace(os.sep, '/')
+            up_arrow_file = os.path.join(self.element.gui.image_path, "icons8-triangle-arrow-16_white_up.png")
+            up_arrow_file = up_arrow_file.replace(os.sep, '/')
+            # For some reason, the down and up arrows are swapped
+            strdown = "QHeaderView::down-arrow { image: url(" + up_arrow_file + "); subcontrol-position: top right; width: 8px; height: 8px;} "
+            strup   = "QHeaderView::up-arrow { image: url(" + down_arrow_file + "); subcontrol-position: top right; width: 8px; height: 8px;}"
+            self.setStyleSheet(strdown + strup)
+        else:    
+            self.setSortingEnabled(False)
 
         self.set_geometry()
 
@@ -136,8 +149,8 @@ class TableView(QTableView):
         if selection_type:
             self.setSelectionMode(selection_type.value)
             if (
-                selection_type == SelectionTable.MultiSelection
-                or selection_type == SelectionTable.ExtendedSelection
+                selection_type == SelectionTable.multiple
+                or selection_type == SelectionTable.extended
             ):
                 self.multi_selection = True
 
@@ -204,8 +217,17 @@ class TableView(QTableView):
     def select_rows(self, indices):
         # Select rows in table
         self.selectionModel().clearSelection()
+        model = self.model() # get data model for indexes.
+        selection = QItemSelection()
         for i in indices:
-            self.selectRow(i)
+            # Get the model index for selection.
+            # Column shouldn't matter for row-wise.
+            model_index = model.index(i, 0)
+            # Select single row.
+            selection.select(model_index, model_index)  # top left, bottom right identical
+        mode = QItemSelectionModel.Select | QtCore.QItemSelectionModel.Rows
+        # Apply the selection, using the row-wise mode.
+        self.selectionModel().select(selection, mode)
 
     def find_original_indices(self):
         # Find indices of row in original dataframe df0 that match the row in the sorted dataframe df

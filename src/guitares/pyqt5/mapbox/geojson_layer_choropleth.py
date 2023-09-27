@@ -8,23 +8,7 @@ class GeoJSONLayerChoropleth(Layer):
         super().__init__(mapbox, id, map_id, **kwargs)
         pass
 
-    def set_data(
-        self,
-        data,
-        hover_property="",
-        color_property="",
-        scaler=None,
-        big_data=False,
-        legend_title="",
-        unit="",
-    ):
-        self.hover_property = hover_property
-        self.color_property = color_property
-        self.scaler = scaler
-        self.big_data = big_data
-        self.legend_title = legend_title
-        self.unit = unit
-
+    def set_data(self, data):
         # Make sure this is not an empty GeoDataFrame
         if isinstance(data, GeoDataFrame):
             # Data is GeoDataFrame
@@ -36,11 +20,7 @@ class GeoJSONLayerChoropleth(Layer):
         else:
             # Read geodataframe from shape file
             self.gdf = read_dataframe(data)
-
-        # Remove existing layer
-        self.remove()
-
-        # Prepare colormap
+        self.visible = True
 
         if not self.big_data:
             # Add new layer
@@ -60,43 +40,51 @@ class GeoJSONLayerChoropleth(Layer):
                     self.scaler,
                     self.legend_title,
                     self.unit,
+                    self.legend_position,
+                    self.side
                 ],
             )
-        self.visible = True
-        self.update()
+        else:    
+            self.update()
 
     def update(self):
-        if self.mapbox.zoom > self.min_zoom and self.big_data and self.visible:
-            coords = self.mapbox.map_extent
-            xl0 = coords[0][0]
-            xl1 = coords[1][0]
-            yl0 = coords[0][1]
-            yl1 = coords[1][1]
-            # Limits WGS 84
-            gdf = self.gdf.cx[xl0:xl1, yl0:yl1]
-
-            # Remove existing layer
-            self.remove()
-
-            # Add new layer
-            self.mapbox.runjs(
-                "./js/geojson_layer_choropleth.js",
-                "addLayer",
-                arglist=[
-                    self.map_id,
-                    gdf,
-                    self.min_zoom,
-                    self.hover_property,
-                    self.color_property,
-                    self.line_color,
-                    self.line_width,
-                    self.line_opacity,
-                    self.fill_opacity,
-                    self.scaler,
-                    self.legend_title,
-                    self.unit,
-                ],
-            )
+        if self.big_data and self.get_visibility():
+            # Using big data algorithm
+            if self.mapbox.zoom > self.min_zoom:
+                # Zoomed in
+                coords = self.mapbox.map_extent
+                xl0 = coords[0][0]
+                xl1 = coords[1][0]
+                yl0 = coords[0][1]
+                yl1 = coords[1][1]
+                # Limits WGS 84
+                gdf = self.gdf.cx[xl0:xl1, yl0:yl1]
+                # Remove existing layer
+                # Add new layer
+                self.mapbox.runjs(
+                    "./js/geojson_layer_choropleth.js",
+                    "addLayer",
+                    arglist=[
+                        self.map_id,
+                        gdf,
+                        self.min_zoom,
+                        self.hover_property,
+                        self.color_property,
+                        self.line_color,
+                        self.line_width,
+                        self.line_opacity,
+                        self.fill_opacity,
+                        self.scaler,
+                        self.legend_title,
+                        self.unit,
+                        self.legend_position,
+                        self.side
+                    ],
+                )
+            else:
+                # Zoomed out
+                # Choropleths are automatically invisible, but legend is not         
+                self.mapbox.runjs(self.main_js, "hideLegend", arglist=[self.map_id])
 
     def activate(self):
         self.active = True
@@ -132,40 +120,6 @@ class GeoJSONLayerChoropleth(Layer):
 
     def redraw(self):
         if isinstance(self.gdf, GeoDataFrame):
-            self.set_data(self.gdf, self.hover_property, self.color_property)
-        if not self.visible:
+            self.set_data(self.gdf)
+        if not self.get_visibility():
             self.hide()
-
-    def clear(self):
-        self.active = False
-        self.remove()
-
-    def remove(self):
-        self.mapbox.runjs(
-            "./js/main.js", "removeLayer", arglist=[self.map_id + ".fill"]
-        )
-        self.mapbox.runjs(
-            "./js/main.js", "removeLayer", arglist=[self.map_id + ".line"]
-        )
-        self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id])
-
-    def set_visibility(self, true_or_false):
-        if true_or_false:
-            self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id])
-            self.mapbox.runjs(
-                "/js/main.js", "showLayer", arglist=[self.map_id + ".fill"]
-            )
-            self.mapbox.runjs(
-                "/js/main.js", "showLayer", arglist=[self.map_id + ".line"]
-            )
-            self.visible = True
-        else:
-            self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id])
-            self.mapbox.runjs(
-                "/js/main.js", "hideLayer", arglist=[self.map_id + ".fill"]
-            )
-            self.mapbox.runjs(
-                "/js/main.js", "hideLayer", arglist=[self.map_id + ".line"]
-            )
-            self.visible = False
-        self.update()

@@ -43,7 +43,8 @@ class GUI:
         self.server_thread = None
         self.server_nodejs = server_nodejs
         self.js_messages = js_messages
-        self.popup_data = None
+        self.popup_window = {}
+        self.popup_data   = {}
         self.resize_factor = 1.0        
 
         QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
@@ -131,7 +132,7 @@ class GUI:
             return None
         return self.variables[group][name]["value"]
 
-    def popup(self, config, data=None):
+    def popup(self, config, id="popup", data=None):
         # Make pop-up window
         # config needs to be file name of yml file, or configuration dict
         # Data is optional and can have any shape (e.g. dict, str, object, etc.)
@@ -141,15 +142,16 @@ class GUI:
             file_name = os.path.basename(config)
             config = self.read_gui_config(path, file_name)
         if data:    
-            self.popup_data = copy.copy(data)
+            self.popup_data[id] = copy.copy(data)
         else:
-            self.popup_data = None    
-        self.popup_window = Window(config, self, type="popup")
-        p = self.popup_window.build()
+            self.popup_data[id] = None    
+        self.popup_window[id] = Window(config, self, type="popup")
+        p = self.popup_window[id].build()
         okay = False
         if p.result() == 1:
             okay = True
-            data = self.popup_data
+            data = self.popup_data[id]
+        # Remove popup window and data    
         return okay, data
 
     def read_gui_config(self, path, file_name):

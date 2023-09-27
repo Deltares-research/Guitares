@@ -75,6 +75,9 @@ class Element:
         self.fraction_collapsed = 1.0
         self.fraction_expanded = 0.5
         self.multiselection = False
+        self.sortable = True
+        self.selection_type = "single"
+        self.ready = False
 
         # Now update element attributes based on dict
 
@@ -190,6 +193,8 @@ class Element:
             self.enable = dct["enable"]
         if "selection_type" in dct:
             self.selection_type = dct["selection_type"]
+        if "sortable" in dct:
+            self.sortable = dct["sortable"]
             
         if "dependency" in dct:
             for dep in dct["dependency"]:
@@ -275,9 +280,9 @@ class Element:
             from .pyqt5.listbox import ListBox
             self.widget = ListBox(self)
 
-        elif self.style == "table":
-            from .pyqt5.table import Table
-            self.widget = Table(self)
+        elif self.style == "tableview":
+            from .pyqt5.tableview import TableView
+            self.widget = TableView(self)
 
         elif self.style == "checkbox":
             from .pyqt5.checkbox import CheckBox
@@ -300,12 +305,30 @@ class Element:
             self.widget = PushSaveFile(self)
 
         elif self.style == "mapbox":
-            from .pyqt5.mapbox.mapbox import MapBox
-            self.widget = MapBox(self)
+            # We don't want to add the mapbox widget if set to invisible, because it takes a long time to load.
+            # This means that widgets that are originally set to invisible will not be added to the GUI!
+            okay = True
+            if self.dependencies:
+                for dep in self.dependencies:
+                    if dep.action == "visible":
+                        if not dep.get():
+                            okay = False
+            if okay:                
+                from .pyqt5.mapbox.mapbox import MapBox
+                self.widget = MapBox(self)
 
         elif self.style == "mapbox_compare":
-            from .pyqt5.mapbox.mapbox_compare import MapBoxCompare
-            self.widget = MapBoxCompare(self)
+            # We don't want to add the mapbox widget if set to invisible, because it takes a long time to load.
+            # This means that widgets that are originally set to invisible will not be added to the GUI!
+            okay = True
+            if self.dependencies:
+                for dep in self.dependencies:
+                    if dep.action == "visible":
+                        if not dep.get():
+                            okay = False
+            if okay:                
+                from .pyqt5.mapbox.mapbox_compare import MapBoxCompare
+                self.widget = MapBoxCompare(self)
 
         elif self.style == "webpage":
             from .pyqt5.webpage import WebPage
