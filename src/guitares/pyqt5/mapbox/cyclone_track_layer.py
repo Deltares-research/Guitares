@@ -23,6 +23,8 @@ class CycloneTrackLayer(Layer):
         else:
             print("Data is not a GeoDataFrame")
             return    
+        
+        self.data = data
 
         # Need to add the track to the GeoDataFrame
         # Loop through geometries in GeoDataFrame and make LineString of the points

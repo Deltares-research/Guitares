@@ -77,6 +77,7 @@ class Element:
         self.multiselection = False
         self.sortable = True
         self.selection_type = "single"
+        self.ready = False
 
         # Now update element attributes based on dict
 
@@ -304,16 +305,30 @@ class Element:
             self.widget = PushSaveFile(self)
 
         elif self.style == "mapbox":
-            from .pyqt5.mapbox.mapbox import MapBox
-            self.widget = MapBox(self)
-
-        elif self.style == "mapbox_simple":
-            from .pyqt5.mapbox.mapbox_simple import MapBoxSimple
-            self.widget = MapBoxSimple(self)
+            # We don't want to add the mapbox widget if set to invisible, because it takes a long time to load.
+            # This means that widgets that are originally set to invisible will not be added to the GUI!
+            okay = True
+            if self.dependencies:
+                for dep in self.dependencies:
+                    if dep.action == "visible":
+                        if not dep.get():
+                            okay = False
+            if okay:                
+                from .pyqt5.mapbox.mapbox import MapBox
+                self.widget = MapBox(self)
 
         elif self.style == "mapbox_compare":
-            from .pyqt5.mapbox.mapbox_compare import MapBoxCompare
-            self.widget = MapBoxCompare(self)
+            # We don't want to add the mapbox widget if set to invisible, because it takes a long time to load.
+            # This means that widgets that are originally set to invisible will not be added to the GUI!
+            okay = True
+            if self.dependencies:
+                for dep in self.dependencies:
+                    if dep.action == "visible":
+                        if not dep.get():
+                            okay = False
+            if okay:                
+                from .pyqt5.mapbox.mapbox_compare import MapBoxCompare
+                self.widget = MapBoxCompare(self)
 
         elif self.style == "webpage":
             from .pyqt5.webpage import WebPage
@@ -387,7 +402,7 @@ class Element:
             if dependency.action == "visible":
                 if self.style == "radiobuttongroup": # Cannot set radiobutton group directly
                     self.widget.set_visible(true_or_false)        
-                elif self.style == "mapbox" or self.style == "mapbox_compare" or self.style == "mapbox_simple":
+                elif self.style == "mapbox" or self.style == "mapbox_compare":
                     if self.widget.ready:
                         self.widget.view.setVisible(true_or_false)        
                 else:    
