@@ -12,6 +12,8 @@ from PyQt5 import QtCore, QtGui
 from guitares.window import Window
 from guitares.server import start_server
 
+import guitares.icons_rc
+
 class GUI:
     def __init__(self, module,
                  framework="pyqt5",

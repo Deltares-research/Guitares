@@ -124,15 +124,6 @@ class TableView(QTableView):
             self.horizontalHeader().sectionClicked.connect(self.header_clicked)
             # Make sure that the sorting direction is shown
             self.horizontalHeader().setSortIndicatorShown(True)
-            # Should really move this next bit to the stylesheet
-            down_arrow_file = os.path.join(self.element.gui.image_path, "icons8-triangle-arrow-16_white_down.png")
-            down_arrow_file = down_arrow_file.replace(os.sep, '/')
-            up_arrow_file = os.path.join(self.element.gui.image_path, "icons8-triangle-arrow-16_white_up.png")
-            up_arrow_file = up_arrow_file.replace(os.sep, '/')
-            # For some reason, the down and up arrows are swapped
-            strdown = "QHeaderView::down-arrow { image: url(" + up_arrow_file + "); subcontrol-position: top right; width: 8px; height: 8px;} "
-            strup   = "QHeaderView::up-arrow { image: url(" + down_arrow_file + "); subcontrol-position: top right; width: 8px; height: 8px;}"
-            self.setStyleSheet(strdown + strup)
         else:    
             self.setSortingEnabled(False)
 
