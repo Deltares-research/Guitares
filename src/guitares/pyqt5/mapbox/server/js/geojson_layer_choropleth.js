@@ -113,12 +113,12 @@ export function addLayer(
   // Legend
   if (color_type == 'damage') {
     var legendItems = [
-      { style: '#FFFFFF', label: '0 ' + unit},
-      { style: '#FEE9CE', label: '0 - ' + numberWithCommas(0.06*scaler) + ' ' + unit},
-      { style: '#FDBB84', label: numberWithCommas(0.06*scaler) + ' - ' + numberWithCommas(0.2*scaler) + ' ' + unit},
-      { style: '#FC844E', label: numberWithCommas(0.2*scaler) + ' - ' + numberWithCommas(0.4*scaler) + ' ' + unit},
-      { style: '#E03720', label: numberWithCommas(0.4*scaler) + ' - ' + numberWithCommas(1*scaler) + ' ' + unit},
-      { style: '#860000', label: '> ' + numberWithCommas(1*scaler) + ' ' + unit},
+      { style: '#FFFFFF', label: '0 '},
+      { style: '#FEE9CE', label: unit + '0 - ' + unit + numberWithCommas(0.06*scaler)},
+      { style: '#FDBB84', label: unit + numberWithCommas(0.06*scaler) + ' - ' + unit + numberWithCommas(0.2*scaler)},
+      { style: '#FC844E', label: unit + numberWithCommas(0.2*scaler) + ' - ' + unit + numberWithCommas(0.4*scaler)},
+      { style: '#E03720', label: unit + numberWithCommas(0.4*scaler) + ' - ' + unit + numberWithCommas(1*scaler)},
+      { style: '#860000', label: '> ' + unit + numberWithCommas(1*scaler)},
     ];
   } else if (color_type == 'flooding') {
     var legendItems = [
