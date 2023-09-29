@@ -42,7 +42,7 @@ class ImageLayer(Layer):
             return None, None
 
     def update(self):
-        if hasattr(self.data, "map_overlay"):            
+        if hasattr(self.data, "map_overlay"):
             xlim, ylim = self.make_overlay()
             if xlim is None:
                 return

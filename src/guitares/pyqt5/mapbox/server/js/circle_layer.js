@@ -37,45 +37,46 @@ export function addLayer(id, data, hover_property,   min_zoom,
 
   map.setLayoutProperty(id, 'visibility', 'visible');
 
-  if (hover_property !== ""){
+  if (hover_property !== "") {
 
-  // Create a popup, but don't add it to the map yet.
-  const popup = new mapboxgl.Popup({
-    closeButton: false,
-    closeOnClick: false
-    });
+    // Create a popup, but don't add it to the map yet.
+    const popup = new mapboxgl.Popup({
+      closeButton: false,
+      closeOnClick: false
+      });
 
+    if (hover_property) {
 
-  map.on('mouseenter', id, (e) => {
-    // Change the cursor style as a UI indicator.
-    map.getCanvas().style.cursor = 'pointer';
+      map.on('mouseenter', id, (e) => {
+
+        // Change the cursor style as a UI indicator.
+        map.getCanvas().style.cursor = 'pointer';
      
-    // Copy coordinates array.
-    const coordinates = e.features[0].geometry.coordinates.slice();
+        // Copy coordinates array.
+        const coordinates = e.features[0].geometry.coordinates.slice();
      
-    // Ensure that if the map is zoomed out such that multiple
-    // copies of the feature are visible, the popup appears
-    // over the copy being pointed to.
-    while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-    coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+        // Ensure that if the map is zoomed out such that multiple
+        // copies of the feature are visible, the popup appears
+        // over the copy being pointed to.
+        while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+          coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+        }
+     
+        // Display a popup 
+        popup.setLngLat(e.lngLat)
+          .setText(hover_property + ": " + e.features[0].properties[hover_property])
+          .addTo(map);
+      });
+     
+      map.on('mouseleave', id, () => {
+        map.getCanvas().style.cursor = '';
+        popup.remove();
+      });
     }
-     
-    // Display a popup 
-    popup.setLngLat(e.lngLat)
-    .setText(hover_property + ": " + e.features[0].properties[hover_property])
-    .addTo(map);
-    });
-     
-    map.on('mouseleave', id, () => {
-    map.getCanvas().style.cursor = '';
-    popup.remove();
-    });
-  }
+  };
 };
 
 export function setData(id, data) {
-  // console.log('setting data in ' + id);
-  // console.log(data);
   var source = map.getSource(id);
   source.setData(data);
 }

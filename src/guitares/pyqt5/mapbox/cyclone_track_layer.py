@@ -1,10 +1,6 @@
-import os
-
-import geojson
 import shapely
 from .layer import Layer
 from geopandas import GeoDataFrame
-import matplotlib.colors as mcolors
 import datetime
 
 class CycloneTrackLayer(Layer):
@@ -99,7 +95,7 @@ class CycloneTrackLayer(Layer):
 
         # First add the line layer
         id = self.map_id + ".track_line"
-        self.mapbox.runjs("./js/geojson_layer_line.js", "addLayer", arglist=[id,
+        self.mapbox.runjs("./js/line_layer.js", "addLayer", arglist=[id,
                                                                              track_gdf,
                                                                              self.line_color,
                                                                              self.line_width,
@@ -111,13 +107,14 @@ class CycloneTrackLayer(Layer):
         if self.show_icons:
             # First add the line layer
             id = self.map_id + ".track_points"
-            self.mapbox.runjs("./js/icon_layer.js", "addLayer", arglist=[id,
-                                                                         data.to_crs(4326)])
+            self.mapbox.runjs("./js/marker_layer.js", "addLayer", arglist=[id,
+                                                                           data.to_crs(4326)])
 
     def redraw(self):
         if isinstance(self.data, GeoDataFrame):
             self.set_data(self.data)
 
+    # TODO: Implement activate and deactivate
     # def activate(self):
     #     self.mapbox.runjs("./js/geojson_layer_line.js", "setPaintProperties", arglist=[self.map_id,
     #                                                                                    self.line_color,

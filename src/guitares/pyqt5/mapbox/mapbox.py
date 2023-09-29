@@ -7,7 +7,6 @@ from pyproj import CRS, Transformer
 
 from .layer import Layer, list_layers, find_layer_by_id
 
-
 class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
     def __init__(self, view, print_messages):
         super().__init__(view)
@@ -102,7 +101,6 @@ class MapBox(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(str)
     def layerStyleSet(self, coords):
-        print("Layer style changed.")
         self.redraw_layers()
 
     @QtCore.pyqtSlot(str)
@@ -229,7 +227,7 @@ class MapBox(QtWidgets.QWidget):
 
     def set_mouse_default(self):
         self.runjs("/js/main.js", "setMouseDefault", arglist=[])
-        self.runjs("/js/draw.js", "setMouseDefault", arglist=[])
+        self.runjs("/js/draw_layer.js", "setMouseDefault", arglist=[])
 
     def add_layer(self, layer_id):
         # Adds a container layer
@@ -280,6 +278,8 @@ class MapBox(QtWidgets.QWidget):
                         if isinstance(columnData.iloc[0], DataFrame):
                             arg = arg.drop([columnName], axis=1)
                     string = string + arg.to_json()
+            elif arg is None:
+                string = string + "null"        
             else:
                 string = string + "'" + arg + "'"
             if iarg < len(arglist) - 1:

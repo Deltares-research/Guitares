@@ -11,14 +11,31 @@ class Layer:
         self.type      = "container"
         self.layer     = {}
         self.parent    = None
-#        self.mode      = "active"
         self.data      = None
         self.index     = None
         self.select    = None
         self.crs       = 4326
-        self.hover_property = "name"
         self.color_property = "value"
         self.legend_position = "bottom-right" # Options are "top-left", "top-right", "bottom-left", "bottom-right"
+        self.selection_type = "single"
+        self.min_zoom = 0
+        self.max_zoom = 22
+        self.zoom_switch = 999
+        self.decimals = 1
+        self.big_data = False
+
+        # Cyclone track layer
+        self.show_icons = True
+
+        # Marker layer
+        self.icon_file = None
+        self.icon_size = 1.0
+        self.marker_color = "blue"
+        self.hover_property = None
+        self.click_property = None
+        self.click_popup_width = None
+
+        # Paint properties
         # Active paint properties
         self.line_color     = "dodgerblue"
         self.line_width     = 2
@@ -51,16 +68,6 @@ class Layer:
         self.fill_color_selected_inactive    = "lightgrey"
         self.fill_opacity_selected_inactive  = 0.0
         self.circle_radius_selected_inactive = 2
-
-        self.selection_type = "single"
-        self.min_zoom = 0
-        self.max_zoom = 22
-        self.zoom_switch = 999
-        self.decimals = 1
-        self.big_data = False
-
-        # Cyclone track layer
-        self.show_icons = True
 
         # Determine which main.js file to use 
         if type(self.mapbox).__name__ == "MapBox":
@@ -106,7 +113,6 @@ class Layer:
 
             # Add containing layer
             self.layer[layer_id] = Layer(self.mapbox, layer_id, map_id)
-#            self.layer[layer_id] = Layer(self.mapbox, layer_id, map_id, mode=mode)
             self.layer[layer_id].parent = self
             return self.layer[layer_id]
         
@@ -117,32 +123,32 @@ class Layer:
                 return None
 
             if type == "circle_selector":
-                from .geojson_layer_circle_selector import GeoJSONLayerCircleSelector
-                self.layer[layer_id] = GeoJSONLayerCircleSelector(self.mapbox, layer_id, map_id, **kwargs)
+                from .circle_selector_layer import CircleSelectorLayer
+                self.layer[layer_id] = CircleSelectorLayer(self.mapbox, layer_id, map_id, **kwargs)
 
             elif type == "polygon_selector":
-                from .geojson_layer_polygon_selector import GeoJSONLayerPolygonSelector
-                self.layer[layer_id] = GeoJSONLayerPolygonSelector(self.mapbox, layer_id, map_id, **kwargs)
+                from .polygon_selector_layer import PolygonSelectorLayer
+                self.layer[layer_id] = PolygonSelectorLayer(self.mapbox, layer_id, map_id, **kwargs)
 
             elif type == "line_selector":
-                from .geojson_layer_line_selector import GeoJSONLayerLineSelector
-                self.layer[layer_id] = GeoJSONLayerLineSelector(self.mapbox, layer_id, map_id, **kwargs)
-
-            elif type == "choropleth":
-                from .geojson_layer_choropleth import GeoJSONLayerChoropleth
-                self.layer[layer_id] = GeoJSONLayerChoropleth(self.mapbox, layer_id, map_id, **kwargs)
-            
-            elif type == "heatmap":
-                from .geojson_layer_heatmap import GeoJSONLayerHeatmap
-                self.layer[layer_id] = GeoJSONLayerHeatmap(self.mapbox, layer_id, map_id, **kwargs)
+                from .line_selector_layer import LineSelectorLayer
+                self.layer[layer_id] = LineSelectorLayer(self.mapbox, layer_id, map_id, **kwargs)
 
             elif type == "circle":
-                from .geojson_layer_circle import GeoJSONLayerCircle
-                self.layer[layer_id] = GeoJSONLayerCircle(self.mapbox, layer_id, map_id, **kwargs)
+                from .circle_layer import CircleLayer
+                self.layer[layer_id] = CircleLayer(self.mapbox, layer_id, map_id, **kwargs)
             
             elif type == "line":
-                from .geojson_layer_line import GeoJSONLayerLine
-                self.layer[layer_id] = GeoJSONLayerLine(self.mapbox, layer_id, map_id, **kwargs)
+                from .line_layer import LineLayer
+                self.layer[layer_id] = LineLayer(self.mapbox, layer_id, map_id, **kwargs)
+
+            elif type == "choropleth":
+                from .choropleth_layer import ChoroplethLayer
+                self.layer[layer_id] = ChoroplethLayer(self.mapbox, layer_id, map_id, **kwargs)
+            
+            elif type == "heatmap":
+                from .heatmap_layer import HeatmapLayer
+                self.layer[layer_id] = HeatmapLayer(self.mapbox, layer_id, map_id, **kwargs)
 
             elif type == "draw":
                 from .draw_layer import DrawLayer
@@ -160,16 +166,21 @@ class Layer:
                 from .raster_from_tiles_layer import RasterFromTilesLayer
                 self.layer[layer_id] = RasterFromTilesLayer(self.mapbox, layer_id, map_id, **kwargs)
 
-            elif type == "deck_geojson":
-                from .deck_geojson_layer import DeckGeoJSONLayer
-                self.layer[layer_id] = DeckGeoJSONLayer(self.mapbox, layer_id, map_id, **kwargs)
+            # elif type == "deck_geojson":
+            #     from .deck_geojson_layer import DeckGeoJSONLayer
+            #     self.layer[layer_id] = DeckGeoJSONLayer(self.mapbox, layer_id, map_id, **kwargs)
 
-            elif type == "datashader_choropleth":
-                from .datashader_choropleth_layer import DatashaderChoroplethLayer
-                self.layer[layer_id] = DatashaderChoroplethLayer(self.mapbox, layer_id, map_id, **kwargs)
+            # elif type == "datashader_choropleth":
+            #     from .datashader_choropleth_layer import DatashaderChoroplethLayer
+            #     self.layer[layer_id] = DatashaderChoroplethLayer(self.mapbox, layer_id, map_id, **kwargs)
+
             elif type == "cyclone_track":
                 from .cyclone_track_layer import CycloneTrackLayer
                 self.layer[layer_id] = CycloneTrackLayer(self.mapbox, layer_id, map_id, **kwargs)
+
+            elif type == "marker":
+                from .marker_layer import MarkerLayer
+                self.layer[layer_id] = MarkerLayer(self.mapbox, layer_id, map_id, **kwargs)
 
             else:
                 print("Error! Layer type " + self.type + " not recognized!")
@@ -177,7 +188,6 @@ class Layer:
 
             self.layer[layer_id].type = type
             self.layer[layer_id].parent = self
-#            self.layer[layer_id].mode = mode
 
             return self.layer[layer_id]
  
@@ -223,15 +233,32 @@ class Layer:
     def delete_from_map(self):
         self.mapbox.runjs(self.main_js, "removeLayer", arglist=[self.map_id, self.side])
 
+    def set_mode(self, mode):
+        # Can only be called on data layers
+        if not self.layer:
+            # Data layer
+            if mode == "active":
+                self.show()
+                self.activate()
+            elif mode == "inactive":
+                self.show()
+                self.deactivate()
+            else: # Invisible   
+                self.hide()
+                self.deactivate()
+
     def show(self):
+        """Show layer on map. Any child layers that are set to visible will also be shown."""
         self.visible = True
         self.set_visibility(True)
 
     def hide(self):
+        """Hide layer on map. Any child layers will also be hidden."""
         self.visible = False
         self.set_visibility(False)
 
     def set_visibility(self, true_or_false):
+        # Loop down through the layer hierarchy to show or hide layers
         if self.layer:
             # Container layer
             # Make a list of all layers
@@ -257,59 +284,17 @@ class Layer:
 
     def activate(self):
         # Only called for layers that do not have a activate function in the subclass
-        self.active = True
-        if self.layer:
-            self.set_activity(True)
+        pass
 
     def deactivate(self):
         # Only called for layers that do not have a deactivate function in the subclass
-        self.active = False    
-        if self.layer:
-            self.set_activity(False)
-
-    def set_activity(self, true_or_false):
-        if self.layer:
-            # Container layer
-            # Make a list of all layers
-            layers = list_layers(self.layer)
-            for layer in layers:
-                layer.set_activity(true_or_false)
-        else:
-            # Data layer
-            if true_or_false and self.activate:
-                self.activate()
-            else:
-                self.deactivate()
+        pass
 
     def get(self, layer_id):
         if layer_id in self.layer:
             return self.layer[layer_id]
         else:
             return None
-
-    # def set_mode(self, mode):
-    #     # Make a list of all layers
-    #     if self.layer:
-    #         # Container layer
-    #         self.mode = mode
-    #         layers = list_layers(self.layer)
-    #         for layer in layers:                
-    #             layer.set_mode(mode)
-    #     else:
-    #         # Only change if mode has changed
-    #         if self.mode != mode:
-    #             if mode == "active":
-    #                 self.visible = True
-    #                 self.mapbox.runjs(self.main_js, "showLayer", arglist=[self.map_id, self.side])
-    #                 self.activate()
-    #             elif mode == "inactive":
-    #                 self.visible = True
-    #                 self.mapbox.runjs(self.main_js, "showLayer", arglist=[self.map_id, self.side])
-    #                 self.deactivate()
-    #             else: # Invisible   
-    #                 self.visible = False
-    #                 self.mapbox.runjs(self.main_js, "hideLayer", arglist=[self.map_id, self.side])
-    #         self.mode = mode
 
     def redraw(self):
         # This method is called when the layers style is changed

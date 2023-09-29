@@ -1,77 +1,115 @@
-export function addMarkerLayer(geojson, markerFile, id) {
+export function addLayer(id, data) {
 
-	layerID = id;
+  // Always remove old layer and source first to avoid errors
+  if (map.getLayer(id)) {
+    map.removeLayer(id);
+  }
+  var mapSource = map.getSource(id);
+  if(typeof mapSource !== 'undefined') {
+    map.removeSource(id);
+  }
+  
+  map.addSource(id, {
+    type: 'geojson',
+    data: data
+  });
 
-    if (map.hasImage(id)) {
-        map.removeImage(id);
+  // Iterate through your GeoJSON data to extract unique icon URLs and add them as images
+  var uniqueIconUrls = {};
+  map.getSource(id)._data.features.forEach(function (feature) {
+    var iconUrl = feature.properties.icon_url; // Replace 'iconUrl' with the property in your GeoJSON that specifies the icon URL
+    // Check if this icon is already loaded
+    if (!map.hasImage(iconUrl)) {
+      if (iconUrl && !uniqueIconUrls[iconUrl]) {
+        map.loadImage(iconUrl, function (error, image) {
+          if (error) throw error;
+          map.addImage(iconUrl, image);
+        });
+        uniqueIconUrls[iconUrl] = true;
+      }
     }
+  });
 
-    map.loadImage('icons/' + markerFile,
-        (error, image) => {
-            if (error) throw error;
-            map.addImage('custom-marker', image);
+  var prop0 = map.getSource(id)._data.features[0].properties;
+  // Check if icon_size is defined.
+  var iconSize = prop0.icon_size;
+  if (!iconSize) {iconSize = 1.0;}
+  // Check if icon_color is defined.
+  var iconColor = prop0.icon_color;
+  if (!iconColor) {iconColor = 'red';}
+  // Check if icon_url is a property of the GeoJSON data.
+  var iconUrl = prop0.icon_url;
 
-            // Add a GeoJSON source with 2 points
-            map.addSource(id, {
-			      type: 'geojson',
-			      data: geojson
-            })
+  // Add a layer for the points with icons based on icon URL property
+  map.addLayer({
+    id: id,
+    type: 'symbol',
+    source: id,
+    layout: {
+      'icon-image': ['get', 'icon_url'],
+      'icon-size': iconSize, // Adjust the icon size as needed
+      'icon-allow-overlap': true
+    }
+  });
 
-            // Add a symbol layer
-            map.addLayer({
-                'id': id,
-                'type': 'symbol',
-                'source': id,
-                'layout': {
-                    'icon-image': 'custom-marker',
-                    'icon-size': 0.5,
-                    'text-field': ['get', 'title'],
-                    'text-font': [
-                        'Open Sans Semibold',
-                        'Arial Unicode MS Bold'
-                    ],
-                    'text-offset': [0, 1.25],
-                    'text-anchor': 'top'
-                }
-            });
+  // Initialize a popup
+  var hoverPopup = new mapboxgl.Popup({
+    closeButton: false,
+    closeOnClick: false,
+    offset: [0, -12]
+  });
 
-            // Create a popup, but don't add it to the map yet.
-            const popup = new mapboxgl.Popup({
-                closeButton: false,
-                closeOnClick: false
-            });
+  // Initialize a popup
+  var clickPopup = new mapboxgl.Popup({
+    closeButton: true,
+    closeOnClick: true,
+    offset: [0, -12]
+  });
 
-            map.on('mouseenter', id, (e) => {
+  // Add an event listener for mouseenter on the points
+  map.on('mouseenter', id, function (e) {
+    // Change the cursor style as a UI indicator.
+    map.getCanvas().style.cursor = 'pointer';
+    var coordinates = e.features[0].geometry.coordinates.slice();
+    // If hover_property is defined, 
+    if (e.features[0].properties.hasOwnProperty('hover_html')) {
+        var html = e.features[0].properties.hover_html;
+    } else {var html = null;}    
+    // Ensure that if the map is zoomed out, the popup does not appear beyond the visible bounds
+    while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+        coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+    }
+    // Set the popup content and coordinates
+    if (html) {
+      hoverPopup.setLngLat(coordinates).setHTML(html).addTo(map);
+    }  
+  });
 
-                // Change the cursor style as a UI indicator.
-                map.getCanvas().style.cursor = 'pointer';
+  // Remove the popup when the mouse leaves the points
+  map.on('mouseleave', id, function () {
+    map.getCanvas().style.cursor = '';
+    hoverPopup.remove();
+  });
 
-                // Copy coordinates array.
-                const coordinates = e.features[0].geometry.coordinates.slice();
-                var description   = e.features[0].properties.hover_popup_text;
-                if (e.features[0].properties.hasOwnProperty('hover_popup_width')) {
-					popup.setMaxWidth(e.features[0].properties.hover_popup_width);
-			    }
-
-                // Ensure that if the map is zoomed out such that multiple
-                // copies of the feature are visible, the popup appears
-                // over the copy being pointed to.
-                while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-                    coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-                }
-
-                // Populate the popup and set its coordinates
-                // based on the feature found.
-                popup.setLngLat(coordinates).setHTML(description).addTo(map);
-
-            });
-
-            map.on('mouseleave', id, () => {
-                map.getCanvas().style.cursor = '';
-                popup.remove();
-            });
-
-        }
-    );
-//    layerAdded();
+  // Open popup on click. Should only work if click_html is defined.
+  map.on('click', id, function (e) {
+    if (e.features[0].properties.hasOwnProperty('click_html')) {
+      var coordinates = e.features[0].geometry.coordinates.slice();
+      // Let the popup be slightly offset from the point, depending on the zoom level
+      var offset = 0.0005 * Math.pow(2, 14 - map.getZoom());
+      var html = e.features[0].properties.click_html;
+      if (e.features[0].properties.hasOwnProperty('click_popup_width')) {
+        var maxWidth = e.features[0].properties.click_popup_width.toString() + 'px';
+      } else {
+        var maxWidth = "none";
+      }
+      // Ensure that if the map is zoomed out, the popup does not appear beyond the visible bounds
+      while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+        coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+      }
+      if (html) {
+        clickPopup.setLngLat(coordinates).setHTML(html).setMaxWidth(maxWidth).addTo(map);
+      }
+    }  
+  });
 }

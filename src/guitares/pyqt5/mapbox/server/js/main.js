@@ -2,8 +2,8 @@ console.log('Importing MapBox ...');
 //export let mapboxgl = mpbox.import_mapbox_gl()
 mapboxgl = mpbox.import_mapbox_gl()
 
-console.log('Importing MapBox Draw ...');
-import { draw, setDrawEvents } from '/js/draw.js';
+//console.log('Importing MapBox Draw ...');
+import { draw, setDrawEvents } from '/js/draw_layer.js';
 
 let mapReady;
 let mapMoved;
@@ -96,7 +96,7 @@ map.on('style.load', () => {
   // The 'building' layer in the Mapbox Streets
   // vector tileset contains building height data
   // from OpenStreetMap.
-  console.log('Adding 3d buildings')
+//  console.log('Adding 3d buildings')
   map.addLayer(
       {
           'id': 'add-3d-buildings',
@@ -306,7 +306,6 @@ function onPointClicked(e) {
 
 function onPointRightClicked(e) {
   map.getCanvas().style.cursor = '';
-  console.log("point right clicked");
   map.off('click', onPointClicked);
 }
 

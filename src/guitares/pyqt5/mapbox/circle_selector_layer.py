@@ -1,7 +1,7 @@
 from .layer import Layer
 from geopandas import GeoDataFrame
 
-class GeoJSONLayerCircleSelector(Layer):
+class CircleSelectorLayer(Layer):
     def __init__(self, mapbox, id, map_id, **kwargs):
         super().__init__(mapbox, id, map_id, **kwargs)
         pass
@@ -28,7 +28,7 @@ class GeoJSONLayerCircleSelector(Layer):
         data["index"] = indices
 
         # Add new layer
-        self.mapbox.runjs("./js/geojson_layer_circle_selector.js", "addLayer", arglist=[self.map_id,
+        self.mapbox.runjs("./js/circle_selector_layer.js", "addLayer", arglist=[self.map_id,
                                                                                         data.to_crs(4326),
                                                                                         index,
                                                                                         self.hover_property,
@@ -45,17 +45,17 @@ class GeoJSONLayerCircleSelector(Layer):
                                                                                         self.selection_type])
 
     def select_by_index(self, index):
-        self.mapbox.runjs("/js/geojson_layer_circle_selector.js", "selectByIndex", arglist=[self.map_id, index])
+        self.mapbox.runjs("/js/circle_selector_layer.js", "selectByIndex", arglist=[self.map_id, index])
 
     def select_by_id(self, id):
-        self.mapbox.runjs("/js/geojson_layer_circle_selector.js", "selectById", arglist=[self.map_id, id])
+        self.mapbox.runjs("/js/circle_selector_layer.js", "selectById", arglist=[self.map_id, id])
 
     def activate(self):
         if self.data is None:
             return
         elif len(self.data) == 0:
             return
-        self.mapbox.runjs("./js/geojson_layer_circle_selector.js", "activate", arglist=[self.map_id,
+        self.mapbox.runjs("./js/circle_selector_layer.js", "activate", arglist=[self.map_id,
                                                                                         self.line_color,
                                                                                         self.line_width,
                                                                                         self.line_style,
@@ -72,7 +72,7 @@ class GeoJSONLayerCircleSelector(Layer):
             return
         elif len(self.data) == 0:
             return
-        self.mapbox.runjs("./js/geojson_layer_circle_selector.js", "deactivate", arglist=[self.map_id,
+        self.mapbox.runjs("./js/circle_selector_layer.js", "deactivate", arglist=[self.map_id,
                                                                                         self.line_color_inactive,
                                                                                         self.line_width_inactive,
                                                                                         self.line_style_inactive,

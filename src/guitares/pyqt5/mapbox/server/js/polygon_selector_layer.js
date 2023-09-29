@@ -1,15 +1,7 @@
-//import { map, featureClicked, mapboxgl, layers, layerAdded } from '/js/main.js';
-//import { layerAdded } from '/js/main.js';
-
 let hover_property
 let hoveredId = null;
 let activeLayerId = null;
-
-let popup = new mapboxgl.Popup({
-  offset: 10,
-  closeButton: false,
-  closeOnClick: false
-});
+let popup
 
 export function addLayer(id,
   data,
@@ -27,6 +19,7 @@ export function addLayer(id,
   let hoveredId = null
   let fillId = id + ".fill"
   let lineId = id + ".line"
+
   // Always remove old layers first to avoid errors
   if (map.getLayer(fillId)) {
     map.removeLayer(fillId);
@@ -38,8 +31,12 @@ export function addLayer(id,
     map.removeSource(id);
   }
 
-  //  var selectedFeatures = []
-
+  popup = new mapboxgl.Popup({
+    offset: 10,
+    closeButton: false,
+    closeOnClick: false
+  });
+  
   layers[id] = {}
   layers[id].data = data; 
   layers[id].mode = "active"; 

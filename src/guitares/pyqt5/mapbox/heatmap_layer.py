@@ -1,7 +1,7 @@
 from .layer import Layer
 from geopandas import GeoDataFrame
 
-class GeoJSONLayerHeatmap(Layer):
+class HeatmapLayer(Layer):
     def __init__(self, mapbox, id, map_id, **kwargs):
         super().__init__(mapbox, id, map_id, **kwargs)
         pass
@@ -17,7 +17,7 @@ class GeoJSONLayerHeatmap(Layer):
         self.visible = True 
         # Add new layer
         self.mapbox.runjs(
-            "./js/geojson_layer_heatmap.js",
+            "./js/heatmap_layer.js",
             "addLayer",
             arglist=[
                 self.map_id,
