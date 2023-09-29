@@ -41,7 +41,8 @@ class GeoJSONLayerChoropleth(Layer):
                     self.legend_title,
                     self.unit,
                     self.legend_position,
-                    self.side
+                    self.side,
+                    self.color_type
                 ],
             )
         else:    
@@ -78,7 +79,8 @@ class GeoJSONLayerChoropleth(Layer):
                         self.legend_title,
                         self.unit,
                         self.legend_position,
-                        self.side
+                        self.side,
+                        self.color_type
                     ],
                 )
             else:

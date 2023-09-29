@@ -12,7 +12,8 @@ export function addLayer(
   legend_title,
   unit,
   legend_position,
-  side
+  side,
+  color_type,
   ) {
 
   var mp = getMap(side);
@@ -41,35 +42,56 @@ export function addLayer(
     promoteId: hover_property
   });
  
-  mp.addLayer({
-    'id': fillId,
-    'type': 'fill',
-    'source': id,
-    'minzoom': min_zoom,
-    'paint': {
-      'fill-color': [
-      'step',
-      ['get', color_property],
-      // This should all not be hard0-coded and provided with input
-      '#EEF5E8',
-      0.000001*scaler,
-      '#FEE3C4',
-      0.02*scaler,
-      '#FED7AB',
-      0.05*scaler,
-      '#FCCC96',
-      0.1*scaler,
-      '#F8AB54',
-      0.2*scaler,
-      '#FB9420',
-      0.4*scaler,
-      '#FB2807',
-      1*scaler,
-      '#B8220A',
-    ],
-    'fill-opacity': fillOpacity
-    }
-  });
+  if (color_type == 'damage') {
+    mp.addLayer({
+      'id': fillId,
+      'type': 'fill',
+      'source': id,
+      'minzoom': min_zoom,
+      'paint': {
+        'fill-color': [
+        'step',
+        ['get', color_property],
+        // This should all not be hard0-coded and provided with input
+        '#FFFFFF',
+        0.000001*scaler,
+        '#FEE9CE',
+        0.06*scaler,
+        '#FDBB84',
+        0.2*scaler,
+        '#FC844E',
+        0.4*scaler,
+        '#E03720',
+        1*scaler,
+        '#860000',
+      ],
+      'fill-opacity': fillOpacity
+      }
+    });
+  } else if (color_type == 'flooding') {
+    mp.addLayer({
+      'id': fillId,
+      'type': 'fill',
+      'source': id,
+      'minzoom': min_zoom,
+      'paint': {
+        'fill-color': [
+        'step',
+        ['get', color_property],
+        // This should all not be hard0-coded and provided with input
+        '#BED2FF',
+        1 * scaler,
+        '#B4D79E',
+        3 * scaler,
+        '#1F80B8',
+        5 * scaler,
+        '#081D58',
+      ],
+      'fill-opacity': fillOpacity
+      }
+    });
+  }
+
 
   mp.addLayer({
     'id': lineId,
@@ -89,16 +111,24 @@ export function addLayer(
   });
 
   // Legend
-  var legendItems = [
-    { style: '#EEF5E8', label: '0 ' + unit},
-    { style: '#FEE3C4', label: '0 - ' + numberWithCommas(0.02*scaler) + ' ' + unit},
-    { style: '#FED7AB', label: numberWithCommas(0.02*scaler) + ' - ' + numberWithCommas(0.05*scaler) + ' ' + unit},
-    { style: '#FCCC96', label: numberWithCommas(0.05*scaler) + ' - ' + numberWithCommas(0.1*scaler) + ' ' + unit},
-    { style: '#F8AB54', label: numberWithCommas(0.1*scaler) + ' - ' + numberWithCommas(0.2*scaler) + ' ' + unit},
-    { style: '#FB9420', label: numberWithCommas(0.2*scaler) + ' - ' + numberWithCommas(0.4*scaler) + ' ' + unit},
-    { style: '#FB2807', label: numberWithCommas(0.4*scaler) + ' - ' + numberWithCommas(1*scaler) + ' ' + unit},
-    { style: '#B8220A', label: '> ' + numberWithCommas(1*scaler) + ' ' + unit},
-  ];
+  if (color_type == 'damage') {
+    var legendItems = [
+      { style: '#FFFFFF', label: '0 ' + unit},
+      { style: '#FEE9CE', label: '0 - ' + numberWithCommas(0.06*scaler) + ' ' + unit},
+      { style: '#FDBB84', label: numberWithCommas(0.06*scaler) + ' - ' + numberWithCommas(0.2*scaler) + ' ' + unit},
+      { style: '#FC844E', label: numberWithCommas(0.2*scaler) + ' - ' + numberWithCommas(0.4*scaler) + ' ' + unit},
+      { style: '#E03720', label: numberWithCommas(0.4*scaler) + ' - ' + numberWithCommas(1*scaler) + ' ' + unit},
+      { style: '#860000', label: '> ' + numberWithCommas(1*scaler) + ' ' + unit},
+    ];
+  } else if (color_type == 'flooding') {
+    var legendItems = [
+      { style: '#081D58', label: '> ' + numberWithCommas(5*scaler)},
+      { style: '#1F80B8', label: numberWithCommas(3*scaler) + ' - ' + numberWithCommas(5*scaler)},
+      { style: '#B4D79E', label: numberWithCommas(1*scaler) + ' - ' + numberWithCommas(3*scaler)},
+      { style: '#BED2FF', label: '< ' + numberWithCommas(1*scaler)},
+    ];
+  }
+
   var legend     = document.createElement("div");
   legend.id        = "legend" + id;
   //legend.className = "choropleth_legend";
