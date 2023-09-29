@@ -25,6 +25,7 @@ class GUI:
                  server_nodejs=False,
                  js_messages=True,
                  copy_mapbox_server_folder=True,
+                 icon_path=None,
                  mapbox_token_file="mapbox_token.txt"):
 
         self.module      = module
@@ -71,6 +72,7 @@ class GUI:
                     shutil.rmtree(server_path)
                 # Now copy over folder from mapbox
                 shutil.copytree(mpboxpth, server_path)
+
             # Read mapbox token and store in js file in server path
             if os.path.exists(os.path.join(self.config_path, mapbox_token_file)):
                 fid = open(os.path.join(self.config_path, mapbox_token_file), "r")
@@ -79,7 +81,16 @@ class GUI:
                 fid = open(os.path.join(server_path, "mapbox_token.js"), "w")
                 fid.write("mapbox_token = '" + mapbox_token[0].strip() + "';")
                 fid.close()
-            start_server(server_path, port=server_port, node=self.server_nodejs)    
+
+            if icon_path:
+                # Copy all files in icon_path to server_path/icons
+                if not os.path.exists(os.path.join(server_path, "icons")):
+                    os.mkdir(os.path.join(server_path, "icons"))
+                for file in os.listdir(icon_path):
+                    if file.endswith(".png"):
+                        shutil.copy(os.path.join(icon_path, file), os.path.join(server_path, "icons", file))
+
+            start_server(server_path, port=server_port, node=self.server_nodejs)
 
     def show_splash(self):
         if self.framework == "pyqt5" and self.splash_file:
