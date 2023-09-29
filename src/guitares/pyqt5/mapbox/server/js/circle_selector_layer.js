@@ -1,6 +1,3 @@
-//import { map, featureClicked, layerAdded, mapboxgl, layers } from '/js/main.js';
-//import { layerAdded } from '/js/main.js';
-
 let hover_property
 let hoveredId = null;
 let activeLayerId = null;

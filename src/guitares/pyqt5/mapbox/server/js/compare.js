@@ -1,5 +1,12 @@
 console.log("Adding Mapbox Compare Map ...")
 
+//var mapboxgl = mpbox.import_mapbox_gl()
+
+//let mapboxgl = mpbox.import_mapbox_gl()
+//console.log('mapvars mapMain = ' + mapMain)
+//console.log('mapvars mapA = ' + mapA)
+//console.log('mapvars mapB = ' + mapB)
+
 export let jsonString;
 export let mapReady;
 export let mapMoved;

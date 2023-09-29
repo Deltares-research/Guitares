@@ -1,19 +1,4 @@
 import os
-# from PIL import Image
-# import matplotlib
-# from matplotlib import cm
-# import matplotlib.pyplot as plt
-#import rasterio
-#import rasterio.features
-#from rasterio.warp import calculate_default_transform, reproject, Resampling, transform_bounds
-#from rasterio import MemoryFile
-#from rasterio.transform import Affine
-#import geopandas as gpd
-#import pandas as pd
-#import shapely
-#import matplotlib.pyplot as plt
-#from matplotlib.colors import LightSource
-#import numpy as np
 
 from .colorbar import ColorBar
 from .layer import Layer
