@@ -98,11 +98,12 @@ export function addLayer(id, data) {
       // Let the popup be slightly offset from the point, depending on the zoom level
       var offset = 0.0005 * Math.pow(2, 14 - map.getZoom());
       var html = e.features[0].properties.click_html;
-      if (e.features[0].properties.hasOwnProperty('click_popup_width')) {
-        var maxWidth = e.features[0].properties.click_popup_width.toString() + 'px';
-      } else {
-        var maxWidth = "none";
-      }
+//      if (e.features[0].properties.hasOwnProperty('click_popup_width')) {
+//        var maxWidth = e.features[0].properties.click_popup_width.toString() + 'px';
+//      } else {
+//        var maxWidth = "none";
+//      }
+      var maxWidth = "none";
       // Ensure that if the map is zoomed out, the popup does not appear beyond the visible bounds
       while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
         coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;

@@ -41,6 +41,15 @@ class MarkerLayer(Layer):
             # Use default icon for all markers
             data["icon_url"] = "./icons/mapbox-marker-icon-20px-" + self.marker_color + ".png"
 
+        if self.click_popup_width:
+            wdtstr = str(self.click_popup_width) + "px"
+        else:
+            wdtstr = "100%"
+        if self.click_popup_height:
+            hgtstr = str(self.click_popup_height) + "px"
+        else:
+            hgtstr = "100%"
+                
         # Check if there is a column in the geodataframe called "click_html"
         if self.click_property:
             # Add click_html column to data
@@ -51,10 +60,10 @@ class MarkerLayer(Layer):
                 # If so, replace with relative path in server folder
                 if row[self.click_property].endswith(".html") and not row[self.click_property].startswith("http"):
                     # Must be a local html file
-                    data.at[i, "click_html"] = '<div><iframe src="' + './overlays/' + row[self.click_property] + '"></iframe></div>'
+                    data.at[i, "click_html"] = '<div><iframe width="' + wdtstr + '" height="' + hgtstr + '" src="' + './overlays/' + row[self.click_property] + '"></iframe></div>'
                 elif row[self.click_property].startswith("http"):
                     # Must be an external url (this often does not work and results in an error: Refused to display in a frame because it set 'X-Frame-Options' to 'sameorigin)
-                    data.at[i, "click_html"] = '<div><iframe src="' + row[self.click_property] + '"></iframe></div>'
+                    data.at[i, "click_html"] = '<div><iframe width="' + wdtstr + '" height="' + hgtstr + '" src="' + row[self.click_property] + '"></iframe></div>'
                 else:
                     # Get click_html from click_property
                     data.at[i, "click_html"] = row[self.click_property]    
