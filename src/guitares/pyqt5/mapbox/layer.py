@@ -34,6 +34,7 @@ class Layer:
         self.hover_property = None
         self.click_property = None
         self.click_popup_width = None
+        self.click_popup_height = None
 
         # Paint properties
         # Active paint properties
