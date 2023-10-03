@@ -1,19 +1,4 @@
 import os
-# from PIL import Image
-# import matplotlib
-# from matplotlib import cm
-# import matplotlib.pyplot as plt
-#import rasterio
-#import rasterio.features
-#from rasterio.warp import calculate_default_transform, reproject, Resampling, transform_bounds
-#from rasterio import MemoryFile
-#from rasterio.transform import Affine
-#import geopandas as gpd
-#import pandas as pd
-#import shapely
-#import matplotlib.pyplot as plt
-#from matplotlib.colors import LightSource
-#import numpy as np
 
 from .colorbar import ColorBar
 from .layer import Layer
@@ -22,28 +7,15 @@ from cht_tiling.tiling import make_floodmap_overlay
 class RasterFromTilesLayer(Layer):
     def __init__(self, mapbox, id, map_id, **kwargs):
         super().__init__(mapbox, id, map_id, **kwargs)
-        self.active = False
-        self.type   = "raster_from_tiles"
         self.new    = True
         self.file_name = map_id + ".png"
-#        self.layer_js = "/js/image_layer.js"
-
-    # def activate(self):
-    #     self.active = True
-
-    # def deactivate(self):
-    #     self.active = False
-
-    # def clear(self):
-    #     self.active = False
-    #     self.mapbox.runjs(self.main_js, "removeLayer", arglist=[self.map_id])
 
     def set_data(self, data):
         self.data = data
         self.update()
 
     def update(self):
-        if self.data is None:
+        if self.data is None or not self.get_visibility():
             return
         overlay_file = os.path.join(self.mapbox.server_path, 'overlays', self.file_name)
         overlay_url  = "./overlays/" + self.file_name

@@ -10,12 +10,7 @@ console.log("Adding Mapbox Compare Map ...")
 export let jsonString;
 export let mapReady;
 export let mapMoved;
-//export let map;
-//export let mapA;
-//export let mapB;
 export let activeSide = 'a';
-
-//console.log("Compare Type = " + mapbox_type)
 
 mapboxgl.accessToken = mapbox_token;
 

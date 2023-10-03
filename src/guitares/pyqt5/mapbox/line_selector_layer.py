@@ -6,7 +6,7 @@ from .layer import Layer
 from geopandas import GeoDataFrame
 import matplotlib.colors as mcolors
 
-class GeoJSONLayerLineSelector(Layer):
+class LineSelectorLayer(Layer):
     def __init__(self, mapbox, id, map_id, **kwargs):
         super().__init__(mapbox, id, map_id, **kwargs)
 
@@ -17,6 +17,9 @@ class GeoJSONLayerLineSelector(Layer):
                  data,
                  index):
 
+        self.data = data
+        self.index = index
+
         # Make sure this is not an empty GeoDataFrame
         if isinstance(data, GeoDataFrame):
             # Data is GeoDataFrame
@@ -25,11 +28,8 @@ class GeoJSONLayerLineSelector(Layer):
             # Make sure there is an index column
             data["index"] = range(len(data))
 
-        # # Remove existing layer        
-        # self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id])
-
         # Add new layer        
-        self.mapbox.runjs("./js/geojson_layer_line_selector.js", "addLayer", arglist=[self.map_id,
+        self.mapbox.runjs("./js/line_selector_layer.js", "addLayer", arglist=[self.map_id,
                                                                                data.to_crs(4326),
                                                                                index,
                                                                                self.line_color,
@@ -49,7 +49,7 @@ class GeoJSONLayerLineSelector(Layer):
             self.deactivate()
 
     def set_selected_index(self, index):
-        self.mapbox.runjs("/js/geojson_layer_line_selector.js", "setSelectedIndex", arglist=[self.map_id, index])
+        self.mapbox.runjs("/js/line_selector_layer.js", "setSelectedIndex", arglist=[self.map_id, index])
 
 
     def activate(self):

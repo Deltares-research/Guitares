@@ -65,6 +65,15 @@ export function addLayer(id, data) {
     popup.remove();
   });
 
+  // Open popup on click. Should only work if click_html is defined.
+  map.on('click', id, function (e) {
+    var coordinates = e.features[0].geometry.coordinates.slice();
+    var description = e.features[0].properties.click_html;
+    if (description) {
+      popup.setLngLat(coordinates).setHTML(description).addTo(map);
+    }
+  });
+
 }
 
 //   map.addLayer({

@@ -1,7 +1,7 @@
 from .layer import Layer
 from geopandas import GeoDataFrame
 
-class GeoJSONLayerPolygonSelector(Layer):
+class PolygonSelectorLayer(Layer):
     def __init__(self, mapbox, id, map_id, **kwargs):
         super().__init__(mapbox, id, map_id, **kwargs)
         pass
@@ -23,11 +23,8 @@ class GeoJSONLayerPolygonSelector(Layer):
         indices.extend(range(len(data)))
         data["index"] = indices
 
-        # # Remove existing layer        
-        # self.remove()
-
         # Add new layer
-        self.mapbox.runjs("./js/geojson_layer_polygon_selector.js", "addLayer", arglist=[self.map_id,
+        self.mapbox.runjs("./js/polygon_selector_layer.js", "addLayer", arglist=[self.map_id,
                                                                                          data,
                                                                                          index,
                                                                                          self.hover_property,
@@ -40,7 +37,7 @@ class GeoJSONLayerPolygonSelector(Layer):
 
     def set_selected_index(self, index):
         self.index = index
-        self.mapbox.runjs("/js/geojson_layer_polygon_selector.js", "setSelectedIndex", arglist=[self.map_id, index])
+        self.mapbox.runjs("/js/polygon_selector_layer.js", "setSelectedIndex", arglist=[self.map_id, index])
 
     # Probably should not have a separate function for this
     # Can also done with layer.hover_property = "name" and then layer.redraw() 
@@ -51,16 +48,16 @@ class GeoJSONLayerPolygonSelector(Layer):
         self.set_data(data, index)
 
     def select_by_index(self, index):
-        self.mapbox.runjs("/js/geojson_layer_polygon_selector.js", "selectByIndex", arglist=[self.map_id, index])
+        self.mapbox.runjs("/js/polygon_selector_layer.js", "selectByIndex", arglist=[self.map_id, index])
 
     def select_by_id(self, id):
-        self.mapbox.runjs("/js/geojson_layer_polygon_selector.js", "selectById", arglist=[self.map_id, id])
+        self.mapbox.runjs("/js/polygon_selector_layer.js", "selectById", arglist=[self.map_id, id])
 
     def activate(self):
         self.active = True
         if self.data is None:
             return
-        self.mapbox.runjs("/js/geojson_layer_polygon_selector.js", "activate", arglist=[self.map_id,
+        self.mapbox.runjs("/js/polygon_selector_layer.js", "activate", arglist=[self.map_id,
                                                                                          self.line_color,
                                                                                          self.fill_color,
                                                                                          self.line_color_selected,

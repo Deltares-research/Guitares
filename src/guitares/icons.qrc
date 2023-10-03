@@ -1,0 +1,24 @@
+<!DOCTYPE RCC>
+<!-- Build with: pyrcc5 icons.qrc -o icons_rc.py -->
+<RCC version="1.0">
+    <qresource>
+        <file>img/icons8-triangle-arrow-24_white_right.png</file>
+        <file>img/icons8-triangle-arrow-24_white_left.png</file>
+        <file>img/icons8-triangle-arrow-24_black_right.png</file>
+        <file>img/icons8-triangle-arrow-24_black_left.png</file>
+        <file>img/icons8-triangle-arrow-24_black_up.png</file>
+        <file>img/icons8-triangle-arrow-24_black_down.png</file>
+        <file>img/icons8-triangle-arrow-16_white_right.png</file>
+        <file>img/icons8-triangle-arrow-16_white_left.png</file>
+        <file>img/icons8-triangle-arrow-16_white_up.png</file>
+        <file>img/icons8-triangle-arrow-16_white_down.png</file>
+        <file>img/white_up_48x48.png</file>
+        <file>img/white_right_48x48.png</file>
+        <file>img/white_down_48x48.png</file>
+        <file>img/white_left_48x48.png</file>
+        <file>img/black_up_48x48.png</file>
+        <file>img/black_right_48x48.png</file>
+        <file>img/black_down_48x48.png</file>
+        <file>img/black_left_48x48.png</file>
+    </qresource>
+</RCC>

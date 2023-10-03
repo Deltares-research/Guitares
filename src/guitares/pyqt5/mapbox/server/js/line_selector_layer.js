@@ -1,6 +1,3 @@
-//import { map, featureClicked, mapboxgl } from '/js/main.js';
-//import { featureClicked } from '/js/main.js';
-
 export function addLayer(id,
                          data,
                          index,

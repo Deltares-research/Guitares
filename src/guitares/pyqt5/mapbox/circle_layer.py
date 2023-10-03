@@ -3,35 +3,34 @@ from geopandas import GeoDataFrame
 from pyogrio import read_dataframe
 
 
-class GeoJSONLayerCircle(Layer):
+class CircleLayer(Layer):
     def __init__(self, mapbox, id, map_id, **kwargs):
         super().__init__(mapbox, id, map_id, **kwargs)
         pass
 
     def set_data(self, data):
-#        self.hover_property = hover_property
-#        self.big_data = big_data
 
         # Make sure this is not an empty GeoDataFrame
         if isinstance(data, GeoDataFrame):
             # Data is GeoDataFrame
             if len(data) == 0:
-                data = GeoDataFrame()
+                return
             if data.crs != 4326:
                 data = data.to_crs(4326)
-            self.gdf = data
         else:
             # Read geodataframe from shape file
-            self.gdf = read_dataframe(data)
+            data = read_dataframe(data)
+            
+        self.data = data    
 
         if not self.big_data:
             # Add new layer
             self.mapbox.runjs(
-                "./js/geojson_layer_circle.js",
+                "./js/circle_layer.js",
                 "addLayer",
                 arglist=[
                     self.map_id,
-                    self.gdf,
+                    self.data,
                     self.hover_property,
                     self.min_zoom,
                     self.line_color,
@@ -48,6 +47,11 @@ class GeoJSONLayerCircle(Layer):
     def update(self):
         if not self.mapbox.zoom:
             return
+        if self.data is None:
+            return
+        if len(self.data) == 0:
+            # Empty GeoDataFrame
+            return            
         if self.mapbox.zoom > self.min_zoom and self.big_data and self.visible:
             coords = self.mapbox.map_extent
             xl0 = coords[0][0]
@@ -55,10 +59,10 @@ class GeoJSONLayerCircle(Layer):
             yl0 = coords[0][1]
             yl1 = coords[1][1]
             # Limits WGS 84
-            gdf = self.gdf.cx[xl0:xl1, yl0:yl1]
+            gdf = self.data.cx[xl0:xl1, yl0:yl1]
             # Add new layer
             self.mapbox.runjs(
-                "./js/geojson_layer_circle.js",
+                "./js/circle_layer.js",
                 "addLayer",
                 arglist=[
                     self.map_id,
@@ -75,8 +79,9 @@ class GeoJSONLayerCircle(Layer):
             )
 
     def activate(self):
+        self.show()
         self.mapbox.runjs(
-            "./js/geojson_layer_circle.js",
+            "./js/circle_layer.js",
             "setPaintProperties",
             arglist=[
                 self.map_id,
@@ -91,7 +96,7 @@ class GeoJSONLayerCircle(Layer):
 
     def deactivate(self):
         self.mapbox.runjs(
-            "./js/geojson_layer_circle.js",
+            "./js/circle_layer.js",
             "setPaintProperties",
             arglist=[
                 self.map_id,

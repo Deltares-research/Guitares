@@ -85,12 +85,10 @@ class MapBoxCompare(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(str)
     def mapReady(self, inpstr):
-        print(inpstr)
         inp = json.loads(inpstr)
         coords = inp[0:2]
         self.map_extent = coords
         side = inp[2]
-        print("Compare Loaded " + side)
         if side == "a":
             self.ready_a = True
         elif side == "b":

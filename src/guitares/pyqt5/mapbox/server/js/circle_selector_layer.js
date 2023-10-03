@@ -1,15 +1,7 @@
-//import { map, featureClicked, layerAdded, mapboxgl, layers } from '/js/main.js';
-//import { layerAdded } from '/js/main.js';
-
 let hover_property
 let hoveredId = null;
 let activeLayerId = null;
-
-let popup = new mapboxgl.Popup({
-  offset: 10,
-  closeButton: false,
-  closeOnClick: false
-});
+let popup
 
 export function addLayer(id,
                          data,
@@ -36,6 +28,12 @@ export function addLayer(id,
     map.removeSource(id);
   }
 
+  popup = new mapboxgl.Popup({
+    offset: 10,
+    closeButton: false,
+    closeOnClick: false
+  });
+  
   hover_property = hovprop
 
   var selectedFeatures = []
