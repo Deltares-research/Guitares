@@ -9,7 +9,6 @@ class ChoroplethLayer(Layer):
         pass
 
     def set_data(self, data):
-       
         # Make sure this is not an empty GeoDataFrame
         if isinstance(data, GeoDataFrame):
             # Data is GeoDataFrame
@@ -21,7 +20,7 @@ class ChoroplethLayer(Layer):
             # Read geodataframe from shape file
             data = read_dataframe(data)
 
-        self.data = data
+        self.gdf = data
         self.visible = True
 
         if not self.big_data:
@@ -31,7 +30,7 @@ class ChoroplethLayer(Layer):
                 "addLayer",
                 arglist=[
                     self.map_id,
-                    self.data,
+                    self.gdf,
                     self.min_zoom,
                     self.hover_property,
                     self.color_property,
@@ -44,18 +43,18 @@ class ChoroplethLayer(Layer):
                     self.unit,
                     self.legend_position,
                     self.side,
-                    self.color_type
+                    self.color_type,
                 ],
             )
-        else:    
+        else:
             self.update()
 
     def update(self):
-        if self.data is None:
+        if self.gdf is None:
             return
-        if len(self.data) == 0:
+        if len(self.gdf) == 0:
             # Empty GeoDataFrame
-            return            
+            return
         # Only need to update this layer if it use big data and is visible
         if self.big_data and self.get_visibility():
             if self.mapbox.zoom > self.min_zoom:
@@ -66,7 +65,7 @@ class ChoroplethLayer(Layer):
                 yl0 = coords[0][1]
                 yl1 = coords[1][1]
                 # Limits WGS 84
-                gdf = self.data.cx[xl0:xl1, yl0:yl1]
+                gdf = self.gdf.cx[xl0:xl1, yl0:yl1]
                 # Remove existing layer
                 # Add new layer
                 self.mapbox.runjs(
@@ -87,12 +86,12 @@ class ChoroplethLayer(Layer):
                         self.unit,
                         self.legend_position,
                         self.side,
-                        self.color_type
+                        self.color_type,
                     ],
                 )
             else:
                 # Zoomed out
-                # Choropleths are automatically invisible, but legend is not         
+                # Choropleths are automatically invisible, but legend is not
                 self.mapbox.runjs(self.main_js, "hideLegend", arglist=[self.map_id])
 
     def activate(self):
