@@ -1,8 +1,10 @@
+import {make_html_table} from '/js/main.js';
+
 export function addLayer(
   id, 
   data, 
   min_zoom, 
-  hover_property, // do more than one
+  hover_properties, // do more than one
   color_property,
   lineColor,
   lineWidth,
@@ -39,7 +41,7 @@ export function addLayer(
   mp.addSource(id, {
     type: 'geojson',
     data: data, 
-    promoteId: hover_property
+    // promoteId: hover_property
   });
  
   if (color_type == 'damage') {
@@ -153,21 +155,18 @@ export function addLayer(
   // Create a popup, but don't add it to the map yet.
   const popup = new mapboxgl.Popup({
     closeButton: false,
-    closeOnClick: false
+    closeOnClick: false,
+    maxWidth: 'none'
   });
 
   function onHover(e) {
     // Change the cursor style as a UI indicator.
     mp.getCanvas().style.cursor = 'pointer';
     if (e.features.length > 0) {
-      if (e.features[0].properties[hover_property]) {
-        // Display a popup with the name of area
-        popup.setLngLat(e.lngLat)
-        .setText(hover_property + ": " 
-        + numberWithCommas(e.features[0].properties[hover_property]) 
-        + " " + unit)
-        .addTo(mp);
-      }
+      // Display a popup with the name of area
+      popup.setLngLat(e.lngLat)
+      .setHTML(make_html_table(hover_properties, e, true))
+      .addTo(mp);
     }
   }
 

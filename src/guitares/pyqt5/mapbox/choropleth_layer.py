@@ -6,7 +6,7 @@ from pyogrio import read_dataframe
 class ChoroplethLayer(Layer):
     def __init__(self, mapbox, id, map_id, **kwargs):
         super().__init__(mapbox, id, map_id, **kwargs)
-        pass
+        self.gdf = None
 
     def set_data(self, data):
         # Make sure this is not an empty GeoDataFrame
@@ -32,7 +32,7 @@ class ChoroplethLayer(Layer):
                     self.map_id,
                     self.gdf,
                     self.min_zoom,
-                    self.hover_property,
+                    self.hover_properties,
                     self.color_property,
                     self.line_color,
                     self.line_width,
@@ -75,7 +75,7 @@ class ChoroplethLayer(Layer):
                         self.map_id,
                         gdf,
                         self.min_zoom,
-                        self.hover_property,
+                        self.hover_properties,
                         self.color_property,
                         self.line_color,
                         self.line_width,

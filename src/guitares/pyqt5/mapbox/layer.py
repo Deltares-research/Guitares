@@ -31,7 +31,7 @@ class Layer:
         self.icon_file = None
         self.icon_size = 1.0
         self.marker_color = "blue"
-        self.hover_property = None
+        self.hover_properties = []
         self.click_property = None
         self.click_popup_width = None
         self.click_popup_height = None
@@ -265,10 +265,13 @@ class Layer:
             # Make a list of all layers
             layers = list_layers(self.layer)
             for layer in layers:
-                layer.set_visibility(true_or_false)
+                if true_or_false:
+                    layer.show()
+                else:
+                    layer.hide()
         else:
             # Data layer
-            if true_or_false and self.visible:
+            if true_or_false:
                 self.mapbox.runjs(self.main_js, "showLayer", arglist=[self.map_id, self.side])
             else:
                 self.mapbox.runjs(self.main_js, "hideLayer", arglist=[self.map_id, self.side])

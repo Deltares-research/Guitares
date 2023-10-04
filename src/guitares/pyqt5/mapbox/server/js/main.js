@@ -369,6 +369,29 @@ export function setTerrain(trueOrFalse, exaggeration) {
   }
 }
 
+export function make_html_table(properties, e, show_property_name=false) {
+  // makes a table with name of property and value that can be used for popups
+  var popupHtml = '<table>'
+  for (var i = 0; i < properties.length; i++) {
+    popupHtml += '<tr>'
+    if (show_property_name) {
+      popupHtml += '<td>' + properties[i] + '</td>'
+    }
+    popupHtml += '<td>' 
+    if (show_property_name) {
+      popupHtml += ': '
+    }
+    if (e.features[0].properties[properties[i]]) {
+      popupHtml += e.features[0].properties[properties[i]] + '</td></tr>'
+    } else {
+      popupHtml += '0 </td></tr>'
+    }
+  }
+  popupHtml += '</table>' 
+
+  return popupHtml
+}
+
 function addDummyLayer() {
   // Add a dummy layer (other layer will be added BEFORE this dummy layer)
   var id = 'dummy_layer';
