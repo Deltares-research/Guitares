@@ -20,7 +20,7 @@ class ChoroplethLayer(Layer):
             # Read geodataframe from shape file
             data = read_dataframe(data)
 
-        self.gdf = data
+        self.data = data
         self.visible = True
 
         if not self.big_data:
@@ -30,7 +30,7 @@ class ChoroplethLayer(Layer):
                 "addLayer",
                 arglist=[
                     self.map_id,
-                    self.gdf,
+                    self.data,
                     self.min_zoom,
                     self.hover_property,
                     self.color_property,
@@ -38,21 +38,23 @@ class ChoroplethLayer(Layer):
                     self.line_width,
                     self.line_opacity,
                     self.fill_opacity,
-                    self.scaler,
                     self.legend_title,
                     self.unit,
                     self.legend_position,
                     self.side,
-                    self.color_type,
+                    self.color_no,
+                    self.bins,
+                    self.colors,
+                    self.color_labels,
                 ],
             )
         else:
             self.update()
 
     def update(self):
-        if self.gdf is None:
+        if self.data is None:
             return
-        if len(self.gdf) == 0:
+        if len(self.data) == 0:
             # Empty GeoDataFrame
             return
         # Only need to update this layer if it use big data and is visible
@@ -65,7 +67,7 @@ class ChoroplethLayer(Layer):
                 yl0 = coords[0][1]
                 yl1 = coords[1][1]
                 # Limits WGS 84
-                gdf = self.gdf.cx[xl0:xl1, yl0:yl1]
+                gdf = self.data.cx[xl0:xl1, yl0:yl1]
                 # Remove existing layer
                 # Add new layer
                 self.mapbox.runjs(
@@ -81,12 +83,14 @@ class ChoroplethLayer(Layer):
                         self.line_width,
                         self.line_opacity,
                         self.fill_opacity,
-                        self.scaler,
                         self.legend_title,
                         self.unit,
                         self.legend_position,
                         self.side,
-                        self.color_type,
+                        self.color_no,
+                        self.bins,
+                        self.colors,
+                        self.color_labels,
                     ],
                 )
             else:
@@ -127,7 +131,7 @@ class ChoroplethLayer(Layer):
         )
 
     def redraw(self):
-        if isinstance(self.gdf, GeoDataFrame):
-            self.set_data(self.gdf)
+        if isinstance(self.data, GeoDataFrame):
+            self.set_data(self.data)
         if not self.get_visibility():
             self.hide()

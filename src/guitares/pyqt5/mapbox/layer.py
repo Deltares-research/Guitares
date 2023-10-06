@@ -265,10 +265,13 @@ class Layer:
             # Make a list of all layers
             layers = list_layers(self.layer)
             for layer in layers:
-                layer.set_visibility(true_or_false)
+                if true_or_false:
+                    layer.show()
+                else:
+                    layer.hide()
         else:
             # Data layer
-            if true_or_false and self.visible:
+            if true_or_false:
                 self.mapbox.runjs(self.main_js, "showLayer", arglist=[self.map_id, self.side])
             else:
                 self.mapbox.runjs(self.main_js, "hideLayer", arglist=[self.map_id, self.side])
