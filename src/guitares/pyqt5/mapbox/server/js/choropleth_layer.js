@@ -8,12 +8,14 @@ export function addLayer(
   lineWidth,
   lineOpacity,
   fillOpacity,
-  scaler,
   legend_title,
   unit,
   legend_position,
   side,
-  color_type,
+  color_no,
+  bins,
+  colors,
+  color_labels,
   ) {
 
   var mp = getMap(side);
@@ -42,7 +44,7 @@ export function addLayer(
     promoteId: hover_property
   });
  
-  if (color_type == 'damage') {
+  if (color_no == 6) {
     mp.addLayer({
       'id': fillId,
       'type': 'fill',
@@ -53,22 +55,22 @@ export function addLayer(
         'step',
         ['get', color_property],
         // This should all not be hard0-coded and provided with input
-        '#FFFFFF',
-        0.000001*scaler,
-        '#FEE9CE',
-        0.06*scaler,
-        '#FDBB84',
-        0.2*scaler,
-        '#FC844E',
-        0.4*scaler,
-        '#E03720',
-        1*scaler,
-        '#860000',
+        colors[0],
+        bins[0],
+        colors[1],
+        bins[1],
+        colors[2],
+        bins[2],
+        colors[3],
+        bins[3],
+        colors[4],
+        bins[4],
+        colors[5],
       ],
       'fill-opacity': fillOpacity
       }
     });
-  } else if (color_type == 'flooding') {
+  } else if (color_no == 4) {
     mp.addLayer({
       'id': fillId,
       'type': 'fill',
@@ -79,13 +81,13 @@ export function addLayer(
         'step',
         ['get', color_property],
         // This should all not be hard0-coded and provided with input
-        '#BED2FF',
-        1 * scaler,
-        '#B4D79E',
-        3 * scaler,
-        '#1F80B8',
-        5 * scaler,
-        '#081D58',
+        colors[0],
+        bins[0],
+        colors[1],
+        bins[1],
+        colors[2],
+        bins[2],
+        colors[3],
       ],
       'fill-opacity': fillOpacity
       }
@@ -111,21 +113,21 @@ export function addLayer(
   });
 
   // Legend
-  if (color_type == 'damage') {
+  if (color_no == 6) {
     var legendItems = [
-      { style: '#FFFFFF', label: '0 '},
-      { style: '#FEE9CE', label: unit + '0 - ' + unit + numberWithCommas(0.06*scaler)},
-      { style: '#FDBB84', label: unit + numberWithCommas(0.06*scaler) + ' - ' + unit + numberWithCommas(0.2*scaler)},
-      { style: '#FC844E', label: unit + numberWithCommas(0.2*scaler) + ' - ' + unit + numberWithCommas(0.4*scaler)},
-      { style: '#E03720', label: unit + numberWithCommas(0.4*scaler) + ' - ' + unit + numberWithCommas(1*scaler)},
-      { style: '#860000', label: '> ' + unit + numberWithCommas(1*scaler)},
+      { style: colors[0], label: color_labels[0]},
+      { style: colors[1], label: color_labels[1]},
+      { style: colors[2], label: color_labels[2]},
+      { style: colors[3], label: color_labels[3]},
+      { style: colors[4], label: color_labels[4]},
+      { style: colors[5], label: color_labels[5]},
     ];
-  } else if (color_type == 'flooding') {
+  } else if (color_no == 4) {
     var legendItems = [
-      { style: '#081D58', label: '> ' + numberWithCommas(5*scaler)},
-      { style: '#1F80B8', label: numberWithCommas(3*scaler) + ' - ' + numberWithCommas(5*scaler)},
-      { style: '#B4D79E', label: numberWithCommas(1*scaler) + ' - ' + numberWithCommas(3*scaler)},
-      { style: '#BED2FF', label: '< ' + numberWithCommas(1*scaler)},
+      { style: colors[0], label: color_labels[0]},
+      { style: colors[1], label: color_labels[1]},
+      { style: colors[2], label: color_labels[2]},
+      { style: colors[3], label: color_labels[3]},
     ];
   }
 
