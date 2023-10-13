@@ -73,21 +73,3 @@ class RadioButtonGroup(QButtonGroup):
         nbuttons = len(self.element.option_value.list)
         for i in range(nbuttons):
             self.buttons()[i].setVisible(true_or_false)
-
-
-    def add_items(self):
-
-        # Delete existing items
-        self.clear()
-
-        if self.element.option_string.variable:
-            group = self.element.option_string.variable_group
-            name  = self.element.option_string.variable
-            v     = self.element.getvar(group, name)
-            if not v:
-                v = [""]
-            for itxt, txt in enumerate(v):
-                self.insertItem(itxt, txt)
-        else:
-            for itxt, txt in enumerate(self.element.option_string.list):
-                self.insertItem(itxt, txt)
