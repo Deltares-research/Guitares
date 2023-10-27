@@ -129,9 +129,15 @@ class TableView(QTableView):
 
         self.set_geometry()
 
-        # This allows for whole row selection and not individual cells
-        self.setSelectionBehavior(QTableView.SelectRows)
-
+        # This allows for whole row or column selection and not individual cells. Use row as default
+        selection_direction = QTableView.SelectRows
+        if hasattr(self.element, "selection_direction"):
+            if element.selection_direction == "column":
+                selection_direction = QTableView.SelectColumns
+                if self.element.sortable:
+                    raise ValueError("Column selection cannot be sortable")
+        self.setSelectionBehavior(selection_direction)
+            
         # Set selection mode
         selection_type = None
         if hasattr(self.element, "selection_type"):
@@ -175,14 +181,25 @@ class TableView(QTableView):
 
         # Find indices in sorted dataframe
         indices = self.find_sorted_indices()
-        self.select_rows(indices)
+        if self.selectionBehavior() == QTableView.SelectRows:
+            self.select_rows(indices)
+        elif self.selectionBehavior() == QTableView.SelectColumns:
+            self.select_cols(indices)
+        else:
+            raise ValueError("Selection behavior not recognized")
         self.execute_callback = True
 
     def callback(self):
         # Find selected indices in the original dataframe
         if not self.element.variable:
             return
-        indices = self.find_original_indices()
+        if self.selectionBehavior() == QTableView.SelectRows:
+            indices = self.find_original_indices()
+        elif self.selectionBehavior() == QTableView.SelectColumns:
+            # Column selection cannot be sorted
+            indices = [index.column() for index in self.selectionModel().selectedColumns()]
+        else:
+            raise ValueError("Selection behavior not recognized")
         # Set the new value 
         name = self.element.variable
         group = self.element.variable_group
@@ -217,6 +234,21 @@ class TableView(QTableView):
             # Select single row.
             selection.select(model_index, model_index)  # top left, bottom right identical
         mode = QItemSelectionModel.Select | QtCore.QItemSelectionModel.Rows
+        # Apply the selection, using the row-wise mode.
+        self.selectionModel().select(selection, mode)
+
+    def select_cols(self, indices):
+        # Select rows in table
+        self.selectionModel().clearSelection()
+        model = self.model() # get data model for indexes.
+        selection = QItemSelection()
+        for i in indices:
+            # Get the model index for selection.
+            # Column shouldn't matter for row-wise.
+            model_index = model.index(0, i)
+            # Select single row.
+            selection.select(model_index, model_index)  # top left, bottom right identical
+        mode = QItemSelectionModel.Select | QtCore.QItemSelectionModel.Columns
         # Apply the selection, using the row-wise mode.
         self.selectionModel().select(selection, mode)
 

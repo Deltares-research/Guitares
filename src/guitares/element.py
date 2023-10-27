@@ -193,6 +193,8 @@ class Element:
             self.enable = dct["enable"]
         if "selection_type" in dct:
             self.selection_type = dct["selection_type"]
+        if "selection_direction" in dct:
+            self.selection_direction = dct["selection_direction"]
         if "sortable" in dct:
             self.sortable = dct["sortable"]
             
