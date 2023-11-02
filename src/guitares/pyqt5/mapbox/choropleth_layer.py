@@ -8,7 +8,9 @@ class ChoroplethLayer(Layer):
         super().__init__(mapbox, id, map_id, **kwargs)
         pass
 
-    def set_data(self, data):
+    def set_data(
+        self, data, color_by_attribute: dict = None, legend_items: list = None
+    ):
         # Make sure this is not an empty GeoDataFrame
         if isinstance(data, GeoDataFrame):
             # Data is GeoDataFrame
@@ -24,30 +26,49 @@ class ChoroplethLayer(Layer):
         self.visible = True
 
         if not self.big_data:
-            # Add new layer
-            self.mapbox.runjs(
-                "./js/choropleth_layer.js",
-                "addLayer",
-                arglist=[
-                    self.map_id,
-                    self.data,
-                    self.min_zoom,
-                    self.hover_property,
-                    self.color_property,
-                    self.line_color,
-                    self.line_width,
-                    self.line_opacity,
-                    self.fill_opacity,
-                    self.legend_title,
-                    self.unit,
-                    self.legend_position,
-                    self.side,
-                    self.color_no,
-                    self.bins,
-                    self.colors,
-                    self.color_labels,
-                ],
-            )
+            if color_by_attribute is None:
+                # Add new layer
+                self.mapbox.runjs(
+                    "./js/choropleth_layer.js",
+                    "addLayer",
+                    arglist=[
+                        self.map_id,
+                        self.data,
+                        self.min_zoom,
+                        self.hover_property,
+                        self.color_property,
+                        self.line_color,
+                        self.line_width,
+                        self.line_opacity,
+                        self.fill_opacity,
+                        self.legend_title,
+                        self.unit,
+                        self.legend_position,
+                        self.side,
+                        self.color_no,
+                        self.bins,
+                        self.colors,
+                        self.color_labels,
+                    ],
+                )
+            elif isinstance(color_by_attribute, dict) and isinstance(
+                legend_items, list
+            ):
+                # Color by attribute
+                self.mapbox.runjs(
+                    "./js/polygon_layer_custom.js",
+                    "addLayer",
+                    arglist=[
+                        self.map_id,
+                        self.data,
+                        self.hover_property,
+                        self.min_zoom,
+                        color_by_attribute,
+                        legend_items,
+                        self.legend_position,
+                        self.legend_title,
+                    ],
+                )
         else:
             self.update()
 
