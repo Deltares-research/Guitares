@@ -5,6 +5,8 @@ export function addLayer(
   min_zoom,
   paint_dict,
   legendItems,
+  legend_position,
+  legend_title,
   ) {
 
   // Always remove old layer and source first to avoid errors

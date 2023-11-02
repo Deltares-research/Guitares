@@ -8,8 +8,9 @@ class CircleLayer(Layer):
         super().__init__(mapbox, id, map_id, **kwargs)
         pass
 
-    def set_data(self, data):
-
+    def set_data(
+        self, data, color_by_attribute: dict = None, legend_items: list = None
+    ):
         # Make sure this is not an empty GeoDataFrame
         if isinstance(data, GeoDataFrame):
             # Data is GeoDataFrame
@@ -20,27 +21,46 @@ class CircleLayer(Layer):
         else:
             # Read geodataframe from shape file
             data = read_dataframe(data)
-            
-        self.data = data    
+
+        self.data = data
 
         if not self.big_data:
-            # Add new layer
-            self.mapbox.runjs(
-                "./js/circle_layer.js",
-                "addLayer",
-                arglist=[
-                    self.map_id,
-                    self.data,
-                    self.hover_property,
-                    self.min_zoom,
-                    self.line_color,
-                    self.line_width,
-                    self.line_opacity,
-                    self.fill_color,
-                    self.fill_opacity,
-                    self.circle_radius
-                ],
-            )
+            if color_by_attribute is None:
+                # Add new layer
+                self.mapbox.runjs(
+                    "./js/circle_layer.js",
+                    "addLayer",
+                    arglist=[
+                        self.map_id,
+                        self.data,
+                        self.hover_property,
+                        self.min_zoom,
+                        self.line_color,
+                        self.line_width,
+                        self.line_opacity,
+                        self.fill_color,
+                        self.fill_opacity,
+                        self.circle_radius,
+                    ],
+                )
+            elif isinstance(color_by_attribute, dict) and isinstance(
+                legend_items, list
+            ):
+                # Color by attribute
+                self.mapbox.runjs(
+                    "./js/circle_layer_custom.js",
+                    "addLayer",
+                    arglist=[
+                        self.map_id,
+                        self.data,
+                        self.hover_property,
+                        self.min_zoom,
+                        color_by_attribute,
+                        legend_items,
+                        self.legend_position,
+                        self.legend_title,
+                    ],
+                )
 
         self.update()
 
@@ -51,7 +71,7 @@ class CircleLayer(Layer):
             return
         if len(self.data) == 0:
             # Empty GeoDataFrame
-            return            
+            return
         if self.mapbox.zoom > self.min_zoom and self.big_data and self.visible:
             coords = self.mapbox.map_extent
             xl0 = coords[0][0]
@@ -74,7 +94,7 @@ class CircleLayer(Layer):
                     self.line_opacity,
                     self.fill_color,
                     self.fill_opacity,
-                    self.circle_radius
+                    self.circle_radius,
                 ],
             )
 
@@ -113,4 +133,4 @@ class CircleLayer(Layer):
         if isinstance(self.data, GeoDataFrame):
             self.set_data(self.data)
         if not self.visible:
-            self.hide()    
+            self.hide()
