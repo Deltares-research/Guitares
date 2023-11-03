@@ -243,7 +243,7 @@ class TableView(QTableView):
         df = self.model()._dataframe
         indices = []
         for index in indices0:
-            row = df0.iloc[index]
+            row = df0.loc[index]
             index0 = df.index[df.apply(lambda r: r.equals(row), axis=1)].tolist()[0]
             indices.append(index0)
         return indices
