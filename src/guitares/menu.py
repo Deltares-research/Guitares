@@ -50,11 +50,33 @@ class Menu:
                     print("Error! Could not import module " + dct["module"])
         if "method" in dct:
             self.method = dct["method"]
-        if self.method and self.module:
-            if hasattr(self.module, self.method):
-                self.callback = getattr(self.module, self.method)
-            else:
-                print("Error! Could not find method " + self.method)
+        if hasattr(self.method, '__call__'):
+             # Callback function is already defined as method
+             self.callback = self.method
+        else:
+            if self.module and self.method:
+                try:
+                    # Start with the base module
+                    module = self.module
+                    # If the method contains a dot, it means that it is a method of a class
+                    method_path = self.method.split(".")
+                    # Loop through the method path
+                    for idx, method in enumerate(method_path):
+                        # The last element is the method itself
+                        if idx == len(method_path) - 1:
+                            if hasattr(module, method):
+                                self.callback = getattr(module, method)
+                            else:
+                                raise Exception("Error! Could not find method " + self.method + " in module " + self.module.__name__)
+                        else:
+                            if hasattr(module, method):
+                                class_ = getattr(module, method)
+                                # Initialize the class object
+                                module = class_()
+                            else:
+                                raise Exception("Error! Could not find method " + self.method + " in module " + self.module.__name__)
+                except Exception as e:
+                    print(e)
         if "text" in dct:
             if type(dct["text"]) == dict:
                 self.text = Text(self.variable_group)

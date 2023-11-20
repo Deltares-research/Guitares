@@ -78,6 +78,7 @@ class Element:
         self.sortable = True
         self.selection_type = "single"
         self.ready = False
+        self.threadpool = window.threadpool
 
         # Now update element attributes based on dict
 
@@ -110,10 +111,28 @@ class Element:
              self.callback = self.method
         else:
             if self.module and self.method:
-                if hasattr(self.module, self.method):
-                    self.callback = getattr(self.module, self.method)
-                else:
-                    print("Error! Could not find method " + self.method)
+                try:
+                    # Start with the base module
+                    module = self.module
+                    # If the method contains a dot, it means that it is a method of a class
+                    method_path = self.method.split(".")
+                    # Loop through the method path
+                    for idx, method in enumerate(method_path):
+                        # The last element is the method itself
+                        if idx == len(method_path) - 1:
+                            if hasattr(module, method):
+                                self.callback = getattr(module, method)
+                            else:
+                                raise Exception("Error! Could not find method " + self.method + " in module " + self.module.__name__)
+                        else:
+                            if hasattr(module, method):
+                                class_ = getattr(module, method)
+                                # Initialize the class object
+                                module = class_()
+                            else:
+                                raise Exception("Error! Could not find method " + self.method + " in module " + self.module.__name__)
+                except Exception as e:
+                    print(e)
         if self.variable_group in self.gui.variables:
             if self.variable in self.gui.variables[self.variable_group]:
                 self.type = type(self.gui.variables[self.variable_group][self.variable]["value"])
@@ -195,6 +214,11 @@ class Element:
             self.selection_type = dct["selection_type"]
         if "sortable" in dct:
             self.sortable = dct["sortable"]
+
+        self.parallelization = {"run": False, "variable": None}
+        if "parallelization" in dct:
+            self.parallelization['run'] = dct["parallelization"]["run_in_parallel"]
+            self.parallelization['variable'] = dct["parallelization"]["variable"]
             
         if "dependency" in dct:
             for dep in dct["dependency"]:

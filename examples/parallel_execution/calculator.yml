@@ -75,5 +75,8 @@ element:
         width: 80
         height: 20
       text: Calculate parallel
-      method: Calculator.calculate_parallel
+      method: Calculator.calculate
+      parallelization:
+        run_in_parallel: True
+        variable: calculator_task_status
       tooltip: Calculate the answer in parallel

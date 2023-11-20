@@ -14,7 +14,6 @@ class Calculator:
 
         self.gui = GUI(self,
                        framework="pyqt5",
-                       stylesheet="Combinear.qss",
                        config_file="calculator.yml")
 
         # Define GUI variables

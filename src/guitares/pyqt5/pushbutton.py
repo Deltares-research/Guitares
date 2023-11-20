@@ -1,6 +1,9 @@
 from PyQt5.QtWidgets import QPushButton
 from PyQt5.QtGui import QIcon
 import traceback
+import re
+
+from guitares.parallel_runner import ParallelRunner
 
 class PushButton(QPushButton):
 
@@ -40,11 +43,14 @@ class PushButton(QPushButton):
     def callback(self):
         try:
             if self.element.callback and self.underMouse():
-                self.element.callback(self)
+                if self.element.parallelization['run']:
+                    ParallelRunner(self).parallel_callback_wrapper()
+                else:
+                    self.element.callback(self)
                 # Update GUI
                 self.element.window.update()
         except:
-            traceback.print_exc()
+            traceback.print_exc()  
 
     def set_geometry(self):
         x0, y0, wdt, hgt = self.element.get_position()

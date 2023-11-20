@@ -9,29 +9,21 @@ The method typically get two input arguments:
 
 from calc import calc
 import time
-from guitares.parallel_runner import ParallelRunner
-
 
 class Calculator:
     def __init__(self):
         calc.gui.setvar("calculator", "calculator_task_status", "Hoi")
-
+        
     def calculate(self, *args):
         a = calc.gui.getvar("calculator", "a")
         b = calc.gui.getvar("calculator", "b")
         operator = calc.gui.getvar("calculator", "operator")
 
-        runner = ParallelRunner(calc.gui, print_debug = False)
-        runner.submit_task(self._do_calculation, a, b, operator, task_name = "calculator_task", write_result=True, group="calculator", name="answer")
+        result = self._do_calculation(a, b, operator)
+        calc.gui.setvar("calculator", "answer", result)
+        print(result)
+        calc.gui.window.update()
 
-    def calculate_parallel(self, *args):
-        a = calc.gui.getvar("calculator", "a")
-        b = calc.gui.getvar("calculator", "b")
-        operator = calc.gui.getvar("calculator", "operator")
-
-        runner = ParallelRunner(calc.gui, print_debug = False)
-        runner.submit_parallel_task(self._do_calculation, a, b, operator, task_name = "calculator_task", write_result=True, group="calculator", name="answer")
-        
     def _do_calculation(self, a, b, operator):
         # Simulate a long-running calculation
         time.sleep(5)
