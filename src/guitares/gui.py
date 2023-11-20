@@ -138,12 +138,21 @@ class GUI:
 
     def getvar(self, group, name):
         if group not in self.variables:
-            print("Error! GUI variable group '" + group + "' not defined !")
+            print("Error! Cannot get variable! GUI variable group '" + group + "' not defined!")
             return None
         elif name not in self.variables[group]:
-            print("Error! GUI variable '" + name + "' not defined in group '" + group + "'!")
+            print("Error! Cannot get variable! GUI variable '" + name + "' not defined in group '" + group + "'!")
             return None
         return self.variables[group][name]["value"]
+    
+    def delvar(self, group, name):
+        if group not in self.variables:
+            print("Error! Cannot delete variable! GUI variable group '" + group + "' not defined!")
+            return None
+        elif name not in self.variables[group]:
+            print("Error! Cannot delete variable! GUI variable '" + name + "' not defined in group '" + group + "'!")
+            return None
+        del self.variables[group][name]
 
     def popup(self, config, id="popup", data=None):
         # Make pop-up window
