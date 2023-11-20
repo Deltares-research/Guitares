@@ -159,9 +159,9 @@ class Window:
         return window
 
     def ok(self, *args):
-        if self.okay_method:
-            self.okay_method()
-        self.widget.done(1)
+        # If there is no okay method or the okay method returns True, close the window. Otherwise, do nothing.
+        if not self.okay_method or self.okay_method():
+            self.widget.done(1) 
 
     def cancel(self, *args):
         self.widget.done(0)
