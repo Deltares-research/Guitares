@@ -9,7 +9,7 @@ class ChoroplethLayer(Layer):
         pass
 
     def set_data(
-        self, data, color_by_attribute: dict = None, legend_items: list = None
+        self, data, color_by_attribute: dict = None, legend_items: list = None, 
     ):
         # Make sure this is not an empty GeoDataFrame
         if isinstance(data, GeoDataFrame):
@@ -57,6 +57,23 @@ class ChoroplethLayer(Layer):
                 # Color by attribute
                 self.mapbox.runjs(
                     "./js/polygon_layer_custom.js",
+                    "addLayer",
+                    arglist=[
+                        self.map_id,
+                        self.data,
+                        self.hover_property,
+                        self.min_zoom,
+                        color_by_attribute,
+                        legend_items,
+                        self.legend_position,
+                        self.legend_title,
+                    ],
+                )
+            elif isinstance(color_by_attribute, dict
+            ):
+                # Color by attribute
+                self.mapbox.runjs(
+                    "./js/polygon_layer_additional_attr.js",
                     "addLayer",
                     arglist=[
                         self.map_id,

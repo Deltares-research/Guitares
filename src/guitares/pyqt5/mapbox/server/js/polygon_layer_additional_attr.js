@@ -46,26 +46,26 @@ export function addLayer(
   });
 
   // Legend
-  var legend     = document.createElement("div");
-  legend.id        = "legend" + id;
+  //var legend     = document.createElement("div");
+  //legend.id        = "legend" + id;
   //legend.className = "choropleth_legend";
-  legend.className = legend_position;
-  var newSpan = document.createElement('span');
-  newSpan.class = 'title';
-  newSpan.innerHTML = '<b>' + legend_title + '</b>';
-  legend.appendChild(newSpan);
-  legend.appendChild(document.createElement("br"));
-  for (let i = 0; i < legendItems.length; i++) {
-  let cnt = legendItems[i]
-      var newI = document.createElement('i');
-      newI.setAttribute('style','background:' + cnt["style"]);
-      legend.appendChild(newI);
-      var newSpan = document.createElement('span');
-      newSpan.innerHTML = cnt["label"];
-      legend.appendChild(newSpan);
-      legend.appendChild(document.createElement("br"));
-  }
-  document.body.appendChild(legend);
+  //legend.className = legend_position;
+  //var newSpan = document.createElement('span');
+  //newSpan.class = 'title';
+  //newSpan.innerHTML = '<b>' + legend_title + '</b>';
+  //legend.appendChild(newSpan);
+  //legend.appendChild(document.createElement("br"));
+  //for (let i = 0; i < legendItems.length; i++) {
+  //let cnt = legendItems[i]
+  //    var newI = document.createElement('i');
+  //    newI.setAttribute('style','background:' + cnt["style"]);
+  //    legend.appendChild(newI);
+  //    var newSpan = document.createElement('span');
+  //   newSpan.innerHTML = cnt["label"];
+  //    legend.appendChild(newSpan);
+  //    legend.appendChild(document.createElement("br"));
+  //}
+  //document.body.appendChild(legend);
 
   // Create a popup, but don't add it to the map yet.
   const popup = new mapboxgl.Popup({
