@@ -6,6 +6,8 @@ from pyogrio import read_dataframe
 class CircleLayer(Layer):
     def __init__(self, mapbox, id, map_id, **kwargs):
         super().__init__(mapbox, id, map_id, **kwargs)
+        self.color_by_attribute = None
+        self.legend_items = None
         pass
 
     def set_data(
@@ -22,6 +24,8 @@ class CircleLayer(Layer):
             # Read geodataframe from shape file
             data = read_dataframe(data)
 
+        self.color_by_attribute = color_by_attribute
+        self.legend_items = legend_items
         self.data = data
 
         if not self.big_data:
@@ -43,8 +47,8 @@ class CircleLayer(Layer):
                         self.circle_radius,
                     ],
                 )
-            elif isinstance(color_by_attribute, dict) and isinstance(
-                legend_items, list
+            elif isinstance(self.color_by_attribute, dict) and isinstance(
+                self.legend_items, list
             ):
                 # Color by attribute
                 self.mapbox.runjs(
@@ -55,8 +59,8 @@ class CircleLayer(Layer):
                         self.data,
                         self.hover_property,
                         self.min_zoom,
-                        color_by_attribute,
-                        legend_items,
+                        self.color_by_attribute,
+                        self.legend_items,
                         self.legend_position,
                         self.legend_title,
                     ],
@@ -78,25 +82,46 @@ class CircleLayer(Layer):
             xl1 = coords[1][0]
             yl0 = coords[0][1]
             yl1 = coords[1][1]
+            
             # Limits WGS 84
             gdf = self.data.cx[xl0:xl1, yl0:yl1]
-            # Add new layer
-            self.mapbox.runjs(
-                "./js/circle_layer.js",
-                "addLayer",
-                arglist=[
-                    self.map_id,
-                    gdf,
-                    self.hover_property,
-                    self.min_zoom,
-                    self.line_color,
-                    self.line_width,
-                    self.line_opacity,
-                    self.fill_color,
-                    self.fill_opacity,
-                    self.circle_radius,
-                ],
-            )
+            
+            if self.color_by_attribute is None:
+                # Add new layer
+                self.mapbox.runjs(
+                    "./js/circle_layer.js",
+                    "addLayer",
+                    arglist=[
+                        self.map_id,
+                        gdf,
+                        self.hover_property,
+                        self.min_zoom,
+                        self.line_color,
+                        self.line_width,
+                        self.line_opacity,
+                        self.fill_color,
+                        self.fill_opacity,
+                        self.circle_radius,
+                    ],
+                )
+            elif isinstance(self.color_by_attribute, dict) and isinstance(
+                self.legend_items, list
+            ):
+                # Color by attribute
+                self.mapbox.runjs(
+                    "./js/circle_layer_custom.js",
+                    "addLayer",
+                    arglist=[
+                        self.map_id,
+                        self.data,
+                        self.hover_property,
+                        self.min_zoom,
+                        self.color_by_attribute,
+                        self.legend_items,
+                        self.legend_position,
+                        self.legend_title,
+                    ],
+                )
 
     def activate(self):
         self.show()
@@ -131,6 +156,6 @@ class CircleLayer(Layer):
 
     def redraw(self):
         if isinstance(self.data, GeoDataFrame):
-            self.set_data(self.data)
+            self.set_data(self.data, self.color_by_attribute, self.legend_items)
         if not self.visible:
             self.hide()
