@@ -6,12 +6,12 @@ from pyogrio import read_dataframe
 class CircleLayer(Layer):
     def __init__(self, mapbox, id, map_id, **kwargs):
         super().__init__(mapbox, id, map_id, **kwargs)
-        self.color_by_attribute = None
-        self.legend_items = None
+        self.color_by_attribute = dict()
+        self.legend_items = list()
         pass
 
     def set_data(
-        self, data, color_by_attribute: dict = None, legend_items: list = None
+        self, data, color_by_attribute: dict = dict(), legend_items: list = []
     ):
         # Make sure this is not an empty GeoDataFrame
         if isinstance(data, GeoDataFrame):
@@ -29,7 +29,7 @@ class CircleLayer(Layer):
         self.data = data
 
         if not self.big_data:
-            if color_by_attribute is None:
+            if len(self.color_by_attribute) == 0:
                 # Add new layer
                 self.mapbox.runjs(
                     "./js/circle_layer.js",
@@ -47,9 +47,7 @@ class CircleLayer(Layer):
                         self.circle_radius,
                     ],
                 )
-            elif isinstance(self.color_by_attribute, dict) and isinstance(
-                self.legend_items, list
-            ):
+            elif len(self.color_by_attribute) > 0 and len(self.legend_items) > 0:
                 # Color by attribute
                 self.mapbox.runjs(
                     "./js/circle_layer_custom.js",
@@ -86,7 +84,7 @@ class CircleLayer(Layer):
             # Limits WGS 84
             gdf = self.data.cx[xl0:xl1, yl0:yl1]
             
-            if self.color_by_attribute is None:
+            if len(self.color_by_attribute) == 0:
                 # Add new layer
                 self.mapbox.runjs(
                     "./js/circle_layer.js",
@@ -104,9 +102,7 @@ class CircleLayer(Layer):
                         self.circle_radius,
                     ],
                 )
-            elif isinstance(self.color_by_attribute, dict) and isinstance(
-                self.legend_items, list
-            ):
+            elif len(self.color_by_attribute) > 0 and len(self.legend_items) > 0:
                 # Color by attribute
                 self.mapbox.runjs(
                     "./js/circle_layer_custom.js",
