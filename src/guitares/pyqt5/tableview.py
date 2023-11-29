@@ -150,8 +150,12 @@ class TableView(QTableView):
         self.sort_order = 0
         self.sort_column = 0
 
-    def set(self):
+    def resize_columns(self, df):
+        for i, col in enumerate(df.columns):
+            max_char = max(max([len(str(x)) for x in df[col].values]),len(col))
+            self.element.widget.setColumnWidth(i, max_char * 10)
 
+    def set(self):
         # option_value
         df = self.element.getvar(self.element.option_value.variable_group, self.element.option_value.variable)
         if df is not None:
@@ -163,7 +167,8 @@ class TableView(QTableView):
         self.clearSpans()
         model = DataFrameModel(df_sorted)
         self.setModel(model)
-        self.resizeColumnsToContents()
+        # self.resizeColumnsToContents()  # Frederique commented out as it was extremely slow, replaced with the function below:
+        self.resize_columns(df_sorted)
         self.verticalHeader().setVisible(False)
 
         if self.element.sortable:
@@ -238,7 +243,7 @@ class TableView(QTableView):
         df = self.model()._dataframe
         indices = []
         for index in indices0:
-            row = df0.iloc[index]
+            row = df0.loc[index]
             index0 = df.index[df.apply(lambda r: r.equals(row), axis=1)].tolist()[0]
             indices.append(index0)
         return indices
