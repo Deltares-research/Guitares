@@ -47,7 +47,7 @@ class CircleLayer(Layer):
                         self.circle_radius,
                     ],
                 )
-            elif len(self.color_by_attribute) > 0 and len(self.legend_items) > 0:
+            elif len(self.color_by_attribute) > 0:
                 # Color by attribute
                 self.mapbox.runjs(
                     "./js/circle_layer_custom.js",
@@ -102,7 +102,7 @@ class CircleLayer(Layer):
                         self.circle_radius,
                     ],
                 )
-            elif len(self.color_by_attribute) > 0 and len(self.legend_items) > 0:
+            elif len(self.color_by_attribute) > 0:
                 # Color by attribute
                 self.mapbox.runjs(
                     "./js/circle_layer_custom.js",
