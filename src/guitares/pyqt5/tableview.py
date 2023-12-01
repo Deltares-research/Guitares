@@ -118,17 +118,6 @@ class TableView(QTableView):
         # Connect callback when event happens
         self.clicked.connect(self.callback)
 
-        # If the header is clicked, the table is sorted and header_clicker is called
-        if self.element.sortable:
-            self.setSortingEnabled(True)
-            self.horizontalHeader().sectionClicked.connect(self.header_clicked)
-            # Make sure that the sorting direction is shown
-            self.horizontalHeader().setSortIndicatorShown(True)
-        else:    
-            self.setSortingEnabled(False)
-
-        self.set_geometry()
-
         # This allows for whole row or column selection and not individual cells. Use row as default
         selection_direction = QTableView.SelectRows
         if hasattr(self.element, "selection_direction"):
@@ -137,7 +126,21 @@ class TableView(QTableView):
                 if self.element.sortable:
                     raise ValueError("Column selection cannot be sortable")
         self.setSelectionBehavior(selection_direction)
-            
+
+        # If the header is clicked and the selection direction is rows, the table is sorted and header_clicker is called
+        if self.element.sortable and selection_direction == QTableView.SelectRows:
+            self.setSortingEnabled(True)
+            self.horizontalHeader().sectionClicked.connect(self.header_clicked)
+            # Make sure that the sorting direction is shown
+            self.horizontalHeader().setSortIndicatorShown(True)
+        elif selection_direction == QTableView.SelectColumns:
+            # If the selection direction is columns, the table is not sorted but it does count as selecting the column. Call the regular callback function
+            self.horizontalHeader().sectionClicked.connect(self.callback)
+        else:    
+            self.setSortingEnabled(False)
+
+        self.set_geometry()
+
         # Set selection mode
         selection_type = None
         if hasattr(self.element, "selection_type"):
