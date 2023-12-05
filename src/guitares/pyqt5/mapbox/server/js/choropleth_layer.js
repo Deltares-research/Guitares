@@ -44,56 +44,27 @@ export function addLayer(
     promoteId: hover_property
   });
  
-  if (color_no == 6) {
-    mp.addLayer({
-      'id': fillId,
-      'type': 'fill',
-      'source': id,
-      'minzoom': min_zoom,
-      'paint': {
-        'fill-color': [
-        'step',
-        ['get', color_property],
-        // This should all not be hard0-coded and provided with input
-        colors[0],
-        bins[0],
-        colors[1],
-        bins[1],
-        colors[2],
-        bins[2],
-        colors[3],
-        bins[3],
-        colors[4],
-        bins[4],
-        colors[5],
-      ],
-      'fill-opacity': fillOpacity
-      }
-    });
-  } else if (color_no == 4) {
-    mp.addLayer({
-      'id': fillId,
-      'type': 'fill',
-      'source': id,
-      'minzoom': min_zoom,
-      'paint': {
-        'fill-color': [
-        'step',
-        ['get', color_property],
-        // This should all not be hard0-coded and provided with input
-        colors[0],
-        bins[0],
-        colors[1],
-        bins[1],
-        colors[2],
-        bins[2],
-        colors[3],
-      ],
-      'fill-opacity': fillOpacity
-      }
-    });
+  let fillColor = ['step', ['get', color_property]];
+
+  // Add colors and bins to fill-color array
+  for (let i = 0; i < colors.length; i++) {
+    fillColor.push(colors[i]);
+    if (bins[i] !== undefined) {
+      fillColor.push(bins[i]);
+    }
   }
 
+  // Add layer
+  mp.addLayer({
+    'id': fillId,
+    'type': 'fill',
+    'source': id,
+    'minzoom': min_zoom,
+    'paint': {
+      'fill-color': fillColor,
+      'fill-opacity': fillOpacity
+    }
+  });
 
   mp.addLayer({
     'id': lineId,
@@ -113,22 +84,9 @@ export function addLayer(
   });
 
   // Legend
-  if (color_no == 6) {
-    var legendItems = [
-      { style: colors[0], label: color_labels[0]},
-      { style: colors[1], label: color_labels[1]},
-      { style: colors[2], label: color_labels[2]},
-      { style: colors[3], label: color_labels[3]},
-      { style: colors[4], label: color_labels[4]},
-      { style: colors[5], label: color_labels[5]},
-    ];
-  } else if (color_no == 4) {
-    var legendItems = [
-      { style: colors[0], label: color_labels[0]},
-      { style: colors[1], label: color_labels[1]},
-      { style: colors[2], label: color_labels[2]},
-      { style: colors[3], label: color_labels[3]},
-    ];
+  var legendItems = [];
+  for (let i = 0; i < color_no; i++) {
+    legendItems.push({ style: colors[i], label: color_labels[i]});
   }
 
   var legend     = document.createElement("div");
