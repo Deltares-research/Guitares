@@ -244,6 +244,11 @@ class MapBox(QtWidgets.QWidget):
 
     def redraw_layers(self):
         # Redraw all layers (after map style has changed)
+        # First clear the layer list in the draw_layer.js file
+        self.runjs(
+            "./js/draw_layer.js",
+            "clearLayerList"
+        )
         layers = self.list_layers()
         for layer in layers:
             layer.redraw()

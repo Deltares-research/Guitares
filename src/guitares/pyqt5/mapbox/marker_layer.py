@@ -127,5 +127,5 @@ class MarkerLayer(Layer):
     def redraw(self):
         if isinstance(self.data, GeoDataFrame):
             self.set_data(self.data)
-        if not self.visible:
-            self.hide()    
+        if not self.get_visibility():
+            self.set_visibility(False)

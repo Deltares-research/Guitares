@@ -243,4 +243,6 @@ class RasterLayer(Layer):
                           decimals=self.data["decimals"],
                           crs=self.data["crs"],
                           colormap=self.data["colormap"])
+        if not self.get_visibility():
+            self.set_visibility(False)
         

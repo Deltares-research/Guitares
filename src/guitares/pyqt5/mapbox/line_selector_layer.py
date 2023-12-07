@@ -81,3 +81,5 @@ class LineSelectorLayer(Layer):
     def redraw(self):
         if isinstance(self.data, GeoDataFrame):
             self.set_data(self.data, self.index)
+        if not self.get_visibility():
+            self.set_visibility(False)

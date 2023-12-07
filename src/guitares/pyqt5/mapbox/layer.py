@@ -262,17 +262,16 @@ class Layer:
         # Loop down through the layer hierarchy to show or hide layers
         if self.layer:
             # Container layer
-            # Make a list of all layers
-            layers = list_layers(self.layer)
-            for layer in layers:
-                if true_or_false:
-                    layer.show()
-                else:
-                    layer.hide()
+            for name in self.layer:
+                self.layer[name].set_visibility(true_or_false)
         else:
             # Data layer
             if true_or_false:
-                self.mapbox.runjs(self.main_js, "showLayer", arglist=[self.map_id, self.side])
+                # Child may be visible, on of parents may be invisible
+                if self.get_visibility():
+                    self.mapbox.runjs(self.main_js, "showLayer", arglist=[self.map_id, self.side])
+                else:    
+                    self.mapbox.runjs(self.main_js, "hideLayer", arglist=[self.map_id, self.side])
             else:
                 self.mapbox.runjs(self.main_js, "hideLayer", arglist=[self.map_id, self.side])
 

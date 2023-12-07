@@ -21,7 +21,7 @@ class ChoroplethLayer(Layer):
             data = read_dataframe(data)
 
         self.data = data
-        self.visible = True
+#        self.visible = True
 
         if not self.big_data:
             # Add new layer
@@ -134,4 +134,4 @@ class ChoroplethLayer(Layer):
         if isinstance(self.data, GeoDataFrame):
             self.set_data(self.data)
         if not self.get_visibility():
-            self.hide()
+            self.set_visibility(False)

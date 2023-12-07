@@ -113,6 +113,8 @@ class CycloneTrackLayer(Layer):
     def redraw(self):
         if isinstance(self.data, GeoDataFrame):
             self.set_data(self.data)
+        if not self.get_visibility:
+            self.set_visibility(False)
 
     # TODO: Implement activate and deactivate
     # def activate(self):

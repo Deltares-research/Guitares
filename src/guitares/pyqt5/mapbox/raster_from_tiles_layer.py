@@ -55,5 +55,5 @@ class RasterFromTilesLayer(Layer):
     def redraw(self):
         self.new = True
         self.update()
-        if not self.visible:
-            self.hide()
+        if not self.get_visibility():
+            self.set_visibility(False)
