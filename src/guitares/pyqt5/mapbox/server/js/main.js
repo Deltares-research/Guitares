@@ -23,15 +23,22 @@ export let layerStyleSet;
 
 mapboxgl.accessToken = mapbox_token;
 
-//export const map = new mapboxgl.Map({
+//map = new mapboxgl.Map({
+//  container: 'map', // container ID
+//  style: 'mapbox://styles/mapbox/streets-v11', // style URL
+////  style: 'mapbox://styles/mapbox/light-v11', // style URL
+//  center: [0.0, 0.0], // starting position [lng, lat]
+//  zoom: 2, // starting zoom
+////  projection: 'globe' // display the map as a 3D globe
+//  projection: 'mercator' // display the map as a 3D globe
+//});
+
 map = new mapboxgl.Map({
-    container: 'map', // container ID
-  style: 'mapbox://styles/mapbox/streets-v11', // style URL
-//  style: 'mapbox://styles/mapbox/light-v11', // style URL
-  center: [0.0, 0.0], // starting position [lng, lat]
-  zoom: 2, // starting zoom
-//  projection: 'globe' // display the map as a 3D globe
-  projection: 'mercator' // display the map as a 3D globe
+  container: 'map', // container ID
+  style: default_style, // style URL
+  center: default_center, // starting position [lng, lat]
+  zoom: default_zoom, // starting zoom
+  projection: default_projection // display the map as a 3D globe
 });
 
 map.scrollZoom.setWheelZoomRate(1 / 200);

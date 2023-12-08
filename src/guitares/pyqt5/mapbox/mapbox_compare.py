@@ -26,6 +26,13 @@ class MapBoxCompare(QtWidgets.QWidget):
         self.gui = element.gui
         self.element = element
 
+        file_name = os.path.join(self.gui.server_path, "js", "mapbox_compare_defaults.js")
+        with open(file_name, "w") as f:
+            f.write("var default_compare_style = '" + element.map_style + "';\n")
+            f.write("var default_compare_center = [" + str(element.map_center[0]) + "," + str(element.map_center[1]) + "]\n")
+            f.write("var default_compare_zoom = " + str(element.map_zoom) + ";\n")
+            f.write("var default_compare_projection = '" + element.map_projection + "';\n")
+
         url = "http://localhost:" + str(self.gui.server_port) + "/mapbox_compare.html"
         self.url = url
 

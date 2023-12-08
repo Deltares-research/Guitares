@@ -15,6 +15,8 @@ class Layer:
         self.index     = None
         self.select    = None
         self.crs       = 4326
+        self.color_values = None
+        self.color_map = "jet"
         self.color_property = "value"
         self.legend_position = "bottom-right" # Options are "top-left", "top-right", "bottom-left", "bottom-right"
         self.selection_type = "single"

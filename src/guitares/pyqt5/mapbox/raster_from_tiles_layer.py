@@ -2,7 +2,7 @@ import os
 
 from .colorbar import ColorBar
 from .layer import Layer
-from cht_tiling.tiling import make_floodmap_overlay
+from cht_tiling.tiling import make_floodmap_overlay, make_topo_overlay
 
 class RasterFromTilesLayer(Layer):
     def __init__(self, mapbox, id, map_id, **kwargs):
@@ -15,7 +15,9 @@ class RasterFromTilesLayer(Layer):
         self.update()
 
     def update(self):
-        if self.data is None or not self.get_visibility():
+        if not self.get_visibility():
+            return
+        if self.data is None and self.option == "floop_map":
             return
         overlay_file = os.path.join(self.mapbox.server_path, 'overlays', self.file_name)
         overlay_url  = "./overlays/" + self.file_name
@@ -24,26 +26,44 @@ class RasterFromTilesLayer(Layer):
         yl = [coords[0][1], coords[1][1]]
         wdt = self.mapbox.view.geometry().width()
         hgt = self.mapbox.view.geometry().height()
-        xb, yb = make_floodmap_overlay(self.data,
-                                       self.index_path,
-                                       self.topobathy_path,
+
+        if self.option == "topography":
+            xb, yb = make_topo_overlay(self.topobathy_path,
                                        npixels=[wdt, hgt],
+                                       caxis=[-2.0, 2.0],
                                        lon_range=xl,
                                        lat_range=yl,  
-                                       option="deterministic",
-                                       color_values=self.color_values,
-                                       caxis=None,
-                                       zbmax=self.zbmax,
-                                       depth=None,
                                        quiet=False,
                                        file_name=overlay_file)
+
+        elif self.option == "flood_map":
+            xb, yb = make_floodmap_overlay(self.data,
+                                        self.index_path,
+                                        self.topobathy_path,
+                                        npixels=[wdt, hgt],
+                                        lon_range=xl,
+                                        lat_range=yl,  
+                                        option="deterministic",
+                                        color_values=self.color_values,
+                                        caxis=None,
+                                        zbmax=self.zbmax,
+                                        depth=None,
+                                        quiet=False,
+                                        file_name=overlay_file)
+
         # Bounds
         bounds = [[xb[0], xb[1]], [yb[0], yb[1]]]
 
         # Legend
-        clrbar = ColorBar(color_values=self.color_values, legend_title=self.legend_title)
-        clrbar.make(0.0, 0.0, decimals=self.decimals)
-        clrbar_dict = clrbar.to_dict()
+        if self.color_values:
+            clrbar = ColorBar(color_values=self.color_values, legend_title=self.legend_title)
+            clrbar.make(0.0, 0.0, decimals=self.decimals)
+            clrbar_dict = clrbar.to_dict()
+        else:
+            clrbar_dict = {}
+            # clrbar = ColorBar(colormap=colormap, legend_title=legend_title)
+            # clrbar.make(cmin, cmax, cstep=cstep, decimals=decimals)
+            # clrbar_dict = clrbar.to_dict()
 
         if self.new:
             self.mapbox.runjs("/js/image_layer.js", "addLayer", arglist=[overlay_url, self.map_id, bounds, clrbar_dict, self.side])
