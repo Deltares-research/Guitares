@@ -48,6 +48,8 @@ class Menu:
                     self.module = importlib.import_module(dct["module"])
                 except:
                     print("Error! Could not import module " + dct["module"])
+        if "callback_class" in dct:
+            self.callback_class = dct["callback_class"]
         if "method" in dct:
             self.method = dct["method"]
         if self.method and self.module:

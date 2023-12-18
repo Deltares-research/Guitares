@@ -24,8 +24,15 @@ class TabPanel(QTabWidget):
         self.set_geometry()
 
     def tab_selected(self, tabs, indx):
-        # Now call the select method
-        if tabs[indx].module:
+        # If the tab has a callback_class, execute the select from the callback class
+        if hasattr(tabs[indx], "callback_class"):
+            try:
+                tabs[indx].callback_class.select()
+            except:
+                traceback.print_exc()
+                    
+        # If it does not have a callback class, check if it has a callback method
+        elif tabs[indx].module:
             if hasattr(tabs[indx].module, "select"):
                 try:
                     tabs[indx].module.select()

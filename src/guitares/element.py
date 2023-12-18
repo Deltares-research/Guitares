@@ -54,6 +54,7 @@ class Element:
         self.variable_group = parent.variable_group
         self.module = parent.module
         self.method = ""
+        self.callback_class = None
         self.callback = None
         self.text = ""
         self.text_position = "left"
@@ -113,6 +114,15 @@ class Element:
                 try:
                     # Start with the base module
                     module = self.module
+
+                    # If callback_class is defined, or if the parent has a callback_class, the method is a method of the class
+                    if self.callback_class:
+                        # Initialize the class object
+                        module = self.callback_class()
+                    elif hasattr(self.parent, "callback_class"):
+                        # Initialize the class object
+                        module = self.parent.callback_class
+                                        
                     # If the method contains a dot, it means that it is a method of a class
                     method_path = self.method.split(".")
                     # Loop through the method path
@@ -257,6 +267,12 @@ class Element:
                     except Exception as e:
                         print("Error! Module " + tab_dct["module"] + " could not be imported!")
                         print(e)
+                if "callback_class" in tab_dct:
+                    if hasattr(tab.module, tab_dct["callback_class"]):
+                        callback_class_ = getattr(tab.module, tab_dct["callback_class"])
+                        tab.callback_class = callback_class_()
+                    else:
+                        print("Error! Could not find callback class " + tab_dct["callback_class"] + " in module " + tab.module.__name__)
                 self.tabs.append(tab)
 
     def add(self):

@@ -24,7 +24,6 @@ class Window:
         self.title  = ""
         self.module = None
         self.variable_group = "_main"
-        self.module = None
         self.method = None
         self.icon   = None
         self.modal  = False
@@ -37,8 +36,16 @@ class Window:
             self.title = config_dict["window"]["title"]
         if "module" in config_dict["window"]:
             self.module = importlib.import_module(config_dict["window"]["module"])
+        if "callback_class" in config_dict["window"]:
+            if self.module:
+                callback_class_ = getattr(self.module, config_dict["window"]["callback_class"])
+                self.callback_class = callback_class_()
         if "method" in config_dict["window"]:
-            self.method = config_dict["window"]["method"]
+            method = config_dict["window"]["method"]
+            if self.callback_class:
+                self.method = getattr(self.callback_class, method)
+            else:
+                self.method = getattr(self.module, method)
         if "variable_group" in config_dict["window"]:
             self.variable_group = config_dict["window"]["variable_group"]
         if "icon" in config_dict["window"]:
@@ -46,7 +53,11 @@ class Window:
         if "modal" in config_dict["window"]:
             self.modal = config_dict["window"]["modal"]
         if self.module and "okay_method" in config_dict["window"]:
-            self.okay_method = getattr(self.module, config_dict["window"]["okay_method"])
+            okay_method = config_dict["window"]["okay_method"]
+            if self.callback_class:
+                self.okay_method = getattr(self.callback_class, okay_method)
+            else:
+                self.okay_method = getattr(self.module, okay_method)
         self.elements = []
         self.menus    = []
         self.toolbar  = []
@@ -148,8 +159,7 @@ class Window:
 
         # Check if a call start up callback function is needed
         if self.module and self.method:
-            start_up_fcn = getattr(self.module, self.method)
-            start_up_fcn()
+            self.method()
             # Set elements again
             self.update()
 
