@@ -36,6 +36,7 @@ dependencies = [
 "guitares.pyqt5.mapbox.server.js" = ["*.js"]
 "guitares.pyqt5.mapbox.server.js.img" = ["*.png"]
 "guitares.pyqt5.mapbox.server.css" = ["*.css"]
+"guitares.pyqt5.mapbox.server.icons" = ["*.png"]
 
 [project.urls]
 "Homepage" = "https://github.com/Deltares/Guitares"
