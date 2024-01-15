@@ -27,10 +27,13 @@ class CircleLayer(Layer):
         self.color_by_attribute = color_by_attribute
         self.legend_items = legend_items
         self.data = data
+        
 
         if not self.big_data:
             if len(self.color_by_attribute) == 0:
                 # Add new layer
+                #TODO: take unit info from settings.toml
+                self.unit = getattr(self, 'unit', '')
                 self.mapbox.runjs(
                     "./js/circle_layer.js",
                     "addLayer",
@@ -45,6 +48,7 @@ class CircleLayer(Layer):
                         self.fill_color,
                         self.fill_opacity,
                         self.circle_radius,
+                        self.unit
                     ],
                 )
             elif len(self.color_by_attribute) > 0:
@@ -86,6 +90,7 @@ class CircleLayer(Layer):
             
             if len(self.color_by_attribute) == 0:
                 # Add new layer
+                self.unit = getattr(self, 'unit', '')
                 self.mapbox.runjs(
                     "./js/circle_layer.js",
                     "addLayer",
@@ -100,6 +105,7 @@ class CircleLayer(Layer):
                         self.fill_color,
                         self.fill_opacity,
                         self.circle_radius,
+                        self.unit                        
                     ],
                 )
             elif len(self.color_by_attribute) > 0:

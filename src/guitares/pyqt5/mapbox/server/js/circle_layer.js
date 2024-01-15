@@ -4,7 +4,8 @@ export function addLayer(id, data, hover_property,   min_zoom,
   lineOpacity, 
   fillColor, 
   fillOpacity, 
-  circleRadius) {  
+  circleRadius,
+  unit) {  
 
   // Always remove old layer and source first to avoid errors
   if (map.getLayer(id)) {
@@ -64,7 +65,8 @@ export function addLayer(id, data, hover_property,   min_zoom,
      
         // Display a popup 
         popup.setLngLat(e.lngLat)
-          .setText(hover_property + ": " + e.features[0].properties[hover_property])
+          .setText(hover_property + ": " + (e.features[0].properties[hover_property])
+          + " " + unit)
           .addTo(map);
       });
      
