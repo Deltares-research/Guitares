@@ -1,9 +1,8 @@
 from PyQt5.QtWidgets import QTableView
-from PyQt5.QtCore import QSortFilterProxyModel, QItemSelection, QItemSelectionModel
+from PyQt5.QtCore import QItemSelection, QItemSelectionModel
 from PyQt5.QtWidgets import QLabel
 from PyQt5 import QtCore
 import traceback
-import os
 
 from enum import Enum
 
@@ -152,7 +151,7 @@ class TableView(QTableView):
 
     def resize_columns(self, df):
         for i, col in enumerate(df.columns):
-            max_char = max(max([len(str(x)) for x in df[col].values]),len(col))
+            max_char = max(max([len(str(x)) for x in df[col].values]), len(col))
             self.element.widget.setColumnWidth(i, max_char * 10)
 
     def set(self):
@@ -162,13 +161,17 @@ class TableView(QTableView):
             self.df = df # Original unsorted dataframe
             df_sorted = copy.copy(df.reset_index()) # Sorted dataframe
             df_sorted = df_sorted.drop("index", axis=1)
-
+        else:
+            df_sorted = df
         # Update items
         self.clearSpans()
         model = DataFrameModel(df_sorted)
         self.setModel(model)
-        # self.resizeColumnsToContents()  # Frederique commented out as it was extremely slow, replaced with the function below:
-        self.resize_columns(df_sorted)
+        # resizeColumnsToContents can be slow for large tables
+        if df_sorted.shape[0] * df_sorted.shape[1] > 1000:
+            self.resize_columns(df_sorted)
+        else:
+            self.resizeColumnsToContents()  
         self.verticalHeader().setVisible(False)
 
         if self.element.sortable:
