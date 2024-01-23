@@ -75,6 +75,9 @@ class Element:
         self.fraction_collapsed = 1.0
         self.fraction_expanded = 0.5
         self.multiselection = False
+        self.sortable = True
+        self.selection_type = "single"
+        self.ready = False
 
         # Now update element attributes based on dict
 
@@ -107,10 +110,28 @@ class Element:
              self.callback = self.method
         else:
             if self.module and self.method:
-                if hasattr(self.module, self.method):
-                    self.callback = getattr(self.module, self.method)
-                else:
-                    print("Error! Could not find method " + self.method)
+                try:
+                    # Start with the base module
+                    module = self.module
+                    # If the method contains a dot, it means that it is a method of a class
+                    method_path = self.method.split(".")
+                    # Loop through the method path
+                    for idx, method in enumerate(method_path):
+                        # The last element is the method itself
+                        if idx == len(method_path) - 1:
+                            if hasattr(module, method):
+                                self.callback = getattr(module, method)
+                            else:
+                                raise Exception("Error! Could not find method " + self.method + " in module " + self.module.__name__)
+                        else:
+                            if hasattr(module, method):
+                                class_ = getattr(module, method)
+                                # Initialize the class object
+                                module = class_()
+                            else:
+                                raise Exception("Error! Could not find method " + self.method + " in module " + self.module.__name__)
+                except Exception as e:
+                    print(e)
         if self.variable_group in self.gui.variables:
             if self.variable in self.gui.variables[self.variable_group]:
                 self.type = type(self.gui.variables[self.variable_group][self.variable]["value"])
@@ -188,7 +209,13 @@ class Element:
             self.multiselection = dct["multiselection"]
         if "enable" in dct:
             self.enable = dct["enable"]
-
+        if "selection_type" in dct:
+            self.selection_type = dct["selection_type"]
+        if "selection_direction" in dct:
+            self.selection_direction = dct["selection_direction"]
+        if "sortable" in dct:
+            self.sortable = dct["sortable"]
+            
         if "dependency" in dct:
             for dep in dct["dependency"]:
                 dependency = Dependency()
@@ -227,8 +254,9 @@ class Element:
                     try:
                         if tab_dct["module"]:
                             tab.module = importlib.import_module(tab_dct["module"])
-                    except:
+                    except Exception as e:
                         print("Error! Module " + tab_dct["module"] + " could not be imported!")
+                        print(e)
                 self.tabs.append(tab)
 
     def add(self):
@@ -272,9 +300,9 @@ class Element:
             from .pyqt5.listbox import ListBox
             self.widget = ListBox(self)
 
-        elif self.style == "table":
-            from .pyqt5.table import Table
-            self.widget = Table(self)
+        elif self.style == "tableview":
+            from .pyqt5.tableview import TableView
+            self.widget = TableView(self)
 
         elif self.style == "checkbox":
             from .pyqt5.checkbox import CheckBox
@@ -297,12 +325,30 @@ class Element:
             self.widget = PushSaveFile(self)
 
         elif self.style == "mapbox":
-            from .pyqt5.mapbox.mapbox import MapBox
-            self.widget = MapBox(self)
+            # We don't want to add the mapbox widget if set to invisible, because it takes a long time to load.
+            # This means that widgets that are originally set to invisible will not be added to the GUI!
+            okay = True
+            if self.dependencies:
+                for dep in self.dependencies:
+                    if dep.action == "visible":
+                        if not dep.get():
+                            okay = False
+            if okay:                
+                from .pyqt5.mapbox.mapbox import MapBox
+                self.widget = MapBox(self)
 
         elif self.style == "mapbox_compare":
-            from .pyqt5.mapbox.mapbox_compare import MapBoxCompare
-            self.widget = MapBoxCompare(self)
+            # We don't want to add the mapbox widget if set to invisible, because it takes a long time to load.
+            # This means that widgets that are originally set to invisible will not be added to the GUI!
+            okay = True
+            if self.dependencies:
+                for dep in self.dependencies:
+                    if dep.action == "visible":
+                        if not dep.get():
+                            okay = False
+            if okay:                
+                from .pyqt5.mapbox.mapbox_compare import MapBoxCompare
+                self.widget = MapBoxCompare(self)
 
         elif self.style == "webpage":
             from .pyqt5.webpage import WebPage

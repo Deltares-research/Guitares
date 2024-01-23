@@ -75,37 +75,76 @@ class DrawLayer(Layer):
 
         # Add this layer
         self.mapbox.runjs(
-            "./js/draw.js",
+            "./js/draw_layer.js",
             "addLayer",
             arglist=[self.map_id, "active", self.paint_props, self.shape],
         )
 
     def set_mode(self, mode):
+        """Set mode of layer. Can be active, inactive or invisible."""
         self.mode = mode
-        self.mapbox.runjs("./js/draw.js", "setLayerMode", arglist=[self.map_id, mode])
+        if mode == "active":
+            self.active = True
+            self.visible = True
+        elif mode == "inactive":
+            self.active = False
+            self.visible = True
+        else:
+            self.active = False
+            self.visible = False
+        self.mapbox.runjs("./js/draw_layer.js", "setLayerMode", arglist=[self.map_id, mode])
+
+    def activate(self):
+        """Activate the draw layer so it can be edited by the user."""
+        self.active = True
+        self.mapbox.runjs("./js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "active"])
+
+    def deactivate(self):
+        """Deactivate the draw layer so it can not be edited by the user."""
+        self.active = False
+        self.mapbox.runjs("./js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "inactive"])
+
+    # def show(self):
+    #     self.visible = True
+    #     if self.active:
+    #         self.mapbox.runjs("./js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "active"])
+    #     else:
+    #         self.mapbox.runjs("./js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "inactive"])    
+
+    # def hide(self):
+    #     self.visible = False
+    #     self.mapbox.runjs("./js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "invisible"])
+
+    # def set_mode(self, mode):
+    #     self.mode = mode
+    #     self.mapbox.runjs("./js/draw_layer.js", "setLayerMode", arglist=[self.map_id, mode])
 
     def set_visibility(self, true_or_false):
         if true_or_false:
-            if self.mode == "invisible":
-                # Make layer inactive
-                self.set_mode("inactive")
+            if self.active:
+                self.mapbox.runjs("./js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "active"])
+            else:
+                self.mapbox.runjs("./js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "inactive"])    
         else:
             # Make layer invisible
-            self.set_mode("invisible")
+            self.mapbox.runjs("./js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "invisible"])    
 
     def set_data(self, gdf):
+        """Clear the draw layer and add data. Data must be a GeoDataFrame."""
         self.clear()
         self.add_feature(gdf)
 
     def add_feature(self, gdf):
+        """Add data to draw layer. Data must be a GeoDataFrame."""
         # Loop through features
         if len(gdf) == 0:
             return
         for index, row in gdf.to_crs(4326).iterrows():
             gdf = gpd.GeoDataFrame(geometry=[row["geometry"]], crs=4326)
-            self.mapbox.runjs("./js/draw.js", "addFeature", arglist=[gdf, self.map_id])
+            self.mapbox.runjs("./js/draw_layer.js", "addFeature", arglist=[gdf, self.map_id])
 
     def add_rectangle(self, x0, y0, lenx, leny, rotation):
+        """Add rectangle to draw layer."""
         x = [x0]
         y = [y0]
         x.append(x[0] + lenx * math.cos(math.pi*rotation/180))
@@ -131,14 +170,16 @@ class DrawLayer(Layer):
         self.add_feature(gdf)
 
     def draw(self):
+        """Activate drawing mode."""
         if self.shape == "polygon":
-            self.mapbox.runjs("./js/draw.js", "drawPolygon", arglist=[self.map_id])
+            self.mapbox.runjs("./js/draw_layer.js", "drawPolygon", arglist=[self.map_id])
         elif self.shape == "polyline":
-            self.mapbox.runjs("./js/draw.js", "drawPolyline", arglist=[self.map_id])
+            self.mapbox.runjs("./js/draw_layer.js", "drawPolyline", arglist=[self.map_id])
         elif self.shape == "rectangle":
-            self.mapbox.runjs("./js/draw.js", "drawRectangle", arglist=[self.map_id])
+            self.mapbox.runjs("./js/draw_layer.js", "drawRectangle", arglist=[self.map_id])
 
     def set_gdf(self, feature_collection, compute_geometry=True):
+        # Called after a feature has been drawn or added. A new GeoDataFrame is created for this layer.
         for feature in feature_collection["features"]:
             feature["properties"]["id"] = feature["id"]
         gdf = gpd.GeoDataFrame.from_features(feature_collection, crs=4326).to_crs(
@@ -162,6 +203,7 @@ class DrawLayer(Layer):
         self.gdf = gdf
 
     def get_feature_index(self, feature_id):
+        """Get a features index by ID in the GeoDataFrame."""
         feature_index = None
         if len(self.gdf) > 0:
             indx = self.gdf.index[self.gdf["id"] == feature_id].tolist()
@@ -172,12 +214,14 @@ class DrawLayer(Layer):
         return feature_index
 
     def get_feature_id(self, feature_index):
+        """Get a features ID by index in the GeoDataFrame."""
         feature_id = None
         if len(self.gdf) > 0 and len(self.gdf) <= feature_index + 1:
             feature_id = self.gdf.loc[feature_index, "id"]
         return feature_id
 
     def feature_drawn(self, feature_collection, feature_id):
+        # Called after a feature has been drawn by the user
         self.set_gdf(feature_collection)
         if self.create:
             feature_index = self.get_feature_index(feature_id)
@@ -193,59 +237,68 @@ class DrawLayer(Layer):
             self.add_rectangle(x0, y0, lenx, leny, rotation)
 
     def feature_added(self, feature_collection, feature_id):
+        # Called after a feature has been added by the application
         self.set_gdf(feature_collection, compute_geometry=False)
-        self.set_mode(self.mode)
+#        self.set_visibility(True)
+#        self.set_mode(self.mode)
         if self.add:
             feature_index = self.get_feature_index(feature_id)
             self.add(self.gdf, feature_index, feature_id)
 
     def feature_modified(self, feature_collection, feature_id):
+        # Called after a feature has been modified by the user
         self.set_gdf(feature_collection)
         if self.modify:
             feature_index = self.get_feature_index(feature_id)
             self.modify(self.gdf, feature_index, feature_id)
 
     def feature_selected(self, feature_collection, feature_id):
+        # Called after a feature has been selected by the user
         if self.select:
             feature_index = self.get_feature_index(feature_id)
             self.select(feature_index)
 
     def feature_deselected(self):
+        # Called after a feature has been de-selected by the user
         if self.deselect:
             self.deselect()
 
     def activate_feature(self, feature_id):
+        """Activate a feature by ID so it can be edited by the user."""
         if self.mode != "active":
             self.mode = "active"
             self.mapbox.runjs(
-                "./js/draw.js", "setLayerMode", arglist=[self.map_id, self.mode]
+                "./js/draw_layer.js", "setLayerMode", arglist=[self.map_id, self.mode]
             )
-        self.mapbox.runjs("./js/draw.js", "activateFeature", arglist=[feature_id])
+        self.mapbox.runjs("./js/draw_layer.js", "activateFeature", arglist=[feature_id])
 
     def set_feature_geometry(self, feature_id, geom):        
-        self.mapbox.runjs("./js/draw.js", "setFeatureGeometry", arglist=[self.map_id, feature_id, geom])
+        self.mapbox.runjs("./js/draw_layer.js", "setFeatureGeometry", arglist=[self.map_id, feature_id, geom])
 
     def delete_feature(self, feature_id):
+        """Delete a feature by ID."""
         if feature_id:  # Could also be None
             # Remove from gdf
             for index, row in self.gdf.iterrows():
                 if row["id"] == feature_id:
                     self.gdf = self.gdf.drop(index)
                     break
-            self.mapbox.runjs("./js/draw.js", "deleteFeature", arglist=[feature_id])
+            self.mapbox.runjs("./js/draw_layer.js", "deleteFeature", arglist=[feature_id])
 
     def delete_from_map(self):
+        """Delete the draw layer from the map."""
         self.active = False
-        self.mapbox.runjs("./js/draw.js", "deleteLayer", arglist=[self.map_id])
+        self.mapbox.runjs("./js/draw_layer.js", "deleteLayer", arglist=[self.map_id])
         self.gdf = gpd.GeoDataFrame()
-#        self.clear()
 
     def clear(self):
+        """Clear the draw layer."""
         for index, row in self.gdf.iterrows():
-            self.mapbox.runjs("./js/draw.js", "deleteFeature", arglist=[row["id"]])
+            self.mapbox.runjs("./js/draw_layer.js", "deleteFeature", arglist=[row["id"]])
         self.gdf = gpd.GeoDataFrame()
 
     def get_gdf(self, id=None):
+        """Return the GeoDataFrame for this layer. If id is specified, return only the row with that id."""
         if id:
             for index, row in self.gdf.iterrows():
                 if row["id"] == id:

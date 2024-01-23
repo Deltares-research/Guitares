@@ -59,6 +59,7 @@ class MapBoxCompare(QtWidgets.QWidget):
         self.map_extent = None
         self.map_moved = None
         self.point_clicked_callback = None
+        self.zoom = None
 
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.reload)
@@ -84,12 +85,10 @@ class MapBoxCompare(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(str)
     def mapReady(self, inpstr):
-        print(inpstr)
         inp = json.loads(inpstr)
         coords = inp[0:2]
         self.map_extent = coords
         side = inp[2]
-        print("Compare Loaded " + side)
         if side == "a":
             self.ready_a = True
         elif side == "b":
@@ -120,6 +119,7 @@ class MapBoxCompare(QtWidgets.QWidget):
         coords = json.loads(coords)
         self.map_extent = coords[0:2]
         self.map_center = coords[2:5]
+        self.zoom = coords[4]
         # Loop through layers to update each
         layers = list_layers(self.layer)
         for layer in layers:
@@ -244,9 +244,9 @@ class MapBoxCompare(QtWidgets.QWidget):
             elif isinstance(arg, float):
                 string = string + str(arg)
             elif isinstance(arg, dict):
-                string = string + json.dumps(arg)
+                string = string + json.dumps(arg).replace('"',"'")
             elif isinstance(arg, list):
-                string = string + "[]"
+                string = string + json.dumps(arg).replace('"',"'")
             elif isinstance(arg, GeoDataFrame):
                 if len(arg) == 0:
                     string = string + "{}"

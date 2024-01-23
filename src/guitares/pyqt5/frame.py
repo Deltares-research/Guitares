@@ -68,12 +68,11 @@ class Frame(QFrame):
                 pwdt = self.element.parent.widget.geometry().width() - button_size
                 phgt = self.element.parent.widget.geometry().height()
                 if self.element.parent.collapsed:
-                    arrow_file = os.path.join(self.element.gui.image_path, "icons8-triangle-arrow-16_white_left.png")
+                    arrow_file = "icons8-triangle-arrow-16_white_left.png"
                 else:
-                    arrow_file = os.path.join(self.element.gui.image_path, "icons8-triangle-arrow-16_white_right.png")
-                arrow_file = arrow_file.replace(os.sep, '/')
+                    arrow_file = "icons8-triangle-arrow-16_white_right.png"                    
                 self.element.parent.widget.pushbutton.setStyleSheet(
-                    "background-image : url(" + arrow_file + "); border: none")
+                    "background-image : url(:/img/" + arrow_file + "); border: none")
 
                 if self.element == self.element.parent.elements[0]:
                     # First panel

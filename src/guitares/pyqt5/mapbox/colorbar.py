@@ -144,6 +144,16 @@ class ColorBar:
             jsn["contour"].append(contour)
         return json.dumps(jsn)
 
+    def to_dict(self):
+        jsn = {}
+        jsn["title"] = self.title
+        jsn["contour"] = []
+        for cnt in self.contour:
+            contour= {}
+            contour["text"] = cnt["string"]
+            contour["color"] = "#" + cnt["hex"]
+            jsn["contour"].append(contour)
+        return jsn
 
 def rgb2hex(rgb):
     return '%02x%02x%02x' % rgb

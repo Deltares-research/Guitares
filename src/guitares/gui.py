@@ -12,6 +12,8 @@ from PyQt5 import QtCore, QtGui
 from guitares.window import Window
 from guitares.server import start_server
 
+import guitares.icons_rc
+
 class GUI:
     def __init__(self, module,
                  framework="pyqt5",
@@ -25,6 +27,7 @@ class GUI:
                  server_nodejs=False,
                  js_messages=True,
                  copy_mapbox_server_folder=True,
+                 icon_path=None,
                  mapbox_token_file="mapbox_token.txt"):
 
         self.module      = module
@@ -43,7 +46,8 @@ class GUI:
         self.server_thread = None
         self.server_nodejs = server_nodejs
         self.js_messages = js_messages
-        self.popup_data = None
+        self.popup_window = {}
+        self.popup_data   = {}
         self.resize_factor = 1.0        
 
         QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
@@ -70,6 +74,7 @@ class GUI:
                     shutil.rmtree(server_path)
                 # Now copy over folder from mapbox
                 shutil.copytree(mpboxpth, server_path)
+
             # Read mapbox token and store in js file in server path
             if os.path.exists(os.path.join(self.config_path, mapbox_token_file)):
                 fid = open(os.path.join(self.config_path, mapbox_token_file), "r")
@@ -78,7 +83,16 @@ class GUI:
                 fid = open(os.path.join(server_path, "mapbox_token.js"), "w")
                 fid.write("mapbox_token = '" + mapbox_token[0].strip() + "';")
                 fid.close()
-            start_server(server_path, port=server_port, node=self.server_nodejs)    
+
+            if icon_path:
+                # Copy all files in icon_path to server_path/icons
+                if not os.path.exists(os.path.join(server_path, "icons")):
+                    os.mkdir(os.path.join(server_path, "icons"))
+                for file in os.listdir(icon_path):
+                    if file.endswith(".png"):
+                        shutil.copy(os.path.join(icon_path, file), os.path.join(server_path, "icons", file))
+
+            start_server(server_path, port=server_port, node=self.server_nodejs)
 
     def show_splash(self):
         if self.framework == "pyqt5" and self.splash_file:
@@ -124,14 +138,23 @@ class GUI:
 
     def getvar(self, group, name):
         if group not in self.variables:
-            print("Error! GUI variable group '" + group + "' not defined !")
+            print("Error! Cannot get variable! GUI variable group '" + group + "' not defined!")
             return None
         elif name not in self.variables[group]:
-            print("Error! GUI variable '" + name + "' not defined in group '" + group + "'!")
+            print("Error! Cannot get variable! GUI variable '" + name + "' not defined in group '" + group + "'!")
             return None
         return self.variables[group][name]["value"]
+    
+    def delvar(self, group, name):
+        if group not in self.variables:
+            print("Error! Cannot delete variable! GUI variable group '" + group + "' not defined!")
+            return None
+        elif name not in self.variables[group]:
+            print("Error! Cannot delete variable! GUI variable '" + name + "' not defined in group '" + group + "'!")
+            return None
+        del self.variables[group][name]
 
-    def popup(self, config, data=None):
+    def popup(self, config, id="popup", data=None):
         # Make pop-up window
         # config needs to be file name of yml file, or configuration dict
         # Data is optional and can have any shape (e.g. dict, str, object, etc.)
@@ -141,15 +164,16 @@ class GUI:
             file_name = os.path.basename(config)
             config = self.read_gui_config(path, file_name)
         if data:    
-            self.popup_data = copy.copy(data)
+            self.popup_data[id] = copy.copy(data)
         else:
-            self.popup_data = None    
-        self.popup_window = Window(config, self, type="popup")
-        p = self.popup_window.build()
+            self.popup_data[id] = None    
+        self.popup_window[id] = Window(config, self, type="popup")
+        p = self.popup_window[id].build()
         okay = False
         if p.result() == 1:
             okay = True
-            data = self.popup_data
+            data = self.popup_data[id]
+        # Remove popup window and data    
         return okay, data
 
     def read_gui_config(self, path, file_name):

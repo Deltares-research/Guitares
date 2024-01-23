@@ -4,7 +4,6 @@ import json
 from geopandas import GeoDataFrame
 from pandas import DataFrame
 from pyproj import CRS, Transformer
-import sched
 
 from .layer import Layer, list_layers, find_layer_by_id
 
@@ -31,7 +30,7 @@ class MapBox(QtWidgets.QWidget):
         self.url = url
 
         self.ready = False
-        self.crs   = CRS(4326)
+        self.crs = CRS(4326)
 
         self.server_path = self.gui.server_path
 
@@ -63,10 +62,11 @@ class MapBox(QtWidgets.QWidget):
         self.map_center = None
         self.map_moved = None
         self.point_clicked_callback = None
+        self.zoom = None
 
     def load_finished(self):
-        print("Load Finished")   
-        self.timer=QtCore.QTimer()
+        print("Load Finished")
+        self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.check_ready)
         self.timer.start(5000)
 
@@ -74,9 +74,9 @@ class MapBox(QtWidgets.QWidget):
         self.timer.stop()
         if not self.ready:
             print("Map not ready. Reloading ...")
-            self.view.reload()            
+            self.view.reload()
         else:
-            print("Map is ready")    
+            print("Map is ready")
 
     def set(self):
         pass
@@ -96,10 +96,11 @@ class MapBox(QtWidgets.QWidget):
         self.nr_map_ready += 1
         if hasattr(self.callback_module, "map_ready") and self.nr_map_ready == 1:
             self.callback_module.map_ready(self)
+        # Set dependencies now (the first time, the map probably wasn't ready yet)    
+        self.element.set_dependencies()    
 
     @QtCore.pyqtSlot(str)
     def layerStyleSet(self, coords):
-        print("Layer style changed.")
         self.redraw_layers()
 
     @QtCore.pyqtSlot(str)
@@ -136,13 +137,11 @@ class MapBox(QtWidgets.QWidget):
         coords = json.loads(coords)
         # Transform to local crs
         if self.crs.to_epsg() != 4326:
-            transformer = Transformer.from_crs(4326,
-                                            self.crs,
-                                            always_xy=True)
+            transformer = Transformer.from_crs(4326, self.crs, always_xy=True)
             x, y = transformer.transform(coords["lng"], coords["lat"])
         else:
-            x = coords["lng"]    
-            y = coords["lat"]    
+            x = coords["lng"]
+            y = coords["lat"]
         if self.point_clicked_callback:
             self.point_clicked_callback(x, y)
 
@@ -228,7 +227,7 @@ class MapBox(QtWidgets.QWidget):
 
     def set_mouse_default(self):
         self.runjs("/js/main.js", "setMouseDefault", arglist=[])
-        self.runjs("/js/draw.js", "setMouseDefault", arglist=[])
+        self.runjs("/js/draw_layer.js", "setMouseDefault", arglist=[])
 
     def add_layer(self, layer_id):
         # Adds a container layer
@@ -267,18 +266,20 @@ class MapBox(QtWidgets.QWidget):
             elif isinstance(arg, float):
                 string = string + str(arg)
             elif isinstance(arg, dict):
-                string = string + json.dumps(arg)
+                string = string + json.dumps(arg).replace('"',"'")
             elif isinstance(arg, list):
-                string = string + "[]"
+                string = string + json.dumps(arg).replace('"',"'")
             elif isinstance(arg, GeoDataFrame):
                 if len(arg) == 0:
                     string = string + "{}"
                 else:
                     # Need to remove timeseries from geodataframe
-                    for (columnName, columnData) in arg.items():                    
+                    for columnName, columnData in arg.items():
                         if isinstance(columnData.iloc[0], DataFrame):
                             arg = arg.drop([columnName], axis=1)
                     string = string + arg.to_json()
+            elif arg is None:
+                string = string + "null"        
             else:
                 string = string + "'" + arg + "'"
             if iarg < len(arglist) - 1:

@@ -25,6 +25,10 @@ dependencies = [
     "pyyaml",
     "pyqt5",
     "pyqtwebengine",
+    "cht_tiling @ git+https://github.com/Deltares-research/cht_tiling.git",
+    "datashader",
+    "spatialpandas",
+    "pyogrio"
 ]
 
 [tool.setuptools.package-data]
@@ -32,6 +36,7 @@ dependencies = [
 "guitares.pyqt5.mapbox.server.js" = ["*.js"]
 "guitares.pyqt5.mapbox.server.js.img" = ["*.png"]
 "guitares.pyqt5.mapbox.server.css" = ["*.css"]
+"guitares.pyqt5.mapbox.server.icons" = ["*.png"]
 
 [project.urls]
 "Homepage" = "https://github.com/Deltares/Guitares"

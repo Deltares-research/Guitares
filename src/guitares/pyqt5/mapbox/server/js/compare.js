@@ -1,81 +1,143 @@
 console.log("Adding Mapbox Compare Map ...")
 
+//var mapboxgl = mpbox.import_mapbox_gl()
+
+//let mapboxgl = mpbox.import_mapbox_gl()
+//console.log('mapvars mapMain = ' + mapMain)
+//console.log('mapvars mapA = ' + mapA)
+//console.log('mapvars mapB = ' + mapB)
+
 export let jsonString;
 export let mapReady;
 export let mapMoved;
-export let map;
-export let compareMap1;
-export let compareMap2;
+export let activeSide = 'a';
 
 mapboxgl.accessToken = mapbox_token;
 
-// Web Channel
-new QWebChannel(qt.webChannelTransport, function (channel) {
-    console.log("New web channel")
-    window.MapBoxCompare = channel.objects.MapBoxCompare;
-    console.log("OBJECT")
-    console.log(MapBoxCompare)
-    if (typeof MapBoxCompare != 'undefined') {
-      console.log("DEFINED");
-      mapReady          = function() { MapBoxCompare.mapReady(jsonString)};
-      mapMoved          = function() { MapBoxCompare.mapMoved(jsonString)};
-    carryOn();
-    }
-  }
-);
-
-function carryOn() {
-
-  compareMap1 = new mapboxgl.Map({
-    container: 'compare1',
-    // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
+mapA = new mapboxgl.Map({
+  container: 'compare1',
+  // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
+  style: 'mapbox://styles/mapbox/light-v11',
+  center: [0, 0],
+  zoom: 0
+});
+   
+mapB = new mapboxgl.Map({
+    container: 'compare2',
     style: 'mapbox://styles/mapbox/light-v11',
     center: [0, 0],
     zoom: 0
-  });
-     
-  compareMap2 = new mapboxgl.Map({
-      container: 'compare2',
-      style: 'mapbox://styles/mapbox/light-v11',
-      center: [0, 0],
-      zoom: 0
-    }
-  );
-  
-  
-  // A selector or reference to HTML element
-  const container = '#comparison-container';
+  }
+);
 
-  map = new mapboxgl.Compare(compareMap1, compareMap2, container, {
-    //main_map.style.display = 'none';
-    // Set this to enable comparing two maps by mouse movement:
-    // mousemove: true
-  });
+// A selector or reference to HTML element
+const container = '#comparison-container';
 
-  compareMap1.on('moveend', () => {
-    onMoveEnd();
-  });
+var mapContainer = new mapboxgl.Compare(mapA, mapB, container, {
+  //main_map.style.display = 'none';
+  // Set this to enable comparing two maps by mouse movement:
+  // mousemove: true
+});
 
-// compareMap2.on('moveend', () => {
-//     onMoveEnd();
+
+// var id = 'dummy_layer';
+// mapA.addSource(id, {
+//   'type': 'geojson'
+// });
+// mapA.addLayer({
+//   'id': 'dummy_layer',
+//   'type': 'line',
+//   'source': id,
+//   'layout': {},
+//   'paint': {
+//     'line-color': '#000',
+//     'line-width': 1
+//   }
+// });
+// mapB.addSource(id, {
+//   'type': 'geojson'
+// });
+// mapB.addLayer({
+//   'id': 'dummy_layer',
+//   'type': 'line',
+//   'source': id,
+//   'layout': {},
+//   'paint': {
+//     'line-color': '#000',
+//     'line-width': 1
+//   }
 // });
 
-  compareMap1.on('load', () => {
-    console.log('Mapbox A loaded !');
-    // Add dummy layer
-    mapLoadedA();
-  });
+//mapA = mapA;
+//mapB = mapB;
 
-  compareMap2.on('load', () => {
-    console.log('Mapbox B loaded !');
+// Web Channel
+new QWebChannel(qt.webChannelTransport, function (channel) {
+  window.MapBoxCompare = channel.objects.MapBoxCompare;
+  if (typeof MapBoxCompare != 'undefined') {
+    mapReady = function() { MapBoxCompare.mapReady(jsonString)};
+    mapMoved = function() { MapBoxCompare.mapMoved(jsonString)};
+  }
+});
+
+//function carryOn() {
+
+
+
+mapA.on('wheel', () => {
+  activeSide = 'a';
+});
+mapB.on('wheel', () => {
+  activeSide = 'b';
+});
+mapA.on('dragstart', () => {
+  activeSide = 'a';
+});
+mapB.on('dragstart', () => {
+  activeSide = 'b';
+});
+mapA.on('moveend', () => {
+  onMoveEndA();
+});
+mapB.on('moveend', () => {
+  onMoveEndB();
+});
+
+mapA.on('load', () => {
+  console.log('Mapbox A loaded !');
     // Add dummy layer
-    mapLoadedB();
+    addDummyLayer(mapA);
+    mapLoadedA();
+});
+
+mapB.on('load', () => {
+  console.log('Mapbox B loaded !');
+  // Add dummy layer
+  addDummyLayer(mapB);
+  mapLoadedB();
+});
+
+function addDummyLayer(mp) {
+  // Add a dummy layer (other layer will be added BEFORE this dummy layer)
+  var id = 'dummy_layer';
+  mp.addSource(id, {
+    'type': 'geojson'
   });
-}    
+  mp.addLayer({
+    'id': 'dummy_layer',
+    'type': 'line',
+    'source': id,
+    'layout': {},
+    'paint': {
+      'line-color': '#000',
+      'line-width': 1
+    }
+  });
+}
 
 function mapLoadedA(evt) {
   // Get the map extents and tell Python Mapbox object that we're ready
-  var extent = compareMap1.getBounds();
+  var extent = mapA.getBounds();
   var sw = extent.getSouthWest();
   var ne = extent.getNorthEast();
   var bottomLeft = [sw["lng"], sw["lat"]];
@@ -86,7 +148,7 @@ function mapLoadedA(evt) {
 
 function mapLoadedB(evt) {
   // Get the map extents and tell Python Mapbox object that we're ready
-  var extent = compareMap2.getBounds();
+  var extent = mapB.getBounds();
   var sw = extent.getSouthWest();
   var ne = extent.getNorthEast();
   var bottomLeft = [sw["lng"], sw["lat"]];
@@ -95,16 +157,32 @@ function mapLoadedB(evt) {
   mapReady();
 }
   
-function onMoveEnd(evt) {
+function onMoveEndA(evt) {
   // Called after moving map ended
   // Get new map extents
-  var extent = compareMap1.getBounds();
+  if (activeSide == 'b') {return;}
+  var extent = mapA.getBounds();
   var sw = extent.getSouthWest();
   var ne = extent.getNorthEast();
   var bottomLeft = [sw["lng"], sw["lat"]];
   var topRight   = [ne["lng"], ne["lat"]];
-  var center = compareMap1.getCenter();
-  var zoom = compareMap1.getZoom();
+  var center = mapA.getCenter();
+  var zoom = mapA.getZoom();
+  jsonString = JSON.stringify([bottomLeft, topRight, center["lng"], center["lat"], zoom]);
+  mapMoved();
+}
+
+function onMoveEndB(evt) {
+  // Called after moving map ended
+  // Get new map extents
+  if (activeSide == 'a') {return;}
+  var extent = mapB.getBounds();
+  var sw = extent.getSouthWest();
+  var ne = extent.getNorthEast();
+  var bottomLeft = [sw["lng"], sw["lat"]];
+  var topRight   = [ne["lng"], ne["lat"]];
+  var center = mapB.getCenter();
+  var zoom = mapB.getZoom();
   jsonString = JSON.stringify([bottomLeft, topRight, center["lng"], center["lat"], zoom]);
   mapMoved();
 }
@@ -112,19 +190,115 @@ function onMoveEnd(evt) {
 export function jumpTo(lon, lat, zoom) {
 	// Called after moving map ended
 	// Get new map extents
-	compareMap1.jumpTo({center: [lon, lat], zoom: zoom});
+	mapA.jumpTo({center: [lon, lat], zoom: zoom});
 }
 
 export function flyTo(lon, lat, zoom) {
 	// Called after moving map ended
 	// Get new map extents
-	compareMap1.flyTo({center: [lon, lat], zoom: zoom});
+	mapA.flyTo({center: [lon, lat], zoom: zoom});
 }
 
 export function setSlider(npix) {
 	map.setSlider(npix);
 }
 
+export function removeLayer(id, side) {
+  var mp = getMap(side);  
+  // Remove the layer, source and legend etc.
+  // Remove layer
+  var mapLayer = mp.getLayer(id);
+  if(typeof mapLayer !== 'undefined') {
+    // Remove map layer
+    mp.removeLayer(id);
+  }
+  // Remove line layer
+  var mapLayer = mp.getLayer(id + '.line');
+  if(typeof mapLayer !== 'undefined') {
+    // Remove map layer
+    mp.removeLayer(id + '.line');
+  }
+  // Remove fill layer
+  var mapLayer = mp.getLayer(id + '.fill');
+  if(typeof mapLayer !== 'undefined') {
+    // Remove map layer
+    mp.removeLayer(id + '.fill');
+  }
+  // Remove circle layer
+  var mapLayer = mp.getLayer(id + '.circle');
+  if(typeof mapLayer !== 'undefined') {
+    // Remove map layer
+    mp.removeLayer(id + '.circle');
+  }
+  // Remove source
+  var mapSource = mp.getSource(id);
+  if(typeof mapSource !== 'undefined') {
+    mp.removeSource(id);
+  }
+  // Remove legend
+  var legend = document.getElementById("legend" + id);
+  if (legend) {
+    legend.remove();
+  }
+}
+
+export function showLayer(id, side) {
+	// Show layer
+  var mp = getMap(side);  
+	if (mp.getLayer(id)) {
+    mp.setLayoutProperty(id, 'visibility', 'visible');
+  }
+	if (mp.getLayer(id + '.line')) {
+    mp.setLayoutProperty(id + '.line', 'visibility', 'visible');
+  }
+	if (mp.getLayer(id + '.fill')) {
+    mp.setLayoutProperty(id + '.fill', 'visibility', 'visible');
+  }
+	if (mp.getLayer(id + '.circle')) {
+    mp.setLayoutProperty(id + '.circle', 'visibility', 'visible');
+  }
+  showLegend(id);
+}
+
+export function hideLayer(id, side) {
+	// Hide layer
+  var mp = getMap(side);  
+	if (mp.getLayer(id)) {
+  	mp.setLayoutProperty(id, 'visibility', 'none');
+  }
+	if (mp.getLayer(id + '.line')) {
+    mp.setLayoutProperty(id + '.line', 'visibility', 'none');
+  }
+	if (mp.getLayer(id + '.fill')) {
+    mp.setLayoutProperty(id + '.fill', 'visibility', 'none');
+  }
+	if (mp.getLayer(id + '.circle')) {
+    mp.setLayoutProperty(id + '.circle', 'visibility', 'none');
+  }
+  hideLegend(id);
+}
+
+export function showLegend(id) {
+	// Show legend
+  var legend = document.getElementById("legend" + id);
+  if (legend) {
+    legend.style.visibility = 'visible';
+  }
+}
+
+export function hideLegend(id) {
+	// Hide layer
+  var legend = document.getElementById("legend" + id);
+  if (legend) {
+    legend.style.visibility = 'hidden';
+  }
+}
+
+
+function getMap(side) {
+  if (side == "a") { return mapA }
+  else { return mapB }
+}
 
 // export let mapboxgl = mpbox.import_mapbox_gl()
 
@@ -472,7 +646,7 @@ export function setSlider(npix) {
 //   var main_map = document.getElementById("map");
 //   main_map.style.display = 'none';
 
-//   const compareMap1 = new mapboxgl.Map({
+//   const mapA = new mapboxgl.Map({
 //     container: 'compare1',
 //     // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
 //     style: 'mapbox://styles/mapbox/light-v11',
@@ -480,7 +654,7 @@ export function setSlider(npix) {
 //     zoom: 0
 //   });
      
-//   const compareMap2 = new mapboxgl.Map({
+//   const mapB = new mapboxgl.Map({
 //     container: 'compare2',
 //     style: 'mapbox://styles/mapbox/dark-v11',
 //     center: [0, 0],
@@ -490,7 +664,7 @@ export function setSlider(npix) {
 //   // A selector or reference to HTML element
 //   const container = '#comparison-container';
      
-//   const map = new mapboxgl.Compare(compareMap1, compareMap2, container, {
+//   const map = new mapboxgl.Compare(mapA, mapB, container, {
 //   // Set this to enable comparing two maps by mouse movement:
 //   // mousemove: true
 //   });

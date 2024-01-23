@@ -25,6 +25,7 @@ class Window:
         self.module = None
         self.variable_group = "_main"
         self.module = None
+        self.method = None
         self.icon   = None
         self.modal  = False
         self.okay_method = None
@@ -36,6 +37,8 @@ class Window:
             self.title = config_dict["window"]["title"]
         if "module" in config_dict["window"]:
             self.module = importlib.import_module(config_dict["window"]["module"])
+        if "method" in config_dict["window"]:
+            self.method = config_dict["window"]["method"]
         if "variable_group" in config_dict["window"]:
             self.variable_group = config_dict["window"]["variable_group"]
         if "icon" in config_dict["window"]:
@@ -143,15 +146,22 @@ class Window:
 
         window.show()
 
+        # Check if a call start up callback function is needed
+        if self.module and self.method:
+            start_up_fcn = getattr(self.module, self.method)
+            start_up_fcn()
+            # Set elements again
+            self.update()
+
         if self.type == "popup":
             window.exec_()
 
         return window
 
     def ok(self, *args):
-        if self.okay_method:
-            self.okay_method()
-        self.widget.done(1)
+        # If there is no okay method or the okay method returns True, close the window. Otherwise, do nothing.
+        if not self.okay_method or self.okay_method():
+            self.widget.done(1) 
 
     def cancel(self, *args):
         self.widget.done(0)

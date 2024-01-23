@@ -1,5 +1,4 @@
 from PyQt5.QtWidgets import QButtonGroup, QRadioButton
-from PyQt5 import QtCore
 import traceback
 
 class RadioButtonGroup(QButtonGroup):
@@ -9,8 +8,16 @@ class RadioButtonGroup(QButtonGroup):
 
         self.element = element
 
-        for i in range(len(element.option_value.list)):
-            d = QRadioButton(element.option_string.list[i], element.parent.widget)
+        if element.option_value.variable:
+            group = element.option_value.variable_group
+            name  = element.option_value.variable
+            self.element.option_value.list = element.getvar(group, name)
+        if element.option_string.variable:
+            group = element.option_string.variable_group
+            name  = element.option_string.variable
+            self.element.option_string.list = element.getvar(group, name)
+        for i in range(len(self.element.option_value.list)):
+            d = QRadioButton(self.element.option_string.list[i], self.element.parent.widget)
             d.setVisible(True)
             d.id = i
             self.addButton(d)
