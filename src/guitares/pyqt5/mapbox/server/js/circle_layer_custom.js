@@ -89,7 +89,7 @@ export function addLayer(
   for (let i = 0; i < legendItems.length; i++) {
   let cnt = legendItems[i]
       var newI = document.createElement('i');
-      newI.setAttribute('style','background:' + cnt["style"]);
+      newI.setAttribute('style','background:' + cnt["style"] + '; border-radius: 50%; width: 10px; height: 10px; display: inline-block;');
       legend.appendChild(newI);
       var newSpan = document.createElement('span');
       newSpan.innerHTML = cnt["label"];
