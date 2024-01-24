@@ -140,6 +140,10 @@ class CircleLayer(Layer):
                 self.circle_radius,
             ],
         )
+        
+        #Not working for color_by_attribute, so fixed with self.update()
+        #TODO: make pretty
+        self.update()
 
     def deactivate(self):
         self.mapbox.runjs(
