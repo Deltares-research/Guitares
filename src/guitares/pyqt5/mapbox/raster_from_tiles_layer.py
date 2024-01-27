@@ -2,7 +2,7 @@ import os
 
 from .colorbar import ColorBar
 from .layer import Layer
-from cht_tiling.tiling import make_floodmap_overlay, make_topo_overlay
+from cht_tiling.tiling import make_floodmap_overlay_v2, make_topo_overlay_v2
 
 class RasterFromTilesLayer(Layer):
     def __init__(self, mapbox, id, map_id, **kwargs):
@@ -28,16 +28,16 @@ class RasterFromTilesLayer(Layer):
         hgt = self.mapbox.view.geometry().height()
 
         if self.option == "topography":
-            xb, yb = make_topo_overlay(self.topobathy_path,
+            xb, yb, cb = make_topo_overlay_v2(self.topobathy_path,
                                        npixels=[wdt, hgt],
-                                       caxis=[-2.0, 2.0],
+                                       color_range=[-2.0, 2.0],
                                        lon_range=xl,
                                        lat_range=yl,  
                                        quiet=False,
                                        file_name=overlay_file)
 
         elif self.option == "flood_map":
-            xb, yb = make_floodmap_overlay(self.data,
+            xb, yb = make_floodmap_overlay_v2(self.data,
                                         self.index_path,
                                         self.topobathy_path,
                                         npixels=[wdt, hgt],
