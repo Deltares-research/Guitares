@@ -1,9 +1,8 @@
 from PyQt5.QtWidgets import QTableView
-from PyQt5.QtCore import QSortFilterProxyModel, QItemSelection, QItemSelectionModel
+from PyQt5.QtCore import QItemSelection, QItemSelectionModel
 from PyQt5.QtWidgets import QLabel
 from PyQt5 import QtCore
 import traceback
-import os
 
 from enum import Enum
 
@@ -159,20 +158,29 @@ class TableView(QTableView):
         self.sort_order = 0
         self.sort_column = 0
 
-    def set(self):
+    def resize_columns(self, df):
+        for i, col in enumerate(df.columns):
+            max_char = max(max([len(str(x)) for x in df[col].values]), len(col))
+            self.element.widget.setColumnWidth(i, max_char * 10)
 
+    def set(self):
         # option_value
         df = self.element.getvar(self.element.option_value.variable_group, self.element.option_value.variable)
         if df is not None:
             self.df = df # Original unsorted dataframe
             df_sorted = copy.copy(df.reset_index()) # Sorted dataframe
             df_sorted = df_sorted.drop("index", axis=1)
-
+        else:
+            df_sorted = df
         # Update items
         self.clearSpans()
         model = DataFrameModel(df_sorted)
         self.setModel(model)
-        self.resizeColumnsToContents()
+        # resizeColumnsToContents can be slow for large tables
+        if df_sorted.shape[0] * df_sorted.shape[1] > 1000:
+            self.resize_columns(df_sorted)
+        else:
+            self.resizeColumnsToContents()  
         self.verticalHeader().setVisible(False)
 
         if self.element.sortable:
@@ -273,7 +281,7 @@ class TableView(QTableView):
         df = self.model()._dataframe
         indices = []
         for index in indices0:
-            row = df0.iloc[index]
+            row = df0.loc[index]
             index0 = df.index[df.apply(lambda r: r.equals(row), axis=1)].tolist()[0]
             indices.append(index0)
         return indices
