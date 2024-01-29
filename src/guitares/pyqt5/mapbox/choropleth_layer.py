@@ -23,7 +23,7 @@ class ChoroplethLayer(Layer):
             data = read_dataframe(data)
 
         self.data = data
-        self.visible = True
+        # self.visible = True
 
         if not self.big_data:
             if color_by_attribute is None:
