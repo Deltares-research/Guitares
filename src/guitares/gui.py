@@ -74,10 +74,17 @@ class GUI:
                     shutil.rmtree(server_path)
                 # Now copy over folder from mapbox
                 shutil.copytree(mpboxpth, server_path)
+          
+            # Check if mapbox token file exists in config path or in current working directory
+            token_file_name = None    
+            if os.path.exists(os.path.join(self.config_path, mapbox_token_file)):
+                token_file_name = os.path.join(self.config_path, mapbox_token_file)
+            if os.path.exists(os.path.join(os.getcwd(), mapbox_token_file)):
+                token_file_name = os.path.join(os.getcwd(), mapbox_token_file)    
 
             # Read mapbox token and store in js file in server path
-            if os.path.exists(os.path.join(self.config_path, mapbox_token_file)):
-                fid = open(os.path.join(self.config_path, mapbox_token_file), "r")
+            if token_file_name:
+                fid = open(token_file_name, "r")
                 mapbox_token = fid.readlines()
                 fid.close()
                 fid = open(os.path.join(server_path, "mapbox_token.js"), "w")

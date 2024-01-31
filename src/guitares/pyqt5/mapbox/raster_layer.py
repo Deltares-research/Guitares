@@ -1,4 +1,5 @@
 import os
+import glob
 from PIL import Image
 import matplotlib
 from matplotlib import cm
@@ -16,6 +17,7 @@ from matplotlib.colors import LightSource
 import numpy as np
 
 from .colorbar import ColorBar
+from guitares.colormap import cm2png
 
 from .layer import Layer
 
@@ -90,7 +92,7 @@ class RasterLayer(Layer):
                     'width': width,
                     'height': height
                 })
-                bnds = src.bounds
+                # bnds = src.bounds
 
                 mem_file = MemoryFile()
                 with mem_file.open(**kwargs) as dst:
@@ -133,8 +135,25 @@ class RasterLayer(Layer):
 
         else:
 
-            cmin = np.nanmin(z)
-            cmax = -cmin
+            # Color scale
+            if self.color_scale_auto:
+                if self.color_scale_symmetric:
+                    if self.color_scale_symmetric_side == "min":
+                        cmin = np.nanmin(z)
+                        cmax = -cmin
+                    elif self.color_scale_symmetric_side == "max":
+                        cmax = np.nanmax(z)
+                        cmin = -cmax
+                    else:
+                        cmx = max(abs(np.nanmin(z)), abs(np.nanmax(z)))
+                        cmin = -cmx
+                        cmax = cmx
+                else:
+                    cmin = np.nanmin(z)
+                    cmax = np.nanmax(z)
+            else:    
+                cmin = self.color_scale_cmin
+                cmax = self.color_scale_cmax
 
             ls = LightSource(azdeg=315, altdeg=30)
 
@@ -182,7 +201,7 @@ class RasterLayer(Layer):
                 'width': width,
                 'height': height
             })
-            bnds = src.bounds
+            # bnds = src.bounds
 
             mem_file2 = MemoryFile()
             with mem_file2.open(**kwargs) as dst:
@@ -215,10 +234,30 @@ class RasterLayer(Layer):
                 # Bounds
                 bounds_string = "[[" + str(bounds[0]) + "," + str(bounds[2]) + "],[" + str(bounds[1]) + "," + str(bounds[3]) + "]]"
 
+
+                # Delete old legend files
+                for file_name in glob.glob(os.path.join(self.mapbox.server_path, "overlays", self.map_id + ".legend.*.png")):
+                    try:
+                        os.remove(file_name)
+                    except:
+                        pass
+
+                # add random integer string to legend file to force reload                
+                # create string with random integer between 1 and 1,000,000
+                rstring = str(np.random.randint(1, 1000000))
+                legend_file = self.map_id + ".legend." + rstring + ".png"
+                cm2png(cmap,
+                    file_name = os.path.join(self.mapbox.server_path, "overlays", legend_file),
+                    orientation="vertical",
+                    vmin=cmin,
+                    vmax=cmax)
+
         # Legend
         clrbar = ColorBar(colormap=colormap, legend_title=legend_title)
         clrbar.make(cmin, cmax, cstep=cstep, decimals=decimals)
         clrmap_string = clrbar.to_json()
+
+        clrmap_string = "'./overlays/" + legend_file + "'"
 
         if self.new:
             js_string = "import('/js/image_layer.js').then(module => {module.addLayer('" + overlay_file + "','" + self.map_id + "'," + bounds_string + "," + clrmap_string + ")});"
@@ -226,6 +265,7 @@ class RasterLayer(Layer):
         else:
             js_string = "import('/js/image_layer.js').then(module => {module.updateLayer('" + overlay_file + "','" + self.map_id + "'," + bounds_string + "," + clrmap_string + ")});"
             self.mapbox.view.page().runJavaScript(js_string)
+        self.mapbox.runjs("/js/image_layer.js", "setOpacity", arglist=[self.map_id, self.opacity, self.side])
 
         self.new = False
 

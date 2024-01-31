@@ -25,6 +25,12 @@ class Layer:
         self.zoom_switch = 999
         self.decimals = 1
         self.big_data = False
+        self.opacity = 0.9
+        self.color_scale_auto = True # automatically scale from min to max
+        self.color_scale_cmin = -1000.0
+        self.color_scale_cmax =  1000.0
+        self.color_scale_symmetric = True
+        self.color_scale_symmetric_side = "min"
 
         # Cyclone track layer
         self.show_icons = True
