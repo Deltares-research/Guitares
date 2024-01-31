@@ -141,8 +141,9 @@ class DrawLayer(Layer):
             return
         for index, row in gdf.to_crs(4326).iterrows():
             gdf = gpd.GeoDataFrame(geometry=[row["geometry"]], crs=4326)
-            self.gdf = self.gdf.append(gdf, ignore_index=True)
             self.mapbox.runjs("./js/draw_layer.js", "addFeature", arglist=[gdf, self.map_id])
+            # append to self.gdf (which doesn't have to hace CRS=4326)
+            self.gdf = self.gdf.append(gdf.to_crs(self.gdf.crs), ignore_index=True)
 
     def add_rectangle(self, x0, y0, lenx, leny, rotation):
         """Add rectangle to draw layer."""
