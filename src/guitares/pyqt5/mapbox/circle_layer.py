@@ -8,6 +8,7 @@ class CircleLayer(Layer):
         super().__init__(mapbox, id, map_id, **kwargs)
         self.color_by_attribute = dict()
         self.legend_items = list()
+        self.unit = ""
         pass
 
     def set_data(
@@ -60,6 +61,7 @@ class CircleLayer(Layer):
                         self.map_id,
                         self.data,
                         self.hover_property,
+                        self.unit,
                         self.min_zoom,
                         self.color_by_attribute,
                         self.legend_items,
@@ -117,6 +119,7 @@ class CircleLayer(Layer):
                         self.map_id,
                         self.data,
                         self.hover_property,
+                        self.unit,
                         self.min_zoom,
                         self.color_by_attribute,
                         self.legend_items,

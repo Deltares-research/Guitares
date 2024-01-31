@@ -2,6 +2,7 @@ export function addLayer(
   id,
   data,
   hover_property,
+  unit,
   min_zoom,
   paint_dict,
   legendItems,
@@ -65,7 +66,8 @@ export function addLayer(
 
         // Display a popup 
         popup.setLngLat(e.lngLat)
-          .setText(hover_property + ": " + e.features[0].properties[hover_property])
+          .setText(hover_property + ": " + (e.features[0].properties[hover_property])
+          + " " + unit)
           .addTo(map);
       });
 
