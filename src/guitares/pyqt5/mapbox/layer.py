@@ -118,7 +118,7 @@ class Layer:
 
         map_id = self.map_id + "." + layer_id
 
-        if type == None:
+        if type is None:
 
             # Add containing layer
             self.layer[layer_id] = Layer(self.mapbox, layer_id, map_id)
