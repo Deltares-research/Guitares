@@ -1,3 +1,13 @@
+function getLineDashArray(lineStyle) {
+  if (lineStyle === '-') {
+    return [1];  // Continuous line
+  } else if (lineStyle === '--') {
+    return [2, 1];  // Dashed line
+  } else if (lineStyle === '..') {
+    return [0.5, 1];  // Dotted line
+  }
+}
+
 export function addLayer(id,
                          data,
                          index,
@@ -29,6 +39,8 @@ export function addLayer(id,
     data: data
   });
 
+  let lineDashArray = getLineDashArray(lineStyle);
+
   // Add a symbol layer
   map.addLayer({
     'id': id,
@@ -36,14 +48,14 @@ export function addLayer(id,
     'source': id,
     'paint': {      
       'line-color': ['case',
-                               ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
-                               lineColorSelected,
-                               lineColor],
+                             ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
+                             lineColorSelected,
+                             lineColor],
       'line-width': ['case',
-                               ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
-                               lineWidthSelected,
-                               lineWidth]
-
+                             ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
+                             lineWidthSelected,
+                             lineWidth],
+      'line-dasharray': lineDashArray,
     }
   });
 
