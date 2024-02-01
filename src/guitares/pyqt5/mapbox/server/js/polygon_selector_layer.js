@@ -2,6 +2,7 @@ let hover_property
 let hoveredId = null;
 let activeLayerId = null;
 let popup
+let selectedFeatures = []
 
 export function addLayer(id,
   data,
@@ -40,9 +41,6 @@ export function addLayer(id,
   layers[id] = {}
   layers[id].data = data; 
   layers[id].mode = "active"; 
-
-  // Select first index
-  selectByIndex(id, index);
 
   map.addSource(id, {
     type: 'geojson',
@@ -100,87 +98,9 @@ export function addLayer(id,
     layerAdded(id);
   });
 
-
-  // updateFeatureState(id);
-
-  // // Create a popup, but don't add it to the map yet.
-  // const popup = new mapboxgl.Popup({
-  //   closeButton: false,
-  //   closeOnClick: false
-  // });
-
-  // // Update feature state after moving
-  // map.on('moveend', () => {
-  //   const vis = map.getLayoutProperty(lineId, 'visibility');
-  //   if (vis == "visible") {
-  //     updateFeatureState(id);
-  //   }
-  // });
-
-  // // When the user moves their mouse over the fill layer, we'll update the
-  // // feature state for the feature under the mouse.
-  // map.on('mousemove', fillId, (e) => {
-  //   // Change the cursor style as a UI indicator.
-  //   map.getCanvas().style.cursor = 'pointer';
-  //   if (e.features.length > 0) {
-  //     if (hoveredId !== null) {
-  //       map.setFeatureState(
-  //         { source: id, id: hoveredId },
-  //         { hover: false }
-  //       );
-  //     }
-  //     hoveredId = e.features[0].id;
-  //     map.setFeatureState(
-  //       { source: id, id: hoveredId },
-  //       { hover: true }
-  //     );
-  //     // Display a popup with the name of area
-  //     popup.setLngLat(e.lngLat)
-  //     .setText(e.features[0].properties[hover_property])
-  //     .addTo(map);
-  //   }
-  // });
-
-  // // When the mouse leaves the fill layer, update the feature state of the
-  // // previously hovered feature.
-  // map.on('mouseleave', fillId, () => {
-	// map.getCanvas().style.cursor = '';
-  //   if (hoveredId !== null) {
-  //     map.setFeatureState(
-  //       { source: id, id: hoveredId },
-  //       { hover: false }
-  //     );
-  //   }
-  //   hoveredId = null;
-  //   popup.remove();
-  // });
-
-  // if (selectionOption == "single") {
-  //   map.on('click', fillId, (e) => {
-  //     if (e.features.length > 0) {
-  //       selectByIndex(id, e.features[0].id);
-  //       // And call main.js
-  //       featureClicked(id, e.features[0]);
-  //     };
-  //   });
-  // } else {
-  //   map.on('click', fillId, (e) => {
-  //     if (e.features.length > 0) {
-  //       var featureState = map.getFeatureState({ source: id, id: e.features[0].id });
-  //       if (featureState.selected) {
-  //         // Was selected, now deselect
-  //         deselectByIndex(id, e.features[0].id);
-  //         selectedFeatures.pop(e.features[0]);
-  //       } else {
-  //         // Select
-  //         selectByIndex(id, e.features[0].id);
-  //         selectedFeatures.push(e.features[0]);
-  //       };
-  //       // And call main.js
-  //       featureClicked(id, selectedFeatures);
-  //     };
-  //   });
-  // }
+  // Select first index
+  selectByIndex(id, index);
+  selectFeatures(id, index);
 };
 
 function mouseEnter(e) {
@@ -231,9 +151,9 @@ function moveEnd(layerId) {
 
 function clickSingle(e) {
   if (e.features.length > 0) {
-    selectByIndex(e.features[0].source, e.features[0].id);
+    selectByIndex(e.features[0].source, [e.features[0].id]);
     // And call main.js
-    featureClicked(e.features[0].source, e.features[0]);
+    featureClicked(e.features[0].source, [e.features[0]]);
   };
 }
 
@@ -260,15 +180,28 @@ function clickMultiple(e) {
 }
 
 export function selectByIndex(layerId, index) {
-  for (let i = 0; i < layers[layerId].data.features.length; i++) {
-    if (i == index) {
-      layers[layerId].data.features[i].selected = true
-    } else {
-      layers[layerId].data.features[i].selected = false
+  for (let k = 0; k < index.length; k++) {
+    for (let i = 0; i < layers[layerId].data.features.length; i++) {
+      if (i == index[k]) {
+        layers[layerId].data.features[i].selected = true
+      } else {
+        layers[layerId].data.features[i].selected = false
+      }
     }
   }
   // And update the feature state
   updateFeatureState(layerId);
+}
+
+export function selectFeatures(layerId, index) {
+  for (let k = 0; k < index.length; k++) {
+    for (let i = 0; i < layers[layerId].data.features.length; i++) {
+      if (i == index[k]) {
+        selectedFeatures.push(layers[layerId].data.features[i]);
+      } 
+    }
+  }
+  featureClicked(layerId, selectedFeatures)
 }
 
 // Set active and selected feature states
@@ -361,12 +294,3 @@ export function remove(id) {
   }
   map.off('moveend', moveEnd(layerId));
 }
-
-// function moveEnd(layerId) {
-//   console.log(layerId);
-//   const vis = map.getLayoutProperty(layerId + '.line', 'visibility');
-//   console.log(vis);
-//   if (vis == "visible") {
-//     updateFeatureState(layerId);
-//   }
-// }
