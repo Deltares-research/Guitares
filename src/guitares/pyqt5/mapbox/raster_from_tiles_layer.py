@@ -30,17 +30,32 @@ class RasterFromTilesLayer(Layer):
         wdt = self.mapbox.view.geometry().width()
         hgt = self.mapbox.view.geometry().height()
 
+        # Adjust quality
+        if self.quality == "high":
+            # No need to do anything (using full screen resolution)
+            pass
+        elif self.quality == "medium":
+            wdt = int(wdt / 2)
+            hgt = int(hgt / 2)
+        elif self.quality == "low":
+            wdt = int(wdt / 4)
+            hgt = int(hgt / 4)
+
         if self.option == "topography":
 
             xb, yb, cb = make_topo_overlay_v2(self.topobathy_path,
+                                              lon_range=xl,
+                                              lat_range=yl,
+                                              hillshading=self.hillshading,
+                                              hillshading_exaggeration=self.hillshading_exaggeration,
+                                              hillshading_azimuth=self.hillshading_azimuth,
+                                              hillshading_altitude=self.hillshading_altitude,
                                               npixels=[wdt, hgt],
                                               color_map=self.color_map,
                                               color_range=[self.color_scale_cmin, self.color_scale_cmax],
                                               color_scale_auto=self.color_scale_auto,
                                               color_scale_symmetric=self.color_scale_symmetric,
                                               color_scale_symmetric_side=self.color_scale_symmetric_side,                                       
-                                              lon_range=xl,
-                                              lat_range=yl,  
                                               quiet=False,
                                               file_name=overlay_file)
 
@@ -88,11 +103,18 @@ class RasterFromTilesLayer(Layer):
             # create string with random integer between 1 and 1,000,000
             rstring = str(np.random.randint(1, 1000000))
             legend_file = self.map_id + ".legend." + rstring + ".png"
+            # Multiply cmin and cmax by scale factor
+            cmin = cmin * self.scale_factor
+            cmax = cmax * self.scale_factor
             cm2png(self.color_map,
                 file_name = os.path.join(self.mapbox.server_path, "overlays", legend_file),
                 orientation="vertical",
                 vmin=cmin,
-                vmax=cmax)
+                vmax=cmax,
+                legend_title=self.legend_title,
+                legend_label=self.legend_label,
+                units=self.legend_units,
+                decimals=self.legend_decimals)
 
             clrbar_dict = "./overlays/" + legend_file
 

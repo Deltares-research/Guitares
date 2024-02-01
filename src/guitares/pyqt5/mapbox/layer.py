@@ -18,7 +18,6 @@ class Layer:
         self.color_values = None
         self.color_map = "jet"
         self.color_property = "value"
-        self.legend_position = "bottom-right" # Options are "top-left", "top-right", "bottom-left", "bottom-right"
         self.selection_type = "single"
         self.min_zoom = 0
         self.max_zoom = 22
@@ -26,11 +25,26 @@ class Layer:
         self.decimals = 1
         self.big_data = False
         self.opacity = 0.9
+
+        # Legend
+        self.legend_position = "bottom-right" # Options are "top-left", "top-right", "bottom-left", "bottom-right"
+        self.legend_title = "" # The text that appears at the top of the legend (e.g. Topography)
+        self.legend_label = "" # The text that appears next to the legend (e.g. elevation [m])
+        self.legend_units = "" # The unit string that may appear in the individual tick labels (e.g. "m")
+        self.legend_decimals = -1 # -1 means automatic
+
+        # Raster layers
         self.color_scale_auto = True # automatically scale from min to max
         self.color_scale_cmin = -1000.0
         self.color_scale_cmax =  1000.0
         self.color_scale_symmetric = True
         self.color_scale_symmetric_side = "min"
+        self.hillshading = True
+        self.hillshading_exaggeration = 10.0
+        self.hillshading_azimuth = 315.0
+        self.hillshading_altitude = 30.0
+        self.quality = "medium"
+        self.scale_factor = 1.0
 
         # Cyclone track layer
         self.show_icons = True
