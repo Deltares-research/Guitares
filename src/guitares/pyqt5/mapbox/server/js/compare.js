@@ -17,17 +17,19 @@ mapboxgl.accessToken = mapbox_token;
 mapA = new mapboxgl.Map({
   container: 'compare1',
   // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
-  style: 'mapbox://styles/mapbox/light-v11',
-  center: [0, 0],
-  zoom: 0
+  style: default_compare_style, // style URL
+  center: default_compare_center, // starting position [lng, lat]
+  zoom: default_compare_zoom, // starting zoom
+  projection: default_compare_projection // display the map as a 3D globe
 });
    
 mapB = new mapboxgl.Map({
     container: 'compare2',
-    style: 'mapbox://styles/mapbox/light-v11',
-    center: [0, 0],
-    zoom: 0
-  }
+    style: default_compare_style, // style URL
+    center: default_compare_center, // starting position [lng, lat]
+    zoom: default_compare_zoom, // starting zoom
+    projection: default_compare_projection // display the map as a 3D globe
+    }
 );
 
 // A selector or reference to HTML element

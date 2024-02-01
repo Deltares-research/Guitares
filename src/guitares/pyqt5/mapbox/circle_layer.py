@@ -79,7 +79,7 @@ class CircleLayer(Layer):
             return
         if len(self.data) == 0:
             # Empty GeoDataFrame
-            return
+            return            
         if self.mapbox.zoom > self.min_zoom and self.big_data and self.visible:
             coords = self.mapbox.map_extent
             xl0 = coords[0][0]
@@ -165,6 +165,6 @@ class CircleLayer(Layer):
 
     def redraw(self):
         if isinstance(self.data, GeoDataFrame):
-            self.set_data(self.data, self.color_by_attribute, self.legend_items)
-        if not self.visible:
-            self.hide()
+            self.set_data(self.data)
+        if not self.get_visibility():
+            self.set_visibility(False)

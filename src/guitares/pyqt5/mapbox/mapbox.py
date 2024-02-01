@@ -4,7 +4,7 @@ import json
 from geopandas import GeoDataFrame
 from pandas import DataFrame
 from pyproj import CRS, Transformer
-
+import os
 from .layer import Layer, list_layers, find_layer_by_id
 
 class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
@@ -25,6 +25,13 @@ class MapBox(QtWidgets.QWidget):
         self.element = element
         self.nr_load_attempts = 0
         self.nr_map_ready = 0
+
+        file_name = os.path.join(self.gui.server_path, "js", "mapbox_defaults.js")
+        with open(file_name, "w") as f:
+            f.write("var default_style = '" + element.map_style + "';\n")
+            f.write("var default_center = [" + str(element.map_center[0]) + "," + str(element.map_center[1]) + "]\n")
+            f.write("var default_zoom = " + str(element.map_zoom) + ";\n")
+            f.write("var default_projection = '" + element.map_projection + "';\n")
 
         url = "http://localhost:" + str(self.gui.server_port) + "/"
         self.url = url
@@ -244,6 +251,11 @@ class MapBox(QtWidgets.QWidget):
 
     def redraw_layers(self):
         # Redraw all layers (after map style has changed)
+        # First clear the layer list in the draw_layer.js file
+        self.runjs(
+            "./js/draw_layer.js",
+            "clearLayerList"
+        )
         layers = self.list_layers()
         for layer in layers:
             layer.redraw()

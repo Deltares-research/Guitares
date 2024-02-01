@@ -314,6 +314,17 @@ class DrawLayer(Layer):
         else:
             return self.gdf
 
+    def redraw(self):
+        # Add this layer
+        self.mapbox.runjs(
+            "./js/draw_layer.js",
+            "addLayer",
+            arglist=[self.map_id, "active", self.paint_props, self.shape],
+        )
+        self.add_feature(self.gdf)
+        self.set_mode(self.mode)
+        if not self.get_visibility():
+            self.set_visibility(False)
 
 def get_rectangle_geometry(geoms):
     x0 = []

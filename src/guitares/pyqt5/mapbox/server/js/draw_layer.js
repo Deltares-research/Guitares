@@ -497,6 +497,10 @@ function removeFromLayerList(featureId) {
   layerList.splice(layerList.findIndex(v => v.featureId === featureId), 1);
 }
 
+export function clearLayerList() {
+  layerList = [];
+}
+
 function getLayerProps(layerId) {
   var props = null
   var index = layerList.findIndex(v => v.layerId === layerId);

@@ -25,7 +25,8 @@ class CheckBox(QCheckBox):
                 txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
             self.setToolTip(txt)
 
-        self.stateChanged.connect(self.callback)
+        # self.stateChanged.connect(self.callback)
+        self.clicked.connect(self.callback)
 
         self.set_geometry()
 
@@ -46,10 +47,11 @@ class CheckBox(QCheckBox):
     def callback(self, state):
         group = self.element.variable_group
         name = self.element.variable
-        if state == QtCore.Qt.Checked:
-            val = True
-        else:
-            val = False
+        val = state
+        # if state == QtCore.Qt.Checked:
+        #     val = True
+        # else:
+        #     val = False
         self.element.setvar(group, name, val)
         try:
             if self.isEnabled() and self.element.callback:

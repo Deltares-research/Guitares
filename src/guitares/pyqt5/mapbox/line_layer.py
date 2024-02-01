@@ -39,6 +39,8 @@ class LineLayer(Layer):
     def redraw(self):
         if isinstance(self.data, GeoDataFrame):
             self.set_data(self.data)
+        if not self.get_visibility():
+            self.set_visibility(False)
 
     def activate(self):
         self.mapbox.runjs("./js/line_layer.js", "setPaintProperties", arglist=[self.map_id,

@@ -15,6 +15,8 @@ class Layer:
         self.index     = None
         self.select    = None
         self.crs       = 4326
+        self.color_values = None
+        self.color_map = "jet"
         self.color_property = "value"
         self.legend_position = "bottom-right" # Options are "top-left", "top-right", "bottom-left", "bottom-right"
         self.selection_type = "single"
@@ -23,6 +25,12 @@ class Layer:
         self.zoom_switch = 999
         self.decimals = 1
         self.big_data = False
+        self.opacity = 0.9
+        self.color_scale_auto = True # automatically scale from min to max
+        self.color_scale_cmin = -1000.0
+        self.color_scale_cmax =  1000.0
+        self.color_scale_symmetric = True
+        self.color_scale_symmetric_side = "min"
 
         # Cyclone track layer
         self.show_icons = True
@@ -110,7 +118,7 @@ class Layer:
 
         map_id = self.map_id + "." + layer_id
 
-        if type == None:
+        if type is None:
 
             # Add containing layer
             self.layer[layer_id] = Layer(self.mapbox, layer_id, map_id)
@@ -262,17 +270,16 @@ class Layer:
         # Loop down through the layer hierarchy to show or hide layers
         if self.layer:
             # Container layer
-            # Make a list of all layers
-            layers = list_layers(self.layer)
-            for layer in layers:
-                if true_or_false:
-                    layer.show()
-                else:
-                    layer.hide()
+            for name in self.layer:
+                self.layer[name].set_visibility(true_or_false)
         else:
             # Data layer
             if true_or_false:
-                self.mapbox.runjs(self.main_js, "showLayer", arglist=[self.map_id, self.side])
+                # Child may be visible, on of parents may be invisible
+                if self.get_visibility():
+                    self.mapbox.runjs(self.main_js, "showLayer", arglist=[self.map_id, self.side])
+                else:    
+                    self.mapbox.runjs(self.main_js, "hideLayer", arglist=[self.map_id, self.side])
             else:
                 self.mapbox.runjs(self.main_js, "hideLayer", arglist=[self.map_id, self.side])
 

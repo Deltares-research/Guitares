@@ -78,6 +78,11 @@ class Element:
         self.sortable = True
         self.selection_type = "single"
         self.ready = False
+        # Mapbox
+        self.map_style = "mapbox://styles/mapbox/streets-v11"
+        self.map_center = [0, 0]
+        self.map_zoom = 0
+        self.map_projection = "mercator"
 
         # Now update element attributes based on dict
 
@@ -215,7 +220,17 @@ class Element:
             self.selection_direction = dct["selection_direction"]
         if "sortable" in dct:
             self.sortable = dct["sortable"]
-            
+        if "map_style" in dct:
+            self.map_style = dct["map_style"]
+        if "map_lat" in dct:
+            self.map_center[1] = dct["map_lat"]
+        if "map_lon" in dct:
+            self.map_center[0] = dct["map_lon"]
+        if "map_zoom" in dct:
+            self.map_zoom = dct["map_zoom"]
+        if "map_projection" in dct:
+            self.map_projection = dct["map_projection"]    
+
         if "dependency" in dct:
             for dep in dct["dependency"]:
                 dependency = Dependency()
