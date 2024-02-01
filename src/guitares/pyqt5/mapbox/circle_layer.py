@@ -8,7 +8,6 @@ class CircleLayer(Layer):
         super().__init__(mapbox, id, map_id, **kwargs)
         self.color_by_attribute = dict()
         self.legend_items = list()
-        self.unit = ""
         pass
 
     def set_data(
@@ -29,12 +28,12 @@ class CircleLayer(Layer):
         self.legend_items = legend_items
         self.data = data
         
-
+        self.unit = getattr(self, 'unit', '')
+        
         if not self.big_data:
             if len(self.color_by_attribute) == 0:
                 # Add new layer
                 #TODO: take unit info from settings.toml
-                self.unit = getattr(self, 'unit', '')
                 self.mapbox.runjs(
                     "./js/circle_layer.js",
                     "addLayer",
@@ -90,9 +89,9 @@ class CircleLayer(Layer):
             # Limits WGS 84
             gdf = self.data.cx[xl0:xl1, yl0:yl1]
             
+            self.unit = getattr(self, 'unit', '')
             if len(self.color_by_attribute) == 0:
                 # Add new layer
-                self.unit = getattr(self, 'unit', '')
                 self.mapbox.runjs(
                     "./js/circle_layer.js",
                     "addLayer",
