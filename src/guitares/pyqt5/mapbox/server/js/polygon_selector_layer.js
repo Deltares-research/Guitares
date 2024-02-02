@@ -95,13 +95,22 @@ export function addLayer(id,
   // Clicking
   if (selectionOption == "single") {
     map.on('click', fillId, clickSingle);
-    // Select provided pre-selection
-    selectSingle(id, index[0]);
-    // clickSingle(id, index[0])
+    // Select and click if pre-selection is provided
+    if (index) {
+      selectByIndex(id, index);
+      for (let i = 0; i < layers[id].data.features.length; i++) {
+        if (i == index) {
+          featureClicked(id, layers[id].data.features[i]) 
+        }
+      }
+    }
   } else {
     map.on('click', fillId, clickMultiple);
-    selectMultiple(id, index);
-    // clickMultiple(id, index);
+    // Select and click if pre-selection is provided
+    if (index) {
+      selectByIndex(id, index);
+      featureClicked(id, selectedFeatures)
+    }
   }  
   map.once('idle', () => {
     updateFeatureState(id);
@@ -157,14 +166,16 @@ function moveEnd(layerId) {
   }
 }
 
+// for a single selection type
 function clickSingle(e) {
   if (e.features.length > 0) {
-    selectSingle(e.features[0].source, e.features[0].id);
+    selectByIndex(e.features[0].source, e.features[0].id);
     // And call main.js
-    // featureClicked(e.features[0].source, e.features[0]);
+    featureClicked(e.features[0].source, e.features[0]);
   };
 }
 
+// for a multiple selection type
 function clickMultiple(e) {
   if (e.features.length > 0) {
     var featureState = map.getFeatureState({ source: e.features[0].source, id: e.features[0].id });
@@ -187,63 +198,34 @@ function clickMultiple(e) {
       );
       selectedFeatures.push(e.features[0]);
     };
+    // And call main.js
     featureClicked(e.features[0].source, selectedFeatures);
   };
 }
 
-export function selectSingle(layerId, index) {
-  for (let i = 0; i < layers[layerId].data.features.length; i++) {
-    if (i == index) {
-      layers[layerId].data.features[i].selected = true
-      featureClicked(layerId, layers[layerId].data.features[i]) 
-    } else {
-      layers[layerId].data.features[i].selected = false
+// method to select features by index
+export function selectByIndex(layerId, index) {
+  if (index.length > 0) {
+    for (let k = 0; k < index.length; k++) {
+      for (let i = 0; i < layers[layerId].data.features.length; i++) {
+        if (i == index[k]) {
+          layers[layerId].data.features[i].selected = true
+          selectedFeatures.push(layers[layerId].data.features[i]);
+        }
+      }
     }
-  }
-  // And update the feature state
-  updateFeatureState(layerId);  
-}
-
-export function selectMultiple(layerId, index) {
-  for (let k = 0; k < index.length; k++) {
+  } else {
     for (let i = 0; i < layers[layerId].data.features.length; i++) {
-      if (i == index[k]) {
+      if (i == index) {
         layers[layerId].data.features[i].selected = true
-        selectedFeatures.push(layers[layerId].data.features[i]);
+      } else {
+        layers[layerId].data.features[i].selected = false
       }
     }
   }
   // And update the feature state
   updateFeatureState(layerId);
-  featureClicked(layerId, selectedFeatures)
 }
-
-// export function preSelectSingle(layerId, index) {
-//   for (let i = 0; i < layers[layerId].data.features.length; i++) {
-//     if (i == index) {
-//       map.setFeatureState(
-//         { source: layers[layerId].data.features[i].source, id: layers[layerId].data.features[i].id },
-//         { selected: true }
-//       );
-//       featureClicked(layerId, layers[layerId].data.features[i])      
-//     } 
-//   }
-// }
-
-// export function preSelectMultiple(layerId, index) {
-//   for (let k = 0; k < index.length; k++) {
-//     for (let i = 0; i < layers[layerId].data.features.length; i++) {
-//       if (i == index[k]) {
-//         map.setFeatureState(
-//           { source: layers[layerId].data.features[i].source, id: layers[layerId].data.features[i].id },
-//           { selected: true }
-//         );
-//         selectedFeatures.push(layers[layerId].data.features[i]);
-//       } 
-//     }
-//   }
-//   featureClicked(layerId, selectedFeatures)
-// }
 
 // Set active and selected feature states
 function updateFeatureState(layerId) {

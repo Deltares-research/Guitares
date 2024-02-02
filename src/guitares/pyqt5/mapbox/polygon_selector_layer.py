@@ -26,7 +26,7 @@ class PolygonSelectorLayer(Layer):
         if isinstance(index, int):
             self.index = [index]
         elif not index and self.selection_type=="multiple":
-            self.index = []  
+            self.index = None  
         elif not index and self.selection_type=="single":
             self.index = [indices[0]]
         else:
