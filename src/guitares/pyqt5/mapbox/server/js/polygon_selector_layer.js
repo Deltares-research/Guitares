@@ -32,22 +32,26 @@ export function addLayer(id,
     map.removeSource(id);
   }
 
+  // Hover popup
   popup = new mapboxgl.Popup({
     offset: 10,
     closeButton: false,
     closeOnClick: false
   });
   
+  // Define the layer
   layers[id] = {}
   layers[id].data = data; 
   layers[id].mode = "active"; 
 
+  // Add source
   map.addSource(id, {
     type: 'geojson',
     data: data,
     promoteId: "index"
   });
 
+  // Add line layer
   map.addLayer({
     'id': lineId,
     'type': 'line',
@@ -57,13 +61,14 @@ export function addLayer(id,
       'line-color': lineColor,
       'line-width': lineWidth,
       'line-opacity': lineOpacity
-     },
-     'layout': {
+    },
+    'layout': {
       // Make the layer visible by default.
       'visibility': 'visible'
       }
   });
 
+  // Add fill layer
   map.addLayer({
     'id': fillId,
     'type': 'fill',
@@ -75,12 +80,13 @@ export function addLayer(id,
     },
     'layout': {
      // Make the layer visible by default.
-     'visibility': 'visible'
-     }
+    'visibility': 'visible'
+    }
   });
 
   map.setLayoutProperty(fillId, 'visibility', 'visible');
   map.setLayoutProperty(lineId, 'visibility', 'visible');
+
   // Update feature state after moving
   map.on('moveend', () => { moveEnd(id); } );
   // Hover pop-up
@@ -89,8 +95,13 @@ export function addLayer(id,
   // Clicking
   if (selectionOption == "single") {
     map.on('click', fillId, clickSingle);
+    // Select provided pre-selection
+    selectSingle(id, index[0]);
+    // clickSingle(id, index[0])
   } else {
     map.on('click', fillId, clickMultiple);
+    selectMultiple(id, index);
+    // clickMultiple(id, index);
   }  
   map.once('idle', () => {
     updateFeatureState(id);
@@ -98,9 +109,6 @@ export function addLayer(id,
     layerAdded(id);
   });
 
-  // Select first index
-  selectByIndex(id, index);
-  selectFeatures(id, index);
 };
 
 function mouseEnter(e) {
@@ -151,9 +159,9 @@ function moveEnd(layerId) {
 
 function clickSingle(e) {
   if (e.features.length > 0) {
-    selectByIndex(e.features[0].source, [e.features[0].id]);
+    selectSingle(e.features[0].source, e.features[0].id);
     // And call main.js
-    featureClicked(e.features[0].source, [e.features[0]]);
+    // featureClicked(e.features[0].source, e.features[0]);
   };
 }
 
@@ -166,7 +174,11 @@ function clickMultiple(e) {
         { source: e.features[0].source, id: e.features[0].id },
         { selected: false }
       );
-      selectedFeatures.pop(e.features[0]);
+      for (let i = 0; i < selectedFeatures.length; i++) {
+        if (selectedFeatures[i].id == e.features[0].id) {
+          selectedFeatures.splice(i, 1)
+        }
+      }
     } else {
       // Select
       map.setFeatureState(
@@ -179,30 +191,59 @@ function clickMultiple(e) {
   };
 }
 
-export function selectByIndex(layerId, index) {
+export function selectSingle(layerId, index) {
+  for (let i = 0; i < layers[layerId].data.features.length; i++) {
+    if (i == index) {
+      layers[layerId].data.features[i].selected = true
+      featureClicked(layerId, layers[layerId].data.features[i]) 
+    } else {
+      layers[layerId].data.features[i].selected = false
+    }
+  }
+  // And update the feature state
+  updateFeatureState(layerId);  
+}
+
+export function selectMultiple(layerId, index) {
   for (let k = 0; k < index.length; k++) {
     for (let i = 0; i < layers[layerId].data.features.length; i++) {
       if (i == index[k]) {
         layers[layerId].data.features[i].selected = true
-      } else {
-        layers[layerId].data.features[i].selected = false
+        selectedFeatures.push(layers[layerId].data.features[i]);
       }
     }
   }
   // And update the feature state
   updateFeatureState(layerId);
-}
-
-export function selectFeatures(layerId, index) {
-  for (let k = 0; k < index.length; k++) {
-    for (let i = 0; i < layers[layerId].data.features.length; i++) {
-      if (i == index[k]) {
-        selectedFeatures.push(layers[layerId].data.features[i]);
-      } 
-    }
-  }
   featureClicked(layerId, selectedFeatures)
 }
+
+// export function preSelectSingle(layerId, index) {
+//   for (let i = 0; i < layers[layerId].data.features.length; i++) {
+//     if (i == index) {
+//       map.setFeatureState(
+//         { source: layers[layerId].data.features[i].source, id: layers[layerId].data.features[i].id },
+//         { selected: true }
+//       );
+//       featureClicked(layerId, layers[layerId].data.features[i])      
+//     } 
+//   }
+// }
+
+// export function preSelectMultiple(layerId, index) {
+//   for (let k = 0; k < index.length; k++) {
+//     for (let i = 0; i < layers[layerId].data.features.length; i++) {
+//       if (i == index[k]) {
+//         map.setFeatureState(
+//           { source: layers[layerId].data.features[i].source, id: layers[layerId].data.features[i].id },
+//           { selected: true }
+//         );
+//         selectedFeatures.push(layers[layerId].data.features[i]);
+//       } 
+//     }
+//   }
+//   featureClicked(layerId, selectedFeatures)
+// }
 
 // Set active and selected feature states
 function updateFeatureState(layerId) {

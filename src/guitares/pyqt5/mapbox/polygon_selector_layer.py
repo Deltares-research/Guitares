@@ -8,10 +8,9 @@ class PolygonSelectorLayer(Layer):
 
     def set_data(self,
                  data,
-                 index = None,
-                 select = None,
-                 selection_type = "single"):
-
+                 index = None
+                 ):
+       
         # Make sure this is not an empty GeoDataFrame
         if isinstance(data, GeoDataFrame):
             # Data is GeoDataFrame
@@ -23,10 +22,15 @@ class PolygonSelectorLayer(Layer):
         data["index"] = indices
         
         self.data = data 
-        if index is int:
+        
+        if isinstance(index, int):
             self.index = [index]
-        if not index:
+        elif not index and self.selection_type=="multiple":
+            self.index = []  
+        elif not index and self.selection_type=="single":
             self.index = [indices[0]]
+        else:
+            self.index = index
             
         # Add new layer
         self.mapbox.runjs("./js/polygon_selector_layer.js", "addLayer", arglist=[self.map_id,
