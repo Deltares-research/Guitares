@@ -46,11 +46,13 @@ def cm2png(cmap,
         ax = fig.add_axes([0.80, 0.05, 0.15, 0.90])
 
     norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
-    mpl.colorbar.ColorbarBase(ax,
-                              cmap=cmap,
-                              norm=norm,
-                              orientation=orientation,
-                              label=legend_label)
+    cb = mpl.colorbar.ColorbarBase(ax,
+                                   cmap=cmap,
+                                   norm=norm,
+                                   orientation=orientation,
+                                   label=legend_label)
+    cb.ax.tick_params(labelsize=6)
+
     # Save figure
     fig.savefig(file_name, dpi=150, bbox_inches='tight')
     mpl.pyplot.close(fig)

@@ -25,6 +25,7 @@ class Layer:
         self.decimals = 1
         self.big_data = False
         self.opacity = 0.9
+        self.url = None
 
         # Legend
         self.legend_position = "bottom-right" # Options are "top-left", "top-right", "bottom-left", "bottom-right"
@@ -204,6 +205,10 @@ class Layer:
             elif type == "marker":
                 from .marker_layer import MarkerLayer
                 self.layer[layer_id] = MarkerLayer(self.mapbox, layer_id, map_id, **kwargs)
+
+            elif type == "raster_tile":
+                from .raster_tile_layer import RasterTileLayer
+                self.layer[layer_id] = RasterTileLayer(self.mapbox, layer_id, map_id, **kwargs)
 
             else:
                 print("Error! Layer type " + self.type + " not recognized!")
