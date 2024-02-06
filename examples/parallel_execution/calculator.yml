@@ -1,0 +1,82 @@
+window:
+  title: A Very Simple Calculator
+  width: 680
+  height: 80
+  module: operations
+  variable_group: calculator
+element:
+  - style: panel
+    title: Calculate
+    position:
+      x: 20
+      y: 20
+      width: -20
+      height: 40
+    element:
+    - style: edit
+      position:
+        x: 10
+        y: 10
+        width: 80
+        height: 20
+      variable: a
+      tooltip: Enter variable A
+    - style: popupmenu
+      position:
+        x: 100
+        y: 10
+        width: 40
+        height: 20
+      variable: operator
+      option_value:
+        variable: operator_values
+      option_string:
+        variable: operator_strings
+      tooltip: Select the operator
+    - style: edit
+      position:
+        x: 150
+        y: 10
+        width: 80
+        height: 20
+      variable: b
+    - style: edit
+      position:
+        x: 250
+        y: 10
+        width: 80
+        height: 20
+      text: "="  
+      variable: answer
+      enable: False
+      tooltip: This should be your answer. Is it correct?
+    - style: edit
+      position:
+        x: 350
+        y: 10
+        width: 80
+        height: 20
+      variable: calculator_task_status
+      enable: False
+      tooltip: Status
+    - style: pushbutton
+      position:
+        x: 450
+        y: 10
+        width: 80
+        height: 20
+      text: Calculate
+      method: Calculator.calculate
+      tooltip: Calculate the answer
+    - style: pushbutton
+      position:
+        x: 550
+        y: 10
+        width: 80
+        height: 20
+      text: Calculate parallel
+      method: Calculator.calculate
+      parallelization:
+        run_in_parallel: True
+        variable: calculator_task_status
+      tooltip: Calculate the answer in parallel

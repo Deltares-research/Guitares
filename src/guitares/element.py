@@ -78,6 +78,7 @@ class Element:
         self.sortable = True
         self.selection_type = "single"
         self.ready = False
+        self.threadpool = window.threadpool
 
         # Now update element attributes based on dict
 
@@ -215,6 +216,11 @@ class Element:
             self.selection_direction = dct["selection_direction"]
         if "sortable" in dct:
             self.sortable = dct["sortable"]
+
+        self.parallelization = {"run": False, "variable": None}
+        if "parallelization" in dct:
+            self.parallelization['run'] = dct["parallelization"]["run_in_parallel"]
+            self.parallelization['variable'] = dct["parallelization"]["variable"]
             
         if "dependency" in dct:
             for dep in dct["dependency"]:
