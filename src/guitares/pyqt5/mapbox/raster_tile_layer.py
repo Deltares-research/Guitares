@@ -11,19 +11,13 @@ class RasterTileLayer(Layer):
 
     def set_data(self,
                  data):
-
-        self.data = data   
-        url = data
-
-        # # Make sure this is not an empty GeoDataFrame
-        # if isinstance(data, GeoDataFrame):
-        #     # Data is GeoDataFrame
-        #     if len(data) == 0:
-        #         return
-        # else:
-        #     print("Data is not a GeoDataFrame")
-        #     return    
-
+        self.data = data
+        # check if the string already contains the x, y, z part
+        if "{x}" in data:
+            url = data
+        else:
+            url = data + "/{z}/{x}/{y}.png"
+        # url = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"    
         # Add new layer        
         self.mapbox.runjs("./js/raster_tile_layer.js", "addLayer", arglist=[self.map_id,
                                                                     url])

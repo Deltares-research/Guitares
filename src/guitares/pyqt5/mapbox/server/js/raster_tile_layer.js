@@ -5,9 +5,10 @@ function getMap(side) {
     else { return map }
 }
 
-export function addLayer(url, id, side) {
+export function addLayer(id, url, side) {
   var mp = getMap(side);
   // Add raster tile source
+  console.log(url)
   mp.addSource(id, {
       'type': 'raster',
       'tiles': [url],
