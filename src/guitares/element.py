@@ -470,7 +470,7 @@ class Element:
                             self.widget.text_widget.setEnabled(true_or_false)
             elif dependency.action == "check":
                 self.widget.setChecked(true_or_false)
-        if self.enable == False:        
+        if not self.enable:        
             if self.widget:
                 self.widget.setEnabled(False)
                 if hasattr(self.widget, "text_widget"):
