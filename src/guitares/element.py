@@ -386,44 +386,59 @@ class Element:
 
     def get_position(self):
 
+        # Position as defined in the yml file 
         position = self.position
         resize_factor = self.gui.resize_factor
         parent = self.parent.widget
 
-            # TO DO: relative positions!
+        # TO DO: relative positions!
         pwdt = parent.geometry().width()
         phgt = parent.geometry().height()
 
+        # Multiply with resize factor for high-res screens
         x0 = position.x * resize_factor
         y0 = position.y * resize_factor
         wdt = position.width * resize_factor
         hgt = position.height * resize_factor
 
         if x0>0:
+            # x0 is absolute
             if wdt>0:
+                # wdt is absolute
                 pass
             else:
+                # wdt is relative
                 wdt = pwdt - x0 + wdt
         else:
+            # x0 is relative
             if wdt>0:
+                # wdt is absolute
                 x0 = pwdt - wdt + x0
             else:
+                # wdt is relative
                 x0 = pwdt + x0
                 wdt = pwdt - x0 + wdt
 
         if y0>0:
+            # y0 is absolute
             if hgt>0:
+                # hgt is absolute
                 y0 = phgt - (y0 + hgt)
             else:
+                # hgt is relative
                 y0 = - hgt
                 hgt = phgt - position.y * resize_factor + hgt
         else:
+            # y0 is relative
             if hgt>0:
+                # hgt is absolute
                 y0 = phgt - hgt
             else:
+                # hgt is relative
                 hgt = - y0 - hgt
                 y0 = phgt - (y0 + hgt)
 
+        # Round to integers
         x0 = int(x0)
         y0 = int(y0)
         wdt = int(wdt)

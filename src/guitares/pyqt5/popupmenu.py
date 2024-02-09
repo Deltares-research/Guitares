@@ -29,7 +29,7 @@ class PopupMenu(QComboBox):
                         element.option_value[i] = int(val)
 
         if element.text:
-            if type(element.text) == str:
+            if isinstance(element.text, str):
                 txt = element.text
             else:
                 txt = self.element.getvar(element.text.variable_group, element.text.variable)    
@@ -38,7 +38,7 @@ class PopupMenu(QComboBox):
             self.text_widget = label
 
         if self.element.tooltip:
-            if type(self.element.tooltip) == str:
+            if isinstance(self.element.tooltip, str):
                 txt = self.element.tooltip
             else:
                 txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
@@ -49,6 +49,10 @@ class PopupMenu(QComboBox):
         self.set_geometry()
 
         self.execute_callback = True
+
+    def showEvent(self, event):
+        # Call when this widget becomes visible
+        self.set_geometry()
 
     def set(self):
 
@@ -75,11 +79,11 @@ class PopupMenu(QComboBox):
             index = self.element.getvar(group, name)
             self.setCurrentIndex(index)
 
-        if type(self.element.text) != str:
+        if not isinstance(self.element.text, str):
             txt = self.element.getvar(self.element.text.variable_group, self.element.text.variable)
             self.text_widget.setText(txt)
 
-        if type(self.element.tooltip) != str:
+        if not isinstance(self.element.tooltip, str):
             txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
             self.setToolTip(txt)
 
@@ -131,10 +135,8 @@ class PopupMenu(QComboBox):
                                   int(20 * resize_factor))
 
     def add_items(self):
-
         # Delete existing items
         self.clear()
-
         if self.element.option_string.variable:
             group = self.element.option_string.variable_group
             name  = self.element.option_string.variable

@@ -20,7 +20,7 @@ class Edit(QLineEdit):
         self.setVisible(True)
 
         if element.text:
-            if type(element.text) == str:
+            if isinstance(element.text, str):
                 txt = element.text
             else:
                 txt = self.element.getvar(element.text.variable_group, element.text.variable)    
@@ -32,7 +32,7 @@ class Edit(QLineEdit):
             label.setVisible(True)
 
         if self.element.tooltip:
-            if type(self.element.tooltip) == str:
+            if isinstance(self.element.tooltip, str):
                 txt = self.element.tooltip
             else:
                 txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
@@ -50,11 +50,11 @@ class Edit(QLineEdit):
         self.setText(str(val))
         self.setStyleSheet("")
 
-        if type(self.element.text) != str:
+        if not isinstance(self.element.text, str):
             txt = self.element.getvar(self.element.text.variable_group, self.element.text.variable)
             self.text_widget.setText(txt)
 
-        if type(self.element.tooltip) != str:
+        if not isinstance(self.element.tooltip, str):
             txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
             self.setToolTip(txt)
 
@@ -105,7 +105,7 @@ class Edit(QLineEdit):
         x0, y0, wdt, hgt = self.element.get_position()
         self.setGeometry(x0, y0, wdt, hgt)
         if self.element.text:
-            if type(self.element.text) != str:
+            if not isinstance(self.element.text, str):
                 txt = self.element.getvar(self.element.text.variable_group, self.element.text.variable)
             else:
                 txt = self.element.text    

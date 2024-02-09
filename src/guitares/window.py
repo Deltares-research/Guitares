@@ -153,6 +153,8 @@ class Window:
             # Set elements again
             self.update()
 
+        self.resize()
+
         if self.type == "popup":
             window.exec_()
 
@@ -170,9 +172,13 @@ class Window:
         pass
 
     def update(self):
-        # Update all elements
+        # Update all elements and menus
         self.set_elements(self.elements)
         self.set_menus(self.menus)
+
+    def resize(self):
+        # Resize elements
+        self.resize_elements(self.elements)
 
     def add_elements(self, elements):
         # Loop through elements list
@@ -255,19 +261,11 @@ class Window:
             if element.style == "tabpanel":
                 # Loop through tabs
                 for tab in element.tabs:
-                    # # Resize tab widgets
-                    # tab.widget.setGeometry(0, 0, wdt, int(hgt - 20 * resize_factor))
                     # And resize elements in this tab
                     if tab.elements:
                         self.resize_elements(tab.elements)
             elif element.style == "panel":
-                # If this panel is resizable, also update element positions of children
-                collapsable = False
-                if hasattr(element.parent, "style"):
-                    if element.parent.style == "panel" and element.parent.collapse:
-                        collapsable = True
-                if element.position.height < 0 or element.collapse or collapsable:
-                    self.resize_elements(element.elements)
+                self.resize_elements(element.elements)
 
     def add_menus(self, menus, parent, gui):
         # Loop through elements list

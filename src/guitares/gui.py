@@ -125,14 +125,13 @@ class GUI:
 
         # Make window object
         self.window = Window(self.config, self)
-        window_widget = self.window.build()
+        self.window.build()
 
         # Call on_build method after building window
         if hasattr(self.module, "on_build"):
             self.module.on_build()
             
         # # # Close splash screen before GUI is initiated
-        # self.close_splash()
 
         app.exec_()
 
