@@ -1,5 +1,4 @@
 import importlib
-from PyQt5 import QtCore
 
 from guitares.dependencies import Dependency, DependencyCheck
 
@@ -103,7 +102,7 @@ class Element:
         if "id" in dct:
             self.id = dct["id"]
         if "module" in dct:
-            if type(dct["module"]) == str:
+            if isinstance(dct["module"], str):
                 try:
                     self.module = importlib.import_module(dct["module"])
                 except:
@@ -145,7 +144,7 @@ class Element:
         if "title" in dct:
             self.text = dct["title"]
         if "text" in dct:
-            if type(dct["text"]) == dict:
+            if isinstance(dct["text"], dict):
                 self.text = Text(self.variable_group)
                 if "variable" in dct["text"]:
                     self.text.variable = dct["text"]["variable"]
@@ -155,46 +154,43 @@ class Element:
                 self.text = dct["text"]
         if "text_position" in dct:
             self.text_position = dct["text_position"]
-        if "tooltip" in dct:
-            if type(dct["tooltip"]) == dict:
-                self.tooltip = Text(self.variable_group)
-                if "variable" in dct["tooltip"]:
-                    self.tooltip.variable = dct["tooltip"]["variable"]
-                if "variable_group" in dct["tooltip"]:
-                    self.tooltip.variable_group = dct["tooltip"]["variable_group"]
-            else:
-                self.tooltip = dct["tooltip"]
+        if isinstance(dct["tooltip"], dict):
+            self.tooltip = Text(self.variable_group)
+            if "variable" in dct["tooltip"]:
+                self.tooltip.variable = dct["tooltip"]["variable"]
+            if "variable_group" in dct["tooltip"]:
+                self.tooltip.variable_group = dct["tooltip"]["variable_group"]
+        else:
+            self.tooltip = dct["tooltip"]
 
         # Special for popupmenus and listboxes
         if "select" in dct:
             # Either 'index' or 'item'
             self.select = dct["select"]
-        if "option_value" in dct:
-            if type(dct["option_value"]) == dict:
-                if "variable" in dct["option_value"]:
-                    self.option_value.variable = dct["option_value"]["variable"]
-                if "variable_group" in dct["option_value"]:
-                    self.option_value.variable_group = dct["option_value"]["variable_group"]
-            else:
-                # It's a list
-                self.option_value.list = dct["option_value"]
+        if isinstance(dct["option_value"], dict):
+            if "variable" in dct["option_value"]:
+                self.option_value.variable = dct["option_value"]["variable"]
+            if "variable_group" in dct["option_value"]:
+                self.option_value.variable_group = dct["option_value"]["variable_group"]
+        else:
+            # It's a list
+            self.option_value.list = dct["option_value"]
 
-        if "option_string" in dct:
-            if type(dct["option_string"]) == dict:
-                if "variable" in dct["option_string"]:
-                    self.option_string.variable = dct["option_string"]["variable"]
-                if "variable_group" in dct["option_string"]:
-                    self.option_string.variable_group = dct["option_string"]["variable_group"]
-            else:
-                # It's a list
-                self.option_string.list = dct["option_string"]
+        if isinstance(dct["option_string"], dict):
+            if "variable" in dct["option_string"]:
+                self.option_string.variable = dct["option_string"]["variable"]
+            if "variable_group" in dct["option_string"]:
+                self.option_string.variable_group = dct["option_string"]["variable_group"]
+        else:
+            # It's a list
+            self.option_string.list = dct["option_string"]
 
         if "title" in dct:
             self.title = dct["title"]
         if "filter" in dct:
             self.filter = dct["filter"]
         if "url" in dct:
-            if type(dct["url"]) == dict:
+            if isinstance(dct["url"], dict):
                 self.url = Text(self.variable_group)
                 if "variable" in dct["url"]:
                     self.url.variable = dct["url"]["variable"]
@@ -253,11 +249,14 @@ class Element:
                 self.dependencies.append(dependency)
 
         if self.style == "tabpanel":
+
             self.tabs = []
+
             # Loop through tabs
             for itab, tab_dct in enumerate(dct["tab"]):
                 tab = Tab(self.variable_group, self.module)
                 tab.gui = self.gui
+                tab.dependencies = []
                 # Backward compatibility
                 if "string" in tab_dct:
                     tab.text = tab_dct["string"]
@@ -272,7 +271,31 @@ class Element:
                     except Exception as e:
                         print("Error! Module " + tab_dct["module"] + " could not be imported!")
                         print(e)
+
+                if "dependency" in tab_dct:
+                    for dep in tab_dct["dependency"]:
+                        dependency = Dependency()
+                        dependency.gui = self.gui
+                        if "action" in dep:
+                            dependency.action = dep["action"]
+                        if "checkfor" in dep:
+                            dependency.checkfor = dep["checkfor"]
+                        for check_dct in dep["check"]:
+                            check = DependencyCheck(self.variable_group)
+                            if "variable" in check_dct:
+                                check.variable = check_dct["variable"]
+                            if "variable_group" in check_dct:
+                                check.variable_group = check_dct["variable_group"]
+                            if "operator" in check_dct:
+                                check.operator = check_dct["operator"]
+                            if "value" in check_dct:
+                                check.value = check_dct["value"]
+                            dependency.checks.append(check)
+                        tab.dependencies.append(dependency)
+
                 self.tabs.append(tab)
+
+
 
     def add(self):
         
@@ -289,7 +312,6 @@ class Element:
             # Add dual frame
             from .pyqt5.dual_frame import DualFrame
             self.widget = DualFrame(self)
-
 
         elif self.style == "pushbutton":
             from .pyqt5.pushbutton import PushButton
@@ -447,34 +469,58 @@ class Element:
         return x0, y0, wdt, hgt
 
     def set_dependencies(self):
-        for dependency in self.dependencies:
-            true_or_false = dependency.get()
-            if dependency.action == "visible":
-                if self.style == "radiobuttongroup": # Cannot set radiobutton group directly
-                    self.widget.set_visible(true_or_false)        
-                elif self.style == "mapbox" or self.style == "mapbox_compare":
-                    if self.widget.ready:
-                        self.widget.view.setVisible(true_or_false)        
-                else:    
-                    if self.widget:
-                        self.widget.setVisible(true_or_false)
-                        if hasattr(self.widget, "text_widget"):
-                            self.widget.text_widget.setVisible(true_or_false)
-            elif dependency.action == "enable":
-                if self.style == "radiobuttongroup": # Cannot set radiobutton group directly
-                    self.widget.set_enabled(true_or_false)        
-                else:    
-                    if self.widget:
-                        self.widget.setEnabled(true_or_false)
-                        if hasattr(self.widget, "text_widget"):
-                            self.widget.text_widget.setEnabled(true_or_false)
-            elif dependency.action == "check":
-                self.widget.setChecked(true_or_false)
-        if not self.enable:        
-            if self.widget:
-                self.widget.setEnabled(False)
-                if hasattr(self.widget, "text_widget"):
-                    self.widget.text_widget.setEnabled(False)
+        # TODO: Would be cleaner to add enable and disable methods in the individual elements
+        # Check if this element is a tabpanel
+        if self.style == "tabpanel":
+            for itab, tab in enumerate(self.tabs):
+                # Check if this tab has dependencies
+                if tab.dependencies:
+                    for dependency in tab.dependencies:
+                        true_or_false = dependency.get()
+                        if dependency.action == "enable":
+                            if true_or_false:
+                                self.widget.setTabEnabled(itab, True)
+                            else:
+                                self.widget.setTabEnabled(itab, False)
+
+                        elif dependency.action == "visible":
+                            if true_or_false:
+                                self.widget.setTabVisible(itab, True)
+                            else:
+                                self.widget.setTabVisible(itab, False)    
+
+        else:            
+            # "normal" element
+            for dependency in self.dependencies:
+                true_or_false = dependency.get()
+                if dependency.action == "visible":
+                    if self.style == "radiobuttongroup": # Cannot set radiobutton group directly
+                        self.widget.set_visible(true_or_false)        
+                    elif self.style == "mapbox" or self.style == "mapbox_compare":
+                        if self.widget.ready:
+                            self.widget.view.setVisible(true_or_false)        
+                    else:    
+                        if self.widget:
+                            self.widget.setVisible(true_or_false)
+                            if hasattr(self.widget, "text_widget"):
+                                self.widget.text_widget.setVisible(true_or_false)
+                elif dependency.action == "enable":
+                    if self.style == "radiobuttongroup": # Cannot set radiobutton group directly
+                        self.widget.set_enabled(true_or_false)        
+                    else:    
+                        if self.widget:
+                            self.widget.setEnabled(true_or_false)
+                            if hasattr(self.widget, "text_widget"):
+                                self.widget.text_widget.setEnabled(true_or_false)
+                elif dependency.action == "check":
+                    self.widget.setChecked(true_or_false)
+            if not self.enable:        
+                if self.widget:
+                    self.widget.setEnabled(False)
+                    if hasattr(self.widget, "text_widget"):
+                        self.widget.text_widget.setEnabled(False)
+
+
 
     def clear_tab(self, index):
         self.widget.clear_tab(index)

@@ -206,6 +206,8 @@ class Window:
             try:
                 if element.visible:
                     if element.style == "tabpanel":
+                        # Set possible tab dependencies
+                        element.set_dependencies()
                         # Only update the elements in the active tab
                         index = element.widget.currentIndex()
                         # Loop through elements in tab
