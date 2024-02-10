@@ -97,18 +97,23 @@ class Element:
 
         if "variable" in dct:
             self.variable = dct["variable"]
+
         if "variable_group" in dct:
             self.variable_group = dct["variable_group"]
+
         if "id" in dct:
             self.id = dct["id"]
+
         if "module" in dct:
             if isinstance(dct["module"], str):
                 try:
                     self.module = importlib.import_module(dct["module"])
                 except:
                     print("Error! Could not import module " + dct["module"])
+
         if "method" in dct:
             self.method = dct["method"]
+
         if hasattr(self.method, '__call__'):
              # Callback function is already defined as method
              self.callback = self.method
@@ -143,6 +148,8 @@ class Element:
         # "title" for backward compatibility
         if "title" in dct:
             self.text = dct["title"]
+            self.title = dct["title"]
+
         if "text" in dct:
             if isinstance(dct["text"], dict):
                 self.text = Text(self.variable_group)
@@ -152,43 +159,48 @@ class Element:
                     self.text.variable_group = dct["text"]["variable_group"]
             else:
                 self.text = dct["text"]
+
         if "text_position" in dct:
             self.text_position = dct["text_position"]
-        if isinstance(dct["tooltip"], dict):
-            self.tooltip = Text(self.variable_group)
-            if "variable" in dct["tooltip"]:
-                self.tooltip.variable = dct["tooltip"]["variable"]
-            if "variable_group" in dct["tooltip"]:
-                self.tooltip.variable_group = dct["tooltip"]["variable_group"]
-        else:
-            self.tooltip = dct["tooltip"]
+
+        if "tooltip" in dct:    
+            if isinstance(dct["tooltip"], dict):
+                self.tooltip = Text(self.variable_group)
+                if "variable" in dct["tooltip"]:
+                    self.tooltip.variable = dct["tooltip"]["variable"]
+                if "variable_group" in dct["tooltip"]:
+                    self.tooltip.variable_group = dct["tooltip"]["variable_group"]
+            else:
+                self.tooltip = dct["tooltip"]
 
         # Special for popupmenus and listboxes
         if "select" in dct:
             # Either 'index' or 'item'
             self.select = dct["select"]
-        if isinstance(dct["option_value"], dict):
-            if "variable" in dct["option_value"]:
-                self.option_value.variable = dct["option_value"]["variable"]
-            if "variable_group" in dct["option_value"]:
-                self.option_value.variable_group = dct["option_value"]["variable_group"]
-        else:
-            # It's a list
-            self.option_value.list = dct["option_value"]
 
-        if isinstance(dct["option_string"], dict):
-            if "variable" in dct["option_string"]:
-                self.option_string.variable = dct["option_string"]["variable"]
-            if "variable_group" in dct["option_string"]:
-                self.option_string.variable_group = dct["option_string"]["variable_group"]
-        else:
-            # It's a list
-            self.option_string.list = dct["option_string"]
+        if "option_value" in dct:    
+            if isinstance(dct["option_value"], dict):
+                if "variable" in dct["option_value"]:
+                    self.option_value.variable = dct["option_value"]["variable"]
+                if "variable_group" in dct["option_value"]:
+                    self.option_value.variable_group = dct["option_value"]["variable_group"]
+            else:
+                # It's a list
+                self.option_value.list = dct["option_value"]
 
-        if "title" in dct:
-            self.title = dct["title"]
+        if "option_string" in dct:    
+            if isinstance(dct["option_string"], dict):
+                if "variable" in dct["option_string"]:
+                    self.option_string.variable = dct["option_string"]["variable"]
+                if "variable_group" in dct["option_string"]:
+                    self.option_string.variable_group = dct["option_string"]["variable_group"]
+            else:
+                # It's a list
+                self.option_string.list = dct["option_string"]
+
         if "filter" in dct:
             self.filter = dct["filter"]
+
         if "url" in dct:
             if isinstance(dct["url"], dict):
                 self.url = Text(self.variable_group)
@@ -198,32 +210,46 @@ class Element:
                     self.url.variable_group = dct["url"]["variable_group"]
             else:
                 self.url = dct["url"]
+
         if "collapse" in dct:
             self.collapse = dct["collapse"]
+
         if "collapsed" in dct:
             self.collapsed = dct["collapsed"]
+
         if "fraction_collapsed" in dct:
             self.fraction_collapsed = dct["fraction_collapsed"]
+
         if "fraction_expanded" in dct:
             self.fraction_expanded = dct["fraction_expanded"]
+
         if "multiselection" in dct:
             self.multiselection = dct["multiselection"]
+
         if "enable" in dct:
             self.enable = dct["enable"]
+
         if "selection_type" in dct:
             self.selection_type = dct["selection_type"]
+
         if "selection_direction" in dct:
             self.selection_direction = dct["selection_direction"]
+
         if "sortable" in dct:
             self.sortable = dct["sortable"]
+
         if "map_style" in dct:
             self.map_style = dct["map_style"]
+
         if "map_lat" in dct:
             self.map_center[1] = dct["map_lat"]
+
         if "map_lon" in dct:
             self.map_center[0] = dct["map_lon"]
+
         if "map_zoom" in dct:
             self.map_zoom = dct["map_zoom"]
+
         if "map_projection" in dct:
             self.map_projection = dct["map_projection"]    
 
@@ -254,11 +280,11 @@ class Element:
 
             # Loop through tabs
             for itab, tab_dct in enumerate(dct["tab"]):
+
                 tab = Tab(self.variable_group, self.module)
                 tab.gui = self.gui
-                tab.dependencies = []
-                # Backward compatibility
-                if "string" in tab_dct:
+                
+                if "string" in tab_dct: # Backward compatibility
                     tab.text = tab_dct["string"]
                 if "text" in tab_dct:
                     tab.text = tab_dct["text"]
@@ -272,6 +298,7 @@ class Element:
                         print("Error! Module " + tab_dct["module"] + " could not be imported!")
                         print(e)
 
+                tab.dependencies = []
                 if "dependency" in tab_dct:
                     for dep in tab_dct["dependency"]:
                         dependency = Dependency()
@@ -294,7 +321,6 @@ class Element:
                         tab.dependencies.append(dependency)
 
                 self.tabs.append(tab)
-
 
 
     def add(self):
