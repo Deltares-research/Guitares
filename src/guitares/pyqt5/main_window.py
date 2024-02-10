@@ -22,7 +22,7 @@ class MainWindow(QMainWindow):
         font = QtGui.QFont("times", pt)
         fm = QtGui.QFontMetrics(font)
         height_in_pixels = fm.height()
-        resize_factor = height_in_pixels / 12
+        resize_factor = height_in_pixels / 11
         self.window.gui.resize_factor = resize_factor
 
         # Window size
