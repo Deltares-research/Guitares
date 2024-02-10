@@ -165,7 +165,7 @@ class GUI:
         # config needs to be file name of yml file, or configuration dict
         # Data is optional and can have any shape (e.g. dict, str, object, etc.)
         # Data will only be changed if Okay is clicked in the pop-up window
-        if type(config) == str:
+        if isinstance(config, str):
             path = os.path.dirname(config)
             file_name = os.path.basename(config)
             config = self.read_gui_config(path, file_name)

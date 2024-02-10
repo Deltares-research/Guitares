@@ -21,6 +21,9 @@ class Window:
         self.data   = data
         self.width  = 800
         self.height = 600
+        self.minimum_width  = 400
+        self.minimum_height = 300
+        self.maximize = False
         self.title  = ""
         self.module = None
         self.variable_group = "_main"
@@ -33,6 +36,16 @@ class Window:
             self.width = config_dict["window"]["width"]
         if "height" in config_dict["window"]:
             self.height = config_dict["window"]["height"]
+        if "minimum_width" in config_dict["window"]:
+            self.minimum_width = config_dict["window"]["minimum_width"]
+        else:
+            self.minimum_width = self.width
+        if "minimum_height" in config_dict["window"]:
+            self.minimum_height = config_dict["window"]["minimum_height"]
+        else:
+            self.minimum_height = self.height
+        if "maximize" in config_dict["window"]:
+            self.maximize = config_dict["window"]["maximize"]
         if "title" in config_dict["window"]:
             self.title = config_dict["window"]["title"]
         if "module" in config_dict["window"]:
@@ -143,6 +156,9 @@ class Window:
 
         # Set elements
         self.update()
+
+        if self.maximize:
+            window.showMaximized()
 
         window.show()
 

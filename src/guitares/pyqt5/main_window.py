@@ -29,9 +29,9 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(self.window.title)
         self.window_width = int(self.window.width*self.window.gui.resize_factor)
         self.window_height = int(self.window.height*self.window.gui.resize_factor)
-        # self.window_width = int(self.window.width)
-        # self.window_height = int(self.window.height)
-        self.setMinimumSize(self.window_width, self.window_height)
+        min_width = int(self.window.minimum_width*self.window.gui.resize_factor)
+        min_height = int(self.window.minimum_height*self.window.gui.resize_factor)
+        self.setMinimumSize(min_width, min_height)
         if self.window.icon:
           self.setWindowIcon(QtGui.QIcon(self.window.icon))
         # screen = QApplication.primaryScreen()
