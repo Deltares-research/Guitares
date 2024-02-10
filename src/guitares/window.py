@@ -24,6 +24,7 @@ class Window:
         self.minimum_width  = 400
         self.minimum_height = 300
         self.maximize = False
+        self.fixed_size = False
         self.title  = ""
         self.module = None
         self.variable_group = "_main"
@@ -46,6 +47,8 @@ class Window:
             self.minimum_height = self.height
         if "maximize" in config_dict["window"]:
             self.maximize = config_dict["window"]["maximize"]
+        if "fixed_size" in config_dict["window"]:
+            self.fixed_size = config_dict["window"]["fixed_size"]
         if "title" in config_dict["window"]:
             self.title = config_dict["window"]["title"]
         if "module" in config_dict["window"]:
@@ -60,6 +63,8 @@ class Window:
             self.modal = config_dict["window"]["modal"]
         if self.module and "okay_method" in config_dict["window"]:
             self.okay_method = getattr(self.module, config_dict["window"]["okay_method"])
+        if self.fixed_size:
+            self.maximize=False    
         self.elements = []
         self.menus    = []
         self.toolbar  = []

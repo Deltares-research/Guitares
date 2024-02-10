@@ -39,6 +39,8 @@ class MainWindow(QMainWindow):
                          int(0.5*(screen.size().height() - self.window_height)),
                          self.window_width,
                          self.window_height)
+        if self.window.fixed_size:
+            self.setFixedSize(self.window_width, self.window_height)
 
     def resizeEvent(self, event):
         self.window.resize_elements(self.window.elements)
