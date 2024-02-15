@@ -12,7 +12,6 @@ export function addLayer(
   unit,
   legend_position,
   side,
-  color_no,
   bins,
   colors,
   color_labels,
@@ -85,7 +84,7 @@ export function addLayer(
 
   // Legend
   var legendItems = [];
-  for (let i = 0; i < color_no; i++) {
+  for (let i = 0; i < colors.length; i++) {
     legendItems.push({ style: colors[i], label: color_labels[i]});
   }
 
