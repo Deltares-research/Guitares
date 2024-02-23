@@ -1,6 +1,7 @@
 import os
 from PyQt5.QtWidgets import QWidget, QFrame, QLabel, QPushButton
 from PyQt5 import QtCore, QtGui
+import traceback
 
 class Frame(QFrame):
     def __init__(self, element):
@@ -36,9 +37,12 @@ class Frame(QFrame):
     def set(self):
         pass
 
+    def showEvent(self, event):
+        self.set_geometry()
+
     def set_geometry(self):
 
-        resize_factor = self.element.gui.resize_factor
+        rf = self.element.gui.resize_factor
         button_size = 12
         x0, y0, wdt, hgt = self.element.get_position()
         if self.element.collapse:
@@ -48,8 +52,9 @@ class Frame(QFrame):
         # Text widget
         if self.element.text:
             fm = self.text_widget.fontMetrics()
+            hlab = fm.size(0, self.element.text).height()
             wlab = fm.size(0, self.element.text).width()
-            self.text_widget.setGeometry(x0 + 10, y0 - 9, wlab, 16)
+            self.text_widget.setGeometry(int(x0 + 5*rf), int(y0 - 0.6*hlab), wlab, hlab)
             self.text_widget.setAlignment(QtCore.Qt.AlignTop)
 
         # Push button

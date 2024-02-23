@@ -21,6 +21,10 @@ class Window:
         self.data   = data
         self.width  = 800
         self.height = 600
+        self.minimum_width  = 400
+        self.minimum_height = 300
+        self.maximize = False
+        self.fixed_size = False
         self.title  = ""
         self.module = None
         self.variable_group = "_main"
@@ -33,6 +37,18 @@ class Window:
             self.width = config_dict["window"]["width"]
         if "height" in config_dict["window"]:
             self.height = config_dict["window"]["height"]
+        if "minimum_width" in config_dict["window"]:
+            self.minimum_width = config_dict["window"]["minimum_width"]
+        else:
+            self.minimum_width = self.width
+        if "minimum_height" in config_dict["window"]:
+            self.minimum_height = config_dict["window"]["minimum_height"]
+        else:
+            self.minimum_height = self.height
+        if "maximize" in config_dict["window"]:
+            self.maximize = config_dict["window"]["maximize"]
+        if "fixed_size" in config_dict["window"]:
+            self.fixed_size = config_dict["window"]["fixed_size"]
         if "title" in config_dict["window"]:
             self.title = config_dict["window"]["title"]
         if "module" in config_dict["window"]:
@@ -47,6 +63,8 @@ class Window:
             self.modal = config_dict["window"]["modal"]
         if self.module and "okay_method" in config_dict["window"]:
             self.okay_method = getattr(self.module, config_dict["window"]["okay_method"])
+        if self.fixed_size:
+            self.maximize=False    
         self.elements = []
         self.menus    = []
         self.toolbar  = []
@@ -144,6 +162,9 @@ class Window:
         # Set elements
         self.update()
 
+        if self.maximize:
+            window.showMaximized()
+
         window.show()
 
         # Check if a call start up callback function is needed
@@ -152,6 +173,8 @@ class Window:
             start_up_fcn()
             # Set elements again
             self.update()
+
+        self.resize()
 
         if self.type == "popup":
             window.exec_()
@@ -170,9 +193,13 @@ class Window:
         pass
 
     def update(self):
-        # Update all elements
+        # Update all elements and menus
         self.set_elements(self.elements)
         self.set_menus(self.menus)
+
+    def resize(self):
+        # Resize elements
+        self.resize_elements(self.elements)
 
     def add_elements(self, elements):
         # Loop through elements list
@@ -200,6 +227,8 @@ class Window:
             try:
                 if element.visible:
                     if element.style == "tabpanel":
+                        # Set possible tab dependencies
+                        element.set_dependencies()
                         # Only update the elements in the active tab
                         index = element.widget.currentIndex()
                         # Loop through elements in tab
@@ -255,19 +284,11 @@ class Window:
             if element.style == "tabpanel":
                 # Loop through tabs
                 for tab in element.tabs:
-                    # # Resize tab widgets
-                    # tab.widget.setGeometry(0, 0, wdt, int(hgt - 20 * resize_factor))
                     # And resize elements in this tab
                     if tab.elements:
                         self.resize_elements(tab.elements)
             elif element.style == "panel":
-                # If this panel is resizable, also update element positions of children
-                collapsable = False
-                if hasattr(element.parent, "style"):
-                    if element.parent.style == "panel" and element.parent.collapse:
-                        collapsable = True
-                if element.position.height < 0 or element.collapse or collapsable:
-                    self.resize_elements(element.elements)
+                self.resize_elements(element.elements)
 
     def add_menus(self, menus, parent, gui):
         # Loop through elements list

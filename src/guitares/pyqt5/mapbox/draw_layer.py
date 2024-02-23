@@ -224,7 +224,7 @@ class DrawLayer(Layer):
     def get_feature_id(self, feature_index):
         """Get a features ID by index in the GeoDataFrame."""
         feature_id = None
-        if len(self.gdf) > 0 and len(self.gdf) <= feature_index + 1:
+        if len(self.gdf) > 0 and len(self.gdf) >= feature_index + 1:
             feature_id = self.gdf.loc[feature_index, "id"]
         return feature_id
 
@@ -271,8 +271,14 @@ class DrawLayer(Layer):
         if self.deselect:
             self.deselect()
 
-    def activate_feature(self, feature_id):
-        """Activate a feature by ID so it can be edited by the user."""
+    def activate_feature(self, feature_id_or_index):
+        """Activate a feature by ID or index so it can be edited by the user."""
+        if isinstance(feature_id_or_index, int):
+            # It's an index
+            index = feature_id_or_index
+            feature_id = self.get_feature_id(index)
+        else:
+            feature_id = feature_id_or_index    
         if self.mode != "active":
             self.mode = "active"
             self.mapbox.runjs(
@@ -283,15 +289,33 @@ class DrawLayer(Layer):
     def set_feature_geometry(self, feature_id, geom):        
         self.mapbox.runjs("./js/draw_layer.js", "setFeatureGeometry", arglist=[self.map_id, feature_id, geom])
 
-    def delete_feature(self, feature_id):
-        """Delete a feature by ID."""
-        if feature_id:  # Could also be None
+    def delete_feature(self, feature_id_or_index):
+        """Delete a feature by ID or index"""
+        if isinstance(feature_id_or_index, int):
+            # It's an index
+            index = feature_id_or_index
+            feature_id = self.get_feature_id(index)
+            # Remove from gdf
+            self.gdf = self.gdf.drop(index)
+            if len(self.gdf) > 0:
+                self.gdf = self.gdf.reset_index(drop=True)
+            else:
+                self.gdf = gpd.GeoDataFrame()
+            # Remove from map
+            self.mapbox.runjs("./js/draw_layer.js", "deleteFeature", arglist=[feature_id])
+        else:    
+            feature_id = feature_id_or_index
             # Remove from gdf
             for index, row in self.gdf.iterrows():
                 if row["id"] == feature_id:
                     self.gdf = self.gdf.drop(index)
+                    if len(self.gdf) > 0:
+                        self.gdf = self.gdf.reset_index(drop=True)
+                    else:
+                        self.gdf = gpd.GeoDataFrame()    
                     break
             self.mapbox.runjs("./js/draw_layer.js", "deleteFeature", arglist=[feature_id])
+        return self.gdf    
 
     def delete_from_map(self):
         """Delete the draw layer from the map."""

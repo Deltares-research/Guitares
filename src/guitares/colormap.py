@@ -25,22 +25,36 @@ def read_color_maps(path_name):
     return mpl.pyplot.colormaps()    
 
 
-def cm2png(cmap, file_name="colorbar.png", orientation="horizontal", vmin=0.0, vmax=1.0):
+def cm2png(cmap,
+           file_name="colorbar.png",
+           orientation="horizontal",
+           vmin=0.0,
+           vmax=1.0,
+           legend_title="",
+           legend_label="",
+           units="",
+           unit_string="",
+           decimals=-1):
+
     """Create png image of colormap"""
     # Create figure
     if orientation == "horizontal":
-        fig = mpl.pyplot.figure(figsize=(3, 1))
+        fig = mpl.pyplot.figure(figsize=(2.5, 1))
         ax = fig.add_axes([0.05, 0.80, 0.9, 0.15])
     else:
-        fig = mpl.pyplot.figure(figsize=(1, 3))
+        fig = mpl.pyplot.figure(figsize=(1, 2.5))
         ax = fig.add_axes([0.80, 0.05, 0.15, 0.90])
 
     norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
-    mpl.colorbar.ColorbarBase(ax, cmap=cmap,
-                              norm=norm,
-                              orientation=orientation)
+    cb = mpl.colorbar.ColorbarBase(ax,
+                                   cmap=cmap,
+                                   norm=norm,
+                                   orientation=orientation,
+                                   label=legend_label)
+    cb.ax.tick_params(labelsize=6)
+
     # Save figure
-    fig.savefig(file_name, dpi=100, bbox_inches='tight')
+    fig.savefig(file_name, dpi=150, bbox_inches='tight')
     mpl.pyplot.close(fig)
 
 def read_colormap(file_name):
