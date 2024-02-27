@@ -150,6 +150,10 @@ class Layer:
                 from .circle_selector_layer import CircleSelectorLayer
                 self.layer[layer_id] = CircleSelectorLayer(self.mapbox, layer_id, map_id, **kwargs)
 
+            elif type == "polygon":
+                from .polygon_layer import PolygonLayer
+                self.layer[layer_id] = PolygonLayer(self.mapbox, layer_id, map_id, **kwargs)	
+                
             elif type == "polygon_selector":
                 from .polygon_selector_layer import PolygonSelectorLayer
                 self.layer[layer_id] = PolygonSelectorLayer(self.mapbox, layer_id, map_id, **kwargs)
