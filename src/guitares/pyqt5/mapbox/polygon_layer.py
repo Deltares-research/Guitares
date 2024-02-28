@@ -62,29 +62,3 @@ class PolygonLayer(Layer):
             self.set_data(self.data, self.index)
         if not self.get_visibility():
             self.set_visibility(False)
-
-    # def activate(self):
-    #     self.active = True
-
-    # def deactivate(self):
-    #     self.active = False
-
-    # def clear(self):
-    #     self.active = False
-    #     self.remove()
-
-    # def remove(self):
-    #     self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id + ".fill"])
-    #     self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id + ".line"])
-    #     self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id])
-
-    # def update(self):
-    #     pass
-
-    # def set_visibility(self, true_or_false):
-    #     if true_or_false and self.visible:
-    #         self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id + ".fill"])
-    #         self.mapbox.runjs("/js/main.js", "showLayer", arglist=[self.map_id + ".line"])
-    #     else:
-    #         self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".fill"])
-    #         self.mapbox.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".line"])
