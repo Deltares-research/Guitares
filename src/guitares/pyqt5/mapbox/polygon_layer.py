@@ -59,6 +59,6 @@ class PolygonLayer(Layer):
     def redraw(self):
         # Called when the map style is changed
         if isinstance(self.data, GeoDataFrame):
-            self.set_data(self.data, self.index)
+            self.set_data(self.data)
         if not self.get_visibility():
             self.set_visibility(False)
