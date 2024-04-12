@@ -54,8 +54,9 @@ class CheckBox(QCheckBox):
                 self.element.callback(val, self)
             # Update GUI
             self.element.window.update()
-        except:
-            pass
+        except Exception as e:
+            print("Error in CheckBox callback")
+            print(e)
 
     def set_geometry(self):
         if self.element.id=="sbg":
