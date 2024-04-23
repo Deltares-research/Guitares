@@ -40,20 +40,15 @@ on:
 jobs:
   build-artifacts:
     runs-on: ubuntu-latest
+    
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      
-      - uses: conda-incubator/setup-miniconda@v2
-        name: Setup Miniconda
+
+      - uses: actions/setup-python@v5
         with:
-          auto-update-conda: true
           python-version: ${{ env.PYTHON_VERSION }}
-    
-      - name: Install GDAL
-        shell: bash -l {0}
-        run: conda install -c conda-forge gdal
 
       - name: Install dependencies and build tools
         shell: bash -l {0}
@@ -89,17 +84,14 @@ jobs:
           ls -ltrh
           ls -ltrh dist
       
-      - uses: conda-incubator/setup-miniconda@v2
-        name: Setup Miniconda
+      - uses: actions/setup-python@v5
         with:
-          auto-update-conda: true
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Verify the built dist/wheel is valid
         run: |
           python -m pip install dist/*.whl
           python -c "import ${{ env.PACKAGE_NAME }}; print(${{ env.PACKAGE_NAME }}.__version__})"
-          
 
   upload-to-test-pypi:
     environment: release
