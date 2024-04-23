@@ -72,6 +72,7 @@ jobs:
           path: dist
       
   test-built-dist: # Install the built package and test it has been built correctly
+    needs: [build-artifacts]
     runs-on: ubuntu-latest
     defaults:
       run:
