@@ -2,9 +2,12 @@
 requires = ["setuptools>=42"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["guitares*"]
+
 [project]
 name = "guitares"
-version = "0.0.9"
 authors = [
     {name = "Maarten van Ormondt", email = "maarten.vanormondt@deltares-usa.us"},
 ]
@@ -30,6 +33,10 @@ dependencies = [
     "spatialpandas",
     "pyogrio"
 ]
+dynamic = ["version"]
+
+[tool.setuptools.dynamic]
+version = { attr = "guitares.__version__" }
 
 [tool.setuptools.package-data]
 "guitares.pyqt5.mapbox.server"    = ["*.js", "*.html"]
