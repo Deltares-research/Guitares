@@ -294,7 +294,10 @@ class Layer:
         if self.layer:
             # Container layer
             for name in self.layer:
-                self.layer[name].set_visibility(true_or_false)
+                if true_or_false:
+                    self.layer[name].show()
+                else:
+                    self.layer[name].hide()
         else:
             # Data layer
             if true_or_false:
