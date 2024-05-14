@@ -3,37 +3,29 @@
 # 
 # Before running this workflow in your repository, you will need to set up Secrets in your repository settings:
 # - Log in to your (test)PyPI account, go to your account -> your_project -> Publishing
-# - Fill in the required fields (environment: release)
+# - Fill in the required fields
 # - Create an API token for the repository and this workflow
 
-# - Go to your repository on GitHub, click on the "Settings" tab.
-# - Create an environment 'release' and set the security rules
-# - Go to the "Secrets" tab, click on "New environment secret"
+# - Go to your repository on GitHub, click on the "Settings" tab, and then "Secrets"
 # - Add a new secret with the name PYPI_TOKEN and the value is your pypi token
-# - Add a new secret with the name PYPI_TEST_TOKEN and the value is your test pypi token
+# - Add a new secret with the name TEST_PYPI_TOKEN and the value is your test pypi token
 # Then, define the name of your package and the python version you want to use in the env block below.
 
-# This workflow will then automatically test, build and upload your package to PyPI/TestPypi:
-# - When a new commit is pushed to main, it will build and upload to TestPyPI to catch errors early
-# - When a new release is created, it will build and upload to the real PyPI
+# This workflow will then automatically build and upload your package to PyPI/TestPypi:
+# - When a pull request is opened to main, it will build and upload to TestPyPI to catch errors early
+# - When a new release is published, it will build and upload to the real PyPI
 ---
 env:
-  PACKAGE_NAME: "guitares"  # the name of your package on PyPI
-  PYTHON_VERSION: "3.10"        # the version of python used to build & publish the package. Tests will be run for all versions in the matrix
+  PACKAGE_NAME: "guitares"
+  PYTHON_VERSION: "3.10"
 
 name: Build and Upload to PyPI
 on:
-  push:
-    branches:
-      - main
-    tags:
-      - v*
   pull_request:
     branches:
       - main
   release:
-    types:
-      - published
+    types: [created, published]
   workflow_dispatch:
 
 
@@ -93,13 +85,12 @@ jobs:
           python -m pip install dist/*.whl
           python -c "import ${{ env.PACKAGE_NAME }}; print(${{ env.PACKAGE_NAME }}.__version__)"
 
+
   upload-to-test-pypi:
     environment: release
     permissions:
       id-token: write
-    needs: [test-built-dist]
-    if: ${{ github.event_name == 'release' && !github.event.act  }}
-
+    needs: test-built-dist
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v3
@@ -116,12 +107,11 @@ jobs:
           skip_existing: true
 
   upload-to-pypi:
-    needs: [upload-to-test-pypi]
     environment: release
     permissions:
       id-token: write
-
-    if: ${{ github.event_name == 'release' && !github.event.act  }}
+    needs: upload-to-test-pypi
+    if: ${{ github.event_name == 'release' && github.event.action == 'published' }}    
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v3
