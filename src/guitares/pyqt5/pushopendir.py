@@ -11,7 +11,7 @@ class PushOpenDir(QPushButton):
         self.element = element
 
         if element.text:
-            if type(element.text) == str:
+            if isinstance(element.text, str):
                 txt = element.text
             else:
                 txt = self.element.getvar(
@@ -20,7 +20,7 @@ class PushOpenDir(QPushButton):
             self.setText(txt)
 
         if self.element.tooltip:
-            if type(self.element.tooltip) == str:
+            if isinstance(element.tooltip, str):
                 txt = self.element.tooltip
             else:
                 txt = self.element.getvar(
@@ -35,24 +35,18 @@ class PushOpenDir(QPushButton):
         self.set_geometry()
 
     def set(self):
-        if type(self.element.text) != str:
+        if not isinstance(self.element.text, str):
             self.setText(
                 self.element.getvar(
                     self.element.text.variable_group, self.element.text.variable
                 )
             )
-        if type(self.element.tooltip) != str:
+        if not isinstance(self.element.tooltip, str):
             self.setToolTip(
                 self.element.getvar(
                     self.element.tooltip.variable_group, self.element.tooltip.variable
                 )
             )
-        # group  = self.element.variable_group
-        # name   = self.element.variable
-        # val    = self.element.getvar(group, name)
-        # self.string = str(val)
-        # self.setText(str(val))
-        # self.setStyleSheet("")
 
     def callback(self):
         self.okay = True
