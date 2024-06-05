@@ -383,6 +383,11 @@ class Element:
             from .pyqt5.pushopenfile import PushOpenFile
             self.widget = PushOpenFile(self)
 
+        elif self.style == "pushselectdir":
+            from .pyqt5.pushopendir import PushOpenDir
+
+            self.widget = PushOpenDir(self)
+            
         elif self.style == "pushsavefile":
             from .pyqt5.pushsavefile import PushSaveFile
             self.widget = PushSaveFile(self)
