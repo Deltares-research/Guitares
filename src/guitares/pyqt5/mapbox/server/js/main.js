@@ -96,51 +96,55 @@ map.on('style.load', () => {
   });
 
   const layers = map.getStyle().layers;
-  const labelLayerId = layers.find(
-      (layer) => layer.type === 'symbol' && layer.layout['text-field']
-  ).id;
-
-  // The 'building' layer in the Mapbox Streets
-  // vector tileset contains building height data
-  // from OpenStreetMap.
-//  console.log('Adding 3d buildings')
-  map.addLayer(
-      {
-          'id': 'add-3d-buildings',
-          'source': 'composite',
-          'source-layer': 'building',
-          'filter': ['==', 'extrude', 'true'],
-          'type': 'fill-extrusion',
-          'minzoom': 15,
-          'paint': {
-              'fill-extrusion-color': '#aaa',
-
-              // Use an 'interpolate' expression to
-              // add a smooth transition effect to
-              // the buildings as the user zooms in.
-              'fill-extrusion-height': [
-                  'interpolate',
-                  ['linear'],
-                  ['zoom'],
-                  15,
-                  0,
-                  15.05,
-                  ['get', 'height']
-              ],
-              'fill-extrusion-base': [
-                  'interpolate',
-                  ['linear'],
-                  ['zoom'],
-                  15,
-                  0,
-                  15.05,
-                  ['get', 'min_height']
-              ],
-              'fill-extrusion-opacity': 0.6
-          }
-      },
-      labelLayerId
+  const labelLayer = layers.find(
+    (layer) => layer.type === 'symbol' && layer.layout['text-field']
   );
+
+  if (!labelLayer) {
+    console.log('No label layer with id found with text-field property');
+  } else {
+    const labelLayerId = labelLayer.id;  
+    // The 'building' layer in the Mapbox Streets
+    // vector tileset contains building height data
+    // from OpenStreetMap.
+    //  console.log('Adding 3d buildings')
+    map.addLayer({
+      'id': 'add-3d-buildings',
+      'source': 'composite',
+      'source-layer': 'building',
+      'filter': ['==', 'extrude', 'true'],
+      'type': 'fill-extrusion',
+      'minzoom': 15,
+      'paint': {
+          'fill-extrusion-color': '#aaa',
+          // Use an 'interpolate' expression to
+          // add a smooth transition effect to
+          // the buildings as the user zooms in.
+          'fill-extrusion-height': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              15,
+              0,
+              15.05,
+              ['get', 'height']
+          ],
+          'fill-extrusion-base': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              15,
+              0,
+              15.05,
+              ['get', 'min_height']
+          ],
+          'fill-extrusion-opacity': 0.6
+      }
+    }, labelLayerId);
+  }
+
+  // Add additional layers
+  
 });
 
 map.on('moveend', () => {
@@ -278,8 +282,6 @@ export function hideLegend(id) {
   }
 }
 
-
-
 export function getExtent() {
 	// Called after moving map ended
 	// Get new map extents
@@ -351,22 +353,49 @@ export function setProjection(projection) {
 	map.setProjection(projection);
 }
 
-export function setLayerStyle(style) {
-  map.setStyle('mapbox://styles/mapbox/' + style);
-  map.once('idle', () => { addDummyLayer(); layerStyleSet(); });
-  var legends = document.getElementsByClassName("overlay_legend")
-  if (legends) {
-    for (const legend of legends) {
-      legend.remove();
-    }
+// styleID should be in the form "satellite-v9"
+export function setLayerStyle(styleID) {
+  fetch(`https://api.mapbox.com/styles/v1/mapbox/${styleID}?access_token=${mapboxgl.accessToken}`)
+    .then(response => response.json())
+    .then(newStyle => {
+      const currentStyle = map.getStyle();
+      // ensure any sources from the current style are copied across to the new style
+      newStyle.sources = Object.assign(
+        {},
+        currentStyle.sources,
+        newStyle.sources
+      );
+
+      // find the index of where to insert our layers to retain in the new style
+      let labelIndex = newStyle.layers.findIndex((el) => {
+        return el.id == 'waterway-label';
+      });
+
+      // default to on top
+      if (labelIndex === -1) {
+        labelIndex = newStyle.layers.length;
+      }
+      const appLayers = currentStyle.layers.filter((el) => {
+        // app layers are the layers to retain, and these are any layers which have a different source set
+        return (
+          el.source &&
+          el.source != 'mapbox://mapbox.satellite' &&
+          el.source != 'mapbox' &&
+          el.source != 'composite'
+        );
+      });
+      newStyle.layers = [
+        ...newStyle.layers.slice(0, labelIndex),
+        ...appLayers,
+        ...newStyle.layers.slice(labelIndex, -1),
+      ];
+      map.setStyle(newStyle);
+      layerStyleSet();
+    })
+    .catch(error => {
+      console.error(`Error fetching style: ${error.message}`);
+    });
   }
-  var legends = document.getElementsByClassName("choropleth_legend")
-  if (legends) {
-    for (const legend of legends) {
-      legend.remove();
-    }
-  }
-}
 
 export function setTerrain(trueOrFalse, exaggeration) {
   if (trueOrFalse) {
