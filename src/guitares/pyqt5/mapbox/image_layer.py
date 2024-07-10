@@ -42,27 +42,49 @@ class ImageLayer(Layer):
             return None, None
 
     def update(self):
-        if hasattr(self.data, "map_overlay"):            
+        if hasattr(self.data, "map_overlay"):
             xlim, ylim = self.make_overlay()
             if xlim is None:
                 return
             bounds = [[xlim[0], xlim[1]], [ylim[0], ylim[1]]]
-            bounds_string = "[[" + str(bounds[0][0]) + "," + str(bounds[0][1]) + "],[" + str(bounds[1][0]) + "," + str(bounds[1][1]) + "]]"
-            overlay_file = "./overlays/" + self.file_name
-            js_string = "import('/js/image_layer.js').then(module => {module.updateLayer('" + overlay_file + "','" + self.map_id + "'," + bounds_string + ","")});"
+            bounds_string = f"[[{bounds[0][0]},{bounds[0][1]}],[{bounds[1][0]},{bounds[1][1]}]]"
+            overlay_file = f"./overlays/{self.file_name}"
+            js_string = f"import('/js/image_layer.js').then(module => {{module.updateLayer('{overlay_file}', '{self.map_id}', {bounds_string}, '')}});"
             self.mapbox.view.page().runJavaScript(js_string)
-            js_string = "import('/js/image_layer.js').then(module => {module.setOpacity('" + self.map_id + "', 1.0)});"
+            js_string = f"import('/js/image_layer.js').then(module => {{module.setOpacity('{self.map_id}', 1.0)}});"
             self.mapbox.view.page().runJavaScript(js_string)
+            
 
-    def set_data(self,
-                 data,
-                 image_file=None,
-                 xlim=None,
-                 ylim=None):
-        
+    def set_data(self, data, image_file=None, xlim=None, ylim=None):
         fname = os.path.join(self.mapbox.server_path, "overlays", self.file_name)
-
         self.data = data
+
+        js_string = f"import('/js/main.js').then(module => {{module.removeLayer('{self.map_id}')}});"
+        self.mapbox.view.page().runJavaScript(js_string)
+
+        try:
+            xlim, ylim = self.make_overlay()
+            if xlim is None:
+                return
+        except Exception as e:
+            print(f"Something went wrong with map overlay: {self.map_id}, {e}")
+            return
+
+        bounds = [[xlim[0], xlim[1]], [ylim[0], ylim[1]]]
+        bounds_string = f"[[{bounds[0][0]},{bounds[0][1]}],[{bounds[1][0]},{bounds[1][1]}]]"
+        overlay_file = f"./overlays/{self.file_name}"
+        js_string = f"import('/js/image_layer.js').then(module => {{module.addLayer('{overlay_file}', '{self.map_id}', {bounds_string}, '')}});"
+        self.mapbox.view.page().runJavaScript(js_string)
+
+    # def set_data(self,
+    #              data,
+    #              image_file=None,
+    #              xlim=None,
+    #              ylim=None):
+        
+    #     fname = os.path.join(self.mapbox.server_path, "overlays", self.file_name)
+
+    #     self.data = data
 
         # id_string = self.id
 
@@ -117,21 +139,21 @@ class ImageLayer(Layer):
 
         # shutil.copy(image_file, os.path.join(self.mapbox.server_path, "overlays", self.file_name))
 
-        js_string = "import('/js/main.js').then(module => {module.removeLayer('" + self.map_id + "')});"
-        self.mapbox.view.page().runJavaScript(js_string)
+        # js_string = "import('/js/main.js').then(module => {module.removeLayer('" + self.map_id + "')});"
+        # self.mapbox.view.page().runJavaScript(js_string)
 
-        try:
-            xlim, ylim = self.make_overlay()
-            if xlim is None:
-                return
-        except:
-            print("Something went wrong with map overlay : " + self.map_id)
-            return
-        bounds = [[xlim[0], xlim[1]], [ylim[0], ylim[1]]]
-        bounds_string = "[[" + str(bounds[0][0]) + "," + str(bounds[0][1]) + "],[" + str(bounds[1][0]) + "," + str(bounds[1][1]) + "]]"
-        overlay_file = "./overlays/" + self.file_name
-        js_string = "import('/js/image_layer.js').then(module => {module.addLayer('" + overlay_file + "','" + self.map_id + "'," + bounds_string + ","")});"
-        self.mapbox.view.page().runJavaScript(js_string)
+        # try:
+        #     xlim, ylim = self.make_overlay()
+        #     if xlim is None:
+        #         return
+        # except:
+        #     print("Something went wrong with map overlay : " + self.map_id)
+        #     return
+        # bounds = [[xlim[0], xlim[1]], [ylim[0], ylim[1]]]
+        # bounds_string = "[[" + str(bounds[0][0]) + "," + str(bounds[0][1]) + "],[" + str(bounds[1][0]) + "," + str(bounds[1][1]) + "]]"
+        # overlay_file = "./overlays/" + self.file_name
+        # js_string = "import('/js/image_layer.js').then(module => {module.addLayer('" + overlay_file + "','" + self.map_id + "'," + bounds_string + ","")});"
+        # self.mapbox.view.page().runJavaScript(js_string)
 
 
 #         overlay_file = "./overlays/" + "main.background_topography.png"

@@ -7,6 +7,16 @@ function getMap(side) {
 
 export function addLayer(fileName, id, bounds, colorbar, side) {
   var mp = getMap(side);
+  
+  // Always remove the layer first to avoid an error
+  if (mp.getLayer(id)) {
+    mp.removeLayer(id);
+  }
+
+  if (mp.getSource(id)) {
+    mp.removeSource(id);
+  }
+
   mp.addSource(id, {
     'type': 'image',
     'url': fileName,
@@ -35,7 +45,43 @@ export function addLayer(fileName, id, bounds, colorbar, side) {
 
 export function updateLayer(fileName, id, bounds, colorbar, side) {
   var mp = getMap(side);
-  mp.getSource(id).updateImage({
+  
+  // If the layer does not exist, add it
+  if (!mp.getLayer(id)) {
+    // console.log("Layer " + id + " does not exist, adding it instead of updating it");
+    mp.addLayer(fileName, id, bounds, colorbar, side);
+    return;
+  }
+
+  // If the layer is not visible, do not update it
+  if (mp.getLayoutProperty(id, 'visibility') !== 'visible') {
+    // console.log("Layer " + id + " is not visible, so it won't be updated");
+    return;
+  }
+  
+  // If the source does not exist, add it
+  if (!mp.getSource(id)) {
+    mp.addSource(id, {
+      'type': 'image',
+      'url': fileName,
+      'coordinates': [
+        [bounds[0][0], bounds[1][1]],
+        [bounds[0][1], bounds[1][1]],
+        [bounds[0][1], bounds[1][0]],
+        [bounds[0][0], bounds[1][0]]
+      ]
+    });
+  }
+
+  var source = mp.getSource(id);
+  // If the source does not have updateImage method, do not update it
+  if (typeof source.updateImage !== 'function') {
+    // console.log("Source does not have updateImage method");
+    return;
+  }
+
+  // Update the image
+  source.updateImage({
     'url': fileName,
     'coordinates': [
       [bounds[0][0], bounds[1][1]],
@@ -44,6 +90,7 @@ export function updateLayer(fileName, id, bounds, colorbar, side) {
       [bounds[0][0], bounds[1][0]]
     ]
   });
+
   if (colorbar) {
     setLegend(mp, id, colorbar);
   }
