@@ -38,7 +38,11 @@ class Frame(QFrame):
         pass
 
     def showEvent(self, event):
-        self.set_geometry()
+        # What is this for? It was added by Daley at some point.
+        # Setting the geometry at this point makes frames disappear because the size of the parent is 0,0,-1,-1 for some reason.
+        # Comment out for now
+        # self.set_geometry()
+        pass
 
     def set_geometry(self):
 
