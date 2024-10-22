@@ -24,7 +24,7 @@ class MapBox(QtWidgets.QWidget):
         self.gui = element.gui
         self.element = element
         self.nr_load_attempts = 0
-        self.nr_map_ready = 0
+        self.nr_ready_attempts = 0
 
         file_name = os.path.join(self.gui.server_path, "js", "mapbox_defaults.js")
         with open(file_name, "w") as f:
@@ -37,7 +37,6 @@ class MapBox(QtWidgets.QWidget):
         self.url = url
 
         self.ready = False
-        self.crs = CRS(4326)
 
         self.server_path = self.gui.server_path
 
@@ -58,12 +57,12 @@ class MapBox(QtWidgets.QWidget):
 
         channel.registerObject("MapBox", self)
 
-        view.load(QtCore.QUrl(url))
-
         view.loadFinished.connect(self.load_finished)
 
-        self.callback_module = element.module
+        view.load(QtCore.QUrl(url))
 
+        self.crs = CRS(4326)
+        self.callback_module = element.module
         self.layer = {}
         self.map_extent = None
         self.map_center = None
@@ -73,17 +72,56 @@ class MapBox(QtWidgets.QWidget):
 
     def load_finished(self):
         print("Load Finished")
-        self.timer = QtCore.QTimer()
-        self.timer.timeout.connect(self.check_ready)
-        self.timer.start(5000)
-
-    def check_ready(self):
-        self.timer.stop()
-        if not self.ready:
-            print("Map not ready. Reloading ...")
+        self.load_finished = True
+        self.nr_load_attempts += 1
+        if self.nr_load_attempts <= 1:
             self.view.reload()
-        else:
-            print("Map is ready")
+        # # Set time to check in 5 seconds if the map is actually ready
+        # self.timer = QtCore.QTimer()        
+        # self.timer.timeout.connect(self.check_ready)
+        # self.timer.start(5000)
+
+        # # Set time to check in 5 seconds if the map is actually ready
+        # self.timer = QtCore.QTimer()        
+        # self.timer.timeout.connect(self.check_ready)
+        # self.timer.start(1)
+        # if not self.ready:
+
+    # def check_ready(self):
+    #     self.timer.stop()
+    #     if not self.ready:
+    #         print("Map not ready. No signal yet from web channel. Reloading ...")
+    #         if self.nr_ready_attempts < 2:
+    #             # Try this again in one second
+    #             self.nr_ready_attempts += 1
+    #             self.timer = QtCore.QTimer()        
+    #             print("Attempt " + str(self.nr_ready_attempts) + " to check if map is ready")
+    #             self.timer.timeout.connect(self.check_ready)
+    #             self.timer.start(1000)
+    #         else:
+    #             # Try reloading the page    
+    #             self.nr_ready_attempts = 0
+    #             self.view.reload()
+    #     else:
+    #         # Should be able to continue now
+    #         pass
+    #         # print("Map seems truly ready, as we got a signal from js")
+    #         # if hasattr(self.callback_module, "map_ready"):
+    #         #     self.callback_module.map_ready(self)
+    #         # # Set dependencies now
+    #         # self.element.set_dependencies()
+
+    # def all_set(self):
+    #     if self.load_finished:
+    #         print("Map seems truly ready, as we got a signal from js")
+    #         if hasattr(self.callback_module, "map_ready"):
+    #             self.callback_module.map_ready(self)
+    #         # Set dependencies now
+    #         self.element.set_dependencies()
+    #     else:
+    #         # Try again ...
+    #         print("Not sure how this is possible ...")
+    #         self.view.reload() 
 
     def set(self):
         pass
@@ -100,11 +138,10 @@ class MapBox(QtWidgets.QWidget):
         coords = json.loads(coords)
         self.ready = True
         self.map_extent = coords
-        self.nr_map_ready += 1
-        if hasattr(self.callback_module, "map_ready") and self.nr_map_ready == 1:
+        if hasattr(self.callback_module, "map_ready"):
             self.callback_module.map_ready(self)
-        # Set dependencies now (the first time, the map probably wasn't ready yet)    
-        self.element.set_dependencies()    
+        # Set dependencies now
+        self.element.set_dependencies()
 
     @QtCore.pyqtSlot(str)
     def layerStyleSet(self, coords):

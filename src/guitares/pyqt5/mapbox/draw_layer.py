@@ -230,6 +230,9 @@ class DrawLayer(Layer):
 
     def feature_drawn(self, feature_collection, feature_id):
         # Called after a feature has been drawn by the user
+        if self.shape == "rectangle":
+            # Need to make sure that the lower le
+            feature_collection = fix_rectangles(feature_collection)
         self.set_gdf(feature_collection)
         if self.create:
             feature_index = self.get_feature_index(feature_id)
@@ -357,7 +360,13 @@ def get_rectangle_geometry(geoms):
     dy = []
     rotation = []
     for geom in geoms:
+        # Always the last drawn rectangle by looping through geometries
         xx, yy = geom.exterior.coords.xy
+        # # Check if the polygon was drawn clockwise or counter-clockwise
+        # if not shapely.is_ccw(geom):
+        #     # Reverse the order of the coordinates            
+        #     xx = xx[::-1]
+        #     yy = yy[::-1]
         x0.append(float(xx[0]))
         y0.append(float(yy[0]))
         lenx = math.sqrt(float(xx[1] - xx[0])**2 + float(yy[1] - yy[0])**2)
@@ -370,3 +379,33 @@ def get_rectangle_geometry(geoms):
         rotation.append(rot)
 
     return x0, y0, dx, dy, rotation
+
+def fix_rectangles(feature_collection):
+    # This ensures that all rectangles in a feature collection are drawn CCW direction with the lower left corner as the first point (what a mess ...)
+    # Loop through features
+    for feature in feature_collection["features"]:
+        # Get the geometry
+        geom = feature["geometry"]
+        # Check if the geometry is a polygon
+        if geom["type"] == "Polygon":
+            # Check if this ccw
+            if not shapely.is_ccw(shapely.LineString(geom["coordinates"][0])):
+                # Reverse the order of the coordinates
+                geom["coordinates"][0] = geom["coordinates"][0][::-1]
+            coords = geom["coordinates"][0]
+            # Remove the last point which is the same as the first
+            coords = coords[0:-1]
+            # Get lower left corner by taking minimum x and y values
+            min_x = min([x for x, y in coords])
+            min_y = min([y for x, y in coords])
+            # Now find the index of the point closest to the lower left corner
+            dst = [(x - min_x)**2 + (y - min_y)**2 for x, y in coords]
+            index = dst.index(min(dst))
+            new_first_point = coords[index]  # Assuming you want the third point as the new first point
+            new_coords = [new_first_point] + coords[index+1:] + coords[0:index] 
+            new_coords.append(new_coords[0])
+            # Create a new polygon with the updated coordinates
+            new_polygon = Polygon(new_coords)
+            # Update the geometry
+            feature["geometry"] = new_polygon.__geo_interface__
+    return feature_collection

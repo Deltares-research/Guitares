@@ -14,6 +14,11 @@ class Text:
         self.variable       = ""
         self.variable_group = variable_group
 
+class ColorMap:
+    def __init__(self, variable_group):
+        self.variable       = ""
+        self.variable_group = variable_group
+
 class OptionValue:
     def __init__(self, variable_group):
         self.list           = []
@@ -76,6 +81,7 @@ class Element:
         self.multiselection = False
         self.sortable = True
         self.selection_type = "single"
+        self.colormap = None
         self.ready = False
         # Mapbox
         self.map_style = "mapbox://styles/mapbox/streets-v11"
@@ -162,6 +168,16 @@ class Element:
 
         if "text_position" in dct:
             self.text_position = dct["text_position"]
+
+        if "colormap" in dct:
+            if isinstance(dct["colormap"], dict):
+                self.colormap = ColorMap(self.variable_group)
+                if "variable" in dct["colormap"]:
+                    self.colormap.variable = dct["colormap"]["variable"]
+                if "variable_group" in dct["colormap"]:
+                    self.colormap.variable_group = dct["colormap"]["variable_group"]
+            else:
+                self.colormap = dct["colormap"]
 
         if "tooltip" in dct:    
             if isinstance(dct["tooltip"], dict):

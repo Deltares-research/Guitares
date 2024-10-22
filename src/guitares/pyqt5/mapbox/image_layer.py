@@ -19,10 +19,10 @@ class ImageLayer(Layer):
 
     def activate(self):
         self.active = True
+        self.show()
 
     def deactivate(self):
         self.active = False
-
 
     def clear(self):
         self.active = False

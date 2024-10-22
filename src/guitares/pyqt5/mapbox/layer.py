@@ -302,12 +302,19 @@ class Layer:
             # Data layer
             if true_or_false:
                 # Child may be visible, on of parents may be invisible
+                self.visible = True
                 if self.get_visibility():
                     self.mapbox.runjs(self.main_js, "showLayer", arglist=[self.map_id, self.side])
                 else:    
                     self.mapbox.runjs(self.main_js, "hideLayer", arglist=[self.map_id, self.side])
             else:
+                self.visible = False
                 self.mapbox.runjs(self.main_js, "hideLayer", arglist=[self.map_id, self.side])
+
+    def set_opacity(self, opacity):
+        # Set opacity for layer
+        self.opacity = opacity
+        self.mapbox.runjs(self.main_js, "setOpacity", arglist=[self.map_id, self.side, opacity])
 
     def get_visibility(self):
         # Loop up through the layer hierarchy to determine if the layer is visible

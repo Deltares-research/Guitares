@@ -78,10 +78,10 @@ new QWebChannel(qt.webChannelTransport, function (channel) {
 layers = new Object();
 
 map.on('load', () => {
-  console.log('Mapbox loaded !');
   // Add dummy layer
   addDummyLayer();
   map.addControl(draw, 'top-left');
+  console.log('Mapbox loaded in main.js ...');
   mapLoaded();
 });
 
@@ -351,6 +351,15 @@ export function setProjection(projection) {
 	// Called after moving map ended
 	// Get new map extents
 	map.setProjection(projection);
+  if (projection == 'globe') {
+    map.setFog({
+      color: 'rgb(186, 210, 235)', // Lower atmosphere
+      'high-color': 'rgb(36, 92, 223)', // Upper atmosphere
+      'horizon-blend': 0.02, // Atmosphere thickness (default 0.2 at low zooms)
+      'space-color': 'rgb(11, 11, 25)', // Background color
+      'star-intensity': 0.6 // Background star brightness (default 0.35 at low zoooms )
+    });
+  }
 }
 
 // styleID should be in the form "satellite-v9"
