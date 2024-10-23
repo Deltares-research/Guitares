@@ -66,48 +66,51 @@ class ListBox(QListWidget):
         for x in range(self.count()):
             items.append(self.item(x))
 
-        # Get value(s)
-        val = self.element.getvar(self.element.variable_group, self.element.variable)
+        # Get value(s). If self.element.variable is not defined (i.e. None), we can skip setting the index
+        if self.element.variable is not None:
+            
+            # Get the variable
+            val = self.element.getvar(self.element.variable_group, self.element.variable)
 
-        # Now get the options
-        if self.element.select == "item":
-            if self.element.option_value.variable:
-                name  = self.element.option_value.variable
-                group = self.element.option_value.variable_group
-                vals = self.element.getvar(group, name)
-                if not vals:
-                    vals = [""]
-            else:
-                vals = self.element.option_value.list
-
-
-        if self.element.multiselection:
-            for index, item in enumerate(items):
-                if self.element.select == "item":
-                    if vals[index] in val:   
-                        item.setSelected(True)
-                    else:
-                        item.setSelected(False)
-                else:
-                    if index in val:   
-                        item.setSelected(True)
-                    else:
-                        item.setSelected(False)
-
-        else:    
-
-            # Now get the values
+            # Now get the options
             if self.element.select == "item":
-                if val in vals:
-                    index = vals.index(val)
+                if self.element.option_value.variable:
+                    name  = self.element.option_value.variable
+                    group = self.element.option_value.variable_group
+                    vals = self.element.getvar(group, name)
+                    if not vals:
+                        vals = [""]
                 else:
-                    index = 0
-                    print(self.element.variable + ' not found !')
-            else:
-                index = val
-            self.setCurrentItem(items[index])
+                    vals = self.element.option_value.list
 
-        self.execute_callback = True    
+
+            if self.element.multiselection:
+                for index, item in enumerate(items):
+                    if self.element.select == "item":
+                        if vals[index] in val:   
+                            item.setSelected(True)
+                        else:
+                            item.setSelected(False)
+                    else:
+                        if index in val:   
+                            item.setSelected(True)
+                        else:
+                            item.setSelected(False)
+
+            else:    
+
+                # Now get the values
+                if self.element.select == "item":
+                    if val in vals:
+                        index = vals.index(val)
+                    else:
+                        index = 0
+                        print(self.element.variable + ' not found !')
+                else:
+                    index = val
+                self.setCurrentItem(items[index])
+
+            self.execute_callback = True    
 
         if type(self.element.text) != str:
             txt = self.element.getvar(self.element.text.variable_group, self.element.text.variable)
@@ -188,6 +191,7 @@ class ListBox(QListWidget):
                 self.insertItem(itxt, txt)
 
     def set_geometry(self):
+
         resize_factor = self.element.gui.resize_factor
         x0, y0, wdt, hgt = self.element.get_position()
         self.setGeometry(x0, y0, wdt, hgt)
