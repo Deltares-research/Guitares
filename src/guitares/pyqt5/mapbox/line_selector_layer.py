@@ -53,7 +53,9 @@ class LineSelectorLayer(Layer):
 
 
     def activate(self):
-        self.mapbox.runjs("./js/geojson_layer_line.js", "setPaintProperties", arglist=[self.map_id,
+        # The line_selector_layer has no setPaintProperties yet.
+        return
+        self.mapbox.runjs("./js/line_selector_layer.js", "setPaintProperties", arglist=[self.map_id,
                                                                                self.line_color,
                                                                                self.line_width,
                                                                                self.line_style,
@@ -64,7 +66,9 @@ class LineSelectorLayer(Layer):
                                                                                self.line_opacity_selected])
   
     def deactivate(self):
-        self.mapbox.runjs("./js/geojson_layer_line.js", "setPaintProperties", arglist=[self.map_id,
+        # The line_selector_layer has no setPaintProperties yet.
+        return
+        self.mapbox.runjs("./js/line_selector_layer.js", "setPaintProperties", arglist=[self.map_id,
                                                                                          self.line_color_inactive,
                                                                                          self.line_width_inactive,
                                                                                          self.line_style_inactive,

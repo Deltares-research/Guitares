@@ -143,6 +143,9 @@ class GUI:
         self.variables[group][name]["value"] = value
 
     def getvar(self, group, name):
+        if name is None:
+            # There is no variable for the element
+            return None
         if group not in self.variables:
             print("Error! Cannot get variable! GUI variable group '" + group + "' not defined!")
             return None
