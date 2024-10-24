@@ -364,6 +364,24 @@ class Window:
         ext = pth.suffix
         return full_name, path, name, ext, fltr
 
+    def dialog_open_files(self, text, filter, path=None, file_name=None, selected_filter=None, allow_directory_change=True):
+        if path == None:
+            path = os.getcwd()
+        results = window_dialog(self, text, type="open_files", path=path, file_name=file_name, filter=filter, selected_filter=selected_filter)
+        full_name = results[0]
+        if not full_name:
+            return "", "", "", "", ""
+        fltr = results[1]
+        pth = pathlib.Path(full_name[0])
+        if not allow_directory_change:
+            if str(pth.parent) != path:
+                self.dialog_warning("Sorry, you cannot select a file from another directory !")
+                return "", "", "", "", ""
+        path = str(pth.parent)
+        name = pth.name
+        ext = pth.suffix
+        return full_name, path, name, ext, fltr
+    
     def dialog_save_file(self, text, filter, path=None, file_name=None, selected_filter=None, allow_directory_change=True):
         if path == None:
             path = os.getcwd()

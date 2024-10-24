@@ -199,6 +199,13 @@ def dialog(
             path = os.path.join(path, file_name)
         fname = QFileDialog.getOpenFileName(window, text, path, filter, selected_filter)
         return fname
+    elif type == "open_files":
+        if path == None:
+            path = os.getcwd()
+        if file_name:
+            path = os.path.join(path, file_name)
+        fname = QFileDialog.getOpenFileNames(window, text, path, filter, selected_filter)
+        return fname
     elif type == "save_file":
         if path == None:
             path = os.getcwd()
