@@ -51,8 +51,9 @@ class PopupMenu(QComboBox):
         self.execute_callback = True
 
     def showEvent(self, event):
-        # Call when this widget becomes visible
-        self.set_geometry()
+        # Call when this widget becomes visible. This was commented out for the frame widget. Doing the same here. Not sure why this was needed.
+        # self.set_geometry()
+        pass
 
     def set(self):
 
