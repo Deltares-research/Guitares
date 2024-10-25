@@ -76,7 +76,6 @@ export function addLayer(id,
       // Change the cursor style as a UI indicator.
       map.getCanvas().style.cursor = 'pointer';
 
-
       var description   = e.features[0].properties[hoverParam];
 
 
@@ -101,7 +100,7 @@ export function addLayer(id,
   });
 
   map.on('mouseleave', id, () => {
-      map.getCanvas().style.cursor = '';
+      map.getCanvas().style.cursor = currentCursor;
       popup.remove();
   });
 

@@ -87,7 +87,7 @@ export function addLayer(id, data) {
 
   // Remove the popup when the mouse leaves the points
   map.on('mouseleave', id, function () {
-    map.getCanvas().style.cursor = '';
+    map.getCanvas().style.cursor = currentCursor;
     hoverPopup.remove();
   });
 

@@ -179,6 +179,10 @@ class Element:
             else:
                 self.colormap = dct["colormap"]
 
+        # For backward compatibility
+        if "tooltipstring" in dct:
+            dct["tooltip"] = dct["tooltipstring"]
+
         if "tooltip" in dct:    
             if isinstance(dct["tooltip"], dict):
                 self.tooltip = Text(self.variable_group)
@@ -203,6 +207,14 @@ class Element:
             else:
                 # It's a list
                 self.option_value.list = dct["option_value"]
+                # Loop through the list and convert to the correct type
+                for idx, item in enumerate(self.option_value.list):
+                    # Check if item is a string
+                    if isinstance(item, str):
+                        if item == "true":
+                            self.option_value.list[idx] = True
+                        elif item == "false":
+                            self.option_value.list[idx] = False   
 
         if "option_string" in dct:    
             if isinstance(dct["option_string"], dict):

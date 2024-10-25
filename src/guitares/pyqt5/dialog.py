@@ -35,9 +35,8 @@ class StringDialog(QDialog):
         super().__init__()
         self.setWindowTitle(title)
         self.buttonBox = QDialogButtonBox()
-        button_text = ["Cancel", "OK"]
-        for txt in button_text:
-            self.buttonBox.addButton("  " + txt + "  ", QDialogButtonBox.AcceptRole)
+        self.buttonBox.addButton("  " + "OK" + "  ", QDialogButtonBox.AcceptRole)
+        self.buttonBox.addButton("  " + "Cancel" + "  ", QDialogButtonBox.RejectRole)
         self.buttonBox.clicked.connect(self.clicked)
         self.buttonBox.accepted.connect(self.accept)
         self.layout = QVBoxLayout()
@@ -193,21 +192,21 @@ def dialog(
             dlg.set_value(i)
         return dlg
     elif type == "open_file":
-        if path == None:
+        if path is None:
             path = os.getcwd()
         if file_name:
             path = os.path.join(path, file_name)
         fname = QFileDialog.getOpenFileName(window, text, path, filter, selected_filter)
         return fname
     elif type == "save_file":
-        if path == None:
+        if path is None:
             path = os.getcwd()
         if file_name:
             path = os.path.join(path, file_name)
         fname = QFileDialog.getSaveFileName(window, text, path, filter, selected_filter)
         return fname
     elif type == "select_path":
-        if path == None:
+        if path is None:
             path = os.getcwd()
         new_path = QFileDialog.getExistingDirectory(window, text, path)
         return new_path

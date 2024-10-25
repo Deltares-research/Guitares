@@ -36,6 +36,7 @@ class MapBox(QtWidgets.QWidget):
         url = "http://localhost:" + str(self.gui.server_port) + "/"
         self.url = url
 
+        self.webchannel_ok = False
         self.ready = False
 
         self.server_path = self.gui.server_path
@@ -70,58 +71,30 @@ class MapBox(QtWidgets.QWidget):
         self.point_clicked_callback = None
         self.zoom = None
 
-    def load_finished(self):
-        print("Load Finished")
-        self.load_finished = True
-        self.nr_load_attempts += 1
-        if self.nr_load_attempts <= 1:
-            self.view.reload()
-        # # Set time to check in 5 seconds if the map is actually ready
-        # self.timer = QtCore.QTimer()        
-        # self.timer.timeout.connect(self.check_ready)
-        # self.timer.start(5000)
+    def load_finished(self, message):
+        # self.load_finished = True
+        # Sending a ping to javascript
+        self.timer_ping = QtCore.QTimer()        
+        self.timer_ping.timeout.connect(self.ping)
+        self.timer_ping.start(1000)
+        # Start a ping received timer
+        self.timer_pong = QtCore.QTimer()        
+        self.timer_pong.timeout.connect(self.pong_received)
+        self.timer_pong.start(1500)
 
-        # # Set time to check in 5 seconds if the map is actually ready
-        # self.timer = QtCore.QTimer()        
-        # self.timer.timeout.connect(self.check_ready)
-        # self.timer.start(1)
-        # if not self.ready:
+    def ping(self):
+        # Sending a ping to javascript
+        self.timer_ping.stop()
+        self.runjs("/js/main.js", "ping", arglist=["ping"])
 
-    # def check_ready(self):
-    #     self.timer.stop()
-    #     if not self.ready:
-    #         print("Map not ready. No signal yet from web channel. Reloading ...")
-    #         if self.nr_ready_attempts < 2:
-    #             # Try this again in one second
-    #             self.nr_ready_attempts += 1
-    #             self.timer = QtCore.QTimer()        
-    #             print("Attempt " + str(self.nr_ready_attempts) + " to check if map is ready")
-    #             self.timer.timeout.connect(self.check_ready)
-    #             self.timer.start(1000)
-    #         else:
-    #             # Try reloading the page    
-    #             self.nr_ready_attempts = 0
-    #             self.view.reload()
-    #     else:
-    #         # Should be able to continue now
-    #         pass
-    #         # print("Map seems truly ready, as we got a signal from js")
-    #         # if hasattr(self.callback_module, "map_ready"):
-    #         #     self.callback_module.map_ready(self)
-    #         # # Set dependencies now
-    #         # self.element.set_dependencies()
-
-    # def all_set(self):
-    #     if self.load_finished:
-    #         print("Map seems truly ready, as we got a signal from js")
-    #         if hasattr(self.callback_module, "map_ready"):
-    #             self.callback_module.map_ready(self)
-    #         # Set dependencies now
-    #         self.element.set_dependencies()
-    #     else:
-    #         # Try again ...
-    #         print("Not sure how this is possible ...")
-    #         self.view.reload() 
+    def pong_received(self):
+        self.timer_pong.stop()
+        if self.webchannel_ok:
+            # Tell JS to import Mapbox
+            self.runjs("/js/main.js", "importMapbox", arglist=[])
+        else:
+            # Reload
+            self.view.load(QtCore.QUrl(self.url))    
 
     def set(self):
         pass
@@ -132,6 +105,16 @@ class MapBox(QtWidgets.QWidget):
 
     def take_screenshot(self, output_file):
         self.view.grab().save(output_file, b"PNG")
+
+    @QtCore.pyqtSlot(str)
+    def pong(self, message):
+        # Python heard a pong!
+        self.webchannel_ok = True
+        # self.runjs("/js/main.js", "importMapbox", arglist=[])
+
+    @QtCore.pyqtSlot(str)
+    def mapboxImported(self, message):
+        self.runjs("/js/main.js", "addMap", arglist=[])
 
     @QtCore.pyqtSlot(str)
     def mapReady(self, coords):
@@ -156,10 +139,10 @@ class MapBox(QtWidgets.QWidget):
     def mouseMoved(self, coords):
         coords = json.loads(coords)
         self.map_extent = coords
-        # Loop through layers to update each
-        layers = list_layers(self.layer)
-        for layer in layers:
-            layer.update()
+        # # Loop through layers to update each
+        # layers = list_layers(self.layer)
+        # for layer in layers:
+        #     layer.update()
         if hasattr(self.callback_module, "mouse_moved"):
             self.callback_module.mouse_moved(coords)
 

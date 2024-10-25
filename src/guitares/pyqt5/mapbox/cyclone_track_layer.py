@@ -2,6 +2,7 @@ import shapely
 from .layer import Layer
 from geopandas import GeoDataFrame
 import datetime
+import copy
 
 class CycloneTrackLayer(Layer):
     def __init__(self, mapbox, id, map_id, **kwargs):
@@ -20,15 +21,16 @@ class CycloneTrackLayer(Layer):
             print("Data is not a GeoDataFrame")
             return    
         
-        self.data = data
+        # We need to make a copy, because we will add columns for icon_url and hover_html
+        self.data = copy.deepcopy(data)
 
         # Need to add the track to the GeoDataFrame
         # Loop through geometries in GeoDataFrame and make LineString of the points
         # Add this LineString to the GeoDataFrame
         points = []
         # Add columns for icon_url and html
-        data["icon_url"] = None
-        data["hover_html"] = None
+        self.data["icon_url"] = None
+        self.data["hover_html"] = None
         for i, row in data.iterrows():
             # Get the point (used to make LineString for new gdf)
             points.append(row["geometry"])
@@ -83,8 +85,8 @@ class CycloneTrackLayer(Layer):
                    'Pressure: &#9;' + pcstr + ' &#9;' + '<br />'
 
             # Add icon and html to row
-            data.at[i, "icon_url"] = icon
-            data.at[i, "hover_html"] = html
+            self.data.at[i, "icon_url"] = icon
+            self.data.at[i, "hover_html"] = html
 
         # Create shapely LineString with geometries in points
         line = shapely.geometry.LineString(points)
@@ -108,7 +110,7 @@ class CycloneTrackLayer(Layer):
             # First add the line layer
             id = self.map_id + ".track_points"
             self.mapbox.runjs("./js/marker_layer.js", "addLayer", arglist=[id,
-                                                                           data.to_crs(4326)])
+                                                                           self.data.to_crs(4326)])
 
     def redraw(self):
         if isinstance(self.data, GeoDataFrame):
