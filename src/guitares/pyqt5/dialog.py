@@ -6,7 +6,8 @@ from PyQt5.QtWidgets import (
     QDialog,
     QProgressDialog,
     QFileDialog,
-    QLineEdit
+    QLineEdit,
+    QApplication
 )
 from PyQt5 import QtCore
 import time
@@ -36,7 +37,7 @@ class StringDialog(QDialog):
         self.setWindowTitle(title)
         self.buttonBox = QDialogButtonBox()
         self.buttonBox.addButton("  " + "OK" + "  ", QDialogButtonBox.AcceptRole)
-        self.buttonBox.addButton("  " + "Cancel" + "  ", QDialogButtonBox.RejectRole)
+        self.buttonBox.addButton("  " + "Cancel" + "  ", QDialogButtonBox.AcceptRole)
         self.buttonBox.clicked.connect(self.clicked)
         self.buttonBox.accepted.connect(self.accept)
         self.layout = QVBoxLayout()
@@ -58,8 +59,10 @@ class ProgressDialog(QProgressDialog):
     def __init__(self, window, text, title, nmax):
         super().__init__(text, "Abort", 0, nmax, window)
         self.setWindowModality(QtCore.Qt.WindowModal)
-#        self.setMinimum(1)
-        self.setMaximum(nmax)
+        # self.setMinimum(1)
+        # self.setMaximum(nmax)
+        self.setMinimum(0)
+        self.setMaximum(100)
         self.setWindowTitle(title)
         self.time_elapsed = QLabel("Time elapsed :", self)
         self.time_elapsed.setGeometry(15, 65, 200, 20)
@@ -67,9 +70,9 @@ class ProgressDialog(QProgressDialog):
         self.time_remaining.setGeometry(15, 85, 200, 20)
         self.t0 = time.time()
         self.nmax = nmax
-        self.setMinimumDuration(0)
+        self.setMinimumDuration(100)
         self.setValue(0)
-#        self.show()
+        self.show()
 
     def set_value(self, i):
         self.setValue(i)
@@ -97,15 +100,22 @@ class ProgressDialog(QProgressDialog):
         else:
             new_string = "Est. time remaining : " + str(int(trem)) + "s"
         self.time_remaining.setText(new_string)
+        self.show()
+        QApplication.processEvents()
 
     def set_text(self, text):
         self.setLabelText(text)
+
+    def set_minimum(self, nmin):
+        self.nmax = nmin
+        self.setMaximum(nmin)
 
     def set_maximum(self, nmax):
         self.nmax = nmax
         self.setMaximum(nmax)
 
     def was_canceled(self):
+        QApplication.processEvents()
         return self.wasCanceled()
 
 
