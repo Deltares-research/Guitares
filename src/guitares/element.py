@@ -166,6 +166,12 @@ class Element:
             else:
                 self.text = dct["text"]
 
+        if "textposition" in dct:
+            self.text_position = dct["textposition"]
+
+        if "text-position" in dct:
+            self.text_position = dct["text-position"]
+
         if "text_position" in dct:
             self.text_position = dct["text_position"]
 

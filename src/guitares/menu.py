@@ -22,6 +22,7 @@ class Menu:
         self.enable = True
         self.id = ""
         self.variable_group = parent.variable_group
+        self.variable = None
         self.module = parent.module
         self.method = ""
         self.callback = None
@@ -40,6 +41,8 @@ class Menu:
             self.option = dct["option"]
         if "checkable" in dct:
             self.checkable = dct["checkable"]
+        if "variable" in dct:
+            self.variable = dct["variable"]
         if "separator" in dct:
             self.separator = dct["separator"]
         if "module" in dct:
@@ -50,11 +53,16 @@ class Menu:
                     print("Error! Could not import module " + dct["module"])
         if "method" in dct:
             self.method = dct["method"]
-        if self.method and self.module:
-            if hasattr(self.module, self.method):
-                self.callback = getattr(self.module, self.method)
+            # Check if self.method is a string or a method
+            if type(self.method) is str:
+                if self.module:
+                    if hasattr(self.module, self.method):
+                        self.callback = getattr(self.module, self.method)
+                    else:
+                        print("Error! Could not find method " + self.method)
             else:
-                print("Error! Could not find method " + self.method)
+                # It's already a method
+                self.callback = self.method
         if "text" in dct:
             if type(dct["text"]) == dict:
                 self.text = Text(self.variable_group)
