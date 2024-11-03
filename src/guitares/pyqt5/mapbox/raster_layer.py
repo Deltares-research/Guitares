@@ -140,9 +140,13 @@ class RasterLayer(Layer):
                 if self.color_scale_symmetric:
                     if self.color_scale_symmetric_side == "min":
                         cmin = np.nanmin(z)
+                        if cmin > 0:
+                            cmin = -cmin
                         cmax = -cmin
                     elif self.color_scale_symmetric_side == "max":
                         cmax = np.nanmax(z)
+                        if cmax < 0:
+                            cmax = -cmax
                         cmin = -cmax
                     else:
                         cmx = max(abs(np.nanmin(z)), abs(np.nanmax(z)))

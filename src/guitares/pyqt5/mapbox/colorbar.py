@@ -77,7 +77,10 @@ class ColorBar:
 
                 self.contour.append(contour)
 
-        else:    
+        else:
+
+            if np.isnan(cmin) or np.isnan(cmax):
+                return
 
             clmap = MplColorHelper(self.color_map, cmin, cmax)
 
