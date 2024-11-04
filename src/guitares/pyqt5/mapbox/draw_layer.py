@@ -1,14 +1,13 @@
 import math
+import pandas as pd
 import geopandas as gpd
 import matplotlib.colors as mcolors
 import shapely
-import json
 from shapely.geometry import Polygon
 from shapely.ops import transform
 import pyproj
 
 from .layer import Layer
-
 
 class DrawLayer(Layer):
     def __init__(
@@ -136,13 +135,13 @@ class DrawLayer(Layer):
 
     def add_feature(self, gdf):
         """Add data to draw layer. Data must be a GeoDataFrame."""
-        # Loop through features
+
         if len(gdf) == 0:
             return
     
         # Append to self.gdf (which doesn't have to have CRS=4326)
         if not self.gdf.empty:
-            self.gdf = self.gdf.append(gdf.to_crs(self.gdf.crs), ignore_index=True)
+            self.gdf = pd.concat([self.gdf, gdf.to_crs(self.gdf.crs)], ignore_index=True)
         else:
             self.gdf = gdf
         
