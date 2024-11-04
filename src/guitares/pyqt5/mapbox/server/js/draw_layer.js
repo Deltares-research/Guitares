@@ -111,8 +111,9 @@ export function drawPolygon(layerId) {
   map.off('draw.create', createListener);
   createListener = polygonCreated;
   map.on('draw.create', createListener);
-  map.getCanvas().style.cursor = 'pointer';
-
+  // Really change cursor here? Not necessary for other shapes ...
+//  map.getCanvas().style.cursor = 'crosshair';
+//  currentCursor = 'crosshair';
 }
 
 function polygonCreated(e) {
@@ -126,6 +127,8 @@ function polygonCreated(e) {
   updateInactiveLayerGeometry(activeLayerId);
   var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
   featureDrawn(JSON.stringify(featureCollection), featureId, activeLayerId);
+//  map.getCanvas().style.cursor = '';
+//  currentCursor = '';
 }
 
 function polygonUpdated(e) {

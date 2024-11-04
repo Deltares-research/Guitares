@@ -24,7 +24,7 @@ class MapBox(QtWidgets.QWidget):
         self.gui = element.gui
         self.element = element
         self.nr_load_attempts = 0
-        self.nr_map_ready = 0
+        self.nr_ready_attempts = 0
 
         file_name = os.path.join(self.gui.server_path, "js", "mapbox_defaults.js")
         with open(file_name, "w") as f:
@@ -36,8 +36,8 @@ class MapBox(QtWidgets.QWidget):
         url = "http://localhost:" + str(self.gui.server_port) + "/"
         self.url = url
 
+        self.webchannel_ok = False
         self.ready = False
-        self.crs = CRS(4326)
 
         self.server_path = self.gui.server_path
 
@@ -58,12 +58,12 @@ class MapBox(QtWidgets.QWidget):
 
         channel.registerObject("MapBox", self)
 
-        view.load(QtCore.QUrl(url))
-
         view.loadFinished.connect(self.load_finished)
 
-        self.callback_module = element.module
+        view.load(QtCore.QUrl(url))
 
+        self.crs = CRS(4326)
+        self.callback_module = element.module
         self.layer = {}
         self.map_extent = None
         self.map_center = None
@@ -71,19 +71,30 @@ class MapBox(QtWidgets.QWidget):
         self.point_clicked_callback = None
         self.zoom = None
 
-    def load_finished(self):
-        print("Load Finished")
-        self.timer = QtCore.QTimer()
-        self.timer.timeout.connect(self.check_ready)
-        self.timer.start(5000)
+    def load_finished(self, message):
+        # self.load_finished = True
+        # Sending a ping to javascript
+        self.timer_ping = QtCore.QTimer()        
+        self.timer_ping.timeout.connect(self.ping)
+        self.timer_ping.start(1000)
+        # Start a ping received timer
+        self.timer_pong = QtCore.QTimer()        
+        self.timer_pong.timeout.connect(self.pong_received)
+        self.timer_pong.start(1500)
 
-    def check_ready(self):
-        self.timer.stop()
-        if not self.ready:
-            print("Map not ready. Reloading ...")
-            self.view.reload()
+    def ping(self):
+        # Sending a ping to javascript
+        self.timer_ping.stop()
+        self.runjs("/js/main.js", "ping", arglist=["ping"])
+
+    def pong_received(self):
+        self.timer_pong.stop()
+        if self.webchannel_ok:
+            # Tell JS to import Mapbox
+            self.runjs("/js/main.js", "importMapbox", arglist=[])
         else:
-            print("Map is ready")
+            # Reload
+            self.view.load(QtCore.QUrl(self.url))    
 
     def set(self):
         pass
@@ -96,15 +107,24 @@ class MapBox(QtWidgets.QWidget):
         self.view.grab().save(output_file, b"PNG")
 
     @QtCore.pyqtSlot(str)
+    def pong(self, message):
+        # Python heard a pong!
+        self.webchannel_ok = True
+        # self.runjs("/js/main.js", "importMapbox", arglist=[])
+
+    @QtCore.pyqtSlot(str)
+    def mapboxImported(self, message):
+        self.runjs("/js/main.js", "addMap", arglist=[])
+
+    @QtCore.pyqtSlot(str)
     def mapReady(self, coords):
         coords = json.loads(coords)
         self.ready = True
         self.map_extent = coords
-        self.nr_map_ready += 1
-        if hasattr(self.callback_module, "map_ready") and self.nr_map_ready == 1:
+        if hasattr(self.callback_module, "map_ready"):
             self.callback_module.map_ready(self)
-        # Set dependencies now (the first time, the map probably wasn't ready yet)    
-        self.element.set_dependencies()    
+        # Set dependencies now
+        self.element.set_dependencies()
 
     @QtCore.pyqtSlot(str)
     def layerStyleSet(self, coords):
@@ -119,10 +139,10 @@ class MapBox(QtWidgets.QWidget):
     def mouseMoved(self, coords):
         coords = json.loads(coords)
         self.map_extent = coords
-        # Loop through layers to update each
-        layers = list_layers(self.layer)
-        for layer in layers:
-            layer.update()
+        # # Loop through layers to update each
+        # layers = list_layers(self.layer)
+        # for layer in layers:
+        #     layer.update()
         if hasattr(self.callback_module, "mouse_moved"):
             self.callback_module.mouse_moved(coords)
 

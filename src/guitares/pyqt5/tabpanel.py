@@ -9,9 +9,6 @@ class TabPanel(QTabWidget):
 
         self.setVisible(True)
 
-        # Used to programmatically select a tab
-#        element["select_tab"] = self.select_tab
-
         for tab in element.tabs:
             # Place tab in tab panel
             widget = QWidget()
@@ -21,9 +18,22 @@ class TabPanel(QTabWidget):
         # Add the callback
         self.currentChanged.connect(lambda indx, tabs=element.tabs: self.tab_selected(tabs, indx))
 
+        self.previous_tab_index = 0
+
         self.set_geometry()
 
     def tab_selected(self, tabs, indx):
+
+        # If the previous tab has a module, call the deselect method
+        if tabs[self.previous_tab_index].module:
+            if hasattr(tabs[self.previous_tab_index].module, "deselect"):
+                try:
+                    tabs[self.previous_tab_index].module.deselect()
+                except:
+                    traceback.print_exc()
+
+        self.previous_tab_index = indx
+
         # Now call the select method
         if tabs[indx].module:
             if hasattr(tabs[indx].module, "select"):

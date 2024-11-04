@@ -148,7 +148,7 @@ function mouseEnter(e) {
 }
 
 function mouseLeave(e) {
-  map.getCanvas().style.cursor = "grab";
+  map.getCanvas().style.cursor = currentCursor;
   popup.remove();
   if (hoveredId !== null) {
     map.setFeatureState(

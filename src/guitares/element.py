@@ -14,6 +14,11 @@ class Text:
         self.variable       = ""
         self.variable_group = variable_group
 
+class ColorMap:
+    def __init__(self, variable_group):
+        self.variable       = ""
+        self.variable_group = variable_group
+
 class OptionValue:
     def __init__(self, variable_group):
         self.list           = []
@@ -76,6 +81,7 @@ class Element:
         self.multiselection = False
         self.sortable = True
         self.selection_type = "single"
+        self.colormap = None
         self.ready = False
         # Mapbox
         self.map_style = "mapbox://styles/mapbox/streets-v11"
@@ -160,8 +166,28 @@ class Element:
             else:
                 self.text = dct["text"]
 
+        if "textposition" in dct:
+            self.text_position = dct["textposition"]
+
+        if "text-position" in dct:
+            self.text_position = dct["text-position"]
+
         if "text_position" in dct:
             self.text_position = dct["text_position"]
+
+        if "colormap" in dct:
+            if isinstance(dct["colormap"], dict):
+                self.colormap = ColorMap(self.variable_group)
+                if "variable" in dct["colormap"]:
+                    self.colormap.variable = dct["colormap"]["variable"]
+                if "variable_group" in dct["colormap"]:
+                    self.colormap.variable_group = dct["colormap"]["variable_group"]
+            else:
+                self.colormap = dct["colormap"]
+
+        # For backward compatibility
+        if "tooltipstring" in dct:
+            dct["tooltip"] = dct["tooltipstring"]
 
         if "tooltip" in dct:    
             if isinstance(dct["tooltip"], dict):
@@ -187,6 +213,14 @@ class Element:
             else:
                 # It's a list
                 self.option_value.list = dct["option_value"]
+                # Loop through the list and convert to the correct type
+                for idx, item in enumerate(self.option_value.list):
+                    # Check if item is a string
+                    if isinstance(item, str):
+                        if item == "true":
+                            self.option_value.list[idx] = True
+                        elif item == "false":
+                            self.option_value.list[idx] = False   
 
         if "option_string" in dct:    
             if isinstance(dct["option_string"], dict):

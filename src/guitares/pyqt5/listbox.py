@@ -105,7 +105,11 @@ class ListBox(QListWidget):
                         index = vals.index(val)
                     else:
                         index = 0
-                        print(self.element.variable + ' not found !')
+                        if type(val) is not str:
+                            valstr = str(val)
+                        else:
+                            valstr = val
+                        print(f"Error in listbox: variable {self.element.variable} ({valstr}) not found in list!")
                 else:
                     index = val
                 self.setCurrentItem(items[index])

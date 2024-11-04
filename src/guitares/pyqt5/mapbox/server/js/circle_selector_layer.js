@@ -1,7 +1,7 @@
-let hover_property
+let hover_property;
 let hoveredId = null;
 let activeLayerId = null;
-let popup
+let popup;
 
 export function addLayer(id,
                          data,
@@ -97,7 +97,7 @@ export function addLayer(id,
 
 function mouseEnter(e) {
   if (map.getFeatureState({ source: e.features[0].source, id: e.features[0].id }).active) { 
-    // Change the cursor style as a UI indicator.
+    // Change the cursor style as a UI indicator
     map.getCanvas().style.cursor = 'pointer';
     if (e.features[0].properties.hasOwnProperty('hover_popup_width')) {  
       popup.setMaxWidth(e.features[0].properties.hover_popup_width);
@@ -133,7 +133,7 @@ function mouseEnter(e) {
 }
 
 function mouseLeave(e) {
-  map.getCanvas().style.cursor = "grab";
+  map.getCanvas().style.cursor = currentCursor;
   popup.remove();
   if (hoveredId !== null) {
     map.setFeatureState(
@@ -248,6 +248,7 @@ export function activate(id,
       circleRadius]);
   }
   updateFeatureState(id);
+
 }
 
 // Set colors to inactive and update feature state

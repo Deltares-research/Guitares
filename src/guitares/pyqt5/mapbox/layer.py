@@ -237,15 +237,11 @@ class Layer:
 
     def delete(self):
         # Delete this layer and all nested layers from map
-        if self.layer:
-            # Container layer
-            layers = list_layers(self.layer)
-            for layer in layers:
-                layer.delete()
-        else:        
-            self.delete_from_map()
 
-        # Remove layer from layer dict
+        # First clear layers on map
+        self.clear()
+
+        # And now remove layer from layer dict
         if self.parent:
             self.parent.layer.pop(self.id)
         else:
@@ -259,11 +255,12 @@ class Layer:
             for layer in layers:
                 layer.clear()
         else:        
-            self.delete_from_map()
+            self.mapbox.runjs(self.main_js, "removeLayer", arglist=[self.map_id, self.side])
+            # self.delete_from_map()
             self.data = None
 
-    def delete_from_map(self):
-        self.mapbox.runjs(self.main_js, "removeLayer", arglist=[self.map_id, self.side])
+    # def delete_from_map(self):
+    #     self.mapbox.runjs(self.main_js, "removeLayer", arglist=[self.map_id, self.side])
 
     def set_mode(self, mode):
         # Can only be called on data layers
@@ -302,12 +299,19 @@ class Layer:
             # Data layer
             if true_or_false:
                 # Child may be visible, on of parents may be invisible
+                self.visible = True
                 if self.get_visibility():
                     self.mapbox.runjs(self.main_js, "showLayer", arglist=[self.map_id, self.side])
                 else:    
                     self.mapbox.runjs(self.main_js, "hideLayer", arglist=[self.map_id, self.side])
             else:
+                self.visible = False
                 self.mapbox.runjs(self.main_js, "hideLayer", arglist=[self.map_id, self.side])
+
+    def set_opacity(self, opacity):
+        # Set opacity for layer
+        self.opacity = opacity
+        self.mapbox.runjs(self.main_js, "setOpacity", arglist=[self.map_id, self.side, opacity])
 
     def get_visibility(self):
         # Loop up through the layer hierarchy to determine if the layer is visible

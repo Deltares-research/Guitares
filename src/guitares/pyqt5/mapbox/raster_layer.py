@@ -140,9 +140,13 @@ class RasterLayer(Layer):
                 if self.color_scale_symmetric:
                     if self.color_scale_symmetric_side == "min":
                         cmin = np.nanmin(z)
+                        if cmin > 0:
+                            cmin = -cmin
                         cmax = -cmin
                     elif self.color_scale_symmetric_side == "max":
                         cmax = np.nanmax(z)
+                        if cmax < 0:
+                            cmax = -cmax
                         cmin = -cmax
                     else:
                         cmx = max(abs(np.nanmin(z)), abs(np.nanmax(z)))
@@ -155,21 +159,25 @@ class RasterLayer(Layer):
                 cmin = self.color_scale_cmin
                 cmax = self.color_scale_cmax
 
-            ls = LightSource(azdeg=315, altdeg=30)
-
-#            cmap = settings.color_map_earth
-#            cmap = matplotlib.pyplot.get_cmap('gist_earth')
-            dx = (x[1] - x[0]) / 2
-            dy = (y[1] - y[0]) / 2
-            rgb = ls.shade(np.flipud(z), cmap,
-                           vmin=cmin,
-                           vmax=cmax,
-                           dx=dx * 50000,
-                           dy=dy * 50000,
-                           vert_exag=10.0,
-                           blend_mode="soft")
-            rgb = rgb * 255
-            rgb = rgb.astype(np.uint8)
+            if self.hillshading:
+                ls = LightSource(azdeg=315, altdeg=30)
+                dx = (x[1] - x[0]) / 2
+                dy = (y[1] - y[0]) / 2
+                rgb = ls.shade(np.flipud(z), cmap,
+                            vmin=cmin,
+                            vmax=cmax,
+                            dx=dx * 50000,
+                            dy=dy * 50000,
+                            vert_exag=10.0,
+                            blend_mode="soft")
+                rgb = rgb * 255
+                rgb = rgb.astype(np.uint8)
+            else:
+                norm = matplotlib.colors.Normalize(vmin=cmin, vmax=cmax)
+                vnorm = norm(np.flipud(z))
+                cmap = cm.get_cmap(colormap)
+                rgb = cmap(vnorm) * 255
+                rgb = rgb.astype(np.uint8)
 
             # First create rasterio image
             res = (x[-1] - x[0]) / (x.size - 1)
@@ -233,7 +241,6 @@ class RasterLayer(Layer):
 
                 # Bounds
                 bounds_string = "[[" + str(bounds[0]) + "," + str(bounds[2]) + "],[" + str(bounds[1]) + "," + str(bounds[3]) + "]]"
-
 
                 # Delete old legend files
                 for file_name in glob.glob(os.path.join(self.mapbox.server_path, "overlays", self.map_id + ".legend.*.png")):

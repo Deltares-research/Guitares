@@ -21,6 +21,7 @@ class CircleSelectorLayer(Layer):
         if isinstance(data, GeoDataFrame):
             # Data is GeoDataFrame
             if len(data) == 0:
+                self.clear()
                 return
 
         indices = []
@@ -29,20 +30,20 @@ class CircleSelectorLayer(Layer):
 
         # Add new layer
         self.mapbox.runjs("./js/circle_selector_layer.js", "addLayer", arglist=[self.map_id,
-                                                                                        data.to_crs(4326),
-                                                                                        index,
-                                                                                        self.hover_property,
-                                                                                        self.line_color,
-                                                                                        self.line_width,
-                                                                                        self.line_style,
-                                                                                        self.line_opacity,
-                                                                                        self.fill_color,
-                                                                                        self.fill_opacity,
-                                                                                        self.circle_radius,
-                                                                                        self.line_color_selected,
-                                                                                        self.fill_color_selected,
-                                                                                        self.circle_radius_selected,
-                                                                                        self.selection_type])
+                                                                                data.to_crs(4326),
+                                                                                index,
+                                                                                self.hover_property,
+                                                                                self.line_color,
+                                                                                self.line_width,
+                                                                                self.line_style,
+                                                                                self.line_opacity,
+                                                                                self.fill_color,
+                                                                                self.fill_opacity,
+                                                                                self.circle_radius,
+                                                                                self.line_color_selected,
+                                                                                self.fill_color_selected,
+                                                                                self.circle_radius_selected,
+                                                                                self.selection_type])
 
     def select_by_index(self, index):
         self.mapbox.runjs("/js/circle_selector_layer.js", "selectByIndex", arglist=[self.map_id, index])

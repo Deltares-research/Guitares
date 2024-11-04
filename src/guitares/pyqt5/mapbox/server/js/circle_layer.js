@@ -11,6 +11,7 @@ export function addLayer(id, data, hover_property,   min_zoom,
   if (map.getLayer(id)) {
     map.removeLayer(id);
   }
+
   if (map.getSource(id)) {
     map.removeSource(id);
   }
@@ -71,7 +72,7 @@ export function addLayer(id, data, hover_property,   min_zoom,
       });
      
       map.on('mouseleave', id, () => {
-        map.getCanvas().style.cursor = '';
+        map.getCanvas().style.cursor = currentCursor;
         popup.remove();
       });
     }

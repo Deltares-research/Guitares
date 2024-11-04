@@ -8,6 +8,7 @@ Created on Wed Apr 28 10:08:26 2021
 import os
 import pandas as pd
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 
 def read_color_maps(path_name):
     """Read all colormaps from a folder and register them (add them to matplotlib.colormaps). Return list of colormap names."""    
@@ -22,7 +23,7 @@ def read_color_maps(path_name):
             rgb = read_colormap(os.path.join(path_name, file))
             cmap = mpl.colors.ListedColormap(rgb, name=name)
             mpl.colormaps.register(cmap=cmap)
-    return mpl.pyplot.colormaps()    
+    return plt.colormaps()    
 
 
 def cm2png(cmap,
@@ -58,7 +59,10 @@ def cm2png(cmap,
     mpl.pyplot.close(fig)
 
 def read_colormap(file_name):
-    df = pd.read_csv(file_name, index_col=False, header=None,
-                  delim_whitespace=True, names=['r','g','b'])
+    df = pd.read_csv(file_name,
+                     index_col=False,
+                     header=None,
+                     sep='\s+',
+                     names=['r','g','b'])
     v = df.to_numpy()
     return v

@@ -19,14 +19,14 @@ class ImageLayer(Layer):
 
     def activate(self):
         self.active = True
+        self.show()
 
     def deactivate(self):
         self.active = False
 
-
     def clear(self):
         self.active = False
-        js_string = "import('/js/main.js').then(module => {module.removeLayer('" + self.id + "')});"
+        js_string = "import('/js/main.js').then(module => {module.removeLayer('" + self.map_id + "')});"
         self.mapbox.view.page().runJavaScript(js_string)
 
     def make_overlay(self):    

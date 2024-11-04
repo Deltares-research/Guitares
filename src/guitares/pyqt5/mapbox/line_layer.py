@@ -10,7 +10,8 @@ class LineLayer(Layer):
     def __init__(self, mapbox, id, map_id, **kwargs):
         super().__init__(mapbox, id, map_id, **kwargs)
 
-        pass
+        # Set some default paint values for line layer
+        self.circle_radius = 0
 
 
     def set_data(self,
