@@ -15,7 +15,7 @@ class DateEdit(QDateTimeEdit):
         self.setDisplayFormat("yyyy-MM-dd hh:mm:ss")
 
         if element.text:
-            if type(element.text) == str:
+            if type(element.text) is str:
                 txt = element.text
             else:
                 txt = self.element.getvar(element.text.variable_group, element.text.variable)    
@@ -27,7 +27,7 @@ class DateEdit(QDateTimeEdit):
             label.setVisible(True)
 
         if self.element.tooltip:
-            if type(self.element.tooltip) == str:
+            if type(self.element.tooltip) is str:
                 txt = self.element.tooltip
             else:
                 txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
@@ -41,18 +41,18 @@ class DateEdit(QDateTimeEdit):
         group = self.element.variable_group
         name  = self.element.variable
         val   = self.element.getvar(group, name)
-        if type(val) == str:
+        if type(val) is str:
             # Value is a string. Need to convert to datetime using Python datetime.
             val = datetime.datetime.strptime(val, "%Y%m%d %H%M%S")
         dtstr = val.strftime("%Y-%m-%d %H:%M:%S")
         qtDate = QtCore.QDateTime.fromString(dtstr, 'yyyy-MM-dd hh:mm:ss')
         self.setDateTime(qtDate)
 
-        if type(self.element.text) != str:
+        if type(self.element.text) is not str:
             txt = self.element.getvar(self.element.text.variable_group, self.element.text.variable)
             self.text_widget.setText(txt)
 
-        if type(self.element.tooltip) != str:
+        if type(self.element.tooltip) is not str:
             txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
             self.setToolTip(txt)
 
@@ -61,7 +61,7 @@ class DateEdit(QDateTimeEdit):
         group = self.element.variable_group
         name  = self.element.variable
         newval = self.dateTime().toPyDateTime()
-        if type(self.element.getvar(group, name)) == str:
+        if type(self.element.getvar(group, name)) is str:
             # Expected value is a string. Need to convert to newval to string.
             newval = newval.strftime("%Y%m%d %H%M%S")
         # Do some range checking here ...
