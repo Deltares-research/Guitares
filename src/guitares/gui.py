@@ -26,9 +26,9 @@ class GUI:
                  server_port=3000,
                  server_nodejs=False,
                  js_messages=True,
-                 copy_mapbox_server_folder=False,
-                 copy_maplibre_server_folder=True,
+                 copy_map_server_folder=True,
                  icon_path=None,
+                 map_engine="mapbox",
                  mapbox_token_file="mapbox_token.txt"):
 
         self.module      = module
@@ -37,6 +37,7 @@ class GUI:
         self.stylesheet  = stylesheet
         self.config_file = config_file
         self.config_path = config_path
+        self.map_engine  = map_engine
         self.splash      = None
         self.icon        = icon
         self.config      = {}
@@ -64,25 +65,17 @@ class GUI:
         self.image_path = self.image_path.replace(os.sep, '/')
 
         if server_path:
-            # Need to run http server (e.g. for MapBox)
+            # Need to run http server (e.g. for MapBox or MapLibre)
             print("Starting http server ...")
             # Run http server in separate thread
             # Use daemon=True to make sure the server stops after the application is finished
-            if copy_mapbox_server_folder:
-                mpboxpth = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pyqt5", "mapbox", "server")
+            if copy_map_server_folder:
+                mppth = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pyqt5", self.map_engine, "server")
                 # Delete current server folder
                 if os.path.exists(server_path):
                     shutil.rmtree(server_path)
                 # Now copy over folder from mapbox
-                shutil.copytree(mpboxpth, server_path)
-
-            if copy_maplibre_server_folder:
-                mplbrpth = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pyqt5", "maplibre", "server")
-                # Delete current server folder
-                if os.path.exists(server_path):
-                    shutil.rmtree(server_path)
-                # Now copy over folder from mapbox
-                shutil.copytree(mplbrpth, server_path)
+                shutil.copytree(mppth, server_path)
 
             # Check if mapbox token file exists in config path or in current working directory
             token_file_name = None    

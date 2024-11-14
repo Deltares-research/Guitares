@@ -1,6 +1,3 @@
-//let MapboxDraw = mpbox.import_mapbox_draw()
-
-//import { map, featureDrawn, featureSelected, featureModified, featureAdded, featureDeselected } from '/js/main.js';
 import { featureDrawn, featureSelected, featureModified, featureAdded, featureDeselected } from '/js/main.js';
 import { DrawRectangle } from '/js/mapbox-gl-draw-rectangle-mode.js';
 import { drawStyles } from '/js/draw_styles.js'
@@ -18,13 +15,14 @@ modes = MapboxDraw.modes;
 modes.draw_rectangle = DrawRectangle;
 modes.scale_rotate_mode = SRMode
 
-export const draw = new MapboxDraw({displayControlsDefault: false,
-                                    userProperties: true,
-                                    styles: drawStyles,
-                                    modes: modes,
-                                   });
+draw = new MapboxDraw({displayControlsDefault: false,
+                       userProperties: true,
+                       styles: drawStyles,
+                       modes: modes,
+});
 
-export function setDrawEvents() {
+//export function setDrawEvents() {
+function setDrawEvents() {
   map.on('draw.create', createListener);
   map.on('draw.modechange', modeChanged);
   map.on('draw.selectionchange', selectionChanged);
@@ -209,6 +207,7 @@ export function drawRectangle(id) {
 }
 
 function rectangleCreated(e) {
+  map.getCanvas().style.cursor = '';
   var feature=e.features[0];
   var id = feature["id"];
   var layerProps = getLayerProps(activeLayerId);

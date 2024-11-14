@@ -1,5 +1,3 @@
-import { draw, setDrawEvents } from '/js/draw_layer.js';
-
 let mapReady;
 let mapMoved;
 let getMapExtent;
@@ -45,16 +43,13 @@ export function ping(ping_string) {
 }
 
 export function importMapLibre() {
-  // Called by mapbox.py -> ping
+  // Called by maplibre.py -> ping
   console.log('Importing MapLibre ...');
-//  maplibregl = mpbox.import_mapbox_gl()
   mapLibreImported();
 }
 
 export function addMap() {
-
   console.log('Adding map ...');
-
   map = new maplibregl.Map({
     container: 'map', // container ID
 //    style: default_style, // style URL
@@ -62,7 +57,7 @@ export function addMap() {
     style: {version: 8,sources: {},layers: []},
     center: default_center, // starting position [lng, lat]
     zoom: default_zoom, // starting zoom
-    projection: default_projection // display the map as a 3D globe
+    projection: default_projection // display the map as a 3D globe or flat
   });
 
   map.scrollZoom.setWheelZoomRate(1 / 200);

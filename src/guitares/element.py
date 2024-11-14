@@ -426,9 +426,8 @@ class Element:
             from .pyqt5.pushsavefile import PushSaveFile
             self.widget = PushSaveFile(self)
 
-        elif self.style == "mapbox":
-            # We don't want to add the mapbox widget if set to invisible, because it takes a long time to load.
-            # This means that widgets that are originally set to invisible will not be added to the GUI!
+        elif self.style == "map" or self.style == "mapbox" or self.style == "maplibre":
+
             okay = True
             if self.dependencies:
                 for dep in self.dependencies:
@@ -436,8 +435,13 @@ class Element:
                         if not dep.get():
                             okay = False
             if okay:                
-                from .pyqt5.mapbox.mapbox import MapBox
-                self.widget = MapBox(self)
+                # Determine which map to use
+                if self.gui.map_engine == "mapbox":
+                    from .pyqt5.mapbox.mapbox import MapBox
+                    self.widget = MapBox(self)
+                elif self.gui.map_engine == "maplibre":
+                    from .pyqt5.maplibre.maplibre import MapLibre
+                    self.widget = MapLibre(self)
 
         elif self.style == "mapbox_compare":
             # We don't want to add the mapbox widget if set to invisible, because it takes a long time to load.
@@ -451,19 +455,6 @@ class Element:
             if okay:                
                 from .pyqt5.mapbox.mapbox_compare import MapBoxCompare
                 self.widget = MapBoxCompare(self)
-
-        elif self.style == "maplibre":
-            # We don't want to add the maplibre widget if set to invisible, because it takes a long time to load.
-            # This means that widgets that are originally set to invisible will not be added to the GUI!
-            okay = True
-            if self.dependencies:
-                for dep in self.dependencies:
-                    if dep.action == "visible":
-                        if not dep.get():
-                            okay = False
-            if okay:                
-                from .pyqt5.maplibre.maplibre import MapLibre
-                self.widget = MapLibre(self)
 
         elif self.style == "webpage":
             from .pyqt5.webpage import WebPage
