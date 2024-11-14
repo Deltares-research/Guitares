@@ -26,7 +26,8 @@ class GUI:
                  server_port=3000,
                  server_nodejs=False,
                  js_messages=True,
-                 copy_mapbox_server_folder=True,
+                 copy_mapbox_server_folder=False,
+                 copy_maplibre_server_folder=True,
                  icon_path=None,
                  mapbox_token_file="mapbox_token.txt"):
 
@@ -74,7 +75,15 @@ class GUI:
                     shutil.rmtree(server_path)
                 # Now copy over folder from mapbox
                 shutil.copytree(mpboxpth, server_path)
-          
+
+            if copy_maplibre_server_folder:
+                mplbrpth = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pyqt5", "maplibre", "server")
+                # Delete current server folder
+                if os.path.exists(server_path):
+                    shutil.rmtree(server_path)
+                # Now copy over folder from mapbox
+                shutil.copytree(mplbrpth, server_path)
+
             # Check if mapbox token file exists in config path or in current working directory
             token_file_name = None    
             if os.path.exists(os.path.join(self.config_path, mapbox_token_file)):

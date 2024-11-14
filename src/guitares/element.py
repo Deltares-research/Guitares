@@ -452,6 +452,19 @@ class Element:
                 from .pyqt5.mapbox.mapbox_compare import MapBoxCompare
                 self.widget = MapBoxCompare(self)
 
+        elif self.style == "maplibre":
+            # We don't want to add the maplibre widget if set to invisible, because it takes a long time to load.
+            # This means that widgets that are originally set to invisible will not be added to the GUI!
+            okay = True
+            if self.dependencies:
+                for dep in self.dependencies:
+                    if dep.action == "visible":
+                        if not dep.get():
+                            okay = False
+            if okay:                
+                from .pyqt5.maplibre.maplibre import MapLibre
+                self.widget = MapLibre(self)
+
         elif self.style == "webpage":
             from .pyqt5.webpage import WebPage
             self.widget = WebPage(self)
