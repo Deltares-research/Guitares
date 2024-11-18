@@ -1,3 +1,5 @@
+import importlib
+
 def window_dialog(
     window,
     text,
@@ -11,10 +13,9 @@ def window_dialog(
     path=None,
     file_name=None
 ):
-    if window.gui.framework == "pyqt5":
-        from .pyqt5.dialog import dialog
+    mod = importlib.import_module(f"guitares.{window.gui.framework}.dialog")  
 
-    p = dialog(
+    p = mod.dialog(
         window.widget,
         text,
         title=title,

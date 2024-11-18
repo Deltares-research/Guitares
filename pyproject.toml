@@ -12,7 +12,7 @@ authors = [
     {name = "Maarten van Ormondt", email = "maarten.vanormondt@deltares-usa.us"},
 ]
 readme = "README.md"
-description = "Guitares is a Python package for building configurable Graphical User Interfaces (GUIs) using the PyQt5 framework."
+description = "Guitares is a Python package for building configurable Graphical User Interfaces (GUIs) using the PyQt5 or PySide6 framework."
 requires-python = ">=3.10"
 dependencies = [
     "geopandas >=0.8",
@@ -29,9 +29,8 @@ dependencies = [
     "pyyaml",
     "pyqt5",
     "pyqtwebengine",
+    "pyside6",
     "cht_tiling",
-    "datashader",
-    "spatialpandas",
     "pyogrio"
 ]
 dynamic = ["version"]

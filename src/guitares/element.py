@@ -83,8 +83,14 @@ class Element:
         self.selection_type = "single"
         self.colormap = None
         self.ready = False
-        # Mapbox
-        self.map_style = "mapbox://styles/mapbox/streets-v11"
+        # Map
+        if self.gui.map_engine == "mapbox":
+            self.map_style = "mapbox://styles/mapbox/streets-v11"
+        elif self.gui.map_engine == "maplibre":
+            self.map_style = "osm"
+        else:
+            # This should not happen
+            self.map_style = "osm"
         self.map_center = [0, 0]
         self.map_zoom = 0
         self.map_projection = "mercator"
@@ -360,71 +366,70 @@ class Element:
     def add(self):
         
         if self.style == "tabpanel":
-            from .pyqt5.tabpanel import TabPanel
-            self.widget = TabPanel(self)
+            mod = importlib.import_module(f"guitares.{self.gui.framework}.tabpanel")
+            self.widget = mod.TabPanel(self)
 
         elif self.style == "panel":
             # Add frame
-            from .pyqt5.frame import Frame
-            self.widget = Frame(self)
+            mod = importlib.import_module(f"guitares.{self.gui.framework}.frame")
+            self.widget = mod.Frame(self)
 
         elif self.style == "dual_frame":
             # Add dual frame
-            from .pyqt5.dual_frame import DualFrame
-            self.widget = DualFrame(self)
+            mod = importlib.import_module(f"guitares.{self.gui.framework}.dual_frame")
+            self.widget = mod.DualFrame(self)
 
         elif self.style == "pushbutton":
-            from .pyqt5.pushbutton import PushButton
-            self.widget = PushButton(self)
+            mod = importlib.import_module(f"guitares.{self.gui.framework}.pushbutton")
+            self.widget = mod.PushButton(self)
 
         elif self.style == "edit":
-            from .pyqt5.edit import Edit
-            self.widget = Edit(self)
+            mod = importlib.import_module(f"guitares.{self.gui.framework}.edit")
+            self.widget = mod.Edit(self)
 
         elif self.style == "datetimeedit":
-            from .pyqt5.date_edit import DateEdit
-            self.widget = DateEdit(self)
+            mod = importlib.import_module(f"guitares.{self.gui.framework}.date_edit")
+            self.widget = mod.DateEdit(self)
 
         elif self.style == "text":
-            from .pyqt5.text import Text
-            self.widget = Text(self)
+            mod = importlib.import_module(f"guitares.{self.gui.framework}.text")
+            self.widget = mod.Text(self)
 
         elif self.style == "popupmenu":
-            from .pyqt5.popupmenu import PopupMenu
-            self.widget = PopupMenu(self)
+            mod = importlib.import_module(f"guitares.{self.gui.framework}.popupmenu")
+            self.widget = mod.PopupMenu(self)
 
         elif self.style == "listbox":
-            from .pyqt5.listbox import ListBox
-            self.widget = ListBox(self)
+            mod = importlib.import_module(f"guitares.{self.gui.framework}.listbox")
+            self.widget = mod.ListBox(self)
 
         elif self.style == "tableview":
-            from .pyqt5.tableview import TableView
-            self.widget = TableView(self)
+            mod = importlib.import_module(f"guitares.{self.gui.framework}.tableview")
+            self.widget = mod.TableView(self)
 
         elif self.style == "checkbox":
-            from .pyqt5.checkbox import CheckBox
-            self.widget = CheckBox(self)
+            mod = importlib.import_module(f"guitares.{self.gui.framework}.checkbox")
+            self.widget = mod.CheckBox(self)
 
         elif self.style == "radiobuttongroup":
-            from .pyqt5.radiobuttongroup import RadioButtonGroup
-            self.widget = RadioButtonGroup(self)
+            mod = importlib.import_module(f"guitares.{self.gui.framework}.radiobuttongroup")
+            self.widget = mod.RadioButtonGroup(self)
 
         elif self.style == "slider":
-            from .pyqt5.slider import Slider
-            self.widget = Slider(self)
+            mod = importlib.import_module(f"guitares.{self.gui.framework}.slider")
+            self.widget = mod.Slider(self)
 
         elif self.style == "pushselectfile":
-            from .pyqt5.pushopenfile import PushOpenFile
-            self.widget = PushOpenFile(self)
+            mod = importlib.import_module(f"guitares.{self.gui.framework}.pushopenfile")
+            self.widget = mod.PushOpenFile(self)
 
         elif self.style == "pushselectdir":
-            from .pyqt5.pushopendir import PushOpenDir
-
-            self.widget = PushOpenDir(self)
+            mod = importlib.import_module(f"guitares.{self.gui.framework}.pushopendir")
+            self.widget = mod.PushOpenDir(self)
             
         elif self.style == "pushsavefile":
-            from .pyqt5.pushsavefile import PushSaveFile
-            self.widget = PushSaveFile(self)
+            mod = importlib.import_module(f"guitares.{self.gui.framework}.pushsavefile")
+            self.widget = mod.PushSaveFile(self)
 
         elif self.style == "map" or self.style == "mapbox" or self.style == "maplibre":
 
@@ -437,11 +442,11 @@ class Element:
             if okay:                
                 # Determine which map to use
                 if self.gui.map_engine == "mapbox":
-                    from .pyqt5.mapbox.mapbox import MapBox
-                    self.widget = MapBox(self)
+                    mod = importlib.import_module(f"guitares.{self.gui.framework}.mapbox")
+                    self.widget = mod.MapBox(self)
                 elif self.gui.map_engine == "maplibre":
-                    from .pyqt5.maplibre.maplibre import MapLibre
-                    self.widget = MapLibre(self)
+                    mod = importlib.import_module(f"guitares.{self.gui.framework}.maplibre")
+                    self.widget = mod.MapLibre(self)
 
         elif self.style == "mapbox_compare":
             # We don't want to add the mapbox widget if set to invisible, because it takes a long time to load.
@@ -452,13 +457,13 @@ class Element:
                     if dep.action == "visible":
                         if not dep.get():
                             okay = False
-            if okay:                
-                from .pyqt5.mapbox.mapbox_compare import MapBoxCompare
-                self.widget = MapBoxCompare(self)
+            if okay:
+                mod = importlib.import_module(f"guitares.{self.gui.framework}.mapbox.mapbox_compare")
+                self.widget = mod.MapBoxCompare(self)
 
         elif self.style == "webpage":
-            from .pyqt5.webpage import WebPage
-            self.widget = WebPage(self)
+            mod = importlib.import_module(f"guitares.{self.gui.framework}.webpage")
+            self.widget = mod.WebPage(self)
         else:
             print("Element style " + self.style + " not recognized!")
 

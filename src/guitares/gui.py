@@ -3,11 +3,10 @@ import yaml
 import sys
 import copy
 import shutil
+import importlib
 
 from pathlib import Path
 import toml
-from PyQt5.QtWidgets import QApplication
-from PyQt5 import QtCore, QtGui
 
 from guitares.window import Window
 from guitares.server import start_server
@@ -50,7 +49,14 @@ class GUI:
         self.js_messages = js_messages
         self.popup_window = {}
         self.popup_data   = {}
-        self.resize_factor = 1.0        
+        self.resize_factor = 1.0
+
+        if self.framework == "pyqt5":
+            from PyQt5.QtWidgets import QApplication
+            from PyQt5 import QtCore
+        elif self.framework == "pyside6":
+            from PySide6.QtWidgets import QApplication
+            from PySide6 import QtCore
 
         QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
         self.qtapp = QApplication(sys.argv)
@@ -70,11 +76,11 @@ class GUI:
             # Run http server in separate thread
             # Use daemon=True to make sure the server stops after the application is finished
             if copy_map_server_folder:
-                mppth = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pyqt5", self.map_engine, "server")
+                mppth = os.path.join(os.path.dirname(os.path.abspath(__file__)), "map", self.map_engine, "server")
                 # Delete current server folder
                 if os.path.exists(server_path):
                     shutil.rmtree(server_path)
-                # Now copy over folder from mapbox
+                # Now copy over folder from mapbox or maplibre
                 shutil.copytree(mppth, server_path)
 
             # Check if mapbox token file exists in config path or in current working directory
@@ -104,9 +110,9 @@ class GUI:
             start_server(server_path, port=server_port, node=self.server_nodejs)
 
     def show_splash(self):
-        if self.framework == "pyqt5" and self.splash_file:
-            from .pyqt5.splash import Splash
-            self.splash = Splash(self.splash_file, seconds=20.0).splash
+        if self.splash_file:
+            mod = importlib.import_module(f"guitares.{self.framework}.splash")
+            self.splash = mod.Splash(self.splash_file, seconds=20.0).splash
 
     def close_splash(self):
         if self.splash:
@@ -117,6 +123,11 @@ class GUI:
         app = self.qtapp
 
         # Set the icon
+        if self.framework == "pyqt5":
+            from PyQt5 import QtGui
+        elif self.framework == "pyside6":
+            from PySide6 import QtGui
+
         app.setWindowIcon(QtGui.QIcon(self.icon))
 
         if self.stylesheet:
@@ -226,7 +237,7 @@ class GUI:
                 # Loop through tabs
                 for tab in el["tab"]:
                     if "element" in tab:
-                        if type(tab["element"]) == str:
+                        if type(tab["element"]) is str:
                             # Must be a file
                             tab["element"] = self.read_gui_elements(path, tab["element"])
                     else:
@@ -234,7 +245,7 @@ class GUI:
         return element
 
     def quit(self):
-        QApplication.quit()
+        self.qtapp.quit()
 
 def yaml2dict(file_name):
     file = open(file_name,"r")

@@ -1,13 +1,14 @@
-from PyQt5 import QtWebEngineWidgets
-from PyQt5 import QtCore, QtWidgets, QtWebChannel
+from PySide6 import QtWebEngineWidgets
+from PySide6 import QtCore, QtWidgets, QtWebChannel
+from PySide6 import QtWebEngineCore
 import json
 from geopandas import GeoDataFrame
 from pandas import DataFrame
 from pyproj import CRS, Transformer
 import os
-from .layer import Layer, list_layers, find_layer_by_id
+from guitares.map.layer import Layer, list_layers, find_layer_by_id
 
-class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
+class WebEnginePage(QtWebEngineCore.QWebEnginePage):
     def __init__(self, view, print_messages):
         super().__init__(view)
         self.print_messages = print_messages
@@ -17,7 +18,7 @@ class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
             print("javaScriptConsoleMessage: ", level, message, lineNumber, sourceID)
 
 
-class MapLibre(QtWidgets.QWidget):
+class MapBox(QtWidgets.QWidget):
     def __init__(self, element):
         super().__init__(element.parent.widget)
 
@@ -26,7 +27,7 @@ class MapLibre(QtWidgets.QWidget):
         self.nr_load_attempts = 0
         self.nr_ready_attempts = 0
 
-        file_name = os.path.join(self.gui.server_path, "js", "maplibre_defaults.js")
+        file_name = os.path.join(self.gui.server_path, "js", "mapbox_defaults.js")
         with open(file_name, "w") as f:
             f.write("var default_style = '" + element.map_style + "';\n")
             f.write("var default_center = [" + str(element.map_center[0]) + "," + str(element.map_center[1]) + "]\n")
@@ -56,7 +57,7 @@ class MapLibre(QtWidgets.QWidget):
 
         view.page().setWebChannel(channel)
 
-        channel.registerObject("MapLibre", self)
+        channel.registerObject("MapBox", self)
 
         view.loadFinished.connect(self.load_finished)
 
@@ -90,8 +91,8 @@ class MapLibre(QtWidgets.QWidget):
     def pong_received(self):
         self.timer_pong.stop()
         if self.webchannel_ok:
-            # Tell JS to import MapLibre
-            self.runjs("/js/main.js", "importMapLibre", arglist=[])
+            # Tell JS to import Mapbox
+            self.runjs("/js/main.js", "importMapbox", arglist=[])
         else:
             # Reload
             self.view.load(QtCore.QUrl(self.url))    
@@ -106,17 +107,17 @@ class MapLibre(QtWidgets.QWidget):
     def take_screenshot(self, output_file):
         self.view.grab().save(output_file, b"PNG")
 
-    @QtCore.pyqtSlot(str)
+    @QtCore.Slot(str)
     def pong(self, message):
         # Python heard a pong!
         self.webchannel_ok = True
-        # self.runjs("/js/main.js", "importMapLibre", arglist=[])
+        # self.runjs("/js/main.js", "importMapbox", arglist=[])
 
-    @QtCore.pyqtSlot(str)
-    def mapLibreImported(self, message):
+    @QtCore.Slot(str)
+    def mapboxImported(self, message):
         self.runjs("/js/main.js", "addMap", arglist=[])
 
-    @QtCore.pyqtSlot(str)
+    @QtCore.Slot(str)
     def mapReady(self, coords):
         coords = json.loads(coords)
         self.ready = True
@@ -126,16 +127,16 @@ class MapLibre(QtWidgets.QWidget):
         # Set dependencies now
         self.element.set_dependencies()
 
-    @QtCore.pyqtSlot(str)
+    @QtCore.Slot(str)
     def layerStyleSet(self, coords):
         self.redraw_layers()
 
-    @QtCore.pyqtSlot(str)
+    @QtCore.Slot(str)
     def layerAdded(self, layer_id):
         layer = find_layer_by_id(layer_id, self.layer)
         layer.layer_added()
 
-    @QtCore.pyqtSlot(str)
+    @QtCore.Slot(str)
     def mouseMoved(self, coords):
         coords = json.loads(coords)
         self.map_extent = coords
@@ -146,7 +147,7 @@ class MapLibre(QtWidgets.QWidget):
         if hasattr(self.callback_module, "mouse_moved"):
             self.callback_module.mouse_moved(coords)
 
-    @QtCore.pyqtSlot(str)
+    @QtCore.Slot(str)
     def mapMoved(self, coords):
         coords = json.loads(coords)
         self.map_extent = coords[0:2]
@@ -159,7 +160,7 @@ class MapLibre(QtWidgets.QWidget):
         if hasattr(self.callback_module, "map_moved"):
             self.callback_module.map_moved(coords, self)
 
-    @QtCore.pyqtSlot(str)
+    @QtCore.Slot(str)
     def pointClicked(self, coords):
         coords = json.loads(coords)
         # Transform to local crs
@@ -172,17 +173,17 @@ class MapLibre(QtWidgets.QWidget):
         if self.point_clicked_callback:
             self.point_clicked_callback(x, y)
 
-    @QtCore.pyqtSlot(str)
+    @QtCore.Slot(str)
     def getMapExtent(self, coords):
         coords = json.loads(coords)
         self.map_extent = coords
 
-    @QtCore.pyqtSlot(str)
+    @QtCore.Slot(str)
     def getMapCenter(self, coords):
         coords = json.loads(coords)
         self.map_center = coords
 
-    @QtCore.pyqtSlot(str, str)
+    @QtCore.Slot(str, str)
     def featureClicked(self, layer_id, feature_props):
         # Find layer by ID
         layer = find_layer_by_id(layer_id, self.layer)
@@ -190,28 +191,28 @@ class MapLibre(QtWidgets.QWidget):
             if layer.select:
                 layer.select(json.loads(feature_props), self)
 
-    @QtCore.pyqtSlot(str, str, str)
+    @QtCore.Slot(str, str, str)
     def featureDrawn(self, feature_collection, feature_id, layer_id):
         layer = find_layer_by_id(layer_id, self.layer)
         layer.feature_drawn(json.loads(feature_collection), feature_id)
 
-    @QtCore.pyqtSlot(str, str, str)
+    @QtCore.Slot(str, str, str)
     def featureModified(self, feature_collection, feature_id, layer_id):
         layer = find_layer_by_id(layer_id, self.layer)
         layer.feature_modified(json.loads(feature_collection), feature_id)
 
-    @QtCore.pyqtSlot(str, str, str)
+    @QtCore.Slot(str, str, str)
     def featureSelected(self, feature_collection, feature_id, layer_id):
         layer = find_layer_by_id(layer_id, self.layer)
         layer.feature_selected(json.loads(feature_collection), feature_id)
 
-    @QtCore.pyqtSlot(str)
+    @QtCore.Slot(str)
     def featureDeselected(self, layer_id):
         layer = find_layer_by_id(layer_id, self.layer)
         if layer:
             layer.feature_deselected()
 
-    @QtCore.pyqtSlot(str, str, str)
+    @QtCore.Slot(str, str, str)
     def featureAdded(self, feature_collection, feature_id, layer_id):
         layer = find_layer_by_id(layer_id, self.layer)
         layer.feature_added(json.loads(feature_collection), feature_id)

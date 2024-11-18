@@ -1,11 +1,11 @@
-import importlib
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QStatusBar, QLabel, QFrame
-
-#from guitares.dependencies import Dependency, DependencyCheck
-
 class StatusBar:
     def __init__(self, window, widths):
+
+        if self.window.gui.framework == "pyqt5":
+            from PyQt5.QtWidgets import QStatusBar, QLabel, QFrame
+        elif self.window.gui.framework == "pyside6":
+            from PySide6.QtWidgets import QStatusBar, QLabel, QFrame
+
         sb = QStatusBar()
         window.setStatusBar(sb)
         self.window = window

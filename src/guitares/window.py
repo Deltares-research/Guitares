@@ -1,4 +1,3 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QStatusBar, QLabel, QFrame
 import importlib
 import os
 import pathlib
@@ -115,18 +114,21 @@ class Window:
 
     def build(self):
 
+        if self.gui.framework == "pyqt5":
+            from PyQt5.QtWidgets import QWidget, QVBoxLayout, QStatusBar, QLabel, QFrame
+        elif self.gui.framework == "pyside6":
+            from PySide6.QtWidgets import QWidget, QVBoxLayout, QStatusBar, QLabel, QFrame
+
         if self.type=="main":
 
             # Add main window
 
-            if self.gui.framework=="pyqt5":
-                from .pyqt5.main_window import MainWindow
-            window = MainWindow(self)
+            mod = importlib.import_module(f"guitares.{self.gui.framework}.main_window")    
+            window = mod.MainWindow(self)
 
             # Add menu
             menu_bar = MenuBar()
-            if self.gui.framework=="pyqt5":
-                menu_bar.widget = window.menuBar()
+            menu_bar.widget = window.menuBar()
             self.add_menus(self.menus, menu_bar, self.gui)
 
             # Add toolbar
@@ -134,6 +136,7 @@ class Window:
 
             # Status bar
             # self.window.statusBar().showMessage('Message in statusbar.')
+
 
             # Central widget
             central_widget = QWidget()
@@ -146,10 +149,8 @@ class Window:
         else:
 
             # Add pop-up window
-
-            if self.gui.framework=="pyqt5":
-                from .pyqt5.popup_window import PopupWindow
-                window = PopupWindow(self)
+            mod = importlib.import_module(f"guitares.{self.gui.framework}.popup_window")
+            window = mod.PopupWindow(self)
             self.widget = window
 
         # Add elements

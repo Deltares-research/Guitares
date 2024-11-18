@@ -96,13 +96,12 @@ class Menu:
 
 
     def add(self):
+        mod = importlib.import_module(f"guitares.{self.gui.framework}.menu")
         if self.menus:
-            from .pyqt5.menu import Menu
-            Menu(self)
+            mod.Menu(self)
         else:
             # End node
-            from .pyqt5.menu import Action
-            Action(self)
+            mod.Action(self)
 
     def set_dependencies(self):
         for dependency in self.dependencies:

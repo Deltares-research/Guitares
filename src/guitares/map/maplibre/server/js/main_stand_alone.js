@@ -1,0 +1,359 @@
+let mapReady;
+let mapMoved;
+let getMapExtent;
+let getMapCenter;
+export let pong;
+export let mapLibreImported;
+export let featureDrawn;
+export let featureSelected;
+export let featureDeselected;
+export let featureModified;
+export let featureAdded;
+export let jsonString;
+export let pointClicked;
+export let layerStyleSet;
+export let marker;
+
+
+  console.log('Adding map ...');
+  map = new maplibregl.Map({
+    container: 'map', // container ID
+//    style: default_style, // style URL
+    style: 'https://demotiles.maplibre.org/style.json',
+//    style: {version: 8,sources: {},layers: []},
+    center: default_center, // starting position [lng, lat]
+    zoom: default_zoom, // starting zoom
+    projection: default_projection // display the map as a 3D globe or flat
+  });
+
+  map.scrollZoom.setWheelZoomRate(1 / 200);
+  const nav = new maplibregl.NavigationControl({
+    visualizePitch: true
+  });
+  map.addControl(nav, 'top-left');
+  const scale = new maplibregl.ScaleControl({
+    maxWidth: 80
+  });
+  map.addControl(scale, 'bottom-left');
+
+  marker = new maplibregl.Marker({draggable: true});
+
+  layers = new Object();
+  currentCursor = '';
+
+  map.on('load', () => {
+    // Add dummy layer
+    console.log('MapLibre loaded in main.js ...');
+    addDummyLayer();
+    map.addControl(draw, 'top-left');
+    console.log('control added ...');
+  });
+
+  map.on('style.load', () => {
+
+    const layers = map.getStyle().layers;
+    const labelLayer = layers.find(
+      (layer) => layer.type === 'symbol' && layer.layout['text-field']
+    );
+
+    if (!labelLayer) {
+      console.log('No label layer with id found with text-field property');
+    } else {
+      const labelLayerId = labelLayer.id;  
+    }
+
+    // Add additional layers
+  
+  });
+
+  map.on('moveend', () => {
+    onMoveEnd();
+  });
+
+
+function mapLoaded(evt) {
+  // Get the map extents and tell Python MapLibre object that we're ready
+  console.log("map loaded 01")
+  var extent = map.getBounds();
+  var sw = extent.getSouthWest();
+  var ne = extent.getNorthEast();
+  var bottomLeft = [sw["lng"], sw["lat"]];
+  var topRight   = [ne["lng"], ne["lat"]];
+  jsonString = JSON.stringify([bottomLeft, topRight]);
+  console.log("map ready")
+}
+
+function onMoveEnd(evt) {
+	// Called after moving map ended
+	// Get new map extents
+    var extent = map.getBounds();
+    var sw = extent.getSouthWest();
+    var ne = extent.getNorthEast();
+    var bottomLeft = [sw["lng"], sw["lat"]];
+    var topRight   = [ne["lng"], ne["lat"]];
+    var center = map.getCenter();
+    var zoom = map.getZoom();
+    jsonString = JSON.stringify([bottomLeft, topRight, center["lng"], center["lat"], zoom]);
+}
+
+export function removeLayer(id, side) {
+  // Remove the layer, source and legend etc.
+  // Remove layer
+  var mapLayer = map.getLayer(id);
+  if(typeof mapLayer !== 'undefined') {
+    // Remove map layer
+    map.removeLayer(id);
+  }
+  var mapLayer = map.getLayer(id + '.line');
+  if(typeof mapLayer !== 'undefined') {
+    // Remove map layer
+    map.removeLayer(id + '.line');
+  }
+  var mapLayer = map.getLayer(id + '.fill');
+  if(typeof mapLayer !== 'undefined') {
+    // Remove map layer
+    map.removeLayer(id + '.fill');
+  }
+  var mapLayer = map.getLayer(id + '.circle');
+  if(typeof mapLayer !== 'undefined') {
+    // Remove map layer
+    map.removeLayer(id + '.circle');
+  }
+  // Remove source
+  var mapSource = map.getSource(id);
+  if(typeof mapSource !== 'undefined') {
+    map.removeSource(id);
+  }
+  var legend = document.getElementById("legend" + id);
+  if (legend) {
+    legend.remove();
+  }
+
+//  // What is this doing here?
+//  map.off('moveend', () => {
+//    const vis = map.getLayoutProperty(lineId, 'visibility');
+//    if (vis == "visible") {
+//      updateFeatureState(id);
+//    }
+//  });
+
+}
+
+export function setMouseDefault() {
+  map.getCanvas().style.cursor = '';
+  currentCursor = '';
+  map.off('click', onPointClicked);
+}
+
+export function showLayer(id, side) {
+	// Show layer
+	if (map.getLayer(id)) {
+    map.setLayoutProperty(id, 'visibility', 'visible');
+  }
+  var map_id = id + '.line'
+	if (map.getLayer(map_id)) {
+  	map.setLayoutProperty(map_id, 'visibility', 'visible');
+  }
+  var map_id = id + '.fill'
+	if (map.getLayer(map_id)) {
+  	map.setLayoutProperty(map_id, 'visibility', 'visible');
+  }
+  var map_id = id + '.circle'
+	if (map.getLayer(map_id)) {
+  	map.setLayoutProperty(map_id, 'visibility', 'visible');
+  }
+  showLegend(id);
+}
+
+export function hideLayer(id, side) {
+	// Hide layer
+	if (map.getLayer(id)) {
+  	map.setLayoutProperty(id, 'visibility', 'none');
+  }
+  var map_id = id + '.line'
+	if (map.getLayer(map_id)) {
+  	map.setLayoutProperty(map_id, 'visibility', 'none');
+  }
+  var map_id = id + '.fill'
+	if (map.getLayer(map_id)) {
+  	map.setLayoutProperty(map_id, 'visibility', 'none');
+  }
+  var map_id = id + '.circle'
+	if (map.getLayer(map_id)) {
+  	map.setLayoutProperty(map_id, 'visibility', 'none');
+  }
+  hideLegend(id);
+}
+
+export function showLegend(id) {
+	// Show legend
+  var legend = document.getElementById("legend" + id);
+  if (legend) {
+    legend.style.visibility = 'visible';
+  }
+}
+
+export function hideLegend(id) {
+	// Hide layer
+  var legend = document.getElementById("legend" + id);
+  if (legend) {
+    legend.style.visibility = 'hidden';
+  }
+}
+
+export function getExtent() {
+	// Called after moving map ended
+	// Get new map extents
+    var extent = map.getBounds();
+    var sw = extent.getSouthWest();
+    var ne = extent.getNorthEast();
+    var bottomLeft = [sw["lng"], sw["lat"]];
+    var topRight   = [ne["lng"], ne["lat"]];
+    jsonString = JSON.stringify([bottomLeft, topRight]);
+    getMapExtent();
+}
+
+export function getCenter() {
+  var center = map.getCenter();
+  var zoom = map.getZoom();
+  jsonString = JSON.stringify([center["lng"], center["lat"], zoom]);
+  getMapCenter();
+}
+
+export function clickPoint() {
+  map.getCanvas().style.cursor = 'crosshair';
+  currentCursor = 'crosshair';
+//  map.once('click', function(e) { onPointClicked(e) });
+  map.once('click', onPointClicked);
+  map.once('contextmenu', onPointRightClicked);
+}
+
+function onPointClicked(e) {
+  map.getCanvas().style.cursor = '';
+  currentCursor = '';
+  pointClicked(e.lngLat);
+}
+
+function onPointRightClicked(e) {
+  map.getCanvas().style.cursor = '';
+  currentCursor = '';
+  map.off('click', onPointClicked);
+}
+
+export function setCenter(lon, lat) {
+	// Called after moving map ended
+	// Get new map extents
+	map.setCenter([lon, lat]);
+}
+
+export function setZoom(zoom) {
+	// Called after moving map ended
+	// Get new map extents
+	map.setZoom(zoom);
+}
+
+export function fitBounds(lon1, lat1, lon2, lat2) {
+  // Fit bounds of map using southwest and northeast corner coordinates
+	map.fitBounds([[lon1, lat1], [lon2, lat2]])
+}
+
+export function jumpTo(lon, lat, zoom) {
+	// Called after moving map ended
+	// Get new map extents
+	map.jumpTo({center: [lon, lat], zoom: zoom});
+}
+
+export function flyTo(lon, lat, zoom) {
+	// Called after moving map ended
+	// Get new map extents
+	map.flyTo({center: [lon, lat], zoom: zoom});
+}
+
+export function setProjection(projection) {
+	// Called after moving map ended
+	// Get new map extents
+	map.setProjection(projection);
+  if (projection == 'globe') {
+    map.setFog({
+      color: 'rgb(186, 210, 235)', // Lower atmosphere
+      'high-color': 'rgb(36, 92, 223)', // Upper atmosphere
+      'horizon-blend': 0.02, // Atmosphere thickness (default 0.2 at low zooms)
+      'space-color': 'rgb(11, 11, 25)', // Background color
+      'star-intensity': 0.6 // Background star brightness (default 0.35 at low zoooms )
+    });
+  }
+}
+
+// styleID should be in the form "satellite-v9"
+export function setLayerStyle(styleID) {
+  fetch(`https://api.mapbox.com/styles/v1/mapbox/${styleID}?access_token=${maplibregl.accessToken}`)
+    .then(response => response.json())
+    .then(newStyle => {
+      const currentStyle = map.getStyle();
+      // ensure any sources from the current style are copied across to the new style
+      newStyle.sources = Object.assign(
+        {},
+        currentStyle.sources,
+        newStyle.sources
+      );
+
+      // find the index of where to insert our layers to retain in the new style
+      let labelIndex = newStyle.layers.findIndex((el) => {
+        return el.id == 'waterway-label';
+      });
+
+      // default to on top
+      if (labelIndex === -1) {
+        labelIndex = newStyle.layers.length;
+      }
+      const appLayers = currentStyle.layers.filter((el) => {
+        // app layers are the layers to retain, and these are any layers which have a different source set
+        return (
+          el.source &&
+          el.source != 'mapbox://mapbox.satellite' &&
+          el.source != 'mapbox' &&
+          el.source != 'composite'
+        );
+      });
+      newStyle.layers = [
+        ...newStyle.layers.slice(0, labelIndex),
+        ...appLayers,
+        ...newStyle.layers.slice(labelIndex, -1),
+      ];
+      map.setStyle(newStyle);
+      layerStyleSet();
+    })
+    .catch(error => {
+      console.error(`Error fetching style: ${error.message}`);
+    });
+  }
+
+export function setTerrain(trueOrFalse, exaggeration) {
+  if (trueOrFalse) {
+    map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': exaggeration });
+  } else {
+    map.setTerrain();
+  }
+}
+
+function addDummyLayer() {
+  // Add a dummy layer (other layer will be added BEFORE this dummy layer)
+  var id = 'dummy_layer';
+  map.addSource(id, {
+    'type': 'geojson',
+    'data': {
+      'type': 'FeatureCollection',
+      'features': []
+    }
+  });
+  map.addLayer({
+    'id': 'dummy_layer',
+    'type': 'line',
+    'source': id,
+    'layout': {},
+    'paint': {
+      'line-color': '#000',
+      'line-width': 1
+    }
+  });
+}
