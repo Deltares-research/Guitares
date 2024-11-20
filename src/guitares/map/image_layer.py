@@ -49,23 +49,13 @@ class ImageLayer(Layer):
             if xlim is None:
                 return
             bounds = [[xlim[0], xlim[1]], [ylim[0], ylim[1]]]
-            bounds_string = f"[[{bounds[0][0]},{bounds[0][1]}],[{bounds[1][0]},{bounds[1][1]}]]"
             overlay_file = f"./overlays/{self.file_name}"
-            # js_string = f"import('/js/image_layer.js').then(module => {{module.updateLayer('{overlay_file}', '{self.map_id}', {bounds_string}, '')}});"
-            # self.map.view.page().runJavaScript(js_string)
-            # js_string = f"import('/js/image_layer.js').then(module => {{module.setOpacity('{self.map_id}', 1.0)}});"
-            # self.map.view.page().runJavaScript(js_string)
-            self.map.runjs("/js/image_layer.js", "updateLayer", arglist=[overlay_file, self.map_id, bounds_string])
+            self.map.runjs("/js/image_layer.js", "updateLayer", arglist=[overlay_file, self.map_id, bounds])
             self.map.runjs("/js/image_layer.js", "setOpacity", arglist=[self.map_id, 1.0])
 
-            
-
     def set_data(self, data, image_file=None, xlim=None, ylim=None):
-        fname = os.path.join(self.map.server_path, "overlays", self.file_name)
-        self.data = data
 
-        # js_string = f"import('/js/main.js').then(module => {{module.removeLayer('{self.map_id}')}});"
-        # self.map.view.page().runJavaScript(js_string)
+        self.data = data
         self.map.runjs("/js/main.js", "removeLayer", arglist=[self.map_id])
 
         try:
@@ -77,11 +67,8 @@ class ImageLayer(Layer):
             return
 
         bounds = [[xlim[0], xlim[1]], [ylim[0], ylim[1]]]
-        bounds_string = f"[[{bounds[0][0]},{bounds[0][1]}],[{bounds[1][0]},{bounds[1][1]}]]"
         overlay_file = f"./overlays/{self.file_name}"
-        # js_string = f"import('/js/image_layer.js').then(module => {{module.addLayer('{overlay_file}', '{self.map_id}', {bounds_string}, '')}});"
-        # self.map.view.page().runJavaScript(js_string)
-        self.map.runjs("/js/image_layer.js", "addLayer", arglist=[overlay_file, self.map_id, bounds_string])
+        self.map.runjs("/js/image_layer.js", "addLayer", arglist=[overlay_file, self.map_id, bounds])
 
     # def set_data(self,
     #              data,
