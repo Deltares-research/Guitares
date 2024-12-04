@@ -1,8 +1,3 @@
-//let MapboxDraw;
-//MapboxDraw = require('@mapbox/mapbox-gl-draw');
-//let MapboxDraw = mpbox.import_mapbox_draw()
-//let turf = mpbox.import_turf()
-
 const Constants = MapboxDraw.constants
 const CommonSelectors = MapboxDraw.lib.CommonSelectors;
 const doubleClickZoom = MapboxDraw.lib.doubleClickZoom;
