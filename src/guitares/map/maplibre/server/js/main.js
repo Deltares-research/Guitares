@@ -114,12 +114,16 @@ export function addMap() {
   layers = new Object();
   currentCursor = '';
 
-  map.on('load', () => {
+  map.on('load', async () => {
     // Add dummy layer
     console.log('MapLibre loaded in main.js ...');
     addDummyLayer();
     map.addControl(draw, 'top-left');
-    console.log('control added ...');
+    // Load icons
+    iconUrls.forEach(async (iconUrl) => {
+      var image = await map.loadImage(iconUrl);
+      map.addImage(iconUrl, image.data);
+    });
     mapLoaded();
   });
 
@@ -318,6 +322,14 @@ export function hideLegend(id) {
   var legend = document.getElementById("legend" + id);
   if (legend) {
     legend.style.visibility = 'hidden';
+  }
+}
+
+export function closePopup() {
+  var popup = document.getElementsByClassName('maplibre-popup');
+  // if popup is defined, remove it
+  if (popup[0]) {
+    popup[0].remove();
   }
 }
 

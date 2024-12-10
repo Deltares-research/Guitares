@@ -33,13 +33,13 @@ class MarkerLayer(Layer):
         # Add relative path to icon_file 
         # Check if there is a column in the dataframe data called "icon_file"
         if "icon_url" in data.columns:
-            # Loop through all rows and add the relative path "./icons/" to the icon_file
+            # Loop through all rows and add the relative path "/icons/" to the icon_file
             for i, row in data.iterrows():
                 if not row["icon_url"].startswith("http"):
-                    data.at[i, "icon_url"] = "./icons/" + row["icon_url"]
+                    data.at[i, "icon_url"] = "/icons/" + row["icon_url"]
         else:
             # Use default icon for all markers
-            data["icon_url"] = "./icons/map-marker-icon-20px-" + self.marker_color + ".png"
+            data["icon_url"] = "/icons/map-marker-icon-20px-" + self.marker_color + ".png"
 
         if self.click_popup_width:
             wdtstr = str(self.click_popup_width) + "px"

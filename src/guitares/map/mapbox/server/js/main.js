@@ -46,10 +46,11 @@ export function ping(ping_string) {
 
 export function importMapbox() {
   // Called by mapbox.py -> ping
-  console.log('Importing MapBox ...');
+  console.log('Importing MapBox GL ...');
   mapboxgl = mpbox.import_mapbox_gl()
   mapboxgl.accessToken = mapbox_token;
   mapboxImported();
+  console.log('MapBox GL imported ...');
 }
 
 export function addMap() {
@@ -84,6 +85,13 @@ export function addMap() {
     addDummyLayer();
     map.addControl(draw, 'top-left');
     console.log('Mapbox loaded in main.js ...');
+    // Load icons
+    iconUrls.forEach( (iconUrl) => {
+      map.loadImage(iconUrl, function (error, image) {
+        if (error) throw error;
+        map.addImage(iconUrl, image);
+      });
+    });  
     mapLoaded();
   });
 
@@ -281,6 +289,14 @@ export function hideLegend(id) {
   var legend = document.getElementById("legend" + id);
   if (legend) {
     legend.style.visibility = 'hidden';
+  }
+}
+
+export function closePopup() {
+  var popup = document.getElementsByClassName('mapboxgl-popup');
+  // if popup is defined, remove it
+  if (popup[0]) {
+    popup[0].remove();
   }
 }
 

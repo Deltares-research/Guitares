@@ -8,7 +8,6 @@ function getMap(side) {
 export function addLayer(fileName, id, bounds, colorbar, side) {
   var mp = getMap(side);  
   // Always remove the layer first to avoid an error
-  console.log('removelayer')
   if (mp.getLayer(id)) {
     mp.removeLayer(id);
   }

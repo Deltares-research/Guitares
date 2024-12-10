@@ -51,12 +51,23 @@ class MapLibre(QtWidgets.QWidget):
             map_style = element.map_style
             offline = False
 
+
+        # List all icon files in the icons folder
+        icon_path = os.path.join(self.gui.server_path, "icons")
+        icon_files = os.listdir(icon_path)
+        icon_files = [f for f in icon_files if f.endswith(".png")]
+        icon_list_string = ""
+        for icon_file in icon_files:
+            icon_list_string = icon_list_string + "'/icons/" + icon_file + "',"
+        icon_list_string = "[" + icon_list_string + "]"    
+
         file_name = os.path.join(self.gui.server_path, "js", "defaults.js")
         with open(file_name, "w") as f:
             f.write("var default_style = '" + map_style + "';\n")
             f.write("var default_center = [" + str(element.map_center[0]) + "," + str(element.map_center[1]) + "]\n")
             f.write("var default_zoom = " + str(element.map_zoom) + ";\n")
             f.write("var default_projection = '" + element.map_projection + "';\n")
+            f.write("var iconUrls = " + icon_list_string + ";\n")
             if offline:
                 f.write("var offline = true;\n")
             else:
@@ -260,6 +271,9 @@ class MapLibre(QtWidgets.QWidget):
     def set_mouse_default(self):
         self.runjs("/js/main.js", "setMouseDefault", arglist=[])
         self.runjs("/js/draw_layer.js", "setMouseDefault", arglist=[])
+
+    def close_popup(self):
+        self.runjs("/js/main.js", "closePopup")
 
     def add_layer(self, layer_id):
         # Adds a container layer
