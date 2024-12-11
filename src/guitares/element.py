@@ -458,7 +458,7 @@ class Element:
                         if not dep.get():
                             okay = False
             if okay:
-                mod = importlib.import_module(f"guitares.{self.gui.framework}.mapbox.mapbox_compare")
+                mod = importlib.import_module(f"guitares.{self.gui.framework}.mapbox_compare")
                 self.widget = mod.MapBoxCompare(self)
 
         elif self.style == "webpage":
