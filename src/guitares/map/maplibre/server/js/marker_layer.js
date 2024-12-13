@@ -41,6 +41,7 @@ export function addLayer(id, data) {
   if (!iconColor) {iconColor = 'red';}
 
   // Add a layer for the points with icons based on icon URL property
+  // console.log('Adding layer with id: ' + id);
   map.addLayer({
     id: id,
     type: 'symbol',
@@ -50,7 +51,7 @@ export function addLayer(id, data) {
       'icon-size': iconSize, // Adjust the icon size as needed
       'icon-allow-overlap': true
     }
-  });
+  }, 'dummy_layer_1');
 
   // Add an event listener for mouseenter on the points
   map.on('mouseenter', id, mouseEnter);

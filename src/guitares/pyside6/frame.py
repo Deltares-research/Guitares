@@ -1,9 +1,9 @@
-import os
-from PySide6.QtWidgets import QWidget, QFrame, QLabel, QPushButton
+from PySide6.QtWidgets import QLabel, QPushButton, QGroupBox
 from PySide6 import QtCore, QtGui
 import traceback
 
-class Frame(QFrame):
+# class Frame(QFrame):
+class Frame(QGroupBox):
     def __init__(self, element):
         super().__init__(element.parent.widget)
 
@@ -24,13 +24,22 @@ class Frame(QFrame):
 
         if collapsable:
             self.setLineWidth(0)
+            pass
         else:
             # Regular
-            self.setFrameShape(QFrame.StyledPanel)
-            self.setLineWidth(2)
+            # self.setFrameShape(QFrame.StyledPanel)
+            # self.setTitle(element.text)
+            # self.setStyleSheet("background-color: transparent; border: 2px solid white;")
+            # self.setFrameShape(QFrame.Box)
+            # self.setLineWidth(2)
+            # self.setLineWidth(1)
+            pass
 
         if element.text:
             self.text_widget = QLabel(element.text, element.parent.widget)
+            # font = QtGui.QFont()
+            # font.setWeight(QtGui.QFont.Weight.Bold)
+            # self.text_widget.setFont(font)
 
         self.set_geometry()
 
@@ -49,6 +58,9 @@ class Frame(QFrame):
         rf = self.element.gui.resize_factor
         button_size = 12
         x0, y0, wdt, hgt = self.element.get_position()
+        # if self.element.text:
+        #     hgt = hgt + 20
+            # self.setStyleSheet("margin-top: 10px;")
         if self.element.collapse:
             wdt = wdt + button_size
         self.setGeometry(x0, y0, wdt, hgt)
@@ -71,7 +83,6 @@ class Frame(QFrame):
             self.pushbutton.setGeometry(x0p, y0p, wdtp, hgtp)
 
         # Check if these are collapable panels
-        collapsable = False
         if hasattr(self.element.parent, "style"):
             if self.element.parent.style == "panel" and self.element.parent.collapse:
                 pwdt = self.element.parent.widget.geometry().width() - button_size

@@ -34,7 +34,7 @@ export function addLayer(fileName, id, bounds, colorbar, side) {
     'paint': {
       'raster-resampling': 'nearest'
     }
-  }, 'dummy_layer');
+  }, 'dummy_layer_1');
   mp.setLayoutProperty(id, 'visibility', 'visible');    
   mp.setPaintProperty(id, 'raster-opacity', 0.5);
   if (colorbar) {

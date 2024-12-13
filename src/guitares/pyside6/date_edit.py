@@ -60,7 +60,8 @@ class DateEdit(QDateTimeEdit):
     def callback(self):
         group = self.element.variable_group
         name  = self.element.variable
-        newval = self.dateTime().toPyDateTime()
+        # newval = self.dateTime().toPyDateTime()
+        newval = self.dateTime().toPython()
         if type(self.element.getvar(group, name)) is str:
             # Expected value is a string. Need to convert to newval to string.
             newval = newval.strftime("%Y%m%d %H%M%S")

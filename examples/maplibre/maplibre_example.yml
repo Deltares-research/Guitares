@@ -1,0 +1,31 @@
+window:
+  title: Maplibre Example
+  width: 800
+  height: 600
+  variable_group: example
+  module: callbacks
+element:
+- style: map
+  id: map
+  position:
+    x: 10
+    y: 180
+    width: -10
+    height: -10
+  module: map
+- style: listbox
+  position:
+    x: 10
+    y: 10
+    width: 200
+    height: 140
+  text: Map Style
+  text_position: above
+  variable: map_style
+  select: item
+  method: select_map_style
+  option_string:
+    variable: map_style_names
+  option_value:
+    variable: map_style_styles
+

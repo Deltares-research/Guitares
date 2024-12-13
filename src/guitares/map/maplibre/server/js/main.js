@@ -16,6 +16,8 @@ export let layerStyleSet;
 export let marker;
 
 // Web Channel
+
+try {
 new QWebChannel(qt.webChannelTransport, function (channel) {
   window.MapLibre = channel.objects.MapLibre;
   if (typeof MapLibre != 'undefined') {
@@ -35,6 +37,9 @@ new QWebChannel(qt.webChannelTransport, function (channel) {
     layerAdded        = function(layerId) { MapLibre.layerAdded(layerId)};
   }
 });
+} catch (error) {
+  console.log('WebChannel not found');
+}
 
 if (!offline) {
   geocoderApi = {
@@ -114,14 +119,16 @@ export function addMap() {
   layers = new Object();
   currentCursor = '';
 
-  map.on('load', async () => {
+  map.on('load', () => {
     // Add dummy layer
     console.log('MapLibre loaded in main.js ...');
-    addDummyLayer();
+    addDummyLayer('dummy_layer_0');
+    addDummyLayer('dummy_layer_1');
     map.addControl(draw, 'top-left');
     // Load icons
     iconUrls.forEach(async (iconUrl) => {
       var image = await map.loadImage(iconUrl);
+      console.log('Adding icon: ' + iconUrl);
       map.addImage(iconUrl, image.data);
     });
     mapLoaded();
@@ -402,8 +409,6 @@ export function flyTo(lon, lat, zoom) {
 }
 
 export function setProjection(projection) {
-	// Called after moving map ended
-	// Get new map extents
 	map.setProjection(projection);
   if (projection == 'globe') {
     map.setFog({
@@ -416,64 +421,69 @@ export function setProjection(projection) {
   }
 }
 
-// styleID should be in the form "satellite-v9"
+
 export function setLayerStyle(styleID) {
-  // console.log('Setting style to: ' + styleID);
+
+  console.log('Setting style to: ' + styleID);
 
   const currentStyle = map.getStyle();
+  const newStyle = Object.assign({}, mapStyles[styleID]);
 
-  var newStyle = mapStyles[styleID];
- 
-  // Loop through all keys in currentStyle.sources to see which sources need to be copied to the new style
-  for (var sourceId in newStyle.sources) {
-    // Check if currentStyle source has atttribute sourceId
-    if (sourceId in currentStyle.sources) {
-      // source already exists
-    } else {
-      // source does not exist, so add this source to the current style
-      currentStyle.sources[sourceId] = newStyle.sources[sourceId];
-    } 
+  // console.log('old style nr layers: ' + currentStyle.layers.length);
+  // console.log('new style nr layers: ' + newStyle.layers.length);
+  
+  // // Loop through current style layer and print id
+  // for (var layer in currentStyle.layers) {
+  //   console.log("current layer id: " + currentStyle.layers[layer].id);
+  // }
+  // for (var layer in newStyle.layers) {
+  //   console.log("new layer id: " + newStyle.layers[layer].id);
+  // }
+
+  // ensure any sources from the current style are copied across to the new style
+  newStyle.sources = Object.assign(
+    {},
+    currentStyle.sources,
+    newStyle.sources
+  );
+
+  // find the index of where to insert our layers to retain in the new style
+  let labelIndex = currentStyle.layers.findIndex((el) => {
+    return el.id == 'dummy_layer_0';
+  });
+  // console.log('labelIndex: ' + labelIndex);
+
+  // default to on top
+  if (labelIndex === -1) {
+    // This should never happen !
+    console.log('dummy_layer_0 not found !!!!!!!!!!');
+    labelIndex = newStyle.layers.length;
   }
 
-  // Print sources in new style
-  for (var sourceId in currentStyle.sources) {
-    console.log("new src: " + sourceId);
-  }  
+  // const appLayers = currentStyle.layers.slice(labelIndex, -1);
+  const appLayers = currentStyle.layers.slice(labelIndex);
 
-  // Do the same for the layers
-  var dummyLayerFound = false; 
+  // console.log('nr appLayers: ' + appLayers.length);
 
-  // First remove all the old background layers
-  for (var layer in currentStyle.layers) { 
-    // console.log("layerId: " + currentStyle.layers[layer].id); 
-    if (currentStyle.layers[layer].id == 'dummy_layer') {
-      dummyLayerFound = true;
-      break
-    } else {
-      const index = currentStyle.layers.indexOf(layer);
-      if (index > -1) { // only splice array when item is found
-        currentStyle.layers.splice(index, 1); // 2nd parameter means remove one item only
-      }
-    }
-  }
-
-  currentStyle.layers = [
+  // // Loop through app layers and print id
+  // for (var layer in appLayers) {
+  //   console.log("app layer id: " + appLayers[layer].id);
+  // }
+  
+  newStyle.layers = [
     ...newStyle.layers,
-    ...currentStyle.layers,
+    ...appLayers,
   ];
 
-  // Print layers in new style
-  for (var layer in currentStyle.layers) {
-    console.log("new layerId: " + currentStyle.layers[layer].id);
-  }
+  // // Print layers in new style
+  // for (var layer in newStyle.layers) {
+  //   console.log("new layerId: " + newStyle.layers[layer].id);
+  // }
 
-  try {
-    map.setStyle(currentStyle);
-    layerStyleSet();
-  } catch (error) {
-    console.error('Error setting map style:', error);
-  }
-} 
+  map.setStyle(newStyle);
+  layerStyleSet();
+
+}
 
 export function setTerrain(trueOrFalse, exaggeration) {
   if (trueOrFalse) {
@@ -483,9 +493,8 @@ export function setTerrain(trueOrFalse, exaggeration) {
   }
 }
 
-function addDummyLayer() {
-  // Add a dummy layer (other layer will be added BEFORE this dummy layer)
-  var id = 'dummy_layer';
+function addDummyLayer(id) {
+  // Add a dummy layer (other layers will be added BEFORE this dummy layer)
   map.addSource(id, {
     'type': 'geojson',
     'data': {
@@ -494,7 +503,7 @@ function addDummyLayer() {
     }
   });
   map.addLayer({
-    'id': 'dummy_layer',
+    'id': id,
     'type': 'line',
     'source': id,
     'layout': {},

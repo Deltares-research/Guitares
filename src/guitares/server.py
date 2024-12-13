@@ -3,11 +3,12 @@ import threading
 import os
 import time
 import urllib
+import urllib.request
 
 # Custom Exception Class
 class MyException(Exception):
     pass
- 
+
 # Custom Thread Class
 class ServerThread(threading.Thread):
     def __init__(self, server_path, server_port):
@@ -46,6 +47,11 @@ class HTTPHandler(SimpleHTTPRequestHandler):
         relpath = os.path.relpath(path, os.getcwd())
         fullpath = os.path.join(self.server.base_path, relpath)
         return fullpath
+    def end_headers(self):
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET')
+        self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
+        return super(HTTPHandler, self).end_headers()
 
 class HTTPServer(BaseHTTPServer):
     """The main server, you pass in base_path which is the path you want to serve requests from"""

@@ -11,8 +11,6 @@ import toml
 from guitares.window import Window
 from guitares.server import start_server
 
-import guitares.icons_rc
-
 class GUI:
     def __init__(self, module,
                  framework="pyqt5",
@@ -54,9 +52,11 @@ class GUI:
         if self.framework == "pyqt5":
             from PyQt5.QtWidgets import QApplication
             from PyQt5 import QtCore
+            import guitares.pyqt5.icons_rc
         elif self.framework == "pyside6":
             from PySide6.QtWidgets import QApplication
             from PySide6 import QtCore
+            import guitares.pyside6.icons_rc
 
         QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
         self.qtapp = QApplication(sys.argv)
@@ -106,6 +106,12 @@ class GUI:
                 for file in os.listdir(icon_path):
                     if file.endswith(".png"):
                         shutil.copy(os.path.join(icon_path, file), os.path.join(server_path, "icons", file))
+            
+            # Set map styles
+            if self.map_engine == "mapbox":
+                self.map_style = "mapbox://styles/mapbox/streets-v11"
+            elif self.map_engine == "maplibre":
+                self.map_styles = ["osm", "orto", "darkmatter", "positron", "none"]
 
             start_server(server_path, port=server_port, node=self.server_nodejs)
 

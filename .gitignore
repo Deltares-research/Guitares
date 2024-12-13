@@ -16,3 +16,5 @@ deltares_guitares.egg-info
 mapbox_token.txt
 examples/popup_window/.vscode/launch.json
 build/
+/examples/maplibre_compare/server
+/examples/maplibre/server

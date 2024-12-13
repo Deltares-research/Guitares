@@ -31,7 +31,6 @@ class OptionString:
         self.variable       = ""
         self.variable_group = variable_group
 
-
 class Tab:
     def __init__(self, variable_group, module):
         self.text           = ""
@@ -40,7 +39,6 @@ class Tab:
         self.module         = module
         self.elements       = []
         self.gui            = None
-
 
 class Element:
     def __init__(self, dct, parent, window):
@@ -83,11 +81,15 @@ class Element:
         self.selection_type = "single"
         self.colormap = None
         self.ready = False
+        self.full_path = False
+        self.allow_directory_change = True
+
         # Map
         if self.gui.map_engine == "mapbox":
             self.map_style = "mapbox://styles/mapbox/streets-v11"
         elif self.gui.map_engine == "maplibre":
             self.map_style = "osm"
+            # self.map_styles = ["osm", "darkmatter", "cartodb", "none"]
         else:
             # This should not happen
             self.map_style = "osm"
@@ -240,6 +242,12 @@ class Element:
 
         if "filter" in dct:
             self.filter = dct["filter"]
+
+        if "full_path" in dct:
+            self.full_path = dct["full_path"]
+
+        if "allow_directory_change" in dct:
+            self.allow_directory_change = dct["allow_directory_change"]
 
         if "url" in dct:
             if isinstance(dct["url"], dict):

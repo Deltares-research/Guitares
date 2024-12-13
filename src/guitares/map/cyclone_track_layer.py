@@ -109,8 +109,7 @@ class CycloneTrackLayer(Layer):
         if self.show_icons:
             # First add the line layer
             id = self.map_id + ".track_points"
-            self.map.runjs("/js/marker_layer.js", "addLayer", arglist=[id,
-                                                                           self.data.to_crs(4326)])
+            self.map.runjs("/js/marker_layer.js", "addLayer", arglist=[id, self.data.to_crs(4326)])
 
     def redraw(self):
         if isinstance(self.data, GeoDataFrame):

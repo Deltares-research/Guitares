@@ -51,8 +51,21 @@ class PushSaveFile(QPushButton):
         if not val:
             val = os.getcwd()
         fname = QFileDialog.getSaveFileName(self, self.element.title, val, self.element.filter)
-        if len(fname[0])>0:
-            self.element.setvar(group, name, fname[0])
+
+        if self.element.full_path:
+            filename = fname[0]
+        else:
+            # Check if the path is different from the current path
+            curdir = os.getcwd().replace("\\", "/")
+            if os.path.dirname(fname[0]) != curdir:
+                # Different path so use full path
+                filename = fname[0]
+            else:
+                # Same path so use only the filename
+                filename = os.path.basename(fname[0])
+
+        if len(filename)>0:
+            self.element.setvar(group, name, filename)
         else:
             self.okay = False
 

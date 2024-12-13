@@ -8,6 +8,7 @@ import os
 import requests
 
 from guitares.map.layer import Layer, list_layers, find_layer_by_id
+from guitares.server import start_server
 
 class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
     def __init__(self, view, print_messages):
@@ -98,6 +99,8 @@ class MapLibre(QtWidgets.QWidget):
         self.view.loadFinished.connect(self.load_finished)
         self.view.setUrl(QtCore.QUrl(self.url))
 
+        self.pong_received = False
+        self.nr_load_attempts = 0
 
     def load_finished(self, message):
         self.timer_ping = QtCore.QTimer()        
@@ -106,13 +109,22 @@ class MapLibre(QtWidgets.QWidget):
 
     def ping(self):
         # Sending a ping to main.js
-        # print("Ping!")
-        self.runjs("/js/main.js", "ping", arglist=["ping"])
+        if self.nr_load_attempts > 2:
+            print("MapLibre not loading ...")
+            self.nr_load_attempts = 0
+            self.timer_ping.stop()
+            # Reload
+            print("Reloading ...") 
+            self.view.reload()
+        else:
+            print("Ping!")
+            self.nr_load_attempts += 1
+            self.runjs("/js/main.js", "ping", arglist=["ping"])
 
-    def pong_received(self):
-        # print("Pong received!")
-        self.timer_ping.stop()
-        self.runjs("/js/main.js", "importMapLibre", arglist=[])
+    # def pong_received(self):
+    #     print("Pong received!")
+    #     self.timer_ping.stop()
+    #     self.runjs("/js/main.js", "importMapLibre", arglist=[])
 
     def set(self):
         pass
@@ -127,6 +139,8 @@ class MapLibre(QtWidgets.QWidget):
     @QtCore.pyqtSlot(str)
     def pong(self, message):
         # Python heard a pong!
+        print("Pong received!")
+        self.pong_received = True
         self.timer_ping.stop()
         # print("Pong received! Adding map ...")
         # Add map
