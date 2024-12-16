@@ -29,11 +29,9 @@ on:
     tags:
       # https://peps.python.org/pep-0440/
       - r"v[0-9]+\.[0-9]+\.[0-9]"             # final release
-      - r"v[0-9]+\.[0-9]+\.[0-9]+\-rc[0-9]"   # release candidate
-      - r"v[0-9]+\.[0-9]+\.[0-9]+\-a[0-9]"    # alpha release
-      - r"v[0-9]+\.[0-9]+\.[0-9]+\-b[0-9]"    # beta release
-      - r"v[0-9]+\.[0-9]+\.[0-9]+\-post[0-9]" # post release
-      - r"v[0-9]+\.[0-9]+\.[0-9]+\-dev[0-9]+" # development release
+      - r"v[0-9]+\.[0-9]+\.[0-9]+\-rc[0-9]+"   # release candidate
+      - r"v[0-9]+\.[0-9]+\.[0-9]+\-a[0-9]+"    # alpha release
+      - r"v[0-9]+\.[0-9]+\.[0-9]+\-b[0-9]+"    # beta release
 
 env:
   PACKAGE_NAME: "guitares"
