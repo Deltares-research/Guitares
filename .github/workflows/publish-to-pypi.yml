@@ -3,7 +3,7 @@ name: release
 # This workflow will build a Python package and publish it to PyPI when a new tag is created.
 #
 # Usage:
-#  - Create a new tag with the version number in the format v*.*.* where * are integers. (See tags section for more info)
+#  - Create a new tag with the version number in the format v*.*.* where * are integers.
 #  - Push the tag to the repository with git push --tags
 #
 # Result:
@@ -21,17 +21,14 @@ name: release
 #       - Create the project and add a trusted publisher (https://pypi.org/manage/project/<PACKAGE_NAME>/settings/publishing/)
 #       - Ensure the publisher is configured to use:
 #           - environment name: `release` (can be changed, but should be the one created in the github settings)
-#           - the name of this workflow yml (in this case: publish-to-pypi.yml)
+#           - the filename of this workflow yml (in this case: publish-to-pypi.yml)
 #  
 
 on:
   push:
     tags:
       # https://peps.python.org/pep-0440/
-      - r"v[0-9]+\.[0-9]+\.[0-9]"             # final release
-      - r"v[0-9]+\.[0-9]+\.[0-9]+\-rc[0-9]+"   # release candidate
-      - r"v[0-9]+\.[0-9]+\.[0-9]+\-a[0-9]+"    # alpha release
-      - r"v[0-9]+\.[0-9]+\.[0-9]+\-b[0-9]+"    # beta release
+      - r"v[0-9]+\.[0-9]+\.[0-9]"
 
 env:
   PACKAGE_NAME: "guitares"
@@ -42,7 +39,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.release.outputs.new_version }}
-      suffix: ${{ steps.release.outputs.suffix }}
       tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
       - uses: actions/checkout@v2
@@ -53,12 +49,9 @@ jobs:
           if [ "${{ github.ref_type }}" = "tag" ]; then
             TAG_NAME=${GITHUB_REF#refs/tags/}
             NEW_VERSION=$(echo $TAG_NAME | awk -F'-' '{print $1}')
-            SUFFIX=$(echo $TAG_NAME | grep -oP '[a-z]+[0-9]+' || echo "")
             echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
-            echo "suffix=$SUFFIX" >> "$GITHUB_OUTPUT"
             echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
             echo "Version is $NEW_VERSION"
-            echo "Suffix is $SUFFIX"
             echo "Tag name is $TAG_NAME"
           else
             echo "No tag found"
