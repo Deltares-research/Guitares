@@ -85,6 +85,7 @@ class CycloneTrackLayer(Layer):
                    'Pressure: &#9;' + pcstr + ' &#9;' + '<br />'
 
             # Add icon and html to row
+            self.data.at[i, "icon_size"] = self.icon_size
             self.data.at[i, "icon_url"] = icon
             self.data.at[i, "hover_html"] = html
 
@@ -148,3 +149,7 @@ class CycloneTrackLayer(Layer):
     def delete_from_map(self):
         self.map.runjs(self.main_js, "removeLayer", arglist=[self.map_id + ".track_line", self.side])
         self.map.runjs(self.main_js, "removeLayer", arglist=[self.map_id + ".track_points", self.side])
+
+    def clear(self):
+        self.data = None
+        self.delete_from_map()

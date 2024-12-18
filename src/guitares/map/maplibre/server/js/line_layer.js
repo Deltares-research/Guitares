@@ -36,7 +36,7 @@ export function addLayer(id, data,
       'line-width': lineWidth,
       'line-opacity': lineOpacity,
      }
-  });
+  }, 'dummy_layer_1');
   
   if (circleRadius>0) {
     map.addLayer({
@@ -51,7 +51,7 @@ export function addLayer(id, data,
         'circle-radius': circleRadius,
         'circle-opacity': fillOpacity
       }
-    });
+    }, 'dummy_layer_1');
   }
 };
 
