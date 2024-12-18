@@ -1,38 +1,40 @@
 name: release
 
 # This workflow will build a Python package and publish it to PyPI when a new tag is created.
-#
+
 # Usage:
-#  - Create a new tag with the version number in the format v*.*.* where * are integers.
-#  - Push the tag to the repository with git push --tags
-#
+#  - Create a new tag with the version number in the format v*.*.* where * are integers: `git tag v1.2.3`
+#  - Push the tag to the repository: `git push origin tag v1.2.3`
+
 # Result:
-#  - The workflow will check if the new version is greater than the latest version on PyPI
-#  - The workflow will build the package and publish it to PyPI
-#  - The workflow will also create a GitHub release with the tag name and the release notes
+#  - Check if the new version is greater than the latest version on PyPI
+#  - Install dependencies
+#  - Build the package
+#  - Publish it to PyPI
+#  - Create a GitHub release with the tag name and the release notes
 
 # Checklist for using this workflow up for a new project:
-#   - In this file: 
-#      - Replace guitares with the name of your package
-#      - Replace 3.10 with the version of Python you want to use 
-#   - In github settings:
-#       - Create an environment called `release` and setup the permissions (https://github.com/<ORGANIZATION>/<REPO_NAME>/settings/environments)
-#   - On PyPi:
-#       - Create the project and add a trusted publisher (https://pypi.org/manage/project/<PACKAGE_NAME>/settings/publishing/)
-#       - Ensure the publisher is configured to use:
-#           - environment name: `release` (can be changed, but should be the one created in the github settings)
-#           - the filename of this workflow yml (in this case: publish-to-pypi.yml)
-#  
+
+#  1. In github settings:
+#     - Create an environment called `release`
+#     - Setup the permissions (https://github.com/<ORGANIZATION>/<REPO_NAME>/settings/environments)
+#     - Add the following variables:
+#        - PACKAGE_NAME: the name of your package on pypi
+#        - PYTHON_VERSION: the version of Python you want to use
+
+#  2. On PyPi:
+#      - Create the project and add a trusted publisher (https://pypi.org/manage/project/<PACKAGE_NAME>/settings/publishing/ or https://pypi.org/manage/account/publishing if the project is not on pypi yet)
+#      - Ensure the publisher is configured to use:
+#          - the filename of this workflow yml (in this case: publish-to-pypi.yml)
+
+#     - In the `setup_and_build` job:
+#        - Update the the shell commands to install your package
 
 on:
   push:
     tags:
+      - v[0-9]+\.[0-9]+\.[0-9]+
       # https://peps.python.org/pep-0440/
-      - r"v[0-9]+\.[0-9]+\.[0-9]"
-
-env:
-  PACKAGE_NAME: "guitares"
-  PYTHON_VERSION: "3.10"
 
 jobs:
   details:
@@ -48,7 +50,7 @@ jobs:
         run: |
           if [ "${{ github.ref_type }}" = "tag" ]; then
             TAG_NAME=${GITHUB_REF#refs/tags/}
-            NEW_VERSION=$(echo $TAG_NAME | awk -F'-' '{print $1}')
+            NEW_VERSION=$(echo $TAG_NAME | sed 's/^v//' | awk -F'-' '{print $1}')
             echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
             echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
             echo "Version is $NEW_VERSION"
@@ -65,7 +67,7 @@ jobs:
       - name: Fetch information from PyPI
         run: |
           response=$(curl -s https://pypi.org/pypi/${{ env.PACKAGE_NAME }}/json || echo "{}")
-          latest_previous_version=$(echo $response | jq --raw-output "select(.releases != null) | .releases | keys_unsorted | last")
+          latest_previous_version=$(echo $response | jq --raw-output "select(.releases != null) | .releases | keys_unsorted[]" | sort -V | tail -n 1)
           if [ -z "$latest_previous_version" ]; then
             echo "Package not found on PyPI."
             latest_previous_version="0.0.0"
@@ -88,23 +90,28 @@ jobs:
     needs: [details, check_pypi]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: conda-incubator/setup-miniconda@v3
         with:
+          auto-update-conda: true
+          activate-environment: publish
           python-version: ${{ env.PYTHON_VERSION }}
+          channels: conda-forge
 
       - name: Install Build tools
-        run:  pip install --upgrade build pip setuptools 
+        shell: bash -el {0}
+        run: |
+          conda install -n publish pip setuptools wheel python-build
 
       - name: Install dependencies
-        run: 
-          pip install .
+        shell: bash -el {0}
+        run: |
+          conda run -n publish pip install .
 
       - name: Build source and wheel distribution
         run: |
-          python -m build
+          conda run -n publish python -s -m build
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
@@ -118,6 +125,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: release
+
     permissions:
       id-token: write
     steps:
