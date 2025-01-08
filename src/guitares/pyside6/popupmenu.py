@@ -28,6 +28,15 @@ class PopupMenu(QComboBox):
                     elif element.type == int:
                         element.option_value[i] = int(val)
 
+        # if element.text:
+        #     if isinstance(element.text, str):
+        #         txt = element.text
+        #     else:
+        #         txt = self.element.getvar(element.text.variable_group, element.text.variable)    
+        #     label = QLabel(txt, element.parent.widget)
+        #     label.setStyleSheet("background: transparent; border: none")
+        #     self.text_widget = label
+
         if element.text:
             if isinstance(element.text, str):
                 txt = element.text
@@ -35,7 +44,10 @@ class PopupMenu(QComboBox):
                 txt = self.element.getvar(element.text.variable_group, element.text.variable)    
             label = QLabel(txt, element.parent.widget)
             label.setStyleSheet("background: transparent; border: none")
+            if not element.enable:
+                label.setEnabled(False)
             self.text_widget = label
+            label.setVisible(True)
 
         if self.element.tooltip:
             if isinstance(self.element.tooltip, str):

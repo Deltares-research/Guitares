@@ -56,6 +56,7 @@ class CircleSelectorLayer(Layer):
             return
         elif len(self.data) == 0:
             return
+        self.show()
         self.map.runjs("/js/circle_selector_layer.js", "activate", arglist=[self.map_id,
                                                                                         self.line_color,
                                                                                         self.line_width,
@@ -88,5 +89,5 @@ class CircleSelectorLayer(Layer):
     def redraw(self):
         if isinstance(self.data, GeoDataFrame):
             self.set_data(self.data, self.index)
-        if not self.get_visibility:
+        if not self.get_visibility():
             self.set_visibility(False)

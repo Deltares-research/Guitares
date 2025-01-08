@@ -27,9 +27,10 @@ class DataFrameModel(QtCore.QAbstractTableModel):
     def dataFrame(self):
         return self._dataframe
 
-    dataFrame = QtCore.pyqtProperty(pd.DataFrame, fget=dataFrame, fset=setDataFrame)
+    # dataFrame = QtCore.pyqtProperty(pd.DataFrame, fget=dataFrame, fset=setDataFrame)
+    dataFrame = QtCore.Property(pd.DataFrame, fget=dataFrame, fset=setDataFrame)
 
-    @QtCore.pyqtSlot(int, QtCore.Qt.Orientation, result=str)
+    @QtCore.Slot(int, QtCore.Qt.Orientation, result=str)
     def headerData(
         self,
         section: int,
@@ -41,7 +42,7 @@ class DataFrameModel(QtCore.QAbstractTableModel):
                 return self._dataframe.columns[section]
             else:
                 return str(self._dataframe.index[section])
-        return QtCore.QVariant()
+        # return QtCore.QVariant()
 
     def rowCount(self, parent=QtCore.QModelIndex()):
         if parent.isValid():
@@ -70,7 +71,7 @@ class DataFrameModel(QtCore.QAbstractTableModel):
             return val
         if role == DataFrameModel.DtypeRole:
             return dt
-        return QtCore.QVariant()
+        # return QtCore.QVariant()
 
     def roleNames(self):
         roles = { 
@@ -169,7 +170,7 @@ class TableView(QTableView):
         if df is not None:
             self.df = df # Original unsorted dataframe
             df_sorted = copy.copy(df.reset_index()) # Sorted dataframe
-            df_sorted = df_sorted.drop("index", axis=1)
+            # df_sorted = df_sorted.drop("index", axis=1)
         else:
             df_sorted = df
         # Update items

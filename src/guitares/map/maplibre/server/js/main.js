@@ -1,5 +1,6 @@
 let mapReady;
 let mapMoved;
+let mouseMoved;
 let getMapExtent;
 let getMapCenter;
 let geocoderApi;
@@ -24,6 +25,7 @@ new QWebChannel(qt.webChannelTransport, function (channel) {
     pong              = function() { MapLibre.pong("pong")};
     mapReady          = function() { MapLibre.mapReady(jsonString)};
     mapMoved          = function() { MapLibre.mapMoved(jsonString)};
+    mouseMoved        = function(coords) { MapLibre.mouseMoved(JSON.stringify(coords))};
     getMapExtent      = function() { MapLibre.getMapExtent(jsonString)};
     getMapCenter      = function() { MapLibre.getMapCenter(jsonString)};
     featureClicked    = function(featureId, featureProps) { MapLibre.featureClicked(featureId, JSON.stringify(featureProps))};
@@ -200,6 +202,11 @@ export function addMap() {
   map.on('moveend', () => {
     onMoveEnd();
   });
+
+  map.on('mousemove', (e) => {
+    onMouseMoved(e);
+  });
+
 }
 
 function mapLoaded(evt) {
@@ -377,6 +384,10 @@ function onPointRightClicked(e) {
   map.getCanvas().style.cursor = '';
   currentCursor = '';
   map.off('click', onPointClicked);
+}
+
+function onMouseMoved(e) {
+  mouseMoved(e.lngLat);
 }
 
 export function setCenter(lon, lat) {

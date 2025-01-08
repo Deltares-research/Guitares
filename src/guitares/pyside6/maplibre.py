@@ -150,14 +150,17 @@ class MapLibre(QtWidgets.QWidget):
 
     @QtCore.Slot(str)
     def mouseMoved(self, coords):
-        coords = json.loads(coords)
-        self.map_extent = coords
-        # # Loop through layers to update each
-        # layers = list_layers(self.layer)
-        # for layer in layers:
-        #     layer.update()
         if hasattr(self.callback_module, "mouse_moved"):
-            self.callback_module.mouse_moved(coords)
+            coords = json.loads(coords)
+            lon = coords["lng"]
+            lat = coords["lat"]
+            if not self.crs.is_geographic:
+                transformer = Transformer.from_crs(4326, self.crs, always_xy=True)
+                x, y = transformer.transform(lon, lat)
+            else:
+                x = lon
+                y = lat
+            self.callback_module.mouse_moved(x, y, lon, lat)
 
     @QtCore.Slot(str)
     def mapMoved(self, coords):

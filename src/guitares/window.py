@@ -4,7 +4,7 @@ import pathlib
 
 from guitares.element import Element
 from guitares.menu import Menu
-from guitares.statusbar import StatusBar
+# from guitares.statusbar import StatusBar
 
 from guitares.dialog import window_dialog
 
@@ -68,7 +68,7 @@ class Window:
         self.menus    = []
         self.toolbar  = []
         self.statusbar = {}
-        self.statusbar_fields = []
+        # self.statusbar_fields = []
 
         if self.type == "popup":
             # Add OK and Cancel elements
@@ -83,10 +83,11 @@ class Window:
         self.add_elements_to_tree(config_dict["element"], self, self)
         self.add_menu_to_tree(self.menus, config_dict["menu"], self)
 
+        self.statusbar_fields = [] # temporary list
         if "statusbar" in config_dict:
-            if config_dict["statusbar"]:
+            if "field" in config_dict["statusbar"]:
                 for field in config_dict["statusbar"]["field"]:
-                    self.statusbar_fields.append(field["width"])
+                    self.statusbar_fields.append(field)
 
     def add_elements_to_tree(self, dcts, parent, window):
         parent.elements = []
@@ -156,9 +157,10 @@ class Window:
         # Add elements
         self.add_elements(self.elements)
 
-        # Add status bar 
+        # Add status bar (unless it is an empty dict)
         if self.statusbar_fields:
-            self.add_statusbar(window, self.statusbar_fields)
+            mod = importlib.import_module(f"guitares.{self.gui.framework}.statusbar")
+            self.statusbar = mod.StatusBar(self)
 
         # Set elements
         self.update()
@@ -318,8 +320,6 @@ class Window:
                 return item
         return None
 
-    def add_statusbar(self, window, widths):
-        self.statusbar = StatusBar(window, widths)
 
     def dialog_ok_cancel(self, text, title=" "):
         return window_dialog(self, text, type="question", title=title)
