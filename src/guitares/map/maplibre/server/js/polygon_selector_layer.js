@@ -3,17 +3,25 @@ let hoveredId = null;
 let activeLayerId = null;
 let popup
 let selectedFeatures = []
+let paintProperties = {}
 
 export function addLayer(id,
   data,
   index,
   hovprop,
-  lineColor,
-  lineWidth,
-  lineOpacity,
-  fillColor,
-  fillOpacity,
+  paintProperties,
+  // lineColor,
+  // lineWidth,
+  // lineOpacity,
+  // fillColor,
+  // fillOpacity,
   selectionOption) {
+
+  // var lineColor = paintProperties.lineColor;
+  // var lineWidth = paintProperties.lineWidth;
+  // var lineOpacity = paintProperties.lineOpacity;
+  // var fillColor = paintProperties.fillColor;
+  // var fillOpacity = paintProperties.fillOpacity;  
 
   hover_property = hovprop
 
@@ -58,9 +66,9 @@ export function addLayer(id,
     'source': id,
     'layout': {},
     'paint': {
-      'line-color': lineColor,
-      'line-width': lineWidth,
-      'line-opacity': lineOpacity
+      'line-color': ['case', ['any', ['boolean', ['feature-state', 'hover'], false], ['boolean', ['feature-state', 'selected'], false]], paintProperties.lineColorSelected, paintProperties.lineColor],
+      'line-opacity': ['case', ['any', ['boolean', ['feature-state', 'hover'], false], ['boolean', ['feature-state', 'selected'], false]], paintProperties.lineOpacitySelected, paintProperties.lineOpacity],
+      'line-width': paintProperties.lineWidth,
     },
     'layout': {
       // Make the layer visible by default.
@@ -74,8 +82,8 @@ export function addLayer(id,
     'type': 'fill',
     'source': id,
     'paint': {
-      'fill-color': fillColor,
-      'fill-opacity': ['case', ['any', ['boolean', ['feature-state', 'hover'], false], ['boolean', ['feature-state', 'selected'], false]], fillOpacity, 0.0],
+      'fill-color': ['case', ['any', ['boolean', ['feature-state', 'hover'], false], ['boolean', ['feature-state', 'selected'], false]], paintProperties.fillColorSelected, paintProperties.fillColor],
+      'fill-opacity': ['case', ['any', ['boolean', ['feature-state', 'hover'], false], ['boolean', ['feature-state', 'selected'], false]], paintProperties.fillOpacitySelected, paintProperties.fillOpacity],
       'fill-outline-color': 'transparent'
     },
     'layout': {
@@ -92,8 +100,10 @@ export function addLayer(id,
   // Hover pop-up
   map.on('mousemove', fillId, mouseEnter);
   map.on('mouseleave', fillId, mouseLeave);
+
   // Clicking
   if (selectionOption == "single") {
+    map.off('click', fillId, clickSingle);
     map.on('click', fillId, clickSingle);
     // Select and click if pre-selection is provided
     if (index) {
@@ -105,6 +115,7 @@ export function addLayer(id,
       }
     }
   } else {
+    map.off('click', fillId, clickMultiple);
     map.on('click', fillId, clickMultiple);
     // Select and click if pre-selection is provided
     if (index) {
@@ -179,31 +190,39 @@ function clickSingle(e) {
 function clickMultiple(e) {
   if (e.features.length > 0) {
     var featureState = map.getFeatureState({ source: e.features[0].source, id: e.features[0].id });
+    // Get the layer id
+    const layerId = e.features[0].source;
     if (featureState.selected) {
-      // Was selected, now deselect
+      // Was selected before, now deselect
       map.setFeatureState(
         { source: e.features[0].source, id: e.features[0].id },
         { selected: false }
       );
-      for (let i = 0; i < selectedFeatures.length; i++) {
-        if (selectedFeatures[i].id == e.features[0].id) {
-          selectedFeatures.splice(i, 1)
-        }
-      }
+      layers[layerId].data.features[e.features[0].id].selected = false;
     } else {
-      // Select
+      // Was deselected, now select
       map.setFeatureState(
         { source: e.features[0].source, id: e.features[0].id },
         { selected: true }
       );
-      selectedFeatures.push(e.features[0]);
+      layers[layerId].data.features[e.features[0].id].selected = true;
     };
     // And call main.js
+    // Find the selected features
+    // Loop through all features in the source e.features[0].source
+    var nfeat = layers[layerId].data.features.length
+    selectedFeatures = [];
+    for (let i = 0; i < nfeat; i++) {
+      var featureState = map.getFeatureState({ source: e.features[0].source, id: i });
+      if (featureState.selected) {
+        selectedFeatures.push(layers[layerId].data.features[i]);
+      }
+    }
     featureClicked(e.features[0].source, selectedFeatures);
   };
 }
 
-// method to select features by index
+// method to select features by index (called from python layer object)
 export function selectByIndex(layerId, index) {
   if (index.length > 0) {
     for (let k = 0; k < index.length; k++) {
@@ -216,11 +235,7 @@ export function selectByIndex(layerId, index) {
     }
   } else {
     for (let i = 0; i < layers[layerId].data.features.length; i++) {
-      if (i == index) {
-        layers[layerId].data.features[i].selected = true
-      } else {
-        layers[layerId].data.features[i].selected = false
-      }
+      layers[layerId].data.features[i].selected = false
     }
   }
   // And update the feature state
@@ -249,6 +264,7 @@ function updateFeatureState(layerId) {
       );
     }
   }  
+
 }
 
 // Set colors to active and update feature state
@@ -259,6 +275,7 @@ export function activate(id,
                          fillColorActive) {
   layers[layerId].mode = "active"
   if (map.getLayer(id)) {
+    console.log('WTF?')
     map.setPaintProperty(id, 'circle-stroke-color', ['case',
       ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
       lineColorActive,

@@ -95,6 +95,7 @@ class DrawLayer(Layer):
 
     def activate(self):
         """Activate the draw layer so it can be edited by the user."""
+        self.visible = True
         self.active = True
         self.map.runjs("/js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "active"])
 
@@ -118,7 +119,7 @@ class DrawLayer(Layer):
     #     self.mode = mode
     #     self.map.runjs("/js/draw_layer.js", "setLayerMode", arglist=[self.map_id, mode])
 
-    def set_visibility(self, true_or_false):
+    def set_visibility2(self, true_or_false):
         if true_or_false:
             if self.active:
                 self.map.runjs("/js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "active"])
@@ -233,8 +234,10 @@ class DrawLayer(Layer):
             # Need to make sure that the lower le
             feature_collection = fix_rectangles(feature_collection)
         self.set_gdf(feature_collection)
+        # Check if there is a create method
         if self.create:
             feature_index = self.get_feature_index(feature_id)
+            # Call the create method sending the gdf with all features and the index of the new feature
             self.create(self.gdf, feature_index, feature_id)
         if self.shape == "rectangle" and not self.map.crs.is_geographic:
             feature_index = self.get_feature_index(feature_id)

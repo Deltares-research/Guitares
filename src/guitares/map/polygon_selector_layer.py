@@ -8,7 +8,7 @@ class PolygonSelectorLayer(Layer):
 
     def set_data(self,
                  data,
-                 index = None
+                 index=None
                  ):
        
         # Make sure this is not an empty GeoDataFrame
@@ -26,23 +26,20 @@ class PolygonSelectorLayer(Layer):
         if isinstance(index, int):
             self.index = [index]
         elif not index and self.selection_type=="multiple":
-            self.index = None  
+            self.index = []  
         elif not index and self.selection_type=="single":
             self.index = [indices[0]]
         else:
             self.index = index
-            
-        # Add new layer
+
         self.map.runjs("/js/polygon_selector_layer.js", "addLayer", arglist=[self.map_id,
-                                                                                         self.data,
-                                                                                         self.index,
-                                                                                         self.hover_property,
-                                                                                         self.line_color,
-                                                                                         self.line_width,
-                                                                                         self.line_opacity,
-                                                                                         self.fill_color,
-                                                                                         self.fill_opacity,
-                                                                                         self.selection_type])
+                                                                             self.data,
+                                                                             self.index,
+                                                                             self.hover_property,
+                                                                             self.paint_properties,
+                                                                             self.selection_type])
+
+        self.select_by_index(self.index)
 
     def set_selected_index(self, index):
         self.index = index

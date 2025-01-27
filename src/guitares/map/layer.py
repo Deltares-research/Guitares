@@ -126,6 +126,36 @@ class Layer:
         if self.fill_color_selected_inactive != "transparent": 
             self.fill_color_selected_inactive = mcolors.to_hex(self.fill_color_selected_inactive)
 
+        # For use in javascript 
+        self.paint_properties = {"lineColor": self.line_color,
+                                 "lineWidth": self.line_width,
+                                 "lineOpacity": self.line_opacity,
+                                 "fillColor": self.fill_color,
+                                 "fillOpacity": self.fill_opacity,
+                                 "circleRadius": self.circle_radius,
+                                 "lineColorInactive": self.line_color_inactive,
+                                 "lineWidthInactive": self.line_width_inactive,
+                                 "lineStyleInactive": self.line_style_inactive,
+                                 "lineOpacityInactive": self.line_opacity_inactive,
+                                 "fillColorInactive": self.fill_color_inactive,
+                                 "fillOpacityInactive": self.fill_opacity_inactive,
+                                 "circleRadiusInactive": self.circle_radius_inactive,
+                                 "lineColorSelected": self.line_color_selected,
+                                 "lineWidthSelected": self.line_width_selected,
+                                 "lineStyleSelected": self.line_style_selected,
+                                 "lineOpacitySelected": self.line_opacity_selected,
+                                 "fillColorSelected": self.fill_color_selected,
+                                 "fillOpacitySelected": self.fill_opacity_selected,
+                                 "circleRadiusSelected": self.circle_radius_selected,
+                                 "lineColorSelectedInactive": self.line_color_selected_inactive,
+                                 "lineWidthSelectedInactive": self.line_width_selected_inactive,
+                                 "lineStyleSelectedInactive": self.line_style_selected_inactive,
+                                 "lineOpacitySelectedInactive": self.line_opacity_selected_inactive,
+                                 "fillColorSelectedInactive": self.fill_color_selected_inactive,
+                                 "fillOpacitySelectedInactive": self.fill_opacity_selected_inactive,
+                                 "circleRadiusSelectedInactive": self.circle_radius_selected_inactive}
+
+
     def add_layer(self, layer_id, type=None, **kwargs):
 
         if layer_id in self.layer:
@@ -289,25 +319,50 @@ class Layer:
 
     def set_visibility(self, true_or_false):
         # Loop down through the layer hierarchy to show or hide layers
+        # The drawing layer has its own set_visibility method
         if self.layer:
             # Container layer
             for name in self.layer:
-                if true_or_false:
-                    self.layer[name].show()
+                if true_or_false and self.layer[name].visible:
+                    self.layer[name].set_visibility(True)
                 else:
-                    self.layer[name].hide()
+                        self.layer[name].set_visibility(False)
+        
         else:
             # Data layer
             if true_or_false:
-                # Child may be visible, on of parents may be invisible
-                self.visible = True
+                # Child may be visible, but of parents may be invisible, so check here
                 if self.get_visibility():
+                    # print("Showing layer : " + self.map_id)
                     self.map.runjs(self.main_js, "showLayer", arglist=[self.map_id, self.side])
                 else:    
+                    # print("Hiding layer (b) : " + self.map_id)
                     self.map.runjs(self.main_js, "hideLayer", arglist=[self.map_id, self.side])
             else:
-                self.visible = False
+                # print("Hiding layer : " + self.map_id)
                 self.map.runjs(self.main_js, "hideLayer", arglist=[self.map_id, self.side])
+
+    # def set_visibility(self, true_or_false):
+    #     # Loop down through the layer hierarchy to show or hide layers
+    #     if self.layer:
+    #         # Container layer
+    #         for name in self.layer:
+    #             if true_or_false and self.layer[name].visible:
+    #                 self.layer[name].show()
+    #             else:
+    #                 self.layer[name].hide()
+    #     else:
+    #         # Data layer
+    #         if true_or_false:
+    #             self.visible = True
+    #             # Child may be visible, but of parents may be invisible, so check here
+    #             if self.get_visibility():
+    #                 self.map.runjs(self.main_js, "showLayer", arglist=[self.map_id, self.side])
+    #             else:    
+    #                 self.map.runjs(self.main_js, "hideLayer", arglist=[self.map_id, self.side])
+    #         else:
+    #             self.visible = False
+    #             self.map.runjs(self.main_js, "hideLayer", arglist=[self.map_id, self.side])
 
     def set_opacity(self, opacity):
         # Set opacity for layer

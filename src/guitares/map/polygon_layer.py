@@ -26,10 +26,11 @@ class PolygonLayer(Layer):
             "addLayer",
             arglist=[
                 self.map_id,
-                self.data,
+                self.data.to_crs(4326),
                 self.line_color,
                 self.line_width,
                 self.line_opacity,
+                self.line_style,
             ],
         )
 

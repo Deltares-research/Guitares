@@ -4,7 +4,8 @@ export function addLayer(id,
   data,
   lineColor,
   lineWidth,
-  lineOpacity,) {
+  lineOpacity,
+  lineStyle) {
 
   let lineId = id + ".line";
 
@@ -25,9 +26,14 @@ export function addLayer(id,
   map.addSource(id, {
     type: 'geojson',
     data: data,
-    promoteId: "index"
+    promoteId: "index",
+    'generateId': true
   });
 
+  var lineDasharray = [1];
+  if (lineStyle == "--") {
+    var lineDasharray = [2, 2];
+  }   
   // Add line layer
   map.addLayer({
     'id': lineId,
@@ -37,7 +43,8 @@ export function addLayer(id,
     'paint': {
       'line-color': lineColor,
       'line-width': lineWidth,
-      'line-opacity': lineOpacity
+      'line-opacity': lineOpacity,
+      'line-dasharray': lineDasharray
     },
     'layout': {
       // Make the layer visible by default.

@@ -73,9 +73,9 @@ class Window:
         if self.type == "popup":
             # Add OK and Cancel elements
             cancel = {'style': 'pushbutton', 'text': 'Cancel',
-                      'position': {'x': -80, 'y': 10, 'width': 50, 'height': 20}, 'method': self.cancel,
+                      'position': {'x': -100, 'y': 10, 'width': 50, 'height': 20}, 'method': self.cancel,
                       'dependency': [], 'enable': True}
-            ok = {'style': 'pushbutton', 'text': 'OK', 'position': {'x': -20, 'y': 10, 'width': 50, 'height': 20},
+            ok = {'style': 'pushbutton', 'text': 'OK', 'position': {'x': -30, 'y': 10, 'width': 50, 'height': 20},
                   'method': self.ok, 'dependency': [], 'enable': True}
             config_dict["element"].append(cancel)
             config_dict["element"].append(ok)
