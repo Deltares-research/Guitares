@@ -39,11 +39,8 @@ dynamic = ["version"]
 version = { attr = "guitares.__version__" }
 
 [tool.setuptools.package-data]
-"guitares.pyqt5.mapbox.server"    = ["*.js", "*.html"]
-"guitares.pyqt5.mapbox.server.js" = ["*.js"]
-"guitares.pyqt5.mapbox.server.js.img" = ["*.png"]
-"guitares.pyqt5.mapbox.server.css" = ["*.css"]
-"guitares.pyqt5.mapbox.server.icons" = ["*.png"]
+
+guitares = ["py.typed", "map/**", "img/**"]
 
 [project.urls]
 "Homepage" = "https://github.com/Deltares/Guitares"
