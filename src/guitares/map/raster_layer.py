@@ -154,6 +154,9 @@ class RasterLayer(Layer):
                 else:
                     cmin = np.nanmin(z)
                     cmax = np.nanmax(z)
+                if cmax < cmin + 0.01:
+                    cmin = -0.01
+                    cmax = 0.01    
             else:    
                 cmin = self.color_scale_cmin
                 cmax = self.color_scale_cmax

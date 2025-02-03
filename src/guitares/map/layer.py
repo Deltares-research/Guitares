@@ -326,20 +326,17 @@ class Layer:
                 if true_or_false and self.layer[name].visible:
                     self.layer[name].set_visibility(True)
                 else:
-                        self.layer[name].set_visibility(False)
+                    self.layer[name].set_visibility(False)
         
         else:
             # Data layer
             if true_or_false:
                 # Child may be visible, but of parents may be invisible, so check here
                 if self.get_visibility():
-                    # print("Showing layer : " + self.map_id)
                     self.map.runjs(self.main_js, "showLayer", arglist=[self.map_id, self.side])
                 else:    
-                    # print("Hiding layer (b) : " + self.map_id)
                     self.map.runjs(self.main_js, "hideLayer", arglist=[self.map_id, self.side])
             else:
-                # print("Hiding layer : " + self.map_id)
                 self.map.runjs(self.main_js, "hideLayer", arglist=[self.map_id, self.side])
 
     # def set_visibility(self, true_or_false):

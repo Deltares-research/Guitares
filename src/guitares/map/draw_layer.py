@@ -119,7 +119,7 @@ class DrawLayer(Layer):
     #     self.mode = mode
     #     self.map.runjs("/js/draw_layer.js", "setLayerMode", arglist=[self.map_id, mode])
 
-    def set_visibility2(self, true_or_false):
+    def set_visibility(self, true_or_false):
         if true_or_false:
             if self.active:
                 self.map.runjs("/js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "active"])
