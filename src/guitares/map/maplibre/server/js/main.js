@@ -130,7 +130,6 @@ export function addMap() {
     // Load icons
     iconUrls.forEach(async (iconUrl) => {
       var image = await map.loadImage(iconUrl);
-      console.log('Adding icon: ' + iconUrl);
       map.addImage(iconUrl, image.data);
     });
     mapLoaded();

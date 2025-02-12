@@ -62,7 +62,7 @@ def read_colormap(file_name):
     df = pd.read_csv(file_name,
                      index_col=False,
                      header=None,
-                     sep='\s+',
+                     sep=r'\s+',
                      names=['r','g','b'])
     v = df.to_numpy()
     return v
