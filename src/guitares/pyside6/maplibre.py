@@ -250,7 +250,13 @@ class MapLibre(QtWidgets.QWidget):
     def set_zoom(self, zoom):
         self.runjs("/js/main.js", "setZoom", arglist=[zoom])
 
-    def fit_bounds(self, lon1, lat1, lon2, lat2):
+    def fit_bounds(self, lon1, lat1, lon2, lat2, crs=None):
+        if crs is not None:
+            if not crs.is_geographic:
+                # Convert to lat/lon
+                transformer = Transformer.from_crs(crs, 4326, always_xy=True)
+                lon1, lat1 = transformer.transform(lon1, lat1)
+                lon2, lat2 = transformer.transform(lon2, lat2)
         self.runjs("/js/main.js", "fitBounds", arglist=[lon1, lat1, lon2, lat2])
 
     def jump_to(self, lon, lat, zoom):
