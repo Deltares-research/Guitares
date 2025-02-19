@@ -33,7 +33,8 @@ class DateEdit(QDateTimeEdit):
                 txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
             self.setToolTip(txt)
 
-        self.editingFinished.connect(self.callback)
+        # self.editingFinished.connect(self.callback)
+        self.dateTimeChanged.connect(self.callback)
 
         self.set_geometry()
 
@@ -61,11 +62,14 @@ class DateEdit(QDateTimeEdit):
         group = self.element.variable_group
         name  = self.element.variable
         # newval = self.dateTime().toPyDateTime()
+        oldval = self.element.getvar(group, name)
         newval = self.dateTime().toPython()
         if type(self.element.getvar(group, name)) is str:
             # Expected value is a string. Need to convert to newval to string.
             newval = newval.strftime("%Y%m%d %H%M%S")
         # Do some range checking here ...
+        if newval == oldval:
+            return
         # Update value in variable dict
         self.element.setvar(group, name, newval)
         self.okay = True

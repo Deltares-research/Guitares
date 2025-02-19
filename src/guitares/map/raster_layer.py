@@ -256,11 +256,15 @@ class RasterLayer(Layer):
                 # create string with random integer between 1 and 1,000,000
                 rstring = str(np.random.randint(1, 1000000))
                 legend_file = self.map_id + ".legend." + rstring + ".png"
+                width = 1.0
+                height = 2.0
                 cm2png(cmap,
                     file_name = os.path.join(self.map.server_path, "overlays", legend_file),
                     orientation="vertical",
                     vmin=cmin,
-                    vmax=cmax)
+                    vmax=cmax,
+                    width=width,
+                    height=height)
 
         # Legend
         clrbar = ColorBar(colormap=colormap, legend_title=legend_title)

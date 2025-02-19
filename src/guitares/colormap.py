@@ -35,15 +35,17 @@ def cm2png(cmap,
            legend_label="",
            units="",
            unit_string="",
-           decimals=-1):
+           decimals=-1,
+           width=2.5,
+           height=1.0):
 
     """Create png image of colormap"""
     # Create figure
     if orientation == "horizontal":
-        fig = mpl.pyplot.figure(figsize=(2.5, 1))
+        fig = mpl.pyplot.figure(figsize=(width, height))
         ax = fig.add_axes([0.05, 0.80, 0.9, 0.15])
     else:
-        fig = mpl.pyplot.figure(figsize=(1, 2.5))
+        fig = mpl.pyplot.figure(figsize=(width, height))
         ax = fig.add_axes([0.80, 0.05, 0.15, 0.90])
 
     norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
