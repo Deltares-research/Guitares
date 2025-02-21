@@ -11,3 +11,5 @@ matplotlib
 pyyaml
 pyqt5
 pyqtwebengine
+sphinx
+sphinx_rtd_theme
