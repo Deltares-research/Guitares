@@ -25,13 +25,25 @@ class TabPanel(QTabWidget):
     def tab_selected(self, tabs, indx):
 
         # If the previous tab has a module, call the deselect method
-        if tabs[self.previous_tab_index].module:
-            if hasattr(tabs[self.previous_tab_index].module, "deselect"):
+        previous_tab = tabs[self.previous_tab_index]
+
+        if previous_tab.module:
+            if hasattr(previous_tab.module, "deselect"):
                 try:
-                    tabs[self.previous_tab_index].module.deselect()
+                    previous_tab.module.deselect()
                 except:
                     traceback.print_exc()
-
+        # Also check if there are any tab panels in the previous tab. If so, execute deselect for active tab.
+        for element in previous_tab.elements:
+            # Check if child is a TabPanel
+            if element.style == "tabpanel":
+                iii = element.widget.currentIndex()
+                if hasattr(element.tabs[iii].module, "deselect"):
+                    try:
+                        element.tabs[iii].module.deselect()
+                    except:
+                        traceback.print_exc()
+                    
         self.previous_tab_index = indx
 
         # Now call the select method

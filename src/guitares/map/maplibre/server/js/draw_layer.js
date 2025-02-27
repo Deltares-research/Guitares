@@ -121,7 +121,7 @@ function polygonCreated(e) {
   for (const [key, value] of Object.entries(layerProps.paintProps)) {
     draw.setFeatureProperty(featureId, key, value);
   }
-  addToFeatureList(featureId, activeLayerId, "polygon", feature.geometry);
+  addToFeatureList(featureId, "name_polygon", activeLayerId, "polygon", feature.geometry);
   updateInactiveLayerGeometry(activeLayerId);
   var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
   featureDrawn(JSON.stringify(featureCollection), featureId, activeLayerId);
@@ -132,8 +132,8 @@ function polygonCreated(e) {
 function polygonUpdated(e) {
   var feature=e.features[0];
   var featureId = feature["id"];
-  var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
   setGeometryInFeatureList(featureId, feature.geometry); 
+  var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
   updateInactiveLayerGeometry(activeLayerId);
   featureModified(JSON.stringify(featureCollection), featureId, activeLayerId);
 }
@@ -168,7 +168,7 @@ function polylineCreated(e) {
   for (const [key, value] of Object.entries(layerProps.paintProps)) {
     draw.setFeatureProperty(id, key, value);
   }
-  addToFeatureList(id, activeLayerId, 'polyline', feature.geometry);
+  addToFeatureList(id, "name_polyline", activeLayerId, 'polyline', feature.geometry);
   var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
   featureDrawn(JSON.stringify(featureCollection), id, activeLayerId);
 }
@@ -176,8 +176,8 @@ function polylineCreated(e) {
 function polylineUpdated(e) {
   var feature=e.features[0];
   var featureId = feature["id"];
-  var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
   setGeometryInFeatureList(featureId, feature.geometry); 
+  var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
   updateInactiveLayerGeometry(activeLayerId);
   featureModified(JSON.stringify(featureCollection), featureId, activeLayerId);
 }
@@ -214,7 +214,7 @@ function rectangleCreated(e) {
   for (const [key, value] of Object.entries(layerProps.paintProps)) {
     draw.setFeatureProperty(id, key, value);
   }
-  addToFeatureList(id, activeLayerId, 'rectangle', feature.geometry);
+  addToFeatureList(id, "name_rectangle", activeLayerId, 'rectangle', feature.geometry);
   var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
   featureDrawn(JSON.stringify(featureCollection), id, activeLayerId);
 }
@@ -222,8 +222,8 @@ function rectangleCreated(e) {
 function rectangleUpdated(e) {
   var feature=e.features[0];
   var featureId = feature["id"];
-  var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
   setGeometryInFeatureList(featureId, feature.geometry); 
+  var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
   updateInactiveLayerGeometry(activeLayerId);
   featureModified(JSON.stringify(featureCollection), featureId, activeLayerId);
 }
@@ -246,6 +246,12 @@ export function addFeature(featureCollection, layerId) {
   activeLayerId = layerId;
   // Geometry comes in as a feature collection
   var geometry = featureCollection.features[0].geometry;
+  // Check if "name" property is present
+  if (featureCollection.features[0].properties.name == null) {
+    var featureName = geometry.type;
+  } else {
+    var featureName = featureCollection.features[0].properties.name;
+  }  
   var layerProps = getLayerProps(layerId);
   if (layerProps == null) {
     console.log("No draw layer found with ID " + layerId)
@@ -255,7 +261,7 @@ export function addFeature(featureCollection, layerId) {
   var featureId = makeid(15);
   // Plot feature and add to feature list
   plotFeature(featureId, geometry, layerProps.paintProps);
-  addToFeatureList(featureId, layerId, layerProps.shape, geometry);
+  addToFeatureList(featureId, featureName, layerId, layerProps.shape, geometry);
   // Update geometry of inactive layer 
   updateInactiveLayerGeometry(layerId);
   // Set the layer mode
@@ -303,9 +309,10 @@ export function activateFeature(featureId) {
   }
 }
 
-function addToFeatureList(featureId, layerId, shape, geometry) {
+function addToFeatureList(featureId, featureName, layerId, shape, geometry) {
   featureList.push({
     featureId: featureId,
+    name: featureName,
     shape: shape,
     layerId: layerId,
     geometry: geometry
@@ -320,10 +327,10 @@ function setGeometryInFeatureList(featureId, geometry) {
   }
 }
 
-export function setFeatureGeometry(layerId, featureId, featureCollection) {
+export function setFeatureGeometry(layerId, featureId, geometry) {
   // Update geometry of feature
-  var geometry = featureCollection.features[0].geometry;
-  var layerProps = getLayerProps(layerId);
+  console.log(geometry)
+  draw.setGeometry(featureId, geometry);
   setGeometryInFeatureList(featureId, geometry);
   updateInactiveLayerGeometry(layerId);
 }
@@ -340,22 +347,44 @@ function getFeatureProps(featureId) {
 }
 
 function getFeatureCollectionInActiveLayer(layerId) {
-  // Feature collection with all features (of every layer)
-  var featureCollection = draw.getAll();
-  // Make list with features in active layer
-  var featureIdsInLayer = [];
+
+  // Feature collection with all features
+  var featureCollection = {}
+  featureCollection.type = "FeatureCollection"
+  featureCollection.features = []
   for (let i = 0; i < featureList.length; i++) {
     if (featureList[i].layerId == layerId) {
-      featureIdsInLayer.push(featureList[i].featureId);
-    }
-  }
-  var nfeat = featureCollection.features.length;
-  for (let i = 0; i < nfeat; i++) {
-    if (featureIdsInLayer.includes(featureCollection.features[nfeat - i - 1].id) == false) {
-      featureCollection.features.splice(nfeat - i - 1, 1);
+      var feature = {}
+      feature.type = "Feature"
+      feature.properties = {}
+      feature.properties["id"] = featureList[i].featureId;
+      feature.id = featureList[i].featureId;
+      feature.name = featureList[i].name;
+      feature.geometry = featureList[i].geometry;
+      featureCollection.features.push(feature);
     }
   }
   return featureCollection
+
+
+  // // Feature collection with all features (of every layer)
+  // var featureCollection = draw.getAll();
+  // // Make list with features in active layer
+  // var featureIdsInLayer = [];
+  // for (let i = 0; i < featureList.length; i++) {
+  //   if (featureList[i].layerId == layerId) {
+  //     featureIdsInLayer.push(featureList[i].featureId);
+  //   }
+  // }
+  // var nfeat = featureCollection.features.length;
+  // for (let i = 0; i < nfeat; i++) {
+  //   if (featureIdsInLayer.includes(featureCollection.features[nfeat - i - 1].id) == false) {
+  //     featureCollection.features.splice(nfeat - i - 1, 1);
+  //   }
+  // }
+  // return featureCollection
+
+
 }
 
 function getFeatureCollectionInInactiveLayer(layerId) {
@@ -370,6 +399,7 @@ function getFeatureCollectionInInactiveLayer(layerId) {
       feature.properties = {}
       feature.properties["id"] = featureList[i].featureId;
       feature.id = featureList[i].featureId;
+      feature.name = featureList[i].name;
       feature.geometry = featureList[i].geometry;
       featureCollection.features.push(feature);
     }

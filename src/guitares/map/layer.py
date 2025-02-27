@@ -26,6 +26,8 @@ class Layer:
         self.big_data = False
         self.opacity = 0.9
         self.url = None
+        self.option = None
+        self.zbmax = 0.1
 
         # Legend
         self.legend_position = "bottom-right" # Options are "top-left", "top-right", "bottom-left", "bottom-right"
@@ -44,7 +46,7 @@ class Layer:
         self.hillshading_exaggeration = 10.0
         self.hillshading_azimuth = 315.0
         self.hillshading_altitude = 30.0
-        self.quality = "medium"
+        self.quality = "high"
         self.scale_factor = 1.0
 
         # Cyclone track layer

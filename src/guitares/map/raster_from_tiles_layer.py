@@ -6,6 +6,7 @@ from .layer import Layer
 from guitares.colormap import cm2png
 
 from cht_tiling.tiling import make_floodmap_overlay_v2, make_topo_overlay_v2
+from cht_tiling.flood_map import make_flood_map_overlay_v2
 
 class RasterFromTilesLayer(Layer):
     def __init__(self, map, id, map_id, **kwargs):
@@ -63,7 +64,7 @@ class RasterFromTilesLayer(Layer):
             cmax = cb[1]
 
         elif self.option == "flood_map":
-            xb, yb = make_floodmap_overlay_v2(self.data,
+            xb, yb, caxis = make_flood_map_overlay_v2(self.data,
                                         self.index_path,
                                         self.topobathy_path,
                                         npixels=[wdt, hgt],
@@ -104,6 +105,8 @@ class RasterFromTilesLayer(Layer):
             rstring = str(np.random.randint(1, 1000000))
             legend_file = self.map_id + ".legend." + rstring + ".png"
             # Multiply cmin and cmax by scale factor
+            cmin = caxis[0]
+            cmax = caxis[1]
             cmin = cmin * self.scale_factor
             cmax = cmax * self.scale_factor
             cm2png(self.color_map,

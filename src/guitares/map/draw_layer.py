@@ -13,8 +13,9 @@ class DrawLayer(Layer):
     def __init__(
         self,
         map,
-        id,
+        layer_id,
         map_id,
+        columns={},
         shape="polygon",
         create=None,
         modify=None,
@@ -38,7 +39,7 @@ class DrawLayer(Layer):
         circle_fill_opacity=0.5,
         circle_radius=4,
     ):
-        super().__init__(map, id, map_id)
+        super().__init__(map, layer_id, map_id)
 
         self.active = False
         self.type = "draw"
@@ -46,7 +47,8 @@ class DrawLayer(Layer):
         self.mode = (
             "active"  # Draw layers can have three modes: active, inactive, invisible
         )
-        self.gdf = gpd.GeoDataFrame()
+        self.gdf      = gpd.GeoDataFrame()
+        self.columns  = columns
         self.create   = create
         self.modify   = modify
         self.select   = select
@@ -148,8 +150,10 @@ class DrawLayer(Layer):
         
         for index, row in gdf.to_crs(4326).iterrows():
             # Add feature to draw layer, which has CRS=4326
-            gdf = gpd.GeoDataFrame(geometry=[row["geometry"]], crs=4326)
-            self.map.runjs("/js/draw_layer.js", "addFeature", arglist=[gdf, self.map_id])
+            gdf2plot = gpd.GeoDataFrame(geometry=[row["geometry"]])
+            # if "name" in row:
+            #     gdf["name"] = row["name"]
+            self.map.runjs("/js/draw_layer.js", "addFeature", arglist=[gdf2plot, self.map_id])
 
     def add_rectangle(self, x0, y0, lenx, leny, rotation):
         """Add rectangle to draw layer."""
@@ -170,11 +174,11 @@ class DrawLayer(Layer):
         ).transform
         polygon_wgs84 = transform(project, polygon_crs)
         gdf = gpd.GeoDataFrame(geometry=[polygon_wgs84], crs=4326)
-        self._x0 = x0
-        self._y0 = y0
-        self._dx = lenx
-        self._dy = leny
-        self._rotation = math.pi*rotation/180
+        gdf["x0"] = x0
+        gdf["y0"] = y0
+        gdf["dx"] = lenx
+        gdf["dy"] = leny
+        gdf["rotation"] = rotation
         self.add_feature(gdf)
 
     def draw(self):
@@ -186,29 +190,28 @@ class DrawLayer(Layer):
         elif self.shape == "rectangle":
             self.map.runjs("/js/draw_layer.js", "drawRectangle", arglist=[self.map_id])
 
-    def set_gdf(self, feature_collection, compute_geometry=True):
+    def set_gdf(self, feature_collection, index):
+
         # Called after a feature has been drawn or added. A new GeoDataFrame is created for this layer.
-        for feature in feature_collection["features"]:
-            feature["properties"]["id"] = feature["id"]
-        gdf = gpd.GeoDataFrame.from_features(feature_collection, crs=4326).to_crs(
-            self.map.crs
-        )
-        if self.shape == "rectangle":
-            if compute_geometry:
-                x0, y0, dx, dy, rotation = get_rectangle_geometry(gdf["geometry"])
-                # Add columns with geometry info
-                gdf["x0"] = x0
-                gdf["y0"] = y0
-                gdf["dx"] = dx
-                gdf["dy"] = dy
-                gdf["rotation"] = rotation
-            else:
-                gdf["x0"] = self._x0
-                gdf["y0"] = self._y0
-                gdf["dx"] = self._dx
-                gdf["dy"] = self._dy
-                gdf["rotation"] = self._rotation
-        self.gdf = gdf
+        gdf = gpd.GeoDataFrame.from_features(feature_collection,
+                                             crs=4326).to_crs(self.map.crs)
+  
+        feature_id = feature_collection["features"][index]["id"]
+
+        if index > len(self.gdf) - 1:
+            # Add new row to self.gdf
+            d = {"geometry": [gdf.iloc[index]["geometry"]], "id": [feature_id]}
+            if self.columns:
+                for col in self.columns:
+                    d[col] = [self.columns[col]]
+            new_row = gpd.GeoDataFrame(d).set_crs(self.map.crs)
+            # Add new row to self.gdf (this means that the dataframe will get a new memory address) 
+            self.gdf = pd.concat([self.gdf, new_row], ignore_index=True)
+            pass
+        else:
+            # Only change the geometry of the selected feature and copy the id
+            self.gdf.at[index, "id"] = gdf.at[index, "id"]
+            self.gdf.at[index, "geometry"] = gdf.at[index, "geometry"]
 
     def get_feature_index(self, feature_id):
         """Get a features index by ID in the GeoDataFrame."""
@@ -229,41 +232,68 @@ class DrawLayer(Layer):
         return feature_id
 
     def feature_drawn(self, feature_collection, feature_id):
+
+        # Feature index is always the last in the feature collection
+        feature_index = len(feature_collection["features"]) - 1
+
         # Called after a feature has been drawn by the user
         if self.shape == "rectangle":
-            # Need to make sure that the lower le
-            feature_collection = fix_rectangles(feature_collection)
-        self.set_gdf(feature_collection)
+            # Need to make sure that the rectangle is drawn in ccw direction
+            # with the lower left corner as the first point
+            geom = feature_collection["features"][feature_index]["geometry"]
+            geom = fix_rectangle_geometry(geom)
+            feature_collection["features"][feature_index]["geometry"] = geom
+
+        # Create geodataframe from feature collection
+        self.set_gdf(feature_collection, feature_index)
+
+        # Check if this is a rectangle. If so, we need to compute the geometry and redraw it, 
+        # since the polygon may have been changed.
+        if self.shape == "rectangle":
+            # Now compute geometry for rectangle that was just drawn
+            geom = self.gdf.loc[feature_index, "geometry"]
+            x0, y0, dx, dy, rotation = get_rectangle_geometry(geom)
+            self.gdf.at[feature_index, "x0"] = x0
+            self.gdf.at[feature_index, "y0"] = y0
+            self.gdf.at[feature_index, "dx"] = dx
+            self.gdf.at[feature_index, "dy"] = dy
+            self.gdf.at[feature_index, "rotation"] = rotation
+            # self.set_feature_geometry(feature_id, geom)
+            # And redraw the rectangle
+            self.delete_feature(feature_id)
+            self.add_rectangle(x0, y0, dx, dy, rotation)
+
         # Check if there is a create method
         if self.create:
-            feature_index = self.get_feature_index(feature_id)
+            # feature_index = self.get_feature_index(feature_id)
             # Call the create method sending the gdf with all features and the index of the new feature
             self.create(self.gdf, feature_index, feature_id)
-        if self.shape == "rectangle" and not self.map.crs.is_geographic:
-            feature_index = self.get_feature_index(feature_id)
-            x0 = self.gdf.loc[feature_index, "x0"]  
-            y0 = self.gdf.loc[feature_index, "y0"]
-            lenx = self.gdf.loc[feature_index, "dx"]
-            leny = self.gdf.loc[feature_index, "dy"]
-            rotation = self.gdf.loc[feature_index, "rotation"]*180/math.pi
-            self.delete_feature(feature_id)
-            self.add_rectangle(x0, y0, lenx, leny, rotation)
 
     def feature_added(self, feature_collection, feature_id):
         # Called after a feature has been added by the application
-        self.set_gdf(feature_collection, compute_geometry=False)
-#        self.set_visibility(True)
-#        self.set_mode(self.mode)
+        index = len(feature_collection["features"]) - 1
+        self.set_gdf(feature_collection, index)
         if self.add:
             feature_index = self.get_feature_index(feature_id)
             self.add(self.gdf, feature_index, feature_id)
 
     def feature_modified(self, feature_collection, feature_id):
         # Called after a feature has been modified by the user
-        self.set_gdf(feature_collection)
+        index = self.get_feature_index(feature_id)
+        self.set_gdf(feature_collection, index)
+
+        if self.shape == "rectangle":
+            # Need to set rectangle geometry
+            geom = self.gdf.loc[index, "geometry"]
+            x0, y0, dx, dy, rotation = get_rectangle_geometry(geom)
+            self.gdf.at[index, "x0"] = x0
+            self.gdf.at[index, "y0"] = y0
+            self.gdf.at[index, "dx"] = dx
+            self.gdf.at[index, "dy"] = dy
+            self.gdf.at[index, "rotation"] = rotation
+
         if self.modify:
-            feature_index = self.get_feature_index(feature_id)
-            self.modify(self.gdf, feature_index, feature_id)
+            self.modify(self.gdf, index, feature_id)
 
     def feature_selected(self, feature_collection, feature_id):
         # Called after a feature has been selected by the user
@@ -291,8 +321,12 @@ class DrawLayer(Layer):
             )
         self.map.runjs("/js/draw_layer.js", "activateFeature", arglist=[feature_id])
 
-    def set_feature_geometry(self, feature_id, geom):        
-        self.map.runjs("/js/draw_layer.js", "setFeatureGeometry", arglist=[self.map_id, feature_id, geom])
+    # def set_feature_geometry(self, feature_id, geom):
+    #     # This does not work!
+    #     if hasattr(geom, "__geo_interface__"):
+    #         # Shapely geometry, turn into dict
+    #         geom = geom.__geo_interface__        
+    #     self.map.runjs("/js/draw_layer.js", "setFeatureGeometry", arglist=[self.map_id, feature_id, geom])
 
     def delete_feature(self, feature_id_or_index):
         """Delete a feature by ID or index"""
@@ -355,59 +389,38 @@ class DrawLayer(Layer):
         if not self.get_visibility():
             self.set_visibility(False)
 
-def get_rectangle_geometry(geoms):
-    x0 = []
-    y0 = []
-    dx = []
-    dy = []
-    rotation = []
-    for geom in geoms:
-        # Always the last drawn rectangle by looping through geometries
-        xx, yy = geom.exterior.coords.xy
-        # # Check if the polygon was drawn clockwise or counter-clockwise
-        # if not shapely.is_ccw(geom):
-        #     # Reverse the order of the coordinates            
-        #     xx = xx[::-1]
-        #     yy = yy[::-1]
-        x0.append(float(xx[0]))
-        y0.append(float(yy[0]))
-        lenx = math.sqrt(float(xx[1] - xx[0])**2 + float(yy[1] - yy[0])**2)
-        leny = math.sqrt(float(xx[2] - xx[1])**2 + float(yy[2] - yy[1])**2)
-        dx.append(lenx)
-        dy.append(leny)
-        rot = float((math.atan2(yy[1] - yy[0], xx[1] - xx[0])))
-        if abs(rot*180/math.pi) < 1.0:
-            rot = 0.0
-        rotation.append(rot)
+def get_rectangle_geometry(geom):
+    xx, yy = geom.exterior.coords.xy
+    x0 = float(xx[0])
+    y0 = float(yy[0])
+    dx = math.sqrt(float(xx[1] - xx[0])**2 + float(yy[1] - yy[0])**2)
+    dy = math.sqrt(float(xx[2] - xx[1])**2 + float(yy[2] - yy[1])**2)
+    rotation = float((math.atan2(yy[1] - yy[0], xx[1] - xx[0])))
+    if abs(rotation * 180 / math.pi) < 1.0:
+        rotation = 0.0
+    return x0, y0, dx, dy, rotation    
 
-    return x0, y0, dx, dy, rotation
-
-def fix_rectangles(feature_collection):
-    # This ensures that all rectangles in a feature collection are drawn CCW direction with the lower left corner as the first point (what a mess ...)
-    # Loop through features
-    for feature in feature_collection["features"]:
-        # Get the geometry
-        geom = feature["geometry"]
-        # Check if the geometry is a polygon
-        if geom["type"] == "Polygon":
-            # Check if this ccw
-            if not shapely.is_ccw(shapely.LineString(geom["coordinates"][0])):
-                # Reverse the order of the coordinates
-                geom["coordinates"][0] = geom["coordinates"][0][::-1]
-            coords = geom["coordinates"][0]
-            # Remove the last point which is the same as the first
-            coords = coords[0:-1]
-            # Get lower left corner by taking minimum x and y values
-            min_x = min([x for x, y in coords])
-            min_y = min([y for x, y in coords])
-            # Now find the index of the point closest to the lower left corner
-            dst = [(x - min_x)**2 + (y - min_y)**2 for x, y in coords]
-            index = dst.index(min(dst))
-            new_first_point = coords[index]  # Assuming you want the third point as the new first point
-            new_coords = [new_first_point] + coords[index+1:] + coords[0:index] 
-            new_coords.append(new_coords[0])
-            # Create a new polygon with the updated coordinates
-            new_polygon = Polygon(new_coords)
-            # Update the geometry
-            feature["geometry"] = new_polygon.__geo_interface__
-    return feature_collection
+def fix_rectangle_geometry(geom):
+    # This ensures that the rectangle is drawn CCW direction with the lower left corner as the first point (what a mess ...)
+    # Check if the geometry is a polygon
+    # Check if this ccw
+    if not shapely.is_ccw(shapely.LineString(geom["coordinates"][0])):
+        # Reverse the order of the coordinates
+        geom["coordinates"][0] = geom["coordinates"][0][::-1]
+    coords = geom["coordinates"][0]
+    # Remove the last point which is the same as the first
+    coords = coords[0:-1]
+    # Get lower left corner by taking minimum x and y values
+    min_x = min([x for x, y in coords])
+    min_y = min([y for x, y in coords])
+    # Now find the index of the point closest to the lower left corner
+    dst = [(x - min_x)**2 + (y - min_y)**2 for x, y in coords]
+    index = dst.index(min(dst))
+    new_first_point = coords[index]  # Assuming you want the third point as the new first point
+    new_coords = [new_first_point] + coords[index+1:] + coords[0:index] 
+    new_coords.append(new_coords[0])
+    # Create a new polygon with the updated coordinates
+    new_polygon = Polygon(new_coords)
+    # Update the geometry
+    geom = new_polygon.__geo_interface__
+    return geom
