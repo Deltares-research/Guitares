@@ -9,6 +9,7 @@ import pyproj
 
 from .layer import Layer
 
+
 class DrawLayer(Layer):
     def __init__(
         self,
@@ -47,13 +48,13 @@ class DrawLayer(Layer):
         self.mode = (
             "active"  # Draw layers can have three modes: active, inactive, invisible
         )
-        self.gdf      = gpd.GeoDataFrame()
-        self.columns  = columns
-        self.create   = create
-        self.modify   = modify
-        self.select   = select
+        self.gdf = gpd.GeoDataFrame()
+        self.columns = columns
+        self.create = create
+        self.modify = modify
+        self.select = select
         self.deselect = deselect
-        self.add      = add
+        self.add = add
 
         # Get Hex values for colors
         self.paint_props = {}
@@ -99,19 +100,23 @@ class DrawLayer(Layer):
         """Activate the draw layer so it can be edited by the user."""
         self.visible = True
         self.active = True
-        self.map.runjs("/js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "active"])
+        self.map.runjs(
+            "/js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "active"]
+        )
 
     def deactivate(self):
         """Deactivate the draw layer so it can not be edited by the user."""
         self.active = False
-        self.map.runjs("/js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "inactive"])
+        self.map.runjs(
+            "/js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "inactive"]
+        )
 
     # def show(self):
     #     self.visible = True
     #     if self.active:
     #         self.map.runjs("/js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "active"])
     #     else:
-    #         self.map.runjs("/js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "inactive"])    
+    #         self.map.runjs("/js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "inactive"])
 
     # def hide(self):
     #     self.visible = False
@@ -124,12 +129,20 @@ class DrawLayer(Layer):
     def set_visibility(self, true_or_false):
         if true_or_false:
             if self.active:
-                self.map.runjs("/js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "active"])
+                self.map.runjs(
+                    "/js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "active"]
+                )
             else:
-                self.map.runjs("/js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "inactive"])    
+                self.map.runjs(
+                    "/js/draw_layer.js",
+                    "setLayerMode",
+                    arglist=[self.map_id, "inactive"],
+                )
         else:
             # Make layer invisible
-            self.map.runjs("/js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "invisible"])    
+            self.map.runjs(
+                "/js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "invisible"]
+            )
 
     def set_data(self, gdf):
         """Clear the draw layer and add data. Data must be a GeoDataFrame."""
@@ -141,30 +154,34 @@ class DrawLayer(Layer):
 
         if len(gdf) == 0:
             return
-    
+
         # Append to self.gdf (which doesn't have to have CRS=4326)
         if not self.gdf.empty:
-            self.gdf = pd.concat([self.gdf, gdf.to_crs(self.gdf.crs)], ignore_index=True)
+            self.gdf = pd.concat(
+                [self.gdf, gdf.to_crs(self.gdf.crs)], ignore_index=True
+            )
         else:
             self.gdf = gdf
-        
+
         for index, row in gdf.to_crs(4326).iterrows():
             # Add feature to draw layer, which has CRS=4326
             gdf2plot = gpd.GeoDataFrame(geometry=[row["geometry"]])
             # if "name" in row:
             #     gdf["name"] = row["name"]
-            self.map.runjs("/js/draw_layer.js", "addFeature", arglist=[gdf2plot, self.map_id])
+            self.map.runjs(
+                "/js/draw_layer.js", "addFeature", arglist=[gdf2plot, self.map_id]
+            )
 
     def add_rectangle(self, x0, y0, lenx, leny, rotation):
         """Add rectangle to draw layer."""
         x = [x0]
         y = [y0]
-        x.append(x[0] + lenx * math.cos(math.pi*rotation/180))
-        y.append(y[0] + lenx * math.sin(math.pi*rotation/180))
-        x.append(x[1] + leny * math.cos(math.pi*(rotation + 90.0)/180))
-        y.append(y[1] + leny * math.sin(math.pi*(rotation + 90.0)/180))
-        x.append(x[2] + lenx * math.cos(math.pi*(rotation + 180.0)/180))
-        y.append(y[2] + lenx * math.sin(math.pi*(rotation + 180.0)/180))
+        x.append(x[0] + lenx * math.cos(math.pi * rotation / 180))
+        y.append(y[0] + lenx * math.sin(math.pi * rotation / 180))
+        x.append(x[1] + leny * math.cos(math.pi * (rotation + 90.0) / 180))
+        y.append(y[1] + leny * math.sin(math.pi * (rotation + 90.0) / 180))
+        x.append(x[2] + lenx * math.cos(math.pi * (rotation + 180.0) / 180))
+        y.append(y[2] + lenx * math.sin(math.pi * (rotation + 180.0) / 180))
         x.append(x0)
         y.append(y0)
         polygon_crs = Polygon(zip(x, y))
@@ -193,9 +210,10 @@ class DrawLayer(Layer):
     def set_gdf(self, feature_collection, index):
 
         # Called after a feature has been drawn or added. A new GeoDataFrame is created for this layer.
-        gdf = gpd.GeoDataFrame.from_features(feature_collection,
-                                             crs=4326).to_crs(self.map.crs)
-  
+        gdf = gpd.GeoDataFrame.from_features(feature_collection, crs=4326).to_crs(
+            self.map.crs
+        )
+
         feature_id = feature_collection["features"][index]["id"]
 
         if index > len(self.gdf) - 1:
@@ -205,7 +223,7 @@ class DrawLayer(Layer):
                 for col in self.columns:
                     d[col] = [self.columns[col]]
             new_row = gpd.GeoDataFrame(d).set_crs(self.map.crs)
-            # Add new row to self.gdf (this means that the dataframe will get a new memory address) 
+            # Add new row to self.gdf (this means that the dataframe will get a new memory address)
             self.gdf = pd.concat([self.gdf, new_row], ignore_index=True)
             pass
         else:
@@ -247,7 +265,7 @@ class DrawLayer(Layer):
         # Create geodataframe from feature collection
         self.set_gdf(feature_collection, feature_index)
 
-        # Check if this is a rectangle. If so, we need to compute the geometry and redraw it, 
+        # Check if this is a rectangle. If so, we need to compute the geometry and redraw it,
         # since the polygon may have been changed.
         if self.shape == "rectangle":
             # Now compute geometry for rectangle that was just drawn
@@ -258,14 +276,10 @@ class DrawLayer(Layer):
             self.gdf.at[feature_index, "dx"] = dx
             self.gdf.at[feature_index, "dy"] = dy
             self.gdf.at[feature_index, "rotation"] = rotation
-            # self.set_feature_geometry(feature_id, geom)
-            # And redraw the rectangle
-            self.delete_feature(feature_id)
-            self.add_rectangle(x0, y0, dx, dy, rotation)
+            self.set_feature_geometry(feature_id, geom)
 
         # Check if there is a create method
         if self.create:
-            # feature_index = self.get_feature_index(feature_id)
             # Call the create method sending the gdf with all features and the index of the new feature
             self.create(self.gdf, feature_index, feature_id)
 
@@ -313,7 +327,7 @@ class DrawLayer(Layer):
             index = feature_id_or_index
             feature_id = self.get_feature_id(index)
         else:
-            feature_id = feature_id_or_index    
+            feature_id = feature_id_or_index
         if self.mode != "active":
             self.mode = "active"
             self.map.runjs(
@@ -321,12 +335,16 @@ class DrawLayer(Layer):
             )
         self.map.runjs("/js/draw_layer.js", "activateFeature", arglist=[feature_id])
 
-    # def set_feature_geometry(self, feature_id, geom):
-    #     # This does not work!
-    #     if hasattr(geom, "__geo_interface__"):
-    #         # Shapely geometry, turn into dict
-    #         geom = geom.__geo_interface__        
-    #     self.map.runjs("/js/draw_layer.js", "setFeatureGeometry", arglist=[self.map_id, feature_id, geom])
+    def set_feature_geometry(self, feature_id, geom):
+        # This does not work!
+        if hasattr(geom, "__geo_interface__"):
+            # Shapely geometry, turn into dict
+            geom = geom.__geo_interface__
+        self.map.runjs(
+            "/js/draw_layer.js",
+            "setFeatureGeometry",
+            arglist=[self.map_id, feature_id, geom],
+        )
 
     def delete_feature(self, feature_id_or_index):
         """Delete a feature by ID or index"""
@@ -342,7 +360,7 @@ class DrawLayer(Layer):
                 self.gdf = gpd.GeoDataFrame()
             # Remove from map
             self.map.runjs("/js/draw_layer.js", "deleteFeature", arglist=[feature_id])
-        else:    
+        else:
             feature_id = feature_id_or_index
             # Remove from gdf
             for index, row in self.gdf.iterrows():
@@ -351,10 +369,10 @@ class DrawLayer(Layer):
                     if len(self.gdf) > 0:
                         self.gdf = self.gdf.reset_index(drop=True)
                     else:
-                        self.gdf = gpd.GeoDataFrame()    
+                        self.gdf = gpd.GeoDataFrame()
                     break
             self.map.runjs("/js/draw_layer.js", "deleteFeature", arglist=[feature_id])
-        return self.gdf    
+        return self.gdf
 
     def delete_from_map(self):
         """Delete the draw layer from the map."""
@@ -389,16 +407,18 @@ class DrawLayer(Layer):
         if not self.get_visibility():
             self.set_visibility(False)
 
+
 def get_rectangle_geometry(geom):
     xx, yy = geom.exterior.coords.xy
     x0 = float(xx[0])
     y0 = float(yy[0])
-    dx = math.sqrt(float(xx[1] - xx[0])**2 + float(yy[1] - yy[0])**2)
-    dy = math.sqrt(float(xx[2] - xx[1])**2 + float(yy[2] - yy[1])**2)
+    dx = math.sqrt(float(xx[1] - xx[0]) ** 2 + float(yy[1] - yy[0]) ** 2)
+    dy = math.sqrt(float(xx[2] - xx[1]) ** 2 + float(yy[2] - yy[1]) ** 2)
     rotation = float((math.atan2(yy[1] - yy[0], xx[1] - xx[0])))
     if abs(rotation * 180 / math.pi) < 1.0:
         rotation = 0.0
-    return x0, y0, dx, dy, rotation    
+    return x0, y0, dx, dy, rotation
+
 
 def fix_rectangle_geometry(geom):
     # This ensures that the rectangle is drawn CCW direction with the lower left corner as the first point (what a mess ...)
@@ -414,10 +434,12 @@ def fix_rectangle_geometry(geom):
     min_x = min([x for x, y in coords])
     min_y = min([y for x, y in coords])
     # Now find the index of the point closest to the lower left corner
-    dst = [(x - min_x)**2 + (y - min_y)**2 for x, y in coords]
+    dst = [(x - min_x) ** 2 + (y - min_y) ** 2 for x, y in coords]
     index = dst.index(min(dst))
-    new_first_point = coords[index]  # Assuming you want the third point as the new first point
-    new_coords = [new_first_point] + coords[index+1:] + coords[0:index] 
+    new_first_point = coords[
+        index
+    ]  # Assuming you want the third point as the new first point
+    new_coords = [new_first_point] + coords[index + 1 :] + coords[0:index]
     new_coords.append(new_coords[0])
     # Create a new polygon with the updated coordinates
     new_polygon = Polygon(new_coords)

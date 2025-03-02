@@ -121,7 +121,7 @@ function polygonCreated(e) {
   for (const [key, value] of Object.entries(layerProps.paintProps)) {
     draw.setFeatureProperty(featureId, key, value);
   }
-  addToFeatureList(featureId, "name_polygon", activeLayerId, "polygon", feature.geometry);
+  addToFeatureList(feature, featureId, "name_polygon", activeLayerId, "polygon", feature.geometry);
   updateInactiveLayerGeometry(activeLayerId);
   var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
   featureDrawn(JSON.stringify(featureCollection), featureId, activeLayerId);
@@ -168,7 +168,7 @@ function polylineCreated(e) {
   for (const [key, value] of Object.entries(layerProps.paintProps)) {
     draw.setFeatureProperty(id, key, value);
   }
-  addToFeatureList(id, "name_polyline", activeLayerId, 'polyline', feature.geometry);
+  addToFeatureList(feature, id, "name_polyline", activeLayerId, 'polyline', feature.geometry);
   var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
   featureDrawn(JSON.stringify(featureCollection), id, activeLayerId);
 }
@@ -214,7 +214,7 @@ function rectangleCreated(e) {
   for (const [key, value] of Object.entries(layerProps.paintProps)) {
     draw.setFeatureProperty(id, key, value);
   }
-  addToFeatureList(id, "name_rectangle", activeLayerId, 'rectangle', feature.geometry);
+  addToFeatureList(feature, id, "name_rectangle", activeLayerId, 'rectangle', feature.geometry);
   var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
   featureDrawn(JSON.stringify(featureCollection), id, activeLayerId);
 }
@@ -260,8 +260,8 @@ export function addFeature(featureCollection, layerId) {
   // Make random featureId 
   var featureId = makeid(15);
   // Plot feature and add to feature list
-  plotFeature(featureId, geometry, layerProps.paintProps);
-  addToFeatureList(featureId, featureName, layerId, layerProps.shape, geometry);
+  var feature = plotFeature(featureId, geometry, layerProps.paintProps);
+  addToFeatureList(feature, featureId, featureName, layerId, layerProps.shape, geometry);
   // Update geometry of inactive layer 
   updateInactiveLayerGeometry(layerId);
   // Set the layer mode
@@ -286,6 +286,7 @@ function plotFeature(featureId, geometry, paintProps) {
   for (const [key, value] of Object.entries(paintProps)) {
     draw.setFeatureProperty(featureId, key, value);
   }
+  return feature
 }
 
 export function deleteFeature(featureId) {
@@ -309,8 +310,9 @@ export function activateFeature(featureId) {
   }
 }
 
-function addToFeatureList(featureId, featureName, layerId, shape, geometry) {
+function addToFeatureList(feature, featureId, featureName, layerId, shape, geometry) {
   featureList.push({
+    feature: feature,
     featureId: featureId,
     name: featureName,
     shape: shape,
@@ -329,10 +331,20 @@ function setGeometryInFeatureList(featureId, geometry) {
 
 export function setFeatureGeometry(layerId, featureId, geometry) {
   // Update geometry of feature
-  console.log(geometry)
-  draw.setGeometry(featureId, geometry);
+  // Find feature
+  var feature = draw.get(featureId);
+  var properties = feature.properties;
+  // Delete the feature
+  draw.delete(featureId);
+  // Add the feature with new geometry
+  draw.add({
+    id: featureId,
+    type: 'Feature',
+    properties: properties,
+    geometry: geometry
+  });
+  // And now set the geometry in the feature list
   setGeometryInFeatureList(featureId, geometry);
-  updateInactiveLayerGeometry(layerId);
 }
 
 function removeFromFeatureList(featureId) {
