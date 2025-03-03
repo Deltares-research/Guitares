@@ -182,6 +182,12 @@ class GUI:
             return None
         del self.variables[group][name]
 
+    def delgroup(self, group):
+        if group not in self.variables:
+            print("Error! Cannot delete group! GUI variable group '" + group + "' not defined!")
+            return
+        del self.variables[group]
+        
     def popup(self, config, id="popup", data=None):
         # Make pop-up window
         # config needs to be file name of yml file, or configuration dict

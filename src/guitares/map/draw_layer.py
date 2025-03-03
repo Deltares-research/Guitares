@@ -269,13 +269,20 @@ class DrawLayer(Layer):
         # since the polygon may have been changed.
         if self.shape == "rectangle":
             # Now compute geometry for rectangle that was just drawn
+            # Not geom is in the map CRS, not necessarily 4326
             geom = self.gdf.loc[feature_index, "geometry"]
             x0, y0, dx, dy, rotation = get_rectangle_geometry(geom)
             self.gdf.at[feature_index, "x0"] = x0
             self.gdf.at[feature_index, "y0"] = y0
             self.gdf.at[feature_index, "dx"] = dx
             self.gdf.at[feature_index, "dy"] = dy
-            self.gdf.at[feature_index, "rotation"] = rotation
+            self.gdf.at[feature_index, "rotation"] = 0.0 # When drawing a rectangle, the rotation is always 0.0
+            # Need to set the corrected rectangle geometry, but it has to be in 4326
+            # Transform to WGS 84
+            project = pyproj.Transformer.from_crs(
+                self.map.crs, pyproj.CRS(4326), always_xy=True
+            ).transform
+            geom = transform(project, geom) 
             self.set_feature_geometry(feature_id, geom)
 
         # Check if there is a create method

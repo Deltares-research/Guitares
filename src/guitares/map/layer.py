@@ -62,14 +62,16 @@ class Layer:
         self.click_popup_height = None
 
         # Paint properties
+
         # Active paint properties
         self.line_color     = "dodgerblue"
         self.line_width     = 2
         self.line_style     = "-"
         self.line_opacity   = 1.0
         self.fill_color     = "dodgerblue"
-        self.fill_opacity   = 1.0
+        self.fill_opacity   = 0.25
         self.circle_radius  = 4
+
         # Inactive paint properties
         self.line_color_inactive    = "lightgrey"
         self.line_width_inactive    = 2
@@ -78,14 +80,16 @@ class Layer:
         self.fill_color_inactive    = "lightgrey"
         self.fill_opacity_inactive  = 0.0
         self.circle_radius_inactive = 2
+
         # Selected paint properties 
-        self.line_color_selected    = "dodgerblue"
-        self.line_width_selected    = 2
+        self.line_color_selected    = "red"
+        self.line_width_selected    = 3
         self.line_style_selected    = "-"
         self.line_opacity_selected  = 1.0
         self.fill_color_selected    = "red"
-        self.fill_opacity_selected  = 1.0
+        self.fill_opacity_selected  = 0.75
         self.circle_radius_selected = 5
+
         # Selected inactive paint properties
         self.line_color_selected_inactive    = "lightgrey"
         self.line_width_selected_inactive    = 2
@@ -94,6 +98,15 @@ class Layer:
         self.fill_color_selected_inactive    = "lightgrey"
         self.fill_opacity_selected_inactive  = 0.0
         self.circle_radius_selected_inactive = 2
+
+        # Hover paint properties 
+        self.line_color_hover    = "dodgerblue"
+        self.line_width_hover    = 3
+        self.line_style_hover    = "-"
+        self.line_opacity_hover  = 1.0
+        self.fill_color_hover    = "dodgerblue"
+        self.fill_opacity_hover  = 0.5
+        self.circle_radius_hover = 5
 
         # Determine which main.js file to use 
         map_type = type(self.map).__name__.lower()
@@ -127,6 +140,11 @@ class Layer:
             self.line_color_selected_inactive = mcolors.to_hex(self.line_color_selected_inactive)
         if self.fill_color_selected_inactive != "transparent": 
             self.fill_color_selected_inactive = mcolors.to_hex(self.fill_color_selected_inactive)
+        if self.line_color_hover != "transparent":
+            self.line_color_hover = mcolors.to_hex(self.line_color_hover)
+        if self.fill_color_hover != "transparent":
+            self.fill_color_hover = mcolors.to_hex(self.fill_color_hover)
+
 
         # For use in javascript 
         self.paint_properties = {"lineColor": self.line_color,
@@ -155,7 +173,15 @@ class Layer:
                                  "lineOpacitySelectedInactive": self.line_opacity_selected_inactive,
                                  "fillColorSelectedInactive": self.fill_color_selected_inactive,
                                  "fillOpacitySelectedInactive": self.fill_opacity_selected_inactive,
-                                 "circleRadiusSelectedInactive": self.circle_radius_selected_inactive}
+                                 "circleRadiusSelectedInactive": self.circle_radius_selected_inactive,
+                                 "lineColorHover": self.line_color_hover,
+                                 "lineWidthHover": self.line_width_hover,
+                                 "lineStyleHover": self.line_style_hover,
+                                 "lineOpacityHover": self.line_opacity_hover,
+                                 "fillColorHover": self.fill_color_hover,
+                                 "fillOpacityHover": self.fill_opacity_hover,
+                                 "circleRadiusHover": self.circle_radius_hover
+                                 }
 
 
     def add_layer(self, layer_id, type=None, **kwargs):

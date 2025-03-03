@@ -17,6 +17,7 @@ class PolygonSelectorLayer(Layer):
             if len(data) == 0:
                 data = GeoDataFrame()
 
+        # Set "index" for each feature
         indices = []
         indices.extend(range(len(data)))
         data["index"] = indices
@@ -24,12 +25,13 @@ class PolygonSelectorLayer(Layer):
         self.data = data 
         
         if isinstance(index, int):
+            # Turn index to list to make sure that the feature is selected
             self.index = [index]
-        elif not index and self.selection_type=="multiple":
-            self.index = []  
-        elif not index and self.selection_type=="single":
-            self.index = [indices[0]]
+        elif index is None:
+            # Make sure that no feature is selected
+            self.index = []
         else:
+            # Index is a list
             self.index = index
 
         self.map.runjs("/js/polygon_selector_layer.js", "addLayer", arglist=[self.map_id,
