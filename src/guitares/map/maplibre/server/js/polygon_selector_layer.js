@@ -59,20 +59,19 @@ export function addLayer(id,
     'paint': {
       'line-color': [
         'case',
-        ['boolean', ['feature-state', 'hovered'], false], paintProperties.lineColorHover,
         ['boolean', ['feature-state', 'selected'], false], paintProperties.lineColorSelected,
+//        ['boolean', ['feature-state', 'hovered'], false], paintProperties.lineColorHover,
         paintProperties.lineColor
       ], 
       'line-opacity': [
         'case',
-        ['boolean', ['feature-state', 'hovered'], false], paintProperties.lineOpacityHover,
         ['boolean', ['feature-state', 'selected'], false], paintProperties.lineOpacitySelected,
         paintProperties.lineOpacity
       ], 
       'line-width': [
         'case',
-        ['boolean', ['feature-state', 'hovered'], false], paintProperties.lineWidthHover,
         ['boolean', ['feature-state', 'selected'], false], paintProperties.lineWidthSelected,
+        ['boolean', ['feature-state', 'hovered'], false], paintProperties.lineWidthHover,
         paintProperties.lineWidth
       ], 
     },
@@ -90,14 +89,14 @@ export function addLayer(id,
     'paint': {
       'fill-color': [
         'case',
-        ['boolean', ['feature-state', 'hovered'], false], paintProperties.fillColorHover,
         ['boolean', ['feature-state', 'selected'], false], paintProperties.fillColorSelected,
+        ['boolean', ['feature-state', 'hovered'], false], paintProperties.fillColorHover,
         paintProperties.fillColor
       ], 
       'fill-opacity': [
         'case',
-        ['boolean', ['feature-state', 'hovered'], false], paintProperties.fillOpacityHover,
         ['boolean', ['feature-state', 'selected'], false], paintProperties.fillOpacitySelected,
+        ['boolean', ['feature-state', 'hovered'], false], paintProperties.fillOpacityHover,
         paintProperties.fillOpacity
       ], 
       'fill-outline-color': 'transparent'
@@ -171,17 +170,13 @@ function mouseLeave(e) {
   if (hoveredId !== null) {
     map.setFeatureState(
       { source: activeLayerId, id: hoveredId },
-      { hover: false }
+      { hovered: false }
     );
   }
   hoveredId = null;
 }
 
 function moveEnd(layerId) {
-  const vis = map.getLayoutProperty(layerId + '.fill', 'visibility');
-  if (vis == "visible") {
-    updateFeatureState(layerId);
-  }
 }
 
 // for a single selection type
