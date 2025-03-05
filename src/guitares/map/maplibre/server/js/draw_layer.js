@@ -102,6 +102,7 @@ function activateDirectSelectMode(featureId) {
 /// POLYGON \\\
 
 export function drawPolygon(layerId) {
+  map.getCanvas().style.cursor = "crosshair";
   setDrawEvents();
   activeLayerId = layerId;
   setLayerMode(layerId, 'active');
@@ -115,6 +116,7 @@ export function drawPolygon(layerId) {
 }
 
 function polygonCreated(e) {
+  map.getCanvas().style.cursor = '';
   var feature = e.features[0];
   var featureId = feature["id"];
   var layerProps = getLayerProps(activeLayerId);
@@ -152,6 +154,7 @@ function polygonSelectionChanged(e) {
 /// POLYLINE \\\
 
 export function drawPolyline(id) {
+  map.getCanvas().style.cursor = "crosshair";
   setDrawEvents();
   activeLayerId         = id;
   setLayerMode(id, 'active');
@@ -162,6 +165,7 @@ export function drawPolyline(id) {
 }
 
 function polylineCreated(e) {
+  map.getCanvas().style.cursor = '';
   var feature=e.features[0];
   var id = feature["id"];
   var layerProps = getLayerProps(activeLayerId)
