@@ -6,7 +6,6 @@
             "source.fixAll": "explicit"
         }
     },
-    
     "sonarlint.connectedMode.project": {
         "connectionId": "deltares",
         "projectKey": "deltares_guitares"
