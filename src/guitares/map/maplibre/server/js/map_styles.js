@@ -1,8 +1,9 @@
 var mapStyles = new Object();
 
-mapStyles["none"] = {version: 8,sources: {},layers: []};
+mapStyles["none"] = {name: "None", version: 8, sources: {}, layers: []};
 
 mapStyles["osm"] = {
+  name: "OpenStreetMap",
   "version": 8,
   "sources": {
     "osm": {
@@ -5923,7 +5924,7 @@ mapStyles["darkmatter"] = {
 
 mapStyles["arcgishybrid"] = {
   "version": 8,
-  "name": "orto",
+  "name": "ArcGIS Hybrid",
   "metadata": {},
   "center": [
     1.537786,
@@ -10447,7 +10448,7 @@ mapStyles["arcgishybrid"] = {
 
 mapStyles["arcgissatellite"] = {
   "version": 8,
-  "name": "ortosat",
+  "name": "ArcGIS Satellite",
   "metadata": {},
   "center": [
     1.537786,

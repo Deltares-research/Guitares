@@ -1,6 +1,7 @@
-from PySide6.QtWidgets import QTableView
 from PySide6.QtCore import QItemSelection, QItemSelectionModel
-from PySide6.QtWidgets import QLabel
+from PySide6.QtWidgets import QLabel, QTableView, QAbstractItemView
+from PySide6.QtCore import Qt
+
 from PySide6 import QtCore
 import traceback
 
@@ -142,17 +143,26 @@ class TableView(QTableView):
         self.set_geometry()
 
         # Set selection mode
-        selection_type = None
-        if hasattr(self.element, "selection_type"):
-            selection_type = getattr(SelectionTable, element.selection_type, None)
+        # selection_type = None
+        # if hasattr(self.element, "selection_type"):
+        #     selection_type = getattr(SelectionTable, element.selection_type, None)
+
+        selection_mode = None
         self.multi_selection = False
-        if selection_type:
-            self.setSelectionMode(selection_type.value)
-            if (
-                selection_type == SelectionTable.multiple
-                or selection_type == SelectionTable.extended
-            ):
+        if hasattr(self.element, "selection_type"):
+            if self.element.selection_type == "none":
+                selection_mode = QAbstractItemView.SelectionMode.NoSelection
+            elif self.element.selection_type == "single":
+                selection_mode = QAbstractItemView.SelectionMode.SingleSelection
+            elif self.element.selection_type == "multiple":
+                selection_mode = QAbstractItemView.SelectionMode.MultiSelection
                 self.multi_selection = True
+            elif self.element.selection_type == "extended":
+                selection_mode = QAbstractItemView.SelectionMode.ExtendedSelection
+                self.multi_selection = True
+
+        if selection_mode:
+            self.setSelectionMode(selection_mode)
 
         self.execute_callback = True
 
@@ -185,7 +195,11 @@ class TableView(QTableView):
         self.verticalHeader().setVisible(False)
 
         if self.element.sortable:
-            self.sortByColumn(self.sort_column, self.sort_order)
+            if self.sort_order == 0:
+                sort_order = Qt.AscendingOrder
+            else:
+                sort_order = Qt.DescendingOrder
+            self.sortByColumn(self.sort_column, sort_order)
 
         # In case no selection is used skip
         if not self.element.variable:
@@ -271,7 +285,8 @@ class TableView(QTableView):
         df = self.model()._dataframe
         for index in indices:
             row = df.iloc[index]
-            index0 = df0.index[df0.apply(lambda r: r.equals(row), axis=1)].tolist()[0]
+            # Find the index of the row in df0 that matches row
+            index0 = df0.index[df0.apply(lambda r: r.equals(row.drop("index")), axis=1)].tolist()[0]
             indices[indices.index(index)] = index0
         return indices
         
@@ -279,7 +294,8 @@ class TableView(QTableView):
         # Find indices of row in sorted dataframe df0 that match the row in the original dataframe df
         indices0 = self.element.getvar(self.element.variable_group, self.element.variable)
         df0 = self.df
-        df = self.model()._dataframe
+        # Drop the index column
+        df = self.model()._dataframe.drop("index", axis=1)
         indices = []
         for index in indices0:
             row = df0.loc[index]

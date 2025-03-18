@@ -1,12 +1,23 @@
-from PySide6 import QtWebEngineWidgets
-from PySide6 import QtCore, QtWidgets, QtWebChannel
-from PySide6 import QtWebEngineCore
+from PySide6 import QtWebEngineWidgets, QtWebEngineCore, QtCore, QtWidgets, QtWebChannel
+
 import json
 from geopandas import GeoDataFrame
 from pandas import DataFrame
 from pyproj import CRS, Transformer
 import os
+import requests
+
 from guitares.map.layer import Layer, list_layers, find_layer_by_id
+
+def map_styles():
+    available_map_styles = []
+    available_map_styles.append({"id": "streets-v12", "name": "Streets"})
+    available_map_styles.append({"id": "light-v11", "name": "Light"})
+    available_map_styles.append({"id": "dark-v11", "name": "Dark"})
+    available_map_styles.append({"id": "satellite-v9", "name": "Satellite"})
+    available_map_styles.append({"id": "satellite-streets-v12", "name": "Satellite Streets"})
+    return available_map_styles
+
 
 class WebEnginePage(QtWebEngineCore.QWebEnginePage):
     def __init__(self, view, print_messages):
@@ -27,6 +38,28 @@ class MapBox(QtWidgets.QWidget):
         self.nr_load_attempts = 0
         self.nr_ready_attempts = 0
 
+        self.crs = CRS(4326)
+        self.callback_module = element.module
+        self.layer = {}
+        self.map_extent = None
+        self.map_center = None
+        self.map_moved = None
+        self.point_clicked_callback = None
+        self.zoom = None
+
+        self.url = "http://localhost:" + str(self.gui.server_port)
+
+        # Check for internet connection
+        try:
+            requests.get("http://www.google.com", timeout=5)
+        except requests.ConnectionError:
+            print("No internet connection available.")
+            map_style = "none"
+            offline = True
+        else:
+            print("Internet connection available.")
+            map_style = element.map_style
+            offline = False
 
         # List all icon files in the icons folder
         icon_path = os.path.join(self.gui.server_path, "icons")
@@ -37,16 +70,17 @@ class MapBox(QtWidgets.QWidget):
             icon_list_string = icon_list_string + "'/icons/" + icon_file + "',"
         icon_list_string = "[" + icon_list_string + "]"    
 
-        file_name = os.path.join(self.gui.server_path, "js", "mapbox_defaults.js")
+        file_name = os.path.join(self.gui.server_path, "js", "defaults.js")
         with open(file_name, "w") as f:
-            f.write("var default_style = '" + element.map_style + "';\n")
+            f.write("var default_style = '" + map_style + "';\n")
             f.write("var default_center = [" + str(element.map_center[0]) + "," + str(element.map_center[1]) + "]\n")
             f.write("var default_zoom = " + str(element.map_zoom) + ";\n")
             f.write("var default_projection = '" + element.map_projection + "';\n")
+            if offline:
+                f.write("var offline = true;\n")
+            else:
+                f.write("var offline = false;\n")
             f.write("var iconUrls = " + icon_list_string + ";\n")
-
-        url = "http://localhost:" + str(self.gui.server_port) + "/"
-        self.url = url
 
         self.webchannel_ok = False
         self.ready = False
@@ -57,31 +91,19 @@ class MapBox(QtWidgets.QWidget):
             0, 0, -1, -1
         )  # this is necessary because otherwise an invisible widget sits over the top left hand side of the screen and block the menu
 
-        view = self.view = QtWebEngineWidgets.QWebEngineView(element.parent.widget)
-        channel = self.channel = QtWebChannel.QWebChannel()
-        view.page().profile().clearHttpCache()
+        self.view = QtWebEngineWidgets.QWebEngineView(element.parent.widget)
+        self.view.setPage(WebEnginePage(self.view, self.gui.js_messages))
+        self.view.page().settings().setAttribute(QtWebEngineCore.QWebEngineSettings.WebAttribute.WebGLEnabled, True)
+        self.view.page().settings().setAttribute(QtWebEngineCore.QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
+
+        self.channel = QtWebChannel.QWebChannel()
+        self.channel.registerObject("MapBox", self)
+        self.view.page().setWebChannel(self.channel)
 
         self.set_geometry()
-
-        page = WebEnginePage(view, self.gui.js_messages)
-        view.setPage(page)
-
-        view.page().setWebChannel(channel)
-
-        channel.registerObject("MapBox", self)
-
-        view.loadFinished.connect(self.load_finished)
-
-        view.load(QtCore.QUrl(url))
-
-        self.crs = CRS(4326)
-        self.callback_module = element.module
-        self.layer = {}
-        self.map_extent = None
-        self.map_center = None
-        self.map_moved = None
-        self.point_clicked_callback = None
-        self.zoom = None
+        self.view.loadFinished.connect(self.load_finished)
+        print(f"Setting url to {self.url}")
+        self.view.setUrl(QtCore.QUrl(self.url))
 
     def load_finished(self, message):
         # self.load_finished = True
@@ -149,14 +171,17 @@ class MapBox(QtWidgets.QWidget):
 
     @QtCore.Slot(str)
     def mouseMoved(self, coords):
-        coords = json.loads(coords)
-        self.map_extent = coords
-        # # Loop through layers to update each
-        # layers = list_layers(self.layer)
-        # for layer in layers:
-        #     layer.update()
         if hasattr(self.callback_module, "mouse_moved"):
-            self.callback_module.mouse_moved(coords)
+            coords = json.loads(coords)
+            lon = coords["lng"]
+            lat = coords["lat"]
+            if not self.crs.is_geographic:
+                transformer = Transformer.from_crs(4326, self.crs, always_xy=True)
+                x, y = transformer.transform(lon, lat)
+            else:
+                x = lon
+                y = lat
+            self.callback_module.mouse_moved(x, y, lon, lat)
 
     @QtCore.Slot(str)
     def mapMoved(self, coords):
@@ -246,7 +271,13 @@ class MapBox(QtWidgets.QWidget):
     def set_zoom(self, zoom):
         self.runjs("/js/main.js", "setZoom", arglist=[zoom])
 
-    def fit_bounds(self, lon1, lat1, lon2, lat2):
+    def fit_bounds(self, lon1, lat1, lon2, lat2, crs=None):
+        if crs is not None:
+            if not crs.is_geographic:
+                # Convert to lat/lon
+                transformer = Transformer.from_crs(crs, 4326, always_xy=True)
+                lon1, lat1 = transformer.transform(lon1, lat1)
+                lon2, lat2 = transformer.transform(lon2, lat2)
         self.runjs("/js/main.js", "fitBounds", arglist=[lon1, lat1, lon2, lat2])
 
     def jump_to(self, lon, lat, zoom):
@@ -288,7 +319,7 @@ class MapBox(QtWidgets.QWidget):
         # Redraw all layers (after map style has changed)
         # First clear the layer list in the draw_layer.js file
         self.runjs(
-            "./js/draw_layer.js",
+            "/js/draw_layer.js",
             "clearLayerList"
         )
         layers = self.list_layers()
@@ -301,7 +332,8 @@ class MapBox(QtWidgets.QWidget):
     def runjs(self, module, function, arglist=None):
         if not arglist:
             arglist = []
-        string = "import('" + module + "').then(module => {module." + function + "("
+        string = "import('" + self.url + module + "').then(module => {module." + function + "("
+        # string = "import(" + module + "').then(module => {module." + function + "("
         for iarg, arg in enumerate(arglist):
             if isinstance(arg, bool):
                 if arg:
@@ -315,6 +347,8 @@ class MapBox(QtWidgets.QWidget):
             elif isinstance(arg, dict):
                 string = string + json.dumps(arg).replace('"',"'")
             elif isinstance(arg, list):
+                string = string + json.dumps(arg).replace('"',"'")
+            elif isinstance(arg, tuple):
                 string = string + json.dumps(arg).replace('"',"'")
             elif isinstance(arg, GeoDataFrame):
                 if len(arg) == 0:
@@ -332,4 +366,5 @@ class MapBox(QtWidgets.QWidget):
             if iarg < len(arglist) - 1:
                 string = string + ","
         string = string + ")});"
+        # print(string)
         self.view.page().runJavaScript(string)

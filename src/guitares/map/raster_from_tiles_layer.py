@@ -44,7 +44,7 @@ class RasterFromTilesLayer(Layer):
 
         if self.option == "topography":
 
-            xb, yb, cb = make_topo_overlay_v2(self.topobathy_path,
+            xb, yb, caxis = make_topo_overlay_v2(self.topobathy_path,
                                               lon_range=xl,
                                               lat_range=yl,
                                               hillshading=self.hillshading,
@@ -59,9 +59,6 @@ class RasterFromTilesLayer(Layer):
                                               color_scale_symmetric_side=self.color_scale_symmetric_side,                                       
                                               quiet=False,
                                               file_name=overlay_file)
-
-            cmin = cb[0]
-            cmax = cb[1]
 
         elif self.option == "flood_map":
             xb, yb, caxis = make_flood_map_overlay_v2(self.data,

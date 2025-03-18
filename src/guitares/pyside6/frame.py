@@ -23,7 +23,7 @@ class Frame(QGroupBox):
                 collapsable = True
 
         if collapsable:
-            self.setLineWidth(0)
+            # self.setLineWidth(0)
             pass
         else:
             # Regular

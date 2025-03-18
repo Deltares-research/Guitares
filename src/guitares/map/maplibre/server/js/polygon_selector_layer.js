@@ -37,7 +37,7 @@ export function addLayer(id,
     closeOnClick: false
   });
   
-  // Define the layer
+  // Define the layer (are we using this?)
   layers[id] = {};
   layers[id].data = data; 
   layers[id].mode = "active"; 
@@ -260,5 +260,8 @@ function deselectAll(layerId) {
 // method to select features by index (called from python layer object)
 export function selectByIndex(layerId, indices) {
   // indices is an array
+  // console.log(layerId, indices)
+  // console.log(indices);
+  deselectAll(layerId);
   select(layerId, indices);
 }

@@ -228,7 +228,8 @@ class DrawLayer(Layer):
             pass
         else:
             # Only change the geometry of the selected feature and copy the id
-            self.gdf.at[index, "id"] = gdf.at[index, "id"]
+            # self.gdf.at[index, "id"] = gdf.at[index, "id"]
+            self.gdf.at[index, "id"] = feature_id
             self.gdf.at[index, "geometry"] = gdf.at[index, "geometry"]
 
     def get_feature_index(self, feature_id):

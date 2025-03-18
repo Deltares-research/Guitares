@@ -67,6 +67,13 @@ class GUI:
         if not self.config_path:
             self.config_path = os.getcwd()
 
+        if self.config_file:
+            # Read configuration file  
+            self.config = self.read_gui_config(self.config_path, self.config_file)
+        else:
+            # No configuration file, so just set config to empty dict, which MUST be filled by the developer before calling build
+            self.config = {}
+
         self.image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "img")
         self.image_path = self.image_path.replace(os.sep, '/')
 
@@ -109,9 +116,10 @@ class GUI:
             
             # Set map styles
             if self.map_engine == "mapbox":
-                self.map_style = "mapbox://styles/mapbox/streets-v11"
+                self.map_style = "mapbox://styles/mapbox/streets-v12"
             elif self.map_engine == "maplibre":
-                self.map_styles = ["osm", "orto", "darkmatter", "positron", "none"]
+                self.map_style = "osm"
+#                self.map_styles = ["osm", "orto", "darkmatter", "positron", "none"]
 
             start_server(server_path, port=server_port, node=self.server_nodejs)
 
@@ -139,8 +147,8 @@ class GUI:
         if self.stylesheet:
             app.setStyleSheet(open(os.path.join(self.config_path, self.stylesheet), "r").read())
 
-        if self.config_file:
-            self.config = self.read_gui_config(self.config_path, self.config_file)
+        # if self.config_file:
+        #     self.config = self.read_gui_config(self.config_path, self.config_file)
 
         # Make window object
         self.window = Window(self.config, self)
@@ -255,6 +263,40 @@ class GUI:
                     else:
                         tab["element"] = []
         return element
+
+    # def find_id_in_config(self, id, config):
+    #     # Find element in config file
+    #     # First look in the menu
+    #     for el in self.config["element"]:
+    #         if el["id"] == id:
+    #             return el
+    #         if el["style"] == "tabpanel":
+    #             for tab in el["tab"]:
+    #                 if "element" in tab:
+    #                     for el2 in tab["element"]:
+    #                         if el2["id"] == id:
+    #                             return el2
+    #     return None
+
+    # def font_metrics(self):
+    #     font = self.qtapp.font()
+    #     if self.framework == "pyqt5":
+    #         from PyQt5.QtGui import QFontMetrics
+    #         qfm = QFontMetrics(font)    
+    #     elif self.framework == "pyside6":
+    #         from PySide6.QtGui import QFontMetrics
+    #         qfm = QFontMetrics(font)    
+    #     return QFontMetrics(font)
+
+    def string_width(self, string):
+        font = self.qtapp.font()
+        if self.framework == "pyqt5":
+            from PyQt5.QtGui import QFontMetrics
+            wdt = QFontMetrics(font).width(string)  
+        elif self.framework == "pyside6":
+            from PySide6.QtGui import QFontMetrics
+            wdt = QFontMetrics(font).horizontalAdvance(string)
+        return wdt
 
     def quit(self):
         self.qtapp.quit()

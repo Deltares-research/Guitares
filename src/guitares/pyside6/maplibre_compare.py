@@ -1,14 +1,12 @@
 import os
-from PySide6 import QtWebEngineWidgets
-from PySide6 import QtCore, QtWidgets, QtWebChannel
-from PySide6 import QtWebEngineCore
+from PySide6 import QtWebEngineWidgets, QtWebEngineCore, QtCore, QtWidgets, QtWebChannel
 import json
-from urllib.request import urlopen
-import urllib
+# from urllib.request import urlopen
+# import urllib
 from geopandas import GeoDataFrame
+from pandas import DataFrame
 
-from guitares.map.layer import Layer, list_layers, find_layer_by_id
-
+from guitares.map.layer import Layer, list_layers
 
 class WebEnginePage(QtWebEngineCore.QWebEnginePage):
     def __init__(self, view, print_messages):
@@ -20,42 +18,32 @@ class WebEnginePage(QtWebEngineCore.QWebEnginePage):
             print("javaScriptConsoleMessage: ", level, message, lineNumber, sourceID)
 
 
-class MapBoxCompare(QtWidgets.QWidget):
+class MapLibreCompare(QtWidgets.QWidget):
     def __init__(self, element):
         super().__init__(element.parent.widget)
-
-        self.available_map_styles = []
-        self.available_map_styles.append({"id": "streets-v12", "name": "Streets"})
-        self.available_map_styles.append({"id": "light-v11", "name": "Light"})
-        self.available_map_styles.append({"id": "dark-v11", "name": "Dark"})
-        self.available_map_styles.append({"id": "satellite-v9", "name": "Satellite"})
-        self.available_map_styles.append({"id": "satellite-streets-v12", "name": "Satellite Streets"})
 
         self.gui = element.gui
         self.element = element
 
-        # Check if element_map_style is in available_map_styles
-        if element.map_style not in [style["id"] for style in self.available_map_styles]:
-            # If not, set to default
-            element.map_style = "light-v11"
-        # Check if element.map_style starts with "mapbox://styles/"
-        if not element.map_style.startswith("mapbox://styles/"):
-            # If not, add it
-            element.map_style = "mapbox://styles/mapbox/" + element.map_style     
+        self.callback_module = element.module
 
-        file_name = os.path.join(self.gui.server_path, "js", "mapbox_compare_defaults.js")
+        file_name = os.path.join(self.gui.server_path, "js", "maplibre_compare_defaults.js")
         with open(file_name, "w") as f:
             f.write("var default_compare_style = '" + element.map_style + "';\n")
             f.write("var default_compare_center = [" + str(element.map_center[0]) + "," + str(element.map_center[1]) + "]\n")
             f.write("var default_compare_zoom = " + str(element.map_zoom) + ";\n")
             f.write("var default_compare_projection = '" + element.map_projection + "';\n")
 
-        url = "http://localhost:" + str(self.gui.server_port) + "/mapbox_compare.html"
-        self.url = url
+        self.url = "http://localhost:" + str(self.gui.server_port)
+        # url = "http://localhost:" + str(self.gui.server_port) + "/maplibre_compare.html"
+        # self.url = url
 
         self.ready = False
         self.ready_a = False
         self.ready_b = False
+
+        self.webchannel_ok = False
+        # self.ready = False
 
         self.server_path = self.gui.server_path
 
@@ -63,23 +51,40 @@ class MapBoxCompare(QtWidgets.QWidget):
             0, 0, -1, -1
         )  # this is necessary because otherwise an invisible widget sits over the top left hand side of the screen and block the menu
 
-        view = self.view = QtWebEngineWidgets.QWebEngineView(element.parent.widget)
-        channel = self.channel = QtWebChannel.QWebChannel()
-        view.page().profile().clearHttpCache()
+        self.view = QtWebEngineWidgets.QWebEngineView(element.parent.widget)
+        self.view.setPage(WebEnginePage(self.view, self.gui.js_messages))
+        self.view.page().settings().setAttribute(QtWebEngineCore.QWebEngineSettings.WebAttribute.WebGLEnabled, True)
+        self.view.page().settings().setAttribute(QtWebEngineCore.QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
+
+        self.channel = QtWebChannel.QWebChannel()
+        self.channel.registerObject("MapLibreCompare", self)
+        self.view.page().setWebChannel(self.channel)
 
         self.set_geometry()
+        self.view.loadFinished.connect(self.load_finished)
+        self.view.setUrl(QtCore.QUrl(self.url + "/maplibre_compare.html"))
 
-        page = WebEnginePage(view, self.gui.js_messages)
-        view.setPage(page)
-        view.page().setWebChannel(channel)
+        # self.server_path = self.gui.server_path
 
-        channel.registerObject("MapBoxCompare", self)
+        # self.setGeometry(
+        #     0, 0, -1, -1
+        # )  # this is necessary because otherwise an invisible widget sits over the top left hand side of the screen and block the menu
 
-        print("URL: " + url)
+        # view = self.view = QtWebEngineWidgets.QWebEngineView(element.parent.widget)
+        # channel = self.channel = QtWebChannel.QWebChannel()
+        # view.page().profile().clearHttpCache()
 
-        view.load(QtCore.QUrl(url))
+        # self.set_geometry()
 
-        self.callback_module = element.module
+        # page = WebEnginePage(view, self.gui.js_messages)
+        # view.setPage(page)
+        # view.page().setWebChannel(channel)
+
+        # channel.registerObject("MapLibreCompare", self)
+
+        # view.load(QtCore.QUrl(url))
+
+        # self.callback_module = element.module
 
         self.layer = {}
         self.map_extent = None
@@ -87,16 +92,29 @@ class MapBoxCompare(QtWidgets.QWidget):
         self.point_clicked_callback = None
         self.zoom = None
 
-        self.timer = QtCore.QTimer()
-        self.timer.timeout.connect(self.reload)
-        self.timer.setSingleShot(True)
-        self.timer.start(1000)
+        # self.timer = QtCore.QTimer()
+        # # self.timer.timeout.connect(self.reload)
+        # self.timer.setSingleShot(True)
+        # self.timer.start(1000)
 
-    def reload(self):
-        print("Reloading ...")
-        self.view.page().setWebChannel(self.channel)
-        self.channel.registerObject("MapBoxCompare", self)
-        self.view.load(QtCore.QUrl(self.url))
+
+    def load_finished(self, message):
+        self.timer_ping = QtCore.QTimer()        
+        self.timer_ping.timeout.connect(self.ping)
+        self.timer_ping.start(1000)
+
+    def ping(self):
+        # Sending a ping to main.js
+        print("Ping!")
+        self.runjs("/js/compare.js", "ping", arglist=["ping"])
+
+    @QtCore.Slot(str)
+    def pong(self, message):
+        # Python heard a pong!
+        self.timer_ping.stop()
+        print("Pong received! Adding map compare ...")
+        # Add map
+        self.runjs("/js/compare.js", "addMap", arglist=[])
 
     def set(self):
         pass
@@ -255,10 +273,11 @@ class MapBoxCompare(QtWidgets.QWidget):
         for layer in layers:
             layer.redraw()
 
+
     def runjs(self, module, function, arglist=None):
         if not arglist:
             arglist = []
-        string = "import('" + module + "').then(module => {module." + function + "("
+        string = "import('" + self.url + module + "').then(module => {module." + function + "("
         for iarg, arg in enumerate(arglist):
             if isinstance(arg, bool):
                 if arg:
@@ -273,14 +292,55 @@ class MapBoxCompare(QtWidgets.QWidget):
                 string = string + json.dumps(arg).replace('"',"'")
             elif isinstance(arg, list):
                 string = string + json.dumps(arg).replace('"',"'")
+            elif isinstance(arg, tuple):
+                string = string + json.dumps(arg).replace('"',"'")
             elif isinstance(arg, GeoDataFrame):
                 if len(arg) == 0:
                     string = string + "{}"
                 else:
+                    # Need to remove timeseries from geodataframe
+                    for columnName, columnData in arg.items():
+                        if isinstance(columnData.iloc[0], DataFrame):
+                            arg = arg.drop([columnName], axis=1)
                     string = string + arg.to_json()
+            elif arg is None:
+                string = string + "null"        
             else:
                 string = string + "'" + arg + "'"
             if iarg < len(arglist) - 1:
                 string = string + ","
         string = string + ")});"
+        # print(string)
         self.view.page().runJavaScript(string)
+
+
+
+    # def runjs(self, module, function, arglist=None):
+    #     if not arglist:
+    #         arglist = []
+    #     string = "import('" + module + "').then(module => {module." + function + "("
+    #     for iarg, arg in enumerate(arglist):
+    #         if isinstance(arg, bool):
+    #             if arg:
+    #                 string = string + "true"
+    #             else:
+    #                 string = string + "false"
+    #         elif isinstance(arg, int):
+    #             string = string + str(arg)
+    #         elif isinstance(arg, float):
+    #             string = string + str(arg)
+    #         elif isinstance(arg, dict):
+    #             string = string + json.dumps(arg).replace('"',"'")
+    #         elif isinstance(arg, list):
+    #             string = string + json.dumps(arg).replace('"',"'")
+    #         elif isinstance(arg, GeoDataFrame):
+    #             if len(arg) == 0:
+    #                 string = string + "{}"
+    #             else:
+    #                 string = string + arg.to_json()
+    #         else:
+    #             string = string + "'" + arg + "'"
+    #         if iarg < len(arglist) - 1:
+    #             string = string + ","
+    #     string = string + ")});"
+    #     self.view.page().runJavaScript(string)

@@ -1,21 +1,19 @@
 let hover_property
-let hoveredId = null;
-let activeLayerId = null;
+let hoveredId = null
+let activeLayerId = null
+let selectedIndex = null // Only used for single selection
 let popup
 let selectedFeatures = []
+let paintProperties = {}
 
 export function addLayer(id,
   data,
   index,
   hovprop,
-  lineColor,
-  lineWidth,
-  lineOpacity,
-  fillColor,
-  fillOpacity,
+  paintProperties,
   selectionOption) {
 
-  hover_property = hovprop
+  hover_property = hovprop  
 
   let hoveredId = null
   let fillId = id + ".fill"
@@ -40,11 +38,12 @@ export function addLayer(id,
   });
   
   // Define the layer
-  layers[id] = {}
+  layers[id] = {};
   layers[id].data = data; 
   layers[id].mode = "active"; 
 
   // Add source
+  // The feature id is promoted to the index property
   map.addSource(id, {
     type: 'geojson',
     data: data,
@@ -58,9 +57,23 @@ export function addLayer(id,
     'source': id,
     'layout': {},
     'paint': {
-      'line-color': lineColor,
-      'line-width': lineWidth,
-      'line-opacity': lineOpacity
+      'line-color': [
+        'case',
+        ['boolean', ['feature-state', 'selected'], false], paintProperties.lineColorSelected,
+//        ['boolean', ['feature-state', 'hovered'], false], paintProperties.lineColorHover,
+        paintProperties.lineColor
+      ], 
+      'line-opacity': [
+        'case',
+        ['boolean', ['feature-state', 'selected'], false], paintProperties.lineOpacitySelected,
+        paintProperties.lineOpacity
+      ], 
+      'line-width': [
+        'case',
+        ['boolean', ['feature-state', 'selected'], false], paintProperties.lineWidthSelected,
+        ['boolean', ['feature-state', 'hovered'], false], paintProperties.lineWidthHover,
+        paintProperties.lineWidth
+      ], 
     },
     'layout': {
       // Make the layer visible by default.
@@ -74,8 +87,18 @@ export function addLayer(id,
     'type': 'fill',
     'source': id,
     'paint': {
-      'fill-color': fillColor,
-      'fill-opacity': ['case', ['any', ['boolean', ['feature-state', 'hover'], false], ['boolean', ['feature-state', 'selected'], false]], fillOpacity, 0.0],
+      'fill-color': [
+        'case',
+        ['boolean', ['feature-state', 'selected'], false], paintProperties.fillColorSelected,
+        ['boolean', ['feature-state', 'hovered'], false], paintProperties.fillColorHover,
+        paintProperties.fillColor
+      ], 
+      'fill-opacity': [
+        'case',
+        ['boolean', ['feature-state', 'selected'], false], paintProperties.fillOpacitySelected,
+        ['boolean', ['feature-state', 'hovered'], false], paintProperties.fillOpacityHover,
+        paintProperties.fillOpacity
+      ], 
       'fill-outline-color': 'transparent'
     },
     'layout': {
@@ -88,40 +111,35 @@ export function addLayer(id,
   map.setLayoutProperty(lineId, 'visibility', 'visible');
 
   // Update feature state after moving
-  map.on('moveend', () => { moveEnd(id); } );
+  map.on('moveend', () => {moveEnd(id)} );
+
   // Hover pop-up
   map.on('mousemove', fillId, mouseEnter);
   map.on('mouseleave', fillId, mouseLeave);
+
   // Clicking
   if (selectionOption == "single") {
+    map.off('click', fillId, clickSingle);
     map.on('click', fillId, clickSingle);
-    // Select and click if pre-selection is provided
-    if (index) {
-      selectByIndex(id, index);
-      for (let i = 0; i < layers[id].data.features.length; i++) {
-        if (i == index) {
-          featureClicked(id, layers[id].data.features[i]) 
-        }
-      }
-    }
   } else {
+    map.off('click', fillId, clickMultiple);
     map.on('click', fillId, clickMultiple);
-    // Select and click if pre-selection is provided
-    if (index) {
-      selectByIndex(id, index);
-      featureClicked(id, selectedFeatures)
-    }
   }  
+
   map.once('idle', () => {
-    updateFeatureState(id);
+    deselectAll(id);
     // Call layerAdded in main.js
     layerAdded(id);
   });
 
+  // If there are any selected features, select them 
+  if (index.length > 0) {
+    select(id, index);
+  }
+
 };
 
 function mouseEnter(e) {
-  if (map.getFeatureState({ source: e.features[0].source, id: e.features[0].id }).active) { 
     // Change the cursor style as a UI indicator.
     map.getCanvas().style.cursor = 'pointer';
     if (e.features[0].properties.hasOwnProperty('hover_popup_width')) {  
@@ -134,18 +152,17 @@ function mouseEnter(e) {
     if (hoveredId !== null) {
       map.setFeatureState(
         { source: e.features[0].source, id: hoveredId },
-        { hover: false }
+        { hovered: false }
       );
     }  
     // Set hovered feature 
     map.setFeatureState(
       { source: e.features[0].source, id: e.features[0].id },
-      { hover: true }
+      { hovered: true }
     );
     hoveredId = e.features[0].id;
     activeLayerId = e.features[0].source;
   } 
-}
 
 function mouseLeave(e) {
   map.getCanvas().style.cursor = currentCursor;
@@ -153,167 +170,95 @@ function mouseLeave(e) {
   if (hoveredId !== null) {
     map.setFeatureState(
       { source: activeLayerId, id: hoveredId },
-      { hover: false }
+      { hovered: false }
     );
   }
   hoveredId = null;
 }
 
 function moveEnd(layerId) {
-  const vis = map.getLayoutProperty(layerId + '.fill', 'visibility');
-  if (vis == "visible") {
-    updateFeatureState(layerId);
-  }
 }
 
 // for a single selection type
 function clickSingle(e) {
-  if (e.features.length > 0) {
-    selectByIndex(e.features[0].source, e.features[0].id);
-    // And call main.js
-    featureClicked(e.features[0].source, e.features[0]);
-  };
+
+  // Get the layer id
+  var layerId = e.features[0].source;
+
+  // First deselect previous feature
+  if (selectedIndex !== null) {
+    deselect(layerId, [selectedIndex]);
+  }  
+
+  // Then select the clicked feature
+  selectedIndex = e.features[0].id;
+  select(layerId, [selectedIndex]);
+
+  // And call main.js
+  featureClicked(e.features[0].source, e.features[0]);
+
 }
 
 // for a multiple selection type
 function clickMultiple(e) {
-  if (e.features.length > 0) {
-    var featureState = map.getFeatureState({ source: e.features[0].source, id: e.features[0].id });
-    if (featureState.selected) {
-      // Was selected, now deselect
-      map.setFeatureState(
-        { source: e.features[0].source, id: e.features[0].id },
-        { selected: false }
-      );
-      for (let i = 0; i < selectedFeatures.length; i++) {
-        if (selectedFeatures[i].id == e.features[0].id) {
-          selectedFeatures.splice(i, 1)
-        }
-      }
-    } else {
-      // Select
-      map.setFeatureState(
-        { source: e.features[0].source, id: e.features[0].id },
-        { selected: true }
-      );
-      selectedFeatures.push(e.features[0]);
-    };
-    // And call main.js
-    featureClicked(e.features[0].source, selectedFeatures);
+
+  // Get the layer id and index
+  var layerId = e.features[0].source;
+  var index = e.features[0].id;
+
+  // Get the feature state
+  var featureState = map.getFeatureState({ source: e.features[0].source, id: e.features[0].id });
+
+  if (featureState.selected) {
+    // Was selected before, now deselect
+    deselect(layerId, [index]);
+  } else {
+    // Was deselected, now select
+    select(layerId, [index]);
   };
-}
-
-// method to select features by index
-export function selectByIndex(layerId, index) {
-  if (index.length > 0) {
-    for (let k = 0; k < index.length; k++) {
-      for (let i = 0; i < layers[layerId].data.features.length; i++) {
-        if (i == index[k]) {
-          layers[layerId].data.features[i].selected = true
-          selectedFeatures.push(layers[layerId].data.features[i]);
-        }
-      }
-    }
-  } else {
-    for (let i = 0; i < layers[layerId].data.features.length; i++) {
-      if (i == index) {
-        layers[layerId].data.features[i].selected = true
-      } else {
-        layers[layerId].data.features[i].selected = false
-      }
-    }
-  }
-  // And update the feature state
-  updateFeatureState(layerId);
-}
-
-// Set active and selected feature states
-function updateFeatureState(layerId) {
-  if (layers[layerId].mode == "active") {
-    var active = true;
-  } else {
-    var active = false;
-  }
-  const features = map.querySourceFeatures(layerId, {sourceLayer: layerId + ".fill"});
-  for (let i = 0; i < features.length; i++) {
-    const index = features[i].id;
-    if (layers[layerId].data.features[index].selected) {
-      map.setFeatureState(
-        { source: layerId, id: index },
-        { selected: true, active: active }
-      );
-    } else {
-      map.setFeatureState(
-        { source: layerId, id: index },
-        { selected: false, active: active }
-      );
+  // Find the selected features
+  selectedFeatures = [];
+  for (let i = 0; i < layers[layerId].data.features.length; i++) {
+    var featureState = map.getFeatureState({ source: layerId, id: i });
+    if (featureState.selected) {
+      selectedFeatures.push(layers[layerId].data.features[i]);
     }
   }  
+  // And call main.js
+  featureClicked(layerId, selectedFeatures);
 }
 
-// Set colors to active and update feature state
-export function activate(id,
-                         lineColor,
-                         fillColor,
-                         lineColorActive,
-                         fillColorActive) {
-  layers[layerId].mode = "active"
-  if (map.getLayer(id)) {
-    map.setPaintProperty(id, 'circle-stroke-color', ['case',
-      ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
-      lineColorActive,
-      lineColor]);
-    map.setPaintProperty(id, 'circle-color', ['case',
-      ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
-      fillColorActive,
-      fillColor]);
+function select(layerId, indices) {
+  // indices is an array
+  for (let i = 0; i < indices.length; i++) {
+    map.setFeatureState(
+      { source: layerId, id: indices[i] },
+      { selected: true }
+    );
   }
-  updateFeatureState(id);
 }
 
-// Set colors to inactive and update feature state
-export function deactivate(id,
-  lineColor,
-  lineWidth,
-  lineStyle,
-  lineOpacity,
-  fillColor,
-  fillOpacity,
-  lineColorActive,
-  fillColorActive) {  
-  layers[id].mode = "inactive"
-  if (map.getLayer(id)) {
-    map.setPaintProperty(id, 'circle-stroke-color', ['case',
-      ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
-      lineColorActive,
-      lineColor]);
-    map.setPaintProperty(id, 'circle-color', ['case',
-      ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
-      fillColorActive,
-      fillColor]);
-    map.setPaintProperty(id, 'circle-radius', ['case',
-      ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
-      circleRadiusActive,
-      circleRadius]);
+function deselect(layerId, indices) {
+  // indices is an array
+  for (let i = 0; i < indices.length; i++) {
+    map.setFeatureState(
+      { source: layerId, id: indices[i] },
+      { selected: false }
+    );
   }
-  updateFeatureState(id);
 }
 
-export function remove(id) {
-  // Remove line layer
-  var mapLayer = map.getLayer(id + '.line');
-  if(typeof mapLayer !== 'undefined') {
-    map.removeLayer(id + '.line');
+function deselectAll(layerId) {
+  for (let i = 0; i < layers[layerId].data.features.length; i++) {
+    map.setFeatureState(
+      { source: layerId, id: i },
+      { selected: false }
+    );
   }
-  // Remove fill layer
-  var mapLayer = map.getLayer(id + '.fill');
-  if(typeof mapLayer !== 'undefined') {
-    map.removeLayer(id + '.line');
-  }
-  // Remove source
-  var mapSource = map.getSource(id);
-  if(typeof mapSource !== 'undefined') {
-    map.removeSource(id);
-  }
-  map.off('moveend', moveEnd(layerId));
+}
+
+// method to select features by index (called from python layer object)
+export function selectByIndex(layerId, indices) {
+  // indices is an array
+  select(layerId, indices);
 }

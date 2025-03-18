@@ -10,7 +10,9 @@ class PolygonLayer(Layer):
     def set_data(
         self,
         data,
+        index=None,
     ):
+        # Index is not used, but is kept for consistency with polygon_selector_layer
 
         # Make sure this is not an empty GeoDataFrame
         if isinstance(data, GeoDataFrame):
@@ -49,7 +51,7 @@ class PolygonLayer(Layer):
         if self.data is None:
             return
         self.map.runjs(
-            "/js/geojson_layer_circle.js",
+            "/js/geojson_layer_circle.js", # WTF is this?
             "deactivate",
             arglist=[
                 self.map_id,

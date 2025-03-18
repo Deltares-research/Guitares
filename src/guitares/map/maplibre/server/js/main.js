@@ -16,8 +16,12 @@ export let pointClicked;
 export let layerStyleSet;
 export let marker;
 
-// Web Channel
+import { BackgroundLayerSelector, setMapStyle } from "./basemap_control.js";
 
+// Make layers object (Should probably get rid of this? It is used in some of the other layers)
+layers = new Object(); 
+
+// Web Channel
 try {
 new QWebChannel(qt.webChannelTransport, function (channel) {
   window.MapLibre = channel.objects.MapLibre;
@@ -39,10 +43,12 @@ new QWebChannel(qt.webChannelTransport, function (channel) {
     layerAdded        = function(layerId) { MapLibre.layerAdded(layerId)};
   }
 });
+
 } catch (error) {
   console.log('WebChannel not found');
 }
 
+// Set the geocoder API
 if (!offline) {
   geocoderApi = {
     forwardGeocode: async (config) => {
@@ -85,11 +91,14 @@ if (!offline) {
   };
 };
 
+// Done in main.js
+
 export function ping(ping_string) {
   pong();
 }
 
 export function addMap() {
+
   map = new maplibregl.Map({
     container: 'map', // container ID
     style: mapStyles[default_style],
@@ -97,17 +106,28 @@ export function addMap() {
     zoom: default_zoom, // starting zoom
     projection: default_projection // display the map as a 3D globe or flat
   });
-
+    
   map.scrollZoom.setWheelZoomRate(1 / 200);
+
+  // Add controls
+
+  // Navigation
   const nav = new maplibregl.NavigationControl({
     visualizePitch: true
   });
   map.addControl(nav, 'top-left');
-  const scale = new maplibregl.ScaleControl({
-    maxWidth: 80
-  });
-  map.addControl(scale, 'bottom-left');
 
+  // Background layer
+  var backgroundLayers = [];
+  for (var key in mapStyles) {
+    backgroundLayers.push({"id": key, "name": mapStyles[key].name});
+  }  
+  map.addControl(new BackgroundLayerSelector(backgroundLayers, default_style), 'top-left');
+
+  // Scale
+  map.addControl(new maplibregl.ScaleControl({maxWidth: 80}), 'bottom-left');
+
+  // Geocoder
   if (!offline) {
     map.addControl(
       new MaplibreGeocoder(geocoderApi, {
@@ -116,9 +136,9 @@ export function addMap() {
     );
   };
 
+  // Marker (why is this again?) 
   marker = new maplibregl.Marker({draggable: true});
 
-  layers = new Object();
   currentCursor = '';
 
   map.on('load', () => {
@@ -136,66 +156,9 @@ export function addMap() {
   });
 
   map.on('style.load', () => {
-
-//    map.setFog({}); // Set the default atmosphere style
-//    // Add terrain
-//    map.addSource('mapbox-dem', {
-//      'type': 'raster-dem',
-//      'url': 'mapbox://mapbox.mapbox-terrain-dem-v1',
-//      'tileSize': 512,
-//      'maxzoom': 14
-//    });
-
-    const layers = map.getStyle().layers;
-    const labelLayer = layers.find(
-      (layer) => layer.type === 'symbol' && layer.layout['text-field']
-    );
-
-    if (!labelLayer) {
-      console.log('No label layer with id found with text-field property');
-    } else {
-      const labelLayerId = labelLayer.id;  
-      // The 'building' layer in the MapLibre Streets
-      // vector tileset contains building height data
-      // from OpenStreetMap.
-      //  console.log('Adding 3d buildings')
-      // map.addLayer({
-      //   'id': 'add-3d-buildings',
-      //   'source': 'composite',
-      //   'source-layer': 'building',
-      //   'filter': ['==', 'extrude', 'true'],
-      //   'type': 'fill-extrusion',
-      //   'minzoom': 15,
-      //   'paint': {
-      //     'fill-extrusion-color': '#aaa',
-      //     // Use an 'interpolate' expression to
-      //     // add a smooth transition effect to
-      //     // the buildings as the user zooms in.
-      //     'fill-extrusion-height': [
-      //       'interpolate',
-      //       ['linear'],
-      //       ['zoom'],
-      //       15,
-      //       0,
-      //       15.05,
-      //       ['get', 'height']
-      //     ],
-      //     'fill-extrusion-base': [
-      //       'interpolate',
-      //       ['linear'],
-      //       ['zoom'],
-      //       15,
-      //       0,
-      //       15.05,
-      //       ['get', 'min_height']
-      //     ],
-      //     'fill-extrusion-opacity': 0.6
-      //   }
-      // }, labelLayerId);
-    }
-
-    // Add additional layers
-  
+    // Add terrain?
+    // Add buildings?
+    // Add globe?
   });
 
   map.on('moveend', () => {
@@ -265,15 +228,6 @@ export function removeLayer(id, side) {
   if (legend) {
     legend.remove();
   }
-
-//  // What is this doing here?
-//  map.off('moveend', () => {
-//    const vis = map.getLayoutProperty(lineId, 'visibility');
-//    if (vis == "visible") {
-//      updateFeatureState(id);
-//    }
-//  });
-
 }
 
 export function setMouseDefault() {
@@ -368,7 +322,6 @@ export function getCenter() {
 export function clickPoint() {
   map.getCanvas().style.cursor = 'crosshair';
   currentCursor = 'crosshair';
-//  map.once('click', function(e) { onPointClicked(e) });
   map.once('click', onPointClicked);
   map.once('contextmenu', onPointRightClicked);
 }
@@ -431,68 +384,10 @@ export function setProjection(projection) {
   }
 }
 
-
 export function setLayerStyle(styleID) {
-
-  console.log('Setting style to: ' + styleID);
-
-  const currentStyle = map.getStyle();
-  const newStyle = Object.assign({}, mapStyles[styleID]);
-
-  // console.log('old style nr layers: ' + currentStyle.layers.length);
-  // console.log('new style nr layers: ' + newStyle.layers.length);
-  
-  // // Loop through current style layer and print id
-  // for (var layer in currentStyle.layers) {
-  //   console.log("current layer id: " + currentStyle.layers[layer].id);
-  // }
-  // for (var layer in newStyle.layers) {
-  //   console.log("new layer id: " + newStyle.layers[layer].id);
-  // }
-
-  // ensure any sources from the current style are copied across to the new style
-  newStyle.sources = Object.assign(
-    {},
-    currentStyle.sources,
-    newStyle.sources
-  );
-
-  // find the index of where to insert our layers to retain in the new style
-  let labelIndex = currentStyle.layers.findIndex((el) => {
-    return el.id == 'dummy_layer_0';
-  });
-  // console.log('labelIndex: ' + labelIndex);
-
-  // default to on top
-  if (labelIndex === -1) {
-    // This should never happen !
-    console.log('dummy_layer_0 not found !!!!!!!!!!');
-    labelIndex = newStyle.layers.length;
-  }
-
-  // const appLayers = currentStyle.layers.slice(labelIndex, -1);
-  const appLayers = currentStyle.layers.slice(labelIndex);
-
-  // console.log('nr appLayers: ' + appLayers.length);
-
-  // // Loop through app layers and print id
-  // for (var layer in appLayers) {
-  //   console.log("app layer id: " + appLayers[layer].id);
-  // }
-  
-  newStyle.layers = [
-    ...newStyle.layers,
-    ...appLayers,
-  ];
-
-  // // Print layers in new style
-  // for (var layer in newStyle.layers) {
-  //   console.log("new layerId: " + newStyle.layers[layer].id);
-  // }
-
-  map.setStyle(newStyle);
+  // function called by python
+  setMapStyle(styleID);
   layerStyleSet();
-
 }
 
 export function setTerrain(trueOrFalse, exaggeration) {
@@ -504,7 +399,10 @@ export function setTerrain(trueOrFalse, exaggeration) {
 }
 
 function addDummyLayer(id) {
-  // Add a dummy layer (other layers will be added BEFORE this dummy layer)
+  // Add dummy layer
+  // Background layers will be added before dummy_layer_0
+  // Data layers will be added between dummy_layer_0 and dummy_layer_1
+  // Draw layers will be added after dummy_layer_1
   map.addSource(id, {
     'type': 'geojson',
     'data': {

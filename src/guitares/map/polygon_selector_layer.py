@@ -56,6 +56,9 @@ class PolygonSelectorLayer(Layer):
         self.set_data(data, index)
 
     def select_by_index(self, index):
+        # index must be a list!
+        if isinstance(index, int):
+            index = [index]
         self.map.runjs("/js/polygon_selector_layer.js", "selectByIndex", arglist=[self.map_id, index])
 
     def select_by_id(self, id):

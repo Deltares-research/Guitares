@@ -198,7 +198,9 @@ class MapBox(QtWidgets.QWidget):
         layer = find_layer_by_id(layer_id, self.layer)
         if hasattr(layer, "select"):
             if layer.select:
-                layer.select(json.loads(feature_props), self)
+                feature_props = json.loads(feature_props)
+                if len(feature_props) > 0:
+                    layer.select(feature_props, self)
 
     @QtCore.pyqtSlot(str, str, str)
     def featureDrawn(self, feature_collection, feature_id, layer_id):

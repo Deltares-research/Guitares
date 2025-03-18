@@ -86,13 +86,13 @@ class Element:
 
         # Map
         if self.gui.map_engine == "mapbox":
-            self.map_style = "mapbox://styles/mapbox/streets-v11"
+            self.map_style = "mapbox://styles/mapbox/streets-v12"
         elif self.gui.map_engine == "maplibre":
             self.map_style = "osm"
-            # self.map_styles = ["osm", "darkmatter", "cartodb", "none"]
         else:
             # This should not happen
             self.map_style = "osm"
+
         self.map_center = [0, 0]
         self.map_zoom = 0
         self.map_projection = "mercator"
@@ -456,7 +456,7 @@ class Element:
                     mod = importlib.import_module(f"guitares.{self.gui.framework}.maplibre")
                     self.widget = mod.MapLibre(self)
 
-        elif self.style == "mapbox_compare":
+        elif self.style == "mapbox_compare" or self.style == "maplibre_compare" or self.style == "map_compare":
             # We don't want to add the mapbox widget if set to invisible, because it takes a long time to load.
             # This means that widgets that are originally set to invisible will not be added to the GUI!
             okay = True
@@ -466,12 +466,17 @@ class Element:
                         if not dep.get():
                             okay = False
             if okay:
-                mod = importlib.import_module(f"guitares.{self.gui.framework}.mapbox_compare")
-                self.widget = mod.MapBoxCompare(self)
+                if self.gui.map_engine == "mapbox":
+                    mod = importlib.import_module(f"guitares.{self.gui.framework}.mapbox_compare")
+                    self.widget = mod.MapBoxCompare(self)
+                elif self.gui.map_engine == "maplibre":
+                    mod = importlib.import_module(f"guitares.{self.gui.framework}.maplibre_compare")
+                    self.widget = mod.MapLibreCompare(self)
 
         elif self.style == "webpage":
             mod = importlib.import_module(f"guitares.{self.gui.framework}.webpage")
             self.widget = mod.WebPage(self)
+
         else:
             print("Element style " + self.style + " not recognized!")
 
@@ -578,7 +583,7 @@ class Element:
                 if dependency.action == "visible":
                     if self.style == "radiobuttongroup": # Cannot set radiobutton group directly
                         self.widget.set_visible(true_or_false)        
-                    elif self.style == "mapbox" or self.style == "mapbox_compare":
+                    elif self.style == "mapbox" or self.style == "mapbox_compare" or self.style == "maplibre" or self.style == "maplibre_compare" or self.style == "map" or self.style == "map_compare":
                         if self.widget.ready:
                             self.widget.view.setVisible(true_or_false)        
                     else:    
@@ -601,8 +606,6 @@ class Element:
                     self.widget.setEnabled(False)
                     if hasattr(self.widget, "text_widget"):
                         self.widget.text_widget.setEnabled(False)
-
-
 
     def clear_tab(self, index):
         self.widget.clear_tab(index)

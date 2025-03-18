@@ -1,9 +1,6 @@
-from PySide6 import QtWebEngineWidgets
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtWebEngineWidgets, QtWebEngineCore, QtCore, QtWidgets
 
-#from guitares.gui import get_position
-
-class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
+class WebEnginePage(QtWebEngineCore.QWebEnginePage):
     def __init__(self, view, print_messages):
         super().__init__(view)
         self.print_messages = print_messages

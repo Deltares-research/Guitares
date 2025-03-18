@@ -1,47 +1,97 @@
-console.log("Adding Mapbox Compare Map ...")
+console.log("Adding Maplibre Compare Map ...")
 
-//var maplibregl = mpbox.import_mapbox_gl()
-
-//let maplibregl = mpbox.import_mapbox_gl()
-//console.log('mapvars mapMain = ' + mapMain)
-//console.log('mapvars mapA = ' + mapA)
-//console.log('mapvars mapB = ' + mapB)
-
+export let pong;
 export let jsonString;
 export let mapReady;
 export let mapMoved;
 export let activeSide = 'a';
 
-maplibregl.accessToken = mapbox_token;
-
-mapA = new maplibregl.Map({
-  container: 'compare1',
-  // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
-  style: default_compare_style, // style URL
-  center: default_compare_center, // starting position [lng, lat]
-  zoom: default_compare_zoom, // starting zoom
-  projection: default_compare_projection // display the map as a 3D globe
+// Web Channel
+new QWebChannel(qt.webChannelTransport, function (channel) {
+  window.MapLibreCompare = channel.objects.MapLibreCompare;
+  if (typeof MapLibreCompare != 'undefined') {
+    pong     = function() { MapLibreCompare.pong("pong")};
+    mapReady = function() { MapLibreCompare.mapReady(jsonString)};
+    mapMoved = function() { MapLibreCompare.mapMoved(jsonString)};
+  }
 });
-   
-mapB = new maplibregl.Map({
+
+export function ping(ping_string) {
+  pong();
+}
+
+export function addMap() {
+
+  var default_style = 'osm';
+
+  console.log("Adding Maplibre Compare Map A ...")
+  mapA = new maplibregl.Map({
+    container: 'compare1',
+    // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
+    style: mapStyles[default_compare_style],
+    center: default_compare_center, // starting position [lng, lat]
+    zoom: default_compare_zoom, // starting zoom
+    projection: default_compare_projection // display the map as a 3D globe
+  });
+
+  console.log("Adding Maplibre Compare Map B ...")
+  mapB = new maplibregl.Map({
     container: 'compare2',
-    style: default_compare_style, // style URL
+    style: mapStyles[default_style],
     center: default_compare_center, // starting position [lng, lat]
     zoom: default_compare_zoom, // starting zoom
     projection: default_compare_projection // display the map as a 3D globe
     }
-);
+  );
 
-// A selector or reference to HTML element
-const container = '#comparison-container';
+  // A selector or reference to HTML element
+  const container = '#comparison-container';
 
-var mapContainer = new maplibregl.Compare(mapA, mapB, container, {
-  //main_map.style.display = 'none';
-  // Set this to enable comparing two maps by mouse movement:
-  // mousemove: true
-});
+  console.log("Adding Maplibre Compare ...")
+  var mapContainer = new maplibregl.Compare(mapA, mapB, container, {
+    //main_map.style.display = 'none';
+    // Set this to enable comparing two maps by mouse movement:
+    // mousemove: true
+  });
 
+  mapA.on('wheel', () => {
+    activeSide = 'a';
+  });
+  mapB.on('wheel', () => {
+    activeSide = 'b';
+  });
+  mapA.on('dragstart', () => {
+    activeSide = 'a';
+  });
+  mapB.on('dragstart', () => {
+    activeSide = 'b';
+  });
+  mapA.on('moveend', () => {
+    onMoveEndA();
+  });
+  mapB.on('moveend', () => {
+    onMoveEndB();
+  });
+  
+  mapA.on('load', () => {
+    console.log('Mapbox A loaded !');
+      // Add dummy layer
+      addDummyLayer(mapA, 'dummy_layer_0');
+      addDummyLayer(mapA, 'dummy_layer_1');
+      mapLoadedA();
+  });
 
+  mapB.on('load', () => {
+    console.log('Mapbox B loaded !');
+    // Add dummy layer
+    addDummyLayer(mapB, 'dummy_layer_0');
+    addDummyLayer(mapB, 'dummy_layer_1');
+    mapLoadedB();
+  });
+
+};
+
+  
 // var id = 'dummy_layer';
 // mapA.addSource(id, {
 //   'type': 'geojson'
@@ -73,60 +123,23 @@ var mapContainer = new maplibregl.Compare(mapA, mapB, container, {
 //mapA = mapA;
 //mapB = mapB;
 
-// Web Channel
-new QWebChannel(qt.webChannelTransport, function (channel) {
-  window.MapBoxCompare = channel.objects.MapBoxCompare;
-  if (typeof MapBoxCompare != 'undefined') {
-    mapReady = function() { MapBoxCompare.mapReady(jsonString)};
-    mapMoved = function() { MapBoxCompare.mapMoved(jsonString)};
-  }
-});
 
 //function carryOn() {
 
 
 
-mapA.on('wheel', () => {
-  activeSide = 'a';
-});
-mapB.on('wheel', () => {
-  activeSide = 'b';
-});
-mapA.on('dragstart', () => {
-  activeSide = 'a';
-});
-mapB.on('dragstart', () => {
-  activeSide = 'b';
-});
-mapA.on('moveend', () => {
-  onMoveEndA();
-});
-mapB.on('moveend', () => {
-  onMoveEndB();
-});
 
-mapA.on('load', () => {
-  console.log('Mapbox A loaded !');
-    // Add dummy layer
-    addDummyLayer(mapA);
-    mapLoadedA();
-});
-
-mapB.on('load', () => {
-  console.log('Mapbox B loaded !');
-  // Add dummy layer
-  addDummyLayer(mapB);
-  mapLoadedB();
-});
-
-function addDummyLayer(mp) {
+function addDummyLayer(mp, id) {
   // Add a dummy layer (other layer will be added BEFORE this dummy layer)
-  var id = 'dummy_layer';
   mp.addSource(id, {
-    'type': 'geojson'
+    'type': 'geojson',
+    'data': {
+      'type': 'FeatureCollection',
+      'features': []
+    }
   });
   mp.addLayer({
-    'id': 'dummy_layer',
+    'id': id,
     'type': 'line',
     'source': id,
     'layout': {},

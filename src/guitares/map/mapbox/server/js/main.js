@@ -40,6 +40,8 @@ new QWebChannel(qt.webChannelTransport, function (channel) {
   }
 });
 
+console.log('Webchannel added ... Done in main.js');
+
 export function ping(ping_string) {
   pong();
 }
@@ -55,7 +57,7 @@ export function importMapbox() {
 
 export function addMap() {
 
-  console.log('Adding map ...');
+  console.log('Adding map, ' + default_style);
 
   map = new mapboxgl.Map({
     container: 'map', // container ID
