@@ -104,7 +104,8 @@ export function addMap() {
     style: mapStyles[default_style],
     center: default_center, // starting position [lng, lat]
     zoom: default_zoom, // starting zoom
-    projection: default_projection // display the map as a 3D globe or flat
+    projection: default_projection, // display the map as a 3D globe or flat
+    TerrainControl: false,
   });
     
   map.scrollZoom.setWheelZoomRate(1 / 200);
@@ -127,15 +128,22 @@ export function addMap() {
   // Scale
   map.addControl(new maplibregl.ScaleControl({maxWidth: 80}), 'bottom-left');
 
+  // // Terrain (turn this off for now, need to add user-defined maptiler api key first)
+  // map.addControl(
+  //   new maplibregl.TerrainControl({
+  //       source: 'terrain-source',
+  //       exaggeration: 1.5
+  //   }, 'top-left')
+  // );
+
+  // // Globe (turn off for now)
+  // map.addControl(new maplibregl.GlobeControl(), 'top-left');
+
   // Geocoder
   if (!offline) {
-    map.addControl(
-      new MaplibreGeocoder(geocoderApi, {
-        maplibregl
-      })
-    );
+    map.addControl(new MaplibreGeocoder(geocoderApi, {maplibregl}), 'top-right');
   };
-
+    
   // Marker (why is this again?) 
   marker = new maplibregl.Marker({draggable: true});
 
@@ -156,9 +164,19 @@ export function addMap() {
   });
 
   map.on('style.load', () => {
-    // Add terrain?
+
     // Add buildings?
+
     // Add globe?
+  
+    // // Add terrain source (by default, terrain is not shown)
+    // // Turn off for now until we get a maptiler api key
+    // map.addSource("terrain-source", {
+    //   type: 'raster-dem',            
+    //   url: "https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=YdqpdVH0dDnoeOw2q3D3",
+    //   tileSize: 256
+    // });
+
   });
 
   map.on('moveend', () => {

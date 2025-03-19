@@ -3,7 +3,7 @@ export class BackgroundLayerSelector {
     constructor(layers, defaultStyle) {
         this.layers = layers;
         this._container = document.createElement('div');
-        this._container.className = 'background-layer-selector';
+        this._container.className = 'maplibregl-ctrl';
         
         // Create the layers icon button
         const icon = document.createElement('button');
