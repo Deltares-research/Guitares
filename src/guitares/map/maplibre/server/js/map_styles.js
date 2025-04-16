@@ -1,8 +1,8 @@
-var mapStyles = new Object();
+window.mapStyles = new Object();
 
-mapStyles["none"] = {name: "None", version: 8, sources: {}, layers: []};
+window.mapStyles["none"] = {name: "None", version: 8, sources: {}, layers: []};
 
-mapStyles["osm"] = {
+window.mapStyles["osm"] = {
   name: "OpenStreetMap",
   "version": 8,
   "sources": {
@@ -23,7 +23,7 @@ mapStyles["osm"] = {
   ]
 };
 
-mapStyles["darkmatter"] = {
+window.mapStyles["darkmatter"] = {
     "version": 8,
     "name": "Dark Matter",
     "metadata": {
@@ -5922,7 +5922,7 @@ mapStyles["darkmatter"] = {
     "owner": "Carto"
 }
 
-mapStyles["arcgishybrid"] = {
+window.mapStyles["arcgishybrid"] = {
   "version": 8,
   "name": "ArcGIS Hybrid",
   "metadata": {},
@@ -10446,7 +10446,7 @@ mapStyles["arcgishybrid"] = {
   "id": "qebnlkra6"
 }
 
-mapStyles["arcgissatellite"] = {
+window.mapStyles["arcgissatellite"] = {
   "version": 8,
   "name": "ArcGIS Satellite",
   "metadata": {},
@@ -10542,7 +10542,7 @@ mapStyles["arcgissatellite"] = {
 }
 
 
-mapStyles["positron"] = {
+window.mapStyles["positron"] = {
 
   "version": 8,
   "name": "Positron",

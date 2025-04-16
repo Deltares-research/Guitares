@@ -1,3 +1,18 @@
+function waitForQWebChannel(timeout = 10000) {
+  return new Promise((resolve, reject) => {
+    const start = performance.now();    
+    (function check() {
+      if (typeof QWebChannel !== 'undefined') {
+        resolve(QWebChannel);
+      } else if (performance.now() - start > timeout) {
+        reject(new Error("QWebChannel not available within timeout"));
+      } else {
+        setTimeout(check, 100);
+      }
+    })();
+  });
+}
+
 let mapReady;
 let mapMoved;
 let mouseMoved;
@@ -6,102 +21,123 @@ let getMapCenter;
 let geocoderApi;
 export let pong;
 export let mapLibreImported;
-export let featureDrawn;
-export let featureSelected;
-export let featureDeselected;
-export let featureModified;
-export let featureAdded;
+//export let featureDrawn;
+//export let featureSelected;
+//export let featureDeselected;
+//export let featureModified;
+//export let featureAdded;
 export let jsonString;
 export let pointClicked;
 export let layerStyleSet;
 export let marker;
-
 import { BackgroundLayerSelector, setMapStyle } from "./basemap_control.js";
+let webChannelReady = false;
+let firstPong = true;
 
-// Make layers object (Should probably get rid of this? It is used in some of the other layers)
-layers = new Object(); 
+waitForQWebChannel()
 
-// Web Channel
-try {
-new QWebChannel(qt.webChannelTransport, function (channel) {
-  window.MapLibre = channel.objects.MapLibre;
-  if (typeof MapLibre != 'undefined') {
-    pong              = function() { MapLibre.pong("pong")};
-    mapReady          = function() { MapLibre.mapReady(jsonString)};
-    mapMoved          = function() { MapLibre.mapMoved(jsonString)};
-    mouseMoved        = function(coords) { MapLibre.mouseMoved(JSON.stringify(coords))};
-    getMapExtent      = function() { MapLibre.getMapExtent(jsonString)};
-    getMapCenter      = function() { MapLibre.getMapCenter(jsonString)};
-    featureClicked    = function(featureId, featureProps) { MapLibre.featureClicked(featureId, JSON.stringify(featureProps))};
-    featureDrawn      = function(featureCollection, featureId, layerId) { MapLibre.featureDrawn(featureCollection, featureId, layerId)};
-    featureModified   = function(featureCollection, featureId, layerId) { MapLibre.featureModified(featureCollection, featureId, layerId)};
-    featureSelected   = function(featureCollection, featureId, layerId) { MapLibre.featureSelected(featureCollection, featureId, layerId)};
-    featureAdded      = function(featureCollection, featureId, layerId) { MapLibre.featureAdded(featureCollection, featureId, layerId)};
-    featureDeselected = function(layerId) { MapLibre.featureDeselected(layerId)};
-    pointClicked      = function(coords) { MapLibre.pointClicked(JSON.stringify(coords))};
-    layerStyleSet     = function() { MapLibre.layerStyleSet('')};
-    layerAdded        = function(layerId) { MapLibre.layerAdded(layerId)};
-  }
-});
-
-} catch (error) {
-  console.log('WebChannel not found');
-}
-
-// Set the geocoder API
-if (!offline) {
-  geocoderApi = {
-    forwardGeocode: async (config) => {
-        const features = [];
-        try {
-            const request =
-        `https://nominatim.openstreetmap.org/search?q=${
-            config.query
-        }&format=geojson&polygon_geojson=1&addressdetails=1`;
-            const response = await fetch(request);
-            const geojson = await response.json();
-            for (const feature of geojson.features) {
-                const center = [
-                    feature.bbox[0] +
-                (feature.bbox[2] - feature.bbox[0]) / 2,
-                    feature.bbox[1] +
-                (feature.bbox[3] - feature.bbox[1]) / 2
-                ];
-                const point = {
-                    type: 'Feature',
-                    geometry: {
-                        type: 'Point',
-                        coordinates: center
-                    },
-                    place_name: feature.properties.display_name,
-                    properties: feature.properties,
-                     text: feature.properties.display_name,
-                    place_type: ['place'],
-                    center
-                };
-                features.push(point);
-            }
-        } catch (e) {
-            console.error(`Failed to forwardGeocode with error: ${e}`);
+  .then(() => {
+    // Now it's safe to use QWebChannel
+      
+    // Make layers object (Should probably get rid of this? It is used in some of the other layers)
+    var layers = window.layers;
+    layers = new Object(); 
+      
+    // Web Channel
+    try {
+      new QWebChannel(qt.webChannelTransport, function (channel) {
+        window.MapLibre = channel.objects.MapLibre;
+        if (typeof MapLibre != 'undefined') {
+          pong              = function() { MapLibre.pong("pong")};
+          mapReady          = function() { MapLibre.mapReady(jsonString)};
+          mapMoved          = function() { MapLibre.mapMoved(jsonString)};
+          mouseMoved        = function(coords) { MapLibre.mouseMoved(JSON.stringify(coords))};
+          getMapExtent      = function() { MapLibre.getMapExtent(jsonString)};
+          getMapCenter      = function() { MapLibre.getMapCenter(jsonString)};
+          featureClicked    = function(featureId, featureProps) { MapLibre.featureClicked(featureId, JSON.stringify(featureProps))};
+          featureDrawn      = function(featureCollection, featureId, layerId) { MapLibre.featureDrawn(featureCollection, featureId, layerId)};
+          featureModified   = function(featureCollection, featureId, layerId) { MapLibre.featureModified(featureCollection, featureId, layerId)};
+          featureSelected   = function(featureCollection, featureId, layerId) { MapLibre.featureSelected(featureCollection, featureId, layerId)};
+          featureAdded      = function(featureCollection, featureId, layerId) { MapLibre.featureAdded(featureCollection, featureId, layerId)};
+          featureDeselected = function(layerId) { MapLibre.featureDeselected(layerId)};
+          pointClicked      = function(coords) { MapLibre.pointClicked(JSON.stringify(coords))};
+          layerStyleSet     = function() { MapLibre.layerStyleSet('')};
+          layerAdded        = function(layerId) { MapLibre.layerAdded(layerId)};
         }
-        return {
-            features
-        };
+      });
+  
+    } catch (error) {
+      console.log(error)
+      console.log('WebChannel not found');
     }
-  };
-};
+  
+    // Set the geocoder API
+    if (!window.offline) {
+      geocoderApi = {
+        forwardGeocode: async (config) => {
+          const features = [];
+          try {
+              const request =
+          `https://nominatim.openstreetmap.org/search?q=${
+              config.query
+          }&format=geojson&polygon_geojson=1&addressdetails=1`;
+              const response = await fetch(request);
+              const geojson = await response.json();
+              for (const feature of geojson.features) {
+                  const center = [
+                      feature.bbox[0] +
+                  (feature.bbox[2] - feature.bbox[0]) / 2,
+                      feature.bbox[1] +
+                  (feature.bbox[3] - feature.bbox[1]) / 2
+                  ];
+                  const point = {
+                      type: 'Feature',
+                      geometry: {
+                          type: 'Point',
+                          coordinates: center
+                      },
+                      place_name: feature.properties.display_name,
+                      properties: feature.properties,
+                       text: feature.properties.display_name,
+                      place_type: ['place'],
+                      center
+                  };
+                  features.push(point);
+              }
+          } catch (e) {
+              console.error(`Failed to forwardGeocode with error: ${e}`);
+          }
+          return {
+              features
+          };
+      }
+      };
+    };
+  
+    webChannelReady = true;
+
+  })
+
+.catch((err) => {
+    console.error("Error loading QWebChannel:", err);
+    console.error(err);
+});
 
 // Done in main.js
 
 export function ping(ping_string) {
-  pong();
+  //console.log("Ping from Python: " + ping_string);
+  if (webChannelReady && firstPong) {
+    firstPong = false;
+    pong();
+  }
 }
 
 export function addMap() {
-
+    
   map = new maplibregl.Map({
     container: 'map', // container ID
-    style: mapStyles[default_style],
+    style: window.mapStyles[default_style],
     center: default_center, // starting position [lng, lat]
     zoom: default_zoom, // starting zoom
     projection: default_projection, // display the map as a 3D globe or flat
@@ -120,8 +156,8 @@ export function addMap() {
 
   // Background layer
   var backgroundLayers = [];
-  for (var key in mapStyles) {
-    backgroundLayers.push({"id": key, "name": mapStyles[key].name});
+  for (var key in window.mapStyles) {
+    backgroundLayers.push({"id": key, "name": window.mapStyles[key].name});
   }  
   map.addControl(new BackgroundLayerSelector(backgroundLayers, default_style), 'top-left');
 

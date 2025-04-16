@@ -102,13 +102,7 @@ class MapLibre(QtWidgets.QWidget):
 
     def ping(self):
         # Sending a ping to main.js
-        # print("Ping!")
         self.runjs("/js/main.js", "ping", arglist=["ping"])
-
-    # def pong_received(self):
-    #     # print("Pong received!")
-    #     self.timer_ping.stop()
-    #     self.runjs("/js/main.js", "importMapLibre", arglist=[])
 
     def set(self):
         pass

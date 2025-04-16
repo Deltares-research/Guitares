@@ -1,4 +1,4 @@
-import { featureDrawn, featureSelected, featureModified, featureAdded, featureDeselected } from '/js/main.js';
+//import { featureDrawn, featureSelected, featureModified, featureAdded, featureDeselected } from '/js/main.js';
 import { DrawRectangle } from '/js/mapbox-gl-draw-rectangle-mode.js';
 import { drawStyles } from '/js/draw_styles.js'
 import { SRMode, SRCenter } from '/js/mapbox_gl_draw_scale_rotate_mode.js'

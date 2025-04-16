@@ -1,4 +1,5 @@
 from PyQt5 import QtWebEngineWidgets, QtCore, QtWidgets, QtWebChannel
+from PyQt5.QtWebEngineWidgets import QWebEngineProfile
 
 import json
 from geopandas import GeoDataFrame
@@ -6,9 +7,9 @@ from pandas import DataFrame
 from pyproj import CRS, Transformer
 import os
 import requests
+import sys
 
 from guitares.map.layer import Layer, list_layers, find_layer_by_id
-from guitares.server import start_server
 
 class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
     def __init__(self, view, print_messages):
@@ -16,8 +17,21 @@ class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
         self.print_messages = print_messages
 
     def javaScriptConsoleMessage(self, level, message, lineNumber, sourceID):
-        if self.print_messages:
-            print("javaScriptConsoleMessage: ", level, message, lineNumber, sourceID)
+        return
+        print(f"[JS] {message} (line {lineNumber}, source: {sourceID})")
+        sys.stdout.flush()  # Ensures it appears even if buffering is active
+
+    def javaScriptAlert(self, security_origin, msg):
+        # Suppress alert()
+        pass
+
+    def javaScriptConfirm(self, security_origin, msg):
+        # Suppress confirm(), return False by default
+        return False
+
+    def javaScriptPrompt(self, security_origin, msg, default):
+        # Suppress prompt(), return empty string by default
+        return ''
 
 
 class MapLibre(QtWidgets.QWidget):
@@ -40,6 +54,9 @@ class MapLibre(QtWidgets.QWidget):
 
         self.url = "http://localhost:" + str(self.gui.server_port)
 
+        profile = QWebEngineProfile.defaultProfile()
+        profile.clearHttpCache()  # Clear the HTTP cache
+
         # Check for internet connection
         try:
             requests.get("http://www.google.com", timeout=5)
@@ -52,7 +69,6 @@ class MapLibre(QtWidgets.QWidget):
             map_style = element.map_style
             offline = False
 
-
         # List all icon files in the icons folder
         icon_path = os.path.join(self.gui.server_path, "icons")
         icon_files = os.listdir(icon_path)
@@ -64,15 +80,15 @@ class MapLibre(QtWidgets.QWidget):
 
         file_name = os.path.join(self.gui.server_path, "js", "defaults.js")
         with open(file_name, "w") as f:
-            f.write("var default_style = '" + map_style + "';\n")
-            f.write("var default_center = [" + str(element.map_center[0]) + "," + str(element.map_center[1]) + "]\n")
-            f.write("var default_zoom = " + str(element.map_zoom) + ";\n")
-            f.write("var default_projection = '" + element.map_projection + "';\n")
-            f.write("var iconUrls = " + icon_list_string + ";\n")
+            f.write("window.default_style = '" + map_style + "';\n")
+            f.write("window.default_center = [" + str(element.map_center[0]) + "," + str(element.map_center[1]) + "]\n")
+            f.write("window.default_zoom = " + str(element.map_zoom) + ";\n")
+            f.write("window.default_projection = '" + element.map_projection + "';\n")
+            f.write("window.iconUrls = " + icon_list_string + ";\n")
             if offline:
-                f.write("var offline = true;\n")
+                f.write("window.offline = true;\n")
             else:
-                f.write("var offline = false;\n")
+                f.write("window.offline = false;\n")
 
         self.webchannel_ok = False
         self.ready = False
@@ -83,23 +99,19 @@ class MapLibre(QtWidgets.QWidget):
             0, 0, -1, -1
         )  # this is necessary because otherwise an invisible widget sits over the top left hand side of the screen and block the menu
 
-        # view = self.view = QtWebEngineWidgets.QWebEngineView(element.parent.widget)
         self.view = QtWebEngineWidgets.QWebEngineView(element.parent.widget)
-        self.view.setPage(WebEnginePage(self.view, self.gui.js_messages))
+        self.view.setPage(WebEnginePage(self.view, print_messages=True))
         self.view.page().profile().clearHttpCache()
-
-        # self.view.page().settings().setAttribute(QtWebEngineCore.QWebEngineSettings.WebAttribute.WebGLEnabled, True)
-        # self.view.page().settings().setAttribute(QtWebEngineCore.QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
-
+        
         self.channel = QtWebChannel.QWebChannel()
         self.channel.registerObject("MapLibre", self)
         self.view.page().setWebChannel(self.channel)
 
         self.set_geometry()
         self.view.loadFinished.connect(self.load_finished)
-        self.view.setUrl(QtCore.QUrl(self.url))
+        self.view.load(QtCore.QUrl(self.url))
 
-        self.pong_received = False
+        # self.pong_received = False
         self.nr_load_attempts = 0
 
     def load_finished(self, message):
@@ -109,7 +121,7 @@ class MapLibre(QtWidgets.QWidget):
 
     def ping(self):
         # Sending a ping to main.js
-        if self.nr_load_attempts > 2:
+        if self.nr_load_attempts > 10:
             print("MapLibre not loading ...")
             self.nr_load_attempts = 0
             self.timer_ping.stop()
@@ -117,14 +129,9 @@ class MapLibre(QtWidgets.QWidget):
             print("Reloading ...") 
             self.view.reload()
         else:
-            print("Ping!")
+            # print("Ping!")
             self.nr_load_attempts += 1
             self.runjs("/js/main.js", "ping", arglist=["ping"])
-
-    # def pong_received(self):
-    #     print("Pong received!")
-    #     self.timer_ping.stop()
-    #     self.runjs("/js/main.js", "importMapLibre", arglist=[])
 
     def set(self):
         pass
@@ -139,8 +146,8 @@ class MapLibre(QtWidgets.QWidget):
     @QtCore.pyqtSlot(str)
     def pong(self, message):
         # Python heard a pong!
-        print("Pong received!")
-        self.pong_received = True
+        # print("Pong received!")
+        # self.pong_received = True
         self.timer_ping.stop()
         # print("Pong received! Adding map ...")
         # Add map
@@ -167,14 +174,17 @@ class MapLibre(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(str)
     def mouseMoved(self, coords):
-        coords = json.loads(coords)
-        self.map_extent = coords
-        # # Loop through layers to update each
-        # layers = list_layers(self.layer)
-        # for layer in layers:
-        #     layer.update()
         if hasattr(self.callback_module, "mouse_moved"):
-            self.callback_module.mouse_moved(coords)
+            coords = json.loads(coords)
+            lon = coords["lng"]
+            lat = coords["lat"]
+            if not self.crs.is_geographic:
+                transformer = Transformer.from_crs(4326, self.crs, always_xy=True)
+                x, y = transformer.transform(lon, lat)
+            else:
+                x = lon
+                y = lat
+            self.callback_module.mouse_moved(x, y, lon, lat)
 
     @QtCore.pyqtSlot(str)
     def mapMoved(self, coords):
@@ -264,7 +274,13 @@ class MapLibre(QtWidgets.QWidget):
     def set_zoom(self, zoom):
         self.runjs("/js/main.js", "setZoom", arglist=[zoom])
 
-    def fit_bounds(self, lon1, lat1, lon2, lat2):
+    def fit_bounds(self, lon1, lat1, lon2, lat2, crs=None):
+        if crs is not None:
+            if not crs.is_geographic:
+                # Convert to lat/lon
+                transformer = Transformer.from_crs(crs, 4326, always_xy=True)
+                lon1, lat1 = transformer.transform(lon1, lat1)
+                lon2, lat2 = transformer.transform(lon2, lat2)
         self.runjs("/js/main.js", "fitBounds", arglist=[lon1, lat1, lon2, lat2])
 
     def jump_to(self, lon, lat, zoom):

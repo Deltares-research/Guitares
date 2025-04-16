@@ -9,6 +9,10 @@ import urllib.request
 class MyException(Exception):
     pass
 
+class QuietHandler(SimpleHTTPRequestHandler):
+    def log_message(self, format, *args):
+        pass  # Suppress logging
+
 # Custom Thread Class
 class ServerThread(threading.Thread):
     def __init__(self, server_path, server_port):
