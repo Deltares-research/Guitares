@@ -1,11 +1,16 @@
 function getMap(side) {
-    // Return the map object for the given side
-    if (side == "a") { return mapA }
-    else if (side == "b") { return mapB }
-    else { return map }
+  // Return the map object for the given side
+  if (side == "a") { return mapA }
+  else if (side == "b") { return mapB }
+  else { return map }
 }
 
-export function addLayer(fileName, id, bounds, colorbar, side) {
+export function addLayer(id, side) {
+
+  const blankPixel =
+  "data:image/png;base64," +
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=";
+
   var mp = getMap(side);
   
   // Always remove the layer first to avoid an error
@@ -19,14 +24,15 @@ export function addLayer(fileName, id, bounds, colorbar, side) {
 
   mp.addSource(id, {
     'type': 'image',
-    'url': fileName,
+    'url': blankPixel,
     'coordinates': [
-      [bounds[0][0], bounds[1][1]],
-      [bounds[0][1], bounds[1][1]],
-      [bounds[0][1], bounds[1][0]],
-      [bounds[0][0], bounds[1][0]]
-    ]
+      [-1.0, 1.0],
+      [-1.0, -1.0],
+      [1.0, -1.0],
+      [1.0, 1.0]
+      ]
   });
+
   mp.addLayer({
     'id': id,
     'source': id,
@@ -35,12 +41,10 @@ export function addLayer(fileName, id, bounds, colorbar, side) {
       'raster-resampling': 'nearest'
     }
   }, 'dummy_layer');
+
   mp.setLayoutProperty(id, 'visibility', 'visible');    
-  mp.setPaintProperty(id, 'raster-opacity',0.5);
-  if (colorbar) {
-    // If colorbar is a string, then it is a URL and we add it as an image
-    setLegend(mp, id, colorbar);
-  }
+  mp.setPaintProperty(id, 'raster-opacity', 0.5);
+
 }
 
 export function updateLayer(fileName, id, bounds, colorbar, side) {
