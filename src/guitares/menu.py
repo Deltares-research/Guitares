@@ -95,9 +95,10 @@ class Menu:
                 self.dependencies.append(dependency)
 
 
-    def add(self):
+    def add(self, has_children=False):
         mod = importlib.import_module(f"guitares.{self.gui.framework}.menu")
-        if self.menus:
+        if self.menus or has_children:
+            # Submenu
             mod.Menu(self)
         else:
             # End node

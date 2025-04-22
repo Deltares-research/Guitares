@@ -40,12 +40,13 @@ def cm2png(cmap,
            height=1.0):
 
     """Create png image of colormap"""
+    plt.ioff()
     # Create figure
     if orientation == "horizontal":
-        fig = mpl.pyplot.figure(figsize=(width, height))
+        fig = plt.figure(figsize=(width, height))
         ax = fig.add_axes([0.05, 0.80, 0.9, 0.15])
     else:
-        fig = mpl.pyplot.figure(figsize=(width, height))
+        fig = plt.figure(figsize=(width, height))
         ax = fig.add_axes([0.80, 0.05, 0.15, 0.90])
 
     norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
@@ -58,7 +59,7 @@ def cm2png(cmap,
 
     # Save figure
     fig.savefig(file_name, dpi=150, bbox_inches='tight')
-    mpl.pyplot.close(fig)
+    plt.close(fig)
 
 def read_colormap(file_name):
     df = pd.read_csv(file_name,

@@ -21,11 +21,6 @@ let getMapCenter;
 let geocoderApi;
 export let pong;
 export let mapLibreImported;
-//export let featureDrawn;
-//export let featureSelected;
-//export let featureDeselected;
-//export let featureModified;
-//export let featureAdded;
 export let jsonString;
 export let pointClicked;
 export let layerStyleSet;
@@ -34,14 +29,13 @@ import { BackgroundLayerSelector, setMapStyle } from "./basemap_control.js";
 let webChannelReady = false;
 let firstPong = true;
 
+console.log("Waiting for QWebChannel...");
+
 waitForQWebChannel()
 
   .then(() => {
     // Now it's safe to use QWebChannel
-      
-    // Make layers object (Should probably get rid of this? It is used in some of the other layers)
-    var layers = window.layers;
-    layers = new Object(); 
+    console.log("QWebChannel loaded successfully");
       
     // Web Channel
     try {
@@ -273,10 +267,28 @@ export function removeLayer(id, side) {
     // Remove map layer
     map.removeLayer(id + '.circle');
   }
+  var mapLayer = map.getLayer(id + '.a');
+  if(typeof mapLayer !== 'undefined') {
+    // Remove map layer
+    map.removeLayer(id + '.a');
+  }
+  var mapLayer = map.getLayer(id + '.b');
+  if(typeof mapLayer !== 'undefined') {
+    // Remove map layer
+    map.removeLayer(id + '.b');
+  }
   // Remove source
   var mapSource = map.getSource(id);
   if(typeof mapSource !== 'undefined') {
     map.removeSource(id);
+  }
+  var mapSource = map.getSource(id + '.a');
+  if(typeof mapSource !== 'undefined') {
+    map.removeSource(id + '.a');
+  }
+  var mapSource = map.getSource(id + '.b');
+  if(typeof mapSource !== 'undefined') {
+    map.removeSource(id + '.b');
   }
   var legend = document.getElementById("legend" + id);
   if (legend) {
@@ -307,6 +319,14 @@ export function showLayer(id, side) {
 	if (map.getLayer(map_id)) {
   	map.setLayoutProperty(map_id, 'visibility', 'visible');
   }
+  var map_id = id + '.a'
+	if (map.getLayer(map_id)) {
+  	map.setLayoutProperty(map_id, 'visibility', 'visible');
+  }
+  var map_id = id + '.b'
+	if (map.getLayer(map_id)) {
+  	map.setLayoutProperty(map_id, 'visibility', 'visible');
+  }
   showLegend(id);
 }
 
@@ -324,6 +344,14 @@ export function hideLayer(id, side) {
   	map.setLayoutProperty(map_id, 'visibility', 'none');
   }
   var map_id = id + '.circle'
+	if (map.getLayer(map_id)) {
+  	map.setLayoutProperty(map_id, 'visibility', 'none');
+  }
+  var map_id = id + '.a'
+	if (map.getLayer(map_id)) {
+  	map.setLayoutProperty(map_id, 'visibility', 'none');
+  }
+  var map_id = id + '.b'
 	if (map.getLayer(map_id)) {
   	map.setLayoutProperty(map_id, 'visibility', 'none');
   }

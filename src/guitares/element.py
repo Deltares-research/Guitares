@@ -241,7 +241,14 @@ class Element:
                 self.option_string.list = dct["option_string"]
 
         if "filter" in dct:
-            self.filter = dct["filter"]
+            if isinstance(dct["filter"], dict):
+                self.filter = Text(self.variable_group)
+                if "variable" in dct["filter"]:
+                    self.filter.variable = dct["filter"]["variable"]
+                if "variable_group" in dct["filter"]:
+                    self.filter.variable_group = dct["filter"]["variable_group"]
+            else:
+                self.filter = dct["filter"]
 
         if "full_path" in dct:
             self.full_path = dct["full_path"]

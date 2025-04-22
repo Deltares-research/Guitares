@@ -127,6 +127,12 @@ class PopupMenu(QComboBox):
             elif self.element.text_position == "above-left":
                 label.setAlignment(QtCore.Qt.AlignLeft)
                 label.setGeometry(x0, int(y0 - 20 * resize_factor), wlab, int(20 * resize_factor))
+            elif self.element.text_position == "right":
+                label.setAlignment(QtCore.Qt.AlignLeft)
+                label.setGeometry(int(x0 + wdt + 5 * resize_factor),
+                                  int(y0 + 5 * self.element.gui.resize_factor),
+                                  wlab,
+                                  int(20 * resize_factor))
             else:
                 # Assuming left
                 label.setAlignment(QtCore.Qt.AlignRight)

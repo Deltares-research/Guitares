@@ -56,6 +56,8 @@ class HTTPHandler(SimpleHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Methods', 'GET')
         self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
         return super(HTTPHandler, self).end_headers()
+    def log_message(self, format, *args):
+        pass  # Suppress logging
 
 class HTTPServer(BaseHTTPServer):
     """The main server, you pass in base_path which is the path you want to serve requests from"""

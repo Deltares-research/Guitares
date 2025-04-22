@@ -48,6 +48,8 @@ class ImageLayer(Layer):
             xlim, ylim = self.make_overlay()
             if xlim is None:
                 return
+            # if xlim[0] > xlim[1]:
+            #     xlim[0] -= 360.0
             bounds = [[xlim[0], xlim[1]], [ylim[0], ylim[1]]]
             overlay_file = f"./overlays/{self.file_name}"
             self.map.runjs("/js/image_layer.js", "updateLayer", arglist=[overlay_file, self.map_id, bounds])
@@ -68,7 +70,8 @@ class ImageLayer(Layer):
 
         bounds = [[xlim[0], xlim[1]], [ylim[0], ylim[1]]]
         overlay_file = f"./overlays/{self.file_name}"
-        self.map.runjs("/js/image_layer.js", "addLayer", arglist=[overlay_file, self.map_id, bounds])
+        self.map.runjs("/js/image_layer.js", "addLayer", arglist=[self.map_id])
+        self.map.runjs("/js/image_layer.js", "updateLayer", arglist=[overlay_file, self.map_id, bounds])
 
     # def set_data(self,
     #              data,

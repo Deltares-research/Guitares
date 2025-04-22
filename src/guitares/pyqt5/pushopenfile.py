@@ -50,7 +50,18 @@ class PushOpenFile(QPushButton):
         val   = self.element.getvar(group, name)
         if not val:
             val = os.getcwd()
-        fname = QFileDialog.getOpenFileName(self, self.element.title, val, self.element.filter)
+
+        if self.element.filter:
+            if type(self.element.filter) == str:
+                fltr = self.element.filter
+            else:
+                fltr = self.element.getvar(self.element.filter.variable_group, 
+                                           self.element.filter.variable)
+        else:
+            fltr = "All Files (*)"        
+
+        fname = QFileDialog.getOpenFileName(self, self.element.title, val, fltr)
+
         if len(fname[0])>0:
             self.element.setvar(group, name, fname[0])
         else:

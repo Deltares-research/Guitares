@@ -302,6 +302,13 @@ class Window:
             if menu.menus:
                 self.add_menus(menu.menus, menu, gui)
 
+    def add_menu_from_dict(self, menu_dict, parent_id, has_children=False):
+        # Add a menu from a dictionary
+        parent = self.find_menu_item_by_id(parent_id)
+        menu = Menu(menu_dict, parent)
+        parent.menus.append(menu)
+        menu.add(has_children=has_children)
+
     def set_menus(self, menus):
         for menu in menus:
             if menu.menus:

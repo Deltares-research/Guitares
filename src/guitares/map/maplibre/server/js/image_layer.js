@@ -5,8 +5,14 @@ function getMap(side) {
     else { return map }
 }
 
-export function addLayer(fileName, id, bounds, colorbar, side) {
+export function addLayer(id, side) {
+
+  const blankPixel =
+  "data:image/png;base64," +
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=";
+
   var mp = getMap(side);  
+
   // Always remove the layer first to avoid an error
   if (mp.getLayer(id)) {
     mp.removeLayer(id);
@@ -18,13 +24,13 @@ export function addLayer(fileName, id, bounds, colorbar, side) {
 
   mp.addSource(id, {
     'type': 'image',
-    'url': fileName,
+    'url': blankPixel,
     'coordinates': [
-      [bounds[0][0], bounds[1][1]],
-      [bounds[0][1], bounds[1][1]],
-      [bounds[0][1], bounds[1][0]],
-      [bounds[0][0], bounds[1][0]]
-    ]
+      [-1.0, 1.0],
+      [-1.0, -1.0],
+      [1.0, -1.0],
+      [1.0, 1.0]
+      ]
   });
 
   mp.addLayer({
@@ -37,23 +43,15 @@ export function addLayer(fileName, id, bounds, colorbar, side) {
   }, 'dummy_layer_1');
   mp.setLayoutProperty(id, 'visibility', 'visible');    
   mp.setPaintProperty(id, 'raster-opacity', 0.5);
-  if (colorbar) {
-    // If colorbar is a string, then it is a URL and we add it as an image
-    setLegend(mp, id, colorbar);
-  }
 }
 
 export function updateLayer(fileName, id, bounds, colorbar, side) {
+
   var mp = getMap(side);
+
   // If the layer does not exist, add it
   if (!mp.getLayer(id)) {
-    // console.log("Layer " + id + " does not exist, adding it instead of updating it");
     mp.addLayer(fileName, id, bounds, colorbar, side);
-    return;
-  }
-  // If the layer is not visible, do not update it
-  if (mp.getLayoutProperty(id, 'visibility') !== 'visible') {
-    // console.log("Layer " + id + " is not visible, so it won't be updated");
     return;
   }
   
@@ -72,6 +70,7 @@ export function updateLayer(fileName, id, bounds, colorbar, side) {
   }
 
   var source = mp.getSource(id);
+
   // If the source does not have updateImage method, do not update it
   if (typeof source.updateImage !== 'function') {
     // console.log("Source does not have updateImage method");
@@ -92,6 +91,7 @@ export function updateLayer(fileName, id, bounds, colorbar, side) {
   if (colorbar) {
     setLegend(mp, id, colorbar);
   }
+
 }
 
 function setLegend(mp, id, colorbar) {

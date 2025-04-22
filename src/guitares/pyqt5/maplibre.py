@@ -6,8 +6,8 @@ from geopandas import GeoDataFrame
 from pandas import DataFrame
 from pyproj import CRS, Transformer
 import os
-import requests
 import sys
+import requests
 
 from guitares.map.layer import Layer, list_layers, find_layer_by_id
 
@@ -17,9 +17,9 @@ class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
         self.print_messages = print_messages
 
     def javaScriptConsoleMessage(self, level, message, lineNumber, sourceID):
-        return
-        print(f"[JS] {message} (line {lineNumber}, source: {sourceID})")
-        sys.stdout.flush()  # Ensures it appears even if buffering is active
+        if self.print_messages:
+            print(f"[JS] {message} (line {lineNumber}, source: {sourceID})")
+            sys.stdout.flush()  # Ensures it appears even if buffering is active
 
     def javaScriptAlert(self, security_origin, msg):
         # Suppress alert()
@@ -53,9 +53,6 @@ class MapLibre(QtWidgets.QWidget):
         self.zoom = None
 
         self.url = "http://localhost:" + str(self.gui.server_port)
-
-        profile = QWebEngineProfile.defaultProfile()
-        profile.clearHttpCache()  # Clear the HTTP cache
 
         # Check for internet connection
         try:
@@ -100,8 +97,10 @@ class MapLibre(QtWidgets.QWidget):
         )  # this is necessary because otherwise an invisible widget sits over the top left hand side of the screen and block the menu
 
         self.view = QtWebEngineWidgets.QWebEngineView(element.parent.widget)
-        self.view.setPage(WebEnginePage(self.view, print_messages=True))
+        self.view.setPage(WebEnginePage(self.view, self.gui.js_messages))
         self.view.page().profile().clearHttpCache()
+        # self.view.page().settings().setAttribute(QtWebEngineCore.QWebEngineSettings.WebAttribute.WebGLEnabled, True)
+        # self.view.page().settings().setAttribute(QtWebEngineCore.QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
         
         self.channel = QtWebChannel.QWebChannel()
         self.channel.registerObject("MapLibre", self)
@@ -109,10 +108,9 @@ class MapLibre(QtWidgets.QWidget):
 
         self.set_geometry()
         self.view.loadFinished.connect(self.load_finished)
-        self.view.load(QtCore.QUrl(self.url))
+        self.view.setUrl(QtCore.QUrl(self.url))
 
-        # self.pong_received = False
-        self.nr_load_attempts = 0
+        # self.nr_load_attempts = 0
 
     def load_finished(self, message):
         self.timer_ping = QtCore.QTimer()        
@@ -121,17 +119,17 @@ class MapLibre(QtWidgets.QWidget):
 
     def ping(self):
         # Sending a ping to main.js
-        if self.nr_load_attempts > 10:
-            print("MapLibre not loading ...")
-            self.nr_load_attempts = 0
-            self.timer_ping.stop()
-            # Reload
-            print("Reloading ...") 
-            self.view.reload()
-        else:
-            # print("Ping!")
-            self.nr_load_attempts += 1
-            self.runjs("/js/main.js", "ping", arglist=["ping"])
+        # if self.nr_load_attempts > 10:
+        #     print("MapLibre not loading ...")
+        #     self.nr_load_attempts = 0
+        #     self.timer_ping.stop()
+        #     # Reload
+        #     print("Reloading ...") 
+        #     self.view.reload()
+        # else:
+        #     # print("Ping!")
+        #     self.nr_load_attempts += 1
+        self.runjs("/js/main.js", "ping", arglist=["ping"])
 
     def set(self):
         pass
@@ -146,10 +144,7 @@ class MapLibre(QtWidgets.QWidget):
     @QtCore.pyqtSlot(str)
     def pong(self, message):
         # Python heard a pong!
-        # print("Pong received!")
-        # self.pong_received = True
         self.timer_ping.stop()
-        # print("Pong received! Adding map ...")
         # Add map
         self.runjs("/js/main.js", "addMap", arglist=[])
 

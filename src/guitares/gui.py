@@ -49,6 +49,8 @@ class GUI:
         self.popup_data   = {}
         self.resize_factor = 1.0
 
+        # os.environ["QT_LOGGING_RULES"] = "*.debug=false;qt.webchannel.*=false"            
+
         if self.framework == "pyqt5":
             from PyQt5.QtWidgets import QApplication
             from PyQt5 import QtCore
