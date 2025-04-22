@@ -98,7 +98,7 @@ class MapLibre(QtWidgets.QWidget):
 
         self.view = QtWebEngineWidgets.QWebEngineView(element.parent.widget)
         self.view.setPage(WebEnginePage(self.view, self.gui.js_messages))
-        self.view.page().profile().clearHttpCache()
+        # self.view.page().profile().clearHttpCache()
         # self.view.page().settings().setAttribute(QtWebEngineCore.QWebEngineSettings.WebAttribute.WebGLEnabled, True)
         # self.view.page().settings().setAttribute(QtWebEngineCore.QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
         

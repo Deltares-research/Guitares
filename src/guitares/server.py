@@ -81,7 +81,6 @@ def start_server(server_path, port=3000, node=False):
         thr.start()
         while True:
             try:        
-                print("Finding server ...")        
                 urllib.request.urlcleanup()
                 url = "http://localhost:" + str(port)
                 request = urllib.request.urlopen(url)
@@ -93,17 +92,10 @@ def start_server(server_path, port=3000, node=False):
                 time.sleep(1)
         return thr       
     else:
-#        thr = threading.Thread(target=run_server, args=(server_path, port), daemon=True)
         thr = ServerThread(server_path, port)
         thr.start()
-        # # Exception handled in Caller thread
-        # try:
-        #     thr.join()
-        # except Exception as e:
-        #     print("Exception Handled in Main, Details of the Exception:", e)
         while True:
             try:        
-                print("Finding server ...")        
                 urllib.request.urlcleanup()
                 url = "http://localhost:" + str(port)
                 request = urllib.request.urlopen(url)
