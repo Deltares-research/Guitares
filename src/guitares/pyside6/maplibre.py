@@ -1,4 +1,4 @@
-from PySide6 import QtWebEngineWidgets, QtWebEngineCore, QtCore, QtWidgets, QtWebChannel
+from PySide6 import QtWebEngineWidgets, QtWebEngineCore, QtCore, QtWebChannel
 
 import json
 from geopandas import GeoDataFrame
@@ -33,7 +33,8 @@ class WebEnginePage(QtWebEngineCore.QWebEnginePage):
         return ''
 
 
-class MapLibre(QtWidgets.QWidget):
+class MapLibre(QtCore.QObject):
+
     def __init__(self, element):
         super().__init__(element.parent.widget)
 
@@ -91,10 +92,6 @@ class MapLibre(QtWidgets.QWidget):
 
         self.server_path = self.gui.server_path
 
-        self.setGeometry(
-            0, 0, -1, -1
-        )  # this is necessary because otherwise an invisible widget sits over the top left hand side of the screen and block the menu
-
         self.view = QtWebEngineWidgets.QWebEngineView(element.parent.widget)
         self.view.setPage(WebEnginePage(self.view, self.gui.js_messages))
         # self.view.page().profile().clearHttpCache()
@@ -107,6 +104,7 @@ class MapLibre(QtWidgets.QWidget):
 
         self.set_geometry()
         self.view.loadFinished.connect(self.load_finished)
+
         print("Loading map ...")
         self.view.setUrl(QtCore.QUrl(self.url))
 
@@ -121,6 +119,9 @@ class MapLibre(QtWidgets.QWidget):
 
     def set(self):
         pass
+
+    def setVisible(self, visible):
+        self.view.setVisible(visible)
 
     def set_geometry(self):
         x0, y0, wdt, hgt = self.element.get_position()
