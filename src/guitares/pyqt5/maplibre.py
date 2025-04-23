@@ -34,7 +34,7 @@ class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
         return ''
 
 
-class MapLibre(QtWidgets.QWidget):
+class MapLibre(QtCore.QObject):
     def __init__(self, element):
         super().__init__(element.parent.widget)
 
@@ -92,10 +92,6 @@ class MapLibre(QtWidgets.QWidget):
 
         self.server_path = self.gui.server_path
 
-        self.setGeometry(
-            0, 0, -1, -1
-        )  # this is necessary because otherwise an invisible widget sits over the top left hand side of the screen and block the menu
-
         self.view = QtWebEngineWidgets.QWebEngineView(element.parent.widget)
         self.view.setPage(WebEnginePage(self.view, self.gui.js_messages))
         # self.view.page().profile().clearHttpCache()
@@ -108,9 +104,9 @@ class MapLibre(QtWidgets.QWidget):
 
         self.set_geometry()
         self.view.loadFinished.connect(self.load_finished)
-        self.view.setUrl(QtCore.QUrl(self.url))
 
-        # self.nr_load_attempts = 0
+        print("Loading map ...")
+        self.view.setUrl(QtCore.QUrl(self.url))
 
     def load_finished(self, message):
         self.timer_ping = QtCore.QTimer()        
@@ -119,20 +115,13 @@ class MapLibre(QtWidgets.QWidget):
 
     def ping(self):
         # Sending a ping to main.js
-        # if self.nr_load_attempts > 10:
-        #     print("MapLibre not loading ...")
-        #     self.nr_load_attempts = 0
-        #     self.timer_ping.stop()
-        #     # Reload
-        #     print("Reloading ...") 
-        #     self.view.reload()
-        # else:
-        #     # print("Ping!")
-        #     self.nr_load_attempts += 1
         self.runjs("/js/main.js", "ping", arglist=["ping"])
 
     def set(self):
         pass
+
+    def setVisible(self, visible):
+        self.view.setVisible(visible)
 
     def set_geometry(self):
         x0, y0, wdt, hgt = self.element.get_position()

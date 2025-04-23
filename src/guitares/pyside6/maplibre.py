@@ -134,7 +134,6 @@ class MapLibre(QtCore.QObject):
     def pong(self, message):
         # Python heard a pong!
         self.timer_ping.stop()
-        # print("Pong received! Adding map ...")
         # Add map
         self.runjs("/js/main.js", "addMap", arglist=[])
 
