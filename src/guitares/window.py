@@ -354,15 +354,16 @@ class Window:
         dlg = window_dialog(self, text, title=title, type="wait")
         return dlg
 
-    def dialog_open_file(self, text, filter, path=None, file_name=None, selected_filter=None, allow_directory_change=True):
+    def dialog_open_file(self, text, filter, path=None, file_name=None, selected_filter=None, allow_directory_change=True, multiple=False):
         if path == None:
             path = os.getcwd()
-        results = window_dialog(self, text, type="open_file", path=path, file_name=file_name, filter=filter, selected_filter=selected_filter)
+        dialog_type = "open_files" if multiple else "open_file"
+        results = window_dialog(self, text, type=dialog_type, path=path, file_name=file_name, filter=filter, selected_filter=selected_filter)
         full_name = results[0]
         if not full_name:
             return "", "", "", "", ""
         fltr = results[1]
-        pth = pathlib.Path(full_name)
+        pth = pathlib.Path(full_name[0] if multiple else full_name)
         if not allow_directory_change:
             if str(pth.parent) != path:
                 self.dialog_warning("Sorry, you cannot select a file from another directory !")
