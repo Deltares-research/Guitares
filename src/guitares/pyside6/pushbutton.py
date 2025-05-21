@@ -34,7 +34,7 @@ class PushButton(QPushButton):
             else:
                 txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
             self.setToolTip(txt)
-
+        
         self.set_geometry()
 
     def set(self):
@@ -58,6 +58,10 @@ class PushButton(QPushButton):
     def set_geometry(self):
         x0, y0, wdt, hgt = self.element.get_position()
         self.setGeometry(x0, y0, wdt, hgt)
+        self.setFixedSize(wdt, hgt) # Set fixed size to prevent resizing
+        # self.updateGeometry()
+        # self.adjustSize()
+        # self.repaint()
 
     def update_colormap_icon(self):
         if type(self.element.colormap) is str:

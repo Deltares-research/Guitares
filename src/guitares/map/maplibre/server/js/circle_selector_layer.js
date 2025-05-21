@@ -20,7 +20,7 @@ export function addLayer(id,
 
                          selectionOption) {
 
-  console.log("Adding layer " + id + " with index " + index + " and selection option " + selectionOption);
+  //  console.log("Adding layer " + id + " with index " + index + " and selection option " + selectionOption);
 
   // Always remove old layer and source first to avoid errors
   if (map.getLayer(id)) {
@@ -39,9 +39,6 @@ export function addLayer(id,
   hover_property = hovprop
 
   var selectedFeatures = []
-
-  console.log('layers', layers)
-  console.log('window.layers', window.layers)
 
   layers[id] = {}
   layers[id].data = data; 

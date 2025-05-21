@@ -117,7 +117,7 @@ class Edit(QLineEdit):
                 label.setGeometry(x0, int(y0 - 20 * resize_factor), wdt, int(20 * resize_factor))
             elif self.element.text_position == "above-left":
                 label.setAlignment(QtCore.Qt.AlignLeft)
-                label.setGeometry(x0, int(y0 - 20 * resize_factor), wlab, int(20 * resize_factor))
+                label.setGeometry(x0, int(y0 - 15 * resize_factor), wlab, int(20 * resize_factor))
             elif self.element.text_position == "right":
                 label.setAlignment(QtCore.Qt.AlignLeft)
                 label.setGeometry(int(x0 + wdt + 3 * resize_factor),

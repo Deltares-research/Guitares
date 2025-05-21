@@ -155,6 +155,7 @@ class GUI:
         # Make window object
         self.window = Window(self.config, self)
         self.window.build()
+        self.window.resize()
 
         # Call on_build method after building window
         if hasattr(self.module, "on_build"):
