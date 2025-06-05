@@ -23,6 +23,8 @@ class LineLayer(Layer):
         if isinstance(data, GeoDataFrame):
             # Data is GeoDataFrame
             if len(data) == 0:
+                # Need to remove existing layer in MapLibre
+                self.map.runjs("/js/main.js", "removeLayer", arglist=[self.map_id])
                 return
         else:
             print("Data is not a GeoDataFrame")
