@@ -11,8 +11,8 @@ import shutil
 from .layer import Layer
 
 class ImageLayer(Layer):
-    def __init__(self, map, id, map_id):
-        super().__init__(map, id, map_id)
+    def __init__(self, map, id, map_id, **kwargs):
+        super().__init__(map, id, map_id, **kwargs)
         self.active = False
         self.type   = "image"
         self.file_name = map_id + ".png"
@@ -52,8 +52,8 @@ class ImageLayer(Layer):
             #     xlim[0] -= 360.0
             bounds = [[xlim[0], xlim[1]], [ylim[0], ylim[1]]]
             overlay_file = f"./overlays/{self.file_name}"
-            self.map.runjs("/js/image_layer.js", "updateLayer", arglist=[overlay_file, self.map_id, bounds])
-            self.map.runjs("/js/image_layer.js", "setOpacity", arglist=[self.map_id, 1.0])
+            self.map.runjs("/js/image_layer.js", "updateLayer", arglist=[overlay_file, self.map_id, bounds, "", self.side])
+            self.map.runjs("/js/image_layer.js", "setOpacity", arglist=[self.map_id, 1.0, self.side])
 
     def set_data(self, data, image_file=None, xlim=None, ylim=None):
 
@@ -70,8 +70,8 @@ class ImageLayer(Layer):
 
         bounds = [[xlim[0], xlim[1]], [ylim[0], ylim[1]]]
         overlay_file = f"./overlays/{self.file_name}"
-        self.map.runjs("/js/image_layer.js", "addLayer", arglist=[self.map_id])
-        self.map.runjs("/js/image_layer.js", "updateLayer", arglist=[overlay_file, self.map_id, bounds])
+        self.map.runjs("/js/image_layer.js", "addLayer", arglist=[self.map_id, self.side])
+        self.map.runjs("/js/image_layer.js", "updateLayer", arglist=[overlay_file, self.map_id, bounds, "", self.side])
 
     # def set_data(self,
     #              data,
