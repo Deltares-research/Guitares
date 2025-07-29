@@ -64,6 +64,19 @@ class PolygonSelectorLayer(Layer):
     def select_by_id(self, id):
         self.map.runjs("/js/polygon_selector_layer.js", "selectById", arglist=[self.map_id, id])
 
+    def select_by_property(self, property_name, value):
+        # Need to find the index of the feature with the given property value
+        if isinstance(self.data, GeoDataFrame):
+            # Make sure that the property exists in the data
+            if property_name not in self.data.columns:
+                print(f"Property '{property_name}' not found in data.")
+                return
+            index = self.data[self.data[property_name] == value].index.tolist()
+            if index:
+                self.select_by_index(index)
+            else:
+                print(f"No feature found with {property_name} = {value}")    
+
     def activate(self):
         self.active = True
         if self.data is None:
