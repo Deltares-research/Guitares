@@ -8,9 +8,8 @@ function getMap(side) {
 export function addLayer(id, side) {
 
   const blankPixel =
-  "data:image/png;base64," +
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=";
-
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAACZgbYAAAAHElEQVQImWNgYGBgYGBgAAAABAABJzQnCgAAAABJRU5ErkJggg==";
+    
   var mp = getMap(side);
   
   // Always remove the layer first to avoid an error
@@ -53,7 +52,7 @@ export function updateLayer(fileName, id, bounds, colorbar, side) {
   // If the layer does not exist, add it
   if (!mp.getLayer(id)) {
     // console.log("Layer " + id + " does not exist, adding it instead of updating it");
-    mp.addLayer(fileName, id, bounds, colorbar, side);
+    mp.addLayer(id, side);
     return;
   }
 
@@ -63,29 +62,10 @@ export function updateLayer(fileName, id, bounds, colorbar, side) {
     return;
   }
   
-  // If the source does not exist, add it
-  if (!mp.getSource(id)) {
-    mp.addSource(id, {
-      'type': 'image',
-      'url': fileName,
-      'coordinates': [
-        [bounds[0][0], bounds[1][1]],
-        [bounds[0][1], bounds[1][1]],
-        [bounds[0][1], bounds[1][0]],
-        [bounds[0][0], bounds[1][0]]
-      ]
-    });
-  }
-
-  var source = mp.getSource(id);
-  // If the source does not have updateImage method, do not update it
-  if (typeof source.updateImage !== 'function') {
-    // console.log("Source does not have updateImage method");
-    return;
-  }
-
-  // Update the image
-  source.updateImage({
+  mp.removeLayer(id);
+  mp.removeSource(id);
+  mp.addSource(id, {
+    'type': 'image',
     'url': fileName,
     'coordinates': [
       [bounds[0][0], bounds[1][1]],
@@ -94,7 +74,15 @@ export function updateLayer(fileName, id, bounds, colorbar, side) {
       [bounds[0][0], bounds[1][0]]
     ]
   });
-
+  mp.addLayer({
+    'id': id,
+    'source': id,
+    'type': 'raster',
+    'paint': {
+      'raster-resampling': 'nearest'
+    }
+  }, 'dummy_layer');
+  mp.setLayoutProperty(id, 'visibility', 'visible');   
   if (colorbar) {
     setLegend(mp, id, colorbar);
   }
