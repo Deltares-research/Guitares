@@ -8,9 +8,8 @@ function getMap(side) {
 export function addLayer(id, side) {
 
   const blankPixel =
-  "data:image/png;base64," +
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=";
-
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAACZgbYAAAAHElEQVQImWNgYGBgYGBgAAAABAABJzQnCgAAAABJRU5ErkJggg==";
+    
   var mp = getMap(side);
   
   // Always remove the layer first to avoid an error
@@ -44,7 +43,7 @@ export function addLayer(id, side) {
 
   mp.setLayoutProperty(id, 'visibility', 'visible');    
   mp.setPaintProperty(id, 'raster-opacity', 0.5);
-
+  setLegend(mp, id, "");
 }
 
 export function updateLayer(fileName, id, bounds, colorbar, side) {
@@ -53,7 +52,7 @@ export function updateLayer(fileName, id, bounds, colorbar, side) {
   // If the layer does not exist, add it
   if (!mp.getLayer(id)) {
     // console.log("Layer " + id + " does not exist, adding it instead of updating it");
-    mp.addLayer(fileName, id, bounds, colorbar, side);
+    addLayer(id, side);
     return;
   }
 
@@ -63,29 +62,10 @@ export function updateLayer(fileName, id, bounds, colorbar, side) {
     return;
   }
   
-  // If the source does not exist, add it
-  if (!mp.getSource(id)) {
-    mp.addSource(id, {
-      'type': 'image',
-      'url': fileName,
-      'coordinates': [
-        [bounds[0][0], bounds[1][1]],
-        [bounds[0][1], bounds[1][1]],
-        [bounds[0][1], bounds[1][0]],
-        [bounds[0][0], bounds[1][0]]
-      ]
-    });
-  }
-
-  var source = mp.getSource(id);
-  // If the source does not have updateImage method, do not update it
-  if (typeof source.updateImage !== 'function') {
-    // console.log("Source does not have updateImage method");
-    return;
-  }
-
-  // Update the image
-  source.updateImage({
+  mp.removeLayer(id);
+  mp.removeSource(id);
+  mp.addSource(id, {
+    'type': 'image',
     'url': fileName,
     'coordinates': [
       [bounds[0][0], bounds[1][1]],
@@ -94,7 +74,15 @@ export function updateLayer(fileName, id, bounds, colorbar, side) {
       [bounds[0][0], bounds[1][0]]
     ]
   });
-
+  mp.addLayer({
+    'id': id,
+    'source': id,
+    'type': 'raster',
+    'paint': {
+      'raster-resampling': 'nearest'
+    }
+  }, 'dummy_layer');
+  mp.setLayoutProperty(id, 'visibility', 'visible');   
   if (colorbar) {
     setLegend(mp, id, colorbar);
   }
@@ -149,7 +137,7 @@ function setLegend(mp, id, colorbar) {
     for (let i = 0; i < colorbar["contour"].length; i++) {
       let cnt = colorbar["contour"][i]
       var newI = document.createElement('i');
-      newI.setAttribute('style','background:' + cnt["color"]);
+      newI.setAttribute('style','background:' + cnt["color"] + '; display: inline-block;'); // + '; display: inline-block; width: 12px; height: 12px; margin-right: 5px;');
       legend.appendChild(newI);
       var newSpan = document.createElement('span');
       newSpan.innerHTML = cnt["text"];
@@ -169,7 +157,6 @@ function setLegend(mp, id, colorbar) {
 }
 
 export function setLegendPosition(id, position, side) {
-  var mp = getMap(side);
   var legend = document.getElementById("legend" + id);
   if (legend) {
     if (position == "bottom-left") {

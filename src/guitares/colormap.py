@@ -33,6 +33,8 @@ def cm2png(cmap,
            vmax=1.0,
            legend_title="",
            legend_label="",
+           label_size=8,
+           tick_size=6,
            units="",
            unit_string="",
            decimals=-1,
@@ -55,8 +57,8 @@ def cm2png(cmap,
                                    norm=norm,
                                    orientation=orientation,
                                    label=legend_label)
-    cb.ax.tick_params(labelsize=6)
-
+    cb.ax.tick_params(labelsize=tick_size)
+    cb.set_label(legend_label, size=label_size)
     # Save figure
     fig.savefig(file_name, dpi=150, bbox_inches='tight')
     plt.close(fig)
