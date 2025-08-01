@@ -52,7 +52,7 @@ export function updateLayer(fileName, id, bounds, colorbar, side) {
   // If the layer does not exist, add it
   if (!mp.getLayer(id)) {
     // console.log("Layer " + id + " does not exist, adding it instead of updating it");
-    mp.addLayer(id, side);
+    addLayer(id, side);
     return;
   }
 
@@ -137,7 +137,7 @@ function setLegend(mp, id, colorbar) {
     for (let i = 0; i < colorbar["contour"].length; i++) {
       let cnt = colorbar["contour"][i]
       var newI = document.createElement('i');
-      newI.setAttribute('style','background:' + cnt["color"]);
+      newI.setAttribute('style','background:' + cnt["color"] + '; display: inline-block;'); // + '; display: inline-block; width: 12px; height: 12px; margin-right: 5px;');
       legend.appendChild(newI);
       var newSpan = document.createElement('span');
       newSpan.innerHTML = cnt["text"];
@@ -157,7 +157,6 @@ function setLegend(mp, id, colorbar) {
 }
 
 export function setLegendPosition(id, position, side) {
-  var mp = getMap(side);
   var legend = document.getElementById("legend" + id);
   if (legend) {
     if (position == "bottom-left") {
