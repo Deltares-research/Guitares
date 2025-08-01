@@ -43,7 +43,7 @@ export function addLayer(id, side) {
 
   mp.setLayoutProperty(id, 'visibility', 'visible');    
   mp.setPaintProperty(id, 'raster-opacity', 0.5);
-
+  setLegend(mp, id, "");
 }
 
 export function updateLayer(fileName, id, bounds, colorbar, side) {

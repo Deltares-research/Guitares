@@ -120,11 +120,10 @@ class RasterFromTilesLayer(Layer):
 
         if self.new:
             self.map.runjs("/js/image_layer.js", "addLayer", arglist=[self.map_id, self.side])
+        self.map.runjs("/js/image_layer.js", "updateLayer", arglist=[overlay_url, self.map_id, bounds, clrbar_dict, self.side])
+        if self.new:
             # Set legend position (should make this generic for all layers)
             self.map.runjs("/js/image_layer.js", "setLegendPosition", arglist=[self.map_id, self.legend_position, self.side])
-
-        self.map.runjs("/js/image_layer.js", "updateLayer", arglist=[overlay_url, self.map_id, bounds, clrbar_dict, self.side])
-
         self.map.runjs("/js/image_layer.js", "setOpacity", arglist=[self.map_id, self.opacity, self.side])
         self.new = False
 
