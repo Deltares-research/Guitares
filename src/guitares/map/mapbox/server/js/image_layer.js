@@ -5,11 +5,7 @@ function getMap(side) {
   else { return map }
 }
 
-export function addLayer(id, side) {
-
-  const blankPixel =
-      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAACZgbYAAAAHElEQVQImWNgYGBgYGBgAAAABAABJzQnCgAAAABJRU5ErkJggg==";
-    
+export function addLayer(fileName, id, bounds, colorbar, side) {
   var mp = getMap(side);
   
   // Always remove the layer first to avoid an error
@@ -21,48 +17,6 @@ export function addLayer(id, side) {
     mp.removeSource(id);
   }
 
-  mp.addSource(id, {
-    'type': 'image',
-    'url': blankPixel,
-    'coordinates': [
-      [-1.0, 1.0],
-      [-1.0, -1.0],
-      [1.0, -1.0],
-      [1.0, 1.0]
-      ]
-  });
-
-  mp.addLayer({
-    'id': id,
-    'source': id,
-    'type': 'raster',
-    'paint': {
-      'raster-resampling': 'nearest'
-    }
-  }, 'dummy_layer');
-
-  mp.setLayoutProperty(id, 'visibility', 'visible');    
-  mp.setPaintProperty(id, 'raster-opacity', 0.5);
-}
-
-export function updateLayer(fileName, id, bounds, colorbar, side) {
-  var mp = getMap(side);
-  
-  // If the layer does not exist, add it
-  if (!mp.getLayer(id)) {
-    // console.log("Layer " + id + " does not exist, adding it instead of updating it");
-    addLayer(id, side);
-    return;
-  }
-
-  // If the layer is not visible, do not update it
-  if (mp.getLayoutProperty(id, 'visibility') !== 'visible') {
-    // console.log("Layer " + id + " is not visible, so it won't be updated");
-    return;
-  }
-  
-  mp.removeLayer(id);
-  mp.removeSource(id);
   mp.addSource(id, {
     'type': 'image',
     'url': fileName,
@@ -81,7 +35,55 @@ export function updateLayer(fileName, id, bounds, colorbar, side) {
       'raster-resampling': 'nearest'
     }
   }, 'dummy_layer');
-  mp.setLayoutProperty(id, 'visibility', 'visible');   
+  mp.setLayoutProperty(id, 'visibility', 'visible');    
+  mp.setPaintProperty(id, 'raster-opacity',0.5);
+  if (colorbar) {
+    // If colorbar is a string, then it is a URL and we add it as an image
+    setLegend(mp, id, colorbar);
+  }
+}
+
+export function updateLayer(fileName, id, bounds, colorbar, side) {
+  var mp = getMap(side);
+  
+  // If the layer does not exist, add it
+  if (!mp.getLayer(id)) {
+    // console.log("Layer " + id + " does not exist, adding it instead of updating it");
+    addLayer(id, side);
+    return;
+  }
+  
+  // If the source does not exist, add it
+  if (!mp.getSource(id)) {
+    mp.addSource(id, {
+      'url': fileName,
+      'coordinates': [
+        [bounds[0][0], bounds[1][1]],
+        [bounds[0][1], bounds[1][1]],
+        [bounds[0][1], bounds[1][0]],
+        [bounds[0][0], bounds[1][0]]
+      ]
+    });
+  }
+
+  var source = mp.getSource(id);
+  // If the source does not have updateImage method, do not update it
+  if (typeof source.updateImage !== 'function') {
+    // console.log("Source does not have updateImage method");
+    return;
+  }
+
+  // Update the image
+  mp.getSource(id).updateImage({
+    'url': fileName,
+    'coordinates': [
+      [bounds[0][0], bounds[1][1]],
+      [bounds[0][1], bounds[1][1]],
+      [bounds[0][1], bounds[1][0]],
+      [bounds[0][0], bounds[1][0]]
+    ]
+  });
+
   if (colorbar) {
     setLegend(mp, id, colorbar);
   }
