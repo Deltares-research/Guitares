@@ -124,9 +124,9 @@ class Layer:
             setattr(self, key, value)
 
         # Convert colors to hex
-        if self.line_color != "transparent": 
+        if isinstance(self.line_color, str) and self.line_color not in ["transparent", "line_color"]:
             self.line_color = mcolors.to_hex(self.line_color)
-        if self.fill_color != "transparent": 
+        if isinstance(self.fill_color, str) and self.line_color not in ["transparent", "line_color"]:    
             self.fill_color = mcolors.to_hex(self.fill_color)
         if self.line_color_inactive != "transparent": 
             self.line_color_inactive = mcolors.to_hex(self.line_color_inactive)
@@ -142,15 +142,16 @@ class Layer:
             self.fill_color_selected_inactive = mcolors.to_hex(self.fill_color_selected_inactive)
         if self.line_color_hover != "transparent":
             self.line_color_hover = mcolors.to_hex(self.line_color_hover)
-        if self.fill_color_hover != "transparent":
+        if isinstance(self.fill_color_hover, str) and self.fill_color_hover not in ["transparent", "line_color"]:
             self.fill_color_hover = mcolors.to_hex(self.fill_color_hover)
 
 
+
         # For use in javascript 
-        self.paint_properties = {"lineColor": self.line_color,
+        self.paint_properties = {"lineColor": ["get", "line_color"],
                                  "lineWidth": self.line_width,
                                  "lineOpacity": self.line_opacity,
-                                 "fillColor": self.fill_color,
+                                 "fillColor": ["get", "line_color"],
                                  "fillOpacity": self.fill_opacity,
                                  "circleRadius": self.circle_radius,
                                  "lineColorInactive": self.line_color_inactive,
@@ -178,7 +179,7 @@ class Layer:
                                  "lineWidthHover": self.line_width_hover,
                                  "lineStyleHover": self.line_style_hover,
                                  "lineOpacityHover": self.line_opacity_hover,
-                                 "fillColorHover": self.fill_color_hover,
+                                 "fillColorHover": ["get", "line_color"],
                                  "fillOpacityHover": self.fill_opacity_hover,
                                  "circleRadiusHover": self.circle_radius_hover
                                  }
