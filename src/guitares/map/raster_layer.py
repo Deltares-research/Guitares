@@ -21,8 +21,8 @@ from guitares.colormap import cm2png
 from .layer import Layer
 
 class RasterLayer(Layer):
-    def __init__(self, map, id, map_id):
-        super().__init__(map, id, map_id)
+    def __init__(self, map, id, map_id, **kwargs):
+        super().__init__(map, id, map_id, **kwargs)
         self.active = False
         self.type   = "raster"
         self.new    = True
@@ -38,49 +38,62 @@ class RasterLayer(Layer):
     def clear(self):
         self.active = False
         self.map.runjs("/js/main.js", "removeLayer", arglist=[self.map_id])
-
-    def update(self):
-        print("Updating image layer")
+        self.new = True
 
     def set_data(self,
                  x=None,
                  y=None,
-                 z=None,
-                 image_file=None,
-                 legend_title="",
-                 cmin=None,
-                 cmax=None,
-                 cstep=None,
-                 decimals=None,
-                 crs=None,
-                 colormap=None):
+                 z=None):
         
+        # Should make data an xarray DataArray !!! All the other stuff should be attributes of the layer.
+
         self.data = {}
         self.data["x"] = x
         self.data["y"] = y
         self.data["z"] = z
-        self.data["image_file"] = image_file
-        self.data["legend_title"] = legend_title
-        self.data["cmin"] = cmin
-        self.data["cmax"] = cmax
-        self.data["cstep"] = cstep
-        self.data["decimals"] = decimals
-        self.data["crs"] = crs
-        self.data["colormap"] = colormap
 
-        cmap = colormap
+        if self.new:
+            # First time we add the layer, so we need to create it. Always create both west and east layers.
+            # Add west layer
+            self.map.runjs("/js/image_layer.js",
+                        "addLayer",
+                        id=self.map_id + ".a",
+                        side=self.side)
+            # Add east layer
+            self.map.runjs("/js/image_layer.js",
+                        "addLayer",
+                        id=self.map_id + ".b",
+                        side=self.side)
+            self.new = False
 
-        if not crs:
+        self.update()
+
+    def update(self):
+        
+        # cmap = self.data["colormap"]
+        # cmap = self.color_map
+
+        if self.get_data is not None:
+            # There is a get_data method that needs to be called now. This is for example the case for the topography layer.
+            # This method should return a dictionary with keys "x", "y", "z".
+            self.data = self.get_data()
+
+        # if self.data is None or an empty dict, return
+        if self.data is None or self.data == {}:
+            return
+
+        if not self.data["crs"]:
             src_crs = "EPSG:4326"
         else:
-            src_crs = "EPSG:" + str(crs.to_epsg())
+            src_crs = "EPSG:" + str(self.data["crs"].to_epsg())
 
         # Web Mercator
         dst_crs = 'EPSG:3857'
 
-        if image_file:
+        if "image_file" in self.data and self.data["image_file"]:
+        # if self.data["image_file"]:
 
-            with rasterio.open(image_file) as src:
+            with rasterio.open(self.data["image_file"]) as src:
                 transform, width, height = calculate_default_transform(
                     src.crs, dst_crs, src.width, src.height, *src.bounds)
                 kwargs = src.meta.copy()
@@ -121,7 +134,7 @@ class RasterLayer(Layer):
             norm = matplotlib.colors.Normalize(vmin=cminimum, vmax=cmaximum)
             vnorm = norm(band1)
 
-            cmap = cm.get_cmap(colormap)
+            cmap = cm.get_cmap(self.color_map)
             im = Image.fromarray(np.uint8(cmap(vnorm) * 255))
 
             overlay_file = "./overlays/" + self.file_name
@@ -136,22 +149,22 @@ class RasterLayer(Layer):
             if self.color_scale_auto:
                 if self.color_scale_symmetric:
                     if self.color_scale_symmetric_side == "min":
-                        cmin = np.nanmin(z)
+                        cmin = np.nanmin(self.data["z"])
                         if cmin > 0:
                             cmin = -cmin
                         cmax = -cmin
                     elif self.color_scale_symmetric_side == "max":
-                        cmax = np.nanmax(z)
+                        cmax = np.nanmax(self.data["z"])
                         if cmax < 0:
                             cmax = -cmax
                         cmin = -cmax
                     else:
-                        cmx = max(abs(np.nanmin(z)), abs(np.nanmax(z)))
+                        cmx = max(abs(np.nanmin(self.data["z"])), abs(np.nanmax(self.data["z"])))
                         cmin = -cmx
                         cmax = cmx
                 else:
-                    cmin = np.nanmin(z)
-                    cmax = np.nanmax(z)
+                    cmin = np.nanmin(self.data["z"])
+                    cmax = np.nanmax(self.data["z"])
                 if cmax < cmin + 0.01:
                     cmin = -0.01
                     cmax = 0.01    
@@ -159,11 +172,13 @@ class RasterLayer(Layer):
                 cmin = self.color_scale_cmin
                 cmax = self.color_scale_cmax
 
+            cmap = cm.get_cmap(self.color_map)    
+
             if self.hillshading:
                 ls = LightSource(azdeg=315, altdeg=30)
-                dx = (x[1] - x[0]) / 2
-                dy = (y[1] - y[0]) / 2
-                rgb = ls.shade(np.flipud(z), cmap,
+                dx = (self.data["x"][1] - self.data["x"][0]) / 2
+                dy = (self.data["y"][1] - self.data["y"][0]) / 2
+                rgb = ls.shade(np.flipud(self.data["z"]), cmap,
                             vmin=cmin,
                             vmax=cmax,
                             dx=dx * 0.5,
@@ -174,14 +189,13 @@ class RasterLayer(Layer):
 
             else:
                 norm = matplotlib.colors.Normalize(vmin=cmin, vmax=cmax)
-                vnorm = norm(np.flipud(z))
-                cmap = cm.get_cmap(colormap)
+                vnorm = norm(np.flipud(self.data["z"]))
                 rgb = cmap(vnorm) * 255
 
             # Create xarray DataArray with RGBA values of the rgb array
             rgba_da = xr.DataArray(np.transpose(rgb, (2, 0, 1)),
                                 dims=["band", "y", "x"],
-                                coords={ "band": [0, 1, 2, 3], "y": np.flip(y), "x": x})
+                                coords={ "band": [0, 1, 2, 3], "y": np.flip(self.data["y"]), "x": self.data["x"]})
 
             # 1. Assign CRS and spatial dims
             rgba_da.rio.set_spatial_dims(x_dim="x", y_dim="y", inplace=True)
@@ -255,10 +269,10 @@ class RasterLayer(Layer):
                 width=width,
                 height=height)
 
-            # Legend
-            clrbar = ColorBar(colormap=colormap, legend_title=legend_title)
-            clrbar.make(cmin, cmax, cstep=cstep, decimals=decimals)
-            clrmap_string = clrbar.to_json()
+            # # Legend
+            # clrbar = ColorBar(colormap=colormap, legend_title=legend_title)
+            # clrbar.make(cmin, cmax, cstep=cstep, decimals=decimals)
+            # clrmap_string = clrbar.to_dict()
 
             clrmap_string = "./overlays/" + legend_file
 
@@ -293,66 +307,57 @@ class RasterLayer(Layer):
             bounds = [[west, east], [south, north]]
             split_image = False
 
-        if self.new:
-
-            # First time we add the layer, so we need to create it. Always create both west and east layers.
-
-            # Add west layer
-            self.map.runjs("/js/image_layer.js", "addLayer", arglist=[self.map_id + ".a", self.side])
-            # Add east layer
-            self.map.runjs("/js/image_layer.js", "addLayer", arglist=[self.map_id + ".b", self.side])
-
         if split_image:
 
             # Make the east layer visible
             self.map.runjs(self.main_js, "showLayer", arglist=[self.map_id + ".b", self.side])
 
             # Now we need to update the layers with the new bounds and opacity
-            self.map.runjs("/js/image_layer.js", "updateLayer", arglist=[overlay_file_a,
-                                                                         self.map_id + ".a",                                                                        
-                                                                         bounds_a,
-                                                                         clrmap_string])
-            self.map.runjs("/js/image_layer.js",
-                           "setOpacity",
-                           arglist=[self.map_id + ".a", self.opacity, self.side])
-
-            self.map.runjs("/js/image_layer.js", "updateLayer", arglist=[overlay_file_b,
-                                                                         self.map_id + ".b",                                                                        
-                                                                         bounds_b,
-                                                                         ""])
-            self.map.runjs("/js/image_layer.js",
-                           "setOpacity",
-                           arglist=[self.map_id + ".b", self.opacity, self.side])
+            self.map.runjs("/js/image_layer.js", "updateLayer",
+                           id=self.map_id + ".a",
+                           filename=overlay_file_a,
+                           bounds=bounds_a,
+                           colorbar=clrmap_string,
+                           legend_position=self.legend_position,
+                           side=self.side,
+                           opacity=self.opacity)
+            
+            self.map.runjs("/js/image_layer.js", "updateLayer",
+                           id=self.map_id + ".b",
+                           filename=overlay_file_b,
+                           bounds=bounds_b,
+                           side=self.side,
+                           opacity=self.opacity)
 
         else:
             # Just update the layer with the new bounds and opacity
-            self.map.runjs("/js/image_layer.js", "updateLayer", arglist=[overlay_file,
-                                                                         self.map_id + ".a",                                                                         
-                                                                         bounds,
-                                                                         clrmap_string])
-            self.map.runjs("/js/image_layer.js",
-                           "setOpacity",
-                           arglist=[self.map_id + ".a", self.opacity, self.side])
+            self.map.runjs("/js/image_layer.js", "updateLayer",
+                           id=self.map_id + ".a",
+                           filename=overlay_file,
+                           bounds=bounds,
+                           colorbar=clrmap_string,
+                           legend_position=self.legend_position,
+                           side=self.side,
+                           opacity=self.opacity)
 
-            # Make the east layer invisible
+            # Make the east and west layers invisible
+            # self.map.runjs(self.main_js, "hideLayer", arglist=[self.map_id + ".a", self.side])
             self.map.runjs(self.main_js, "hideLayer", arglist=[self.map_id + ".b", self.side])
 
-        self.new = False
-
-    def redraw(self):
-        if self.data:
-            self.new = True
-            self.set_data(x=self.data["x"],
-                          y=self.data["y"],
-                          z=self.data["z"],
-                          image_file=self.data["image_file"],
-                          legend_title=self.data["legend_title"],
-                          cmin=self.data["cmin"],
-                          cmax=self.data["cmax"],
-                          cstep=self.data["cstep"],
-                          decimals=self.data["decimals"],
-                          crs=self.data["crs"],
-                          colormap=self.data["colormap"])
-        if not self.get_visibility():
-            self.set_visibility(False)
+    # def redraw(self):
+    #     if self.data:
+    #         self.new = True
+    #         self.set_data(x=self.data["x"],
+    #                       y=self.data["y"],
+    #                       z=self.data["z"],
+    #                       image_file=self.data["image_file"],
+    #                       legend_title=self.data["legend_title"],
+    #                       cmin=self.data["cmin"],
+    #                       cmax=self.data["cmax"],
+    #                       cstep=self.data["cstep"],
+    #                       decimals=self.data["decimals"],
+    #                       crs=self.data["crs"],
+    #                       colormap=self.data["colormap"])
+    #     if not self.get_visibility():
+    #         self.set_visibility(False)
         

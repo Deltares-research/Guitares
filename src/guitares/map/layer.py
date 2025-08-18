@@ -28,6 +28,7 @@ class Layer:
         self.url = None
         self.option = None
         self.zbmax = 0.1
+        self.get_data = None  # Function to get data for this layer, if needed
 
         # Legend
         self.legend_position = "bottom-right" # Options are "top-left", "top-right", "bottom-left", "bottom-right"
@@ -35,6 +36,7 @@ class Layer:
         self.legend_label = "" # The text that appears next to the legend (e.g. elevation [m])
         self.legend_units = "" # The unit string that may appear in the individual tick labels (e.g. "m")
         self.legend_decimals = -1 # -1 means automatic
+        self.legend_dict = None # A dictionary with the legend values and colors
 
         # Raster layers
         self.color_scale_auto = True # automatically scale from min to max
