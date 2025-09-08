@@ -28,20 +28,25 @@ class LineSelectorLayer(Layer):
             # Make sure there is an index column
             data["index"] = range(len(data))
 
-        # Add new layer        
+        if len(data) > 0:
+            # Need to clear the layer
+            data_in = data.to_crs(4326)
+        else:
+            data_in = GeoDataFrame()
+
         self.map.runjs("/js/line_selector_layer.js", "addLayer", arglist=[self.map_id,
-                                                                               data.to_crs(4326),
-                                                                               index,
-                                                                               self.line_color,
-                                                                               self.line_width,
-                                                                               self.line_style,
-                                                                               self.line_opacity,
-                                                                               self.line_color_selected,
-                                                                               self.line_width_selected,
-                                                                               self.line_style_selected,
-                                                                               self.line_opacity_selected,
-                                                                               self.hover_param,
-                                                                               self.selection_type])
+                                                                            data_in,
+                                                                            index,
+                                                                            self.line_color,
+                                                                            self.line_width,
+                                                                            self.line_style,
+                                                                            self.line_opacity,
+                                                                            self.line_color_selected,
+                                                                            self.line_width_selected,
+                                                                            self.line_style_selected,
+                                                                            self.line_opacity_selected,
+                                                                            self.hover_param,
+                                                                            self.selection_type])
 
         # if self.mode == "inactive":
         #     self.deactivate()
