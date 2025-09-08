@@ -74,7 +74,7 @@ class RasterLayer(Layer):
         # cmap = self.color_map
 
         if self.get_data is not None:
-            # There is a get_data method that needs to be called now. This is for example the case for the topography layer.
+            # There is a get_data method that needs to be called now. This is for example the case for the topography layer in Delft Dashboard.
             # This method should return a dictionary with keys "x", "y", "z".
             self.data = self.get_data()
 
@@ -260,7 +260,7 @@ class RasterLayer(Layer):
             rstring = str(np.random.randint(1, 1000000))
             legend_file = self.map_id + ".legend." + rstring + ".png"
             width = 1.0
-            height = 2.0
+            height = 1.5
             cm2png(cmap,
                 file_name = os.path.join(self.map.server_path, "overlays", legend_file),
                 orientation="vertical",
