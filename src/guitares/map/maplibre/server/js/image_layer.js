@@ -93,19 +93,61 @@ function setLegend(mp, id, colorbar, legend_position) {
   var legend = document.getElementById("legend" + id);
   var legendImage = document.getElementById("legend_image_" + id);
 
+//  // Clear the legend and everything in itm (it will be recreated)
+//  if (legend) {
+//    legend.innerHTML = '';
+//  }
+
+//  legendImage = document.getElementById("legend_image_" + id);
+//  if (legendImage) {
+//    legendImage.src = "";
+//  }  
+
   // If legend does not exist, create it
   if (!legend) {
     // Legend does not exist yet, so create it
     var legend     = document.createElement("div");
     legend.id        = "legend" + id;
-    legend.className = "legend_bottom_left";  
-    if (typeof colorbar === 'string' || colorbar instanceof String) {
-      var legendImage = document.createElement('img');
-      legendImage.id = "legend_image_" + id;
-      legend.appendChild(legendImage);
-    }
+    legend.className = "legend_bottom_left";
+    // if (typeof colorbar === 'string' || colorbar instanceof String) {
+    var legendImage = document.createElement('img');
+    legendImage.id = "legend_image_" + id;
+    legend.appendChild(legendImage);
+    // }
     document.body.appendChild(legend);
   }
+
+  if (!legendImage) {
+    // Legend image does not exist yet, so create it
+    var legendImage = document.createElement('img');
+    legendImage.id = "legend_image_" + id;
+    legend.appendChild(legendImage);
+  }
+
+  // If colorbar is a string, it is a URL to an image
+  // so we want to remove all the spans and i elements
+  // and just show the image. Otherwise, we want to set the src
+  // of the image to ""
+  if (typeof colorbar === 'string' || colorbar instanceof String) {
+    // Colorbar is a URL
+    // Remove all spans and i elements
+    var spans = legend.getElementsByTagName('span');
+    while (spans.length > 0) {
+      spans[0].parentNode.removeChild(spans[0]);
+    }
+    var is = legend.getElementsByTagName('i');
+    while (is.length > 0) {
+      is[0].parentNode.removeChild(is[0]);
+    }
+    legend.innerHTML = '';
+
+  } else {
+    // Colorbar is an object with title and contour
+    // Remove the image
+    legendImage.src = "";
+  }
+
+
 
   if (typeof colorbar === 'string' || colorbar instanceof String) {
     // Colorbar is a URL
@@ -121,6 +163,9 @@ function setLegend(mp, id, colorbar, legend_position) {
   } else {
 
     // Colorbar is an object with title and contour
+
+    // Clear legendImage.src
+    legendImage.src = "";
 
     legend.innerHTML = '';
     legend.classList.add("legend"); // ensure it has base legend class

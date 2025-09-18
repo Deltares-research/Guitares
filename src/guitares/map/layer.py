@@ -251,6 +251,10 @@ class Layer:
                 from .raster_layer import RasterLayer
                 self.layer[layer_id] = RasterLayer(self.map, layer_id, map_id, **kwargs)
 
+            elif type == "raster_image":
+                from .raster_image_layer import RasterImageLayer
+                self.layer[layer_id] = RasterImageLayer(self.map, layer_id, map_id, **kwargs)
+
             elif type == "raster_from_tiles":
                 from .raster_from_tiles_layer import RasterFromTilesLayer
                 self.layer[layer_id] = RasterFromTilesLayer(self.map, layer_id, map_id, **kwargs)
