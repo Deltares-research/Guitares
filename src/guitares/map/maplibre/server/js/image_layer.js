@@ -139,7 +139,11 @@ function setLegend(mp, id, colorbar, legend_position) {
     while (is.length > 0) {
       is[0].parentNode.removeChild(is[0]);
     }
-    legend.innerHTML = '';
+    // also remove br elements
+    var brs = legend.getElementsByTagName('br');
+    while (brs.length > 0) {
+      brs[0].parentNode.removeChild(brs[0]);
+    }
 
   } else {
     // Colorbar is an object with title and contour
