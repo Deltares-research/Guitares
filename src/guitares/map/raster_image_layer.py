@@ -4,19 +4,13 @@ from PIL import Image
 import matplotlib
 from matplotlib import cm
 import rasterio
-# from rasterio.warp import calculate_default_transform, reproject, Resampling, transform_bounds
-# from rasterio import MemoryFile
-# from rasterio.transform import Affine
 from matplotlib.colors import LightSource
 import numpy as np
-import copy
-# import rioxarray
+import rioxarray
 import xarray as xr
 from pyproj import Transformer
 
-# from .colorbar import ColorBar
 from guitares.colormap import cm2png
-
 from .layer import Layer
 
 # This is a combo of image_layer.py and raster_layer.py
@@ -53,14 +47,24 @@ class RasterImageLayer(Layer):
         # Furthermore, type of data can be a scalar field, or RGB
 
         self.data_has_map_overlay = False
+        self.data_has_overview_levels = False
 
         if isinstance(data, (str, os.PathLike)):
             # 1) file path
             # Read the image file (lazily)
-            self.data = rasterio.open(data)
-            # Determine if data is RGB
-            if self.data.count == 3 or self.data.count == 4:
-                self.rgb = True
+            self.data = data
+            # self.data = rioxarray.open_rasterio(data)
+            with rasterio.open(data) as src:
+                ovr = src.overviews(1)
+                if len(ovr) > 0:
+                    self.data_has_overview_levels = True
+                else:
+                    self.data_has_overview_levels = False
+            # Check for overview levels
+            # self.overview_level, _ = get_appropriate_overview_level(self.data, 1000)
+            # If self.data has 3 or 4 bands, then it's RGB(A)
+            # if self.data.shape[0] == 3 or self.data.shape[0] == 4:
+            #     self.rgb = True
 
         elif hasattr(data, "rio") and hasattr(data.rio, "reproject"):
             # 2) rioxarray.DataArray
@@ -89,6 +93,7 @@ class RasterImageLayer(Layer):
         lonlim = [coords[0][0], coords[1][0]]
         latlim = [coords[0][1], coords[1][1]]
         width = self.map.view.geometry().width()
+        height = self.map.view.geometry().height()
         
         overlay_file = None
         legend = None
@@ -140,91 +145,100 @@ class RasterImageLayer(Layer):
             if self.data is None:
                 return  
 
-            src_crs = self.data.rio.crs
+            clip = True
+            derefine = True
+            data_is_rgb = False
 
-            # if not self.data["crs"]:
-            #     src_crs = "EPSG:4326"
-            # else:
-            #     src_crs = "EPSG:" + str(self.data["crs"].to_epsg())
+            if isinstance(self.data, (str, os.PathLike)):
 
-            # Web Mercator
-            # dst_crs = 'EPSG:3857'
+                # File path with GeoTIFF. Read (again and again).
 
-        # if "image_file" in self.data and self.data["image_file"]:
-        # # if self.data["image_file"]:
+                if self.data_has_overview_levels:
+                    # Determine max_cell_size based on map width and number of pixels
+                    max_cell_size = (latlim[1] - latlim[0]) / height  # times 2 to be sure
+                    # multiply to get meters (assume web mercator)
+                    max_cell_size = max_cell_size * 111000
+                    # Need to re-open the filen
+                    with rasterio.open(self.data) as src:                    
+                        overview_level, ok = get_appropriate_overview_level(src, max_cell_size)
+                        data = rioxarray.open_rasterio(self.data, masked=False, overview_level=overview_level)
+                        derefine = False # No derefining needed, overview level is used
+                else:
+                    # Get the entire dataset
+                    data = rioxarray.open_rasterio(self.data, masked=False)        
 
-        #     with rasterio.open(self.data["image_file"]) as src:
-        #         transform, width, height = calculate_default_transform(
-        #             src.crs, dst_crs, src.width, src.height, *src.bounds)
-        #         kwargs = src.meta.copy()
-        #         kwargs.update({
-        #             'crs': dst_crs,
-        #             'transform': transform,
-        #             'width': width,
-        #             'height': height
-        #         })
-        #         # bnds = src.bounds
+                # If self.data has 3 or 4 bands, then it's RGB(A)
+                if data.shape[0] == 3 or data.shape[0] == 4:
+                    data_is_rgb = True
+                else:
+                    data_is_rgb = False
+                    # Need to squeeze to 2D array
+                    if data.shape[0] == 1:
+                        data = data.squeeze("band", drop=True)
 
-        #         mem_file = MemoryFile()
-        #         with mem_file.open(**kwargs) as dst:
-        #             for i in range(1, src.count + 1):
-        #                 reproject(
-        #                     source=rasterio.band(src, i),
-        #                     destination=rasterio.band(dst, i),
-        #                     src_transform=src.transform,
-        #                     src_crs=src.crs,
-        #                     dst_transform=transform,
-        #                     dst_crs=dst_crs,
-        #                     resampling=Resampling.nearest)
+            else:
 
-        #             band1 = dst.read(1)
+                data = self.data
 
-        #     new_bounds = transform_bounds(dst_crs, src_crs,
-        #                                   dst.bounds[0],
-        #                                   dst.bounds[1],
-        #                                   dst.bounds[2],
-        #                                   dst.bounds[3])
-        #     isn = np.where(band1 < 0.001)
-        #     band1[isn] = np.nan
+            if clip:
+                # Little buffer
+                dlon = (lonlim[1] - lonlim[0]) / 10
+                dlat = (latlim[1] - latlim[0]) / 10
+                data = data.rio.clip_box(minx=lonlim[0]-dlon,
+                                         miny=latlim[0]-dlat,
+                                         maxx=lonlim[1]+dlon,
+                                         maxy=latlim[1]+dlat,
+                                         crs="EPSG:4326")
+            if derefine:
+                # Derefine data if too fine compared to screen resolution
+                # Determine current resolution of data
+                y = data["y"].values[:]
+                if len(y) > 1:
+                    dy = abs(y[1] - y[0])
+                else:
+                    dy = 1000000.0
+                # if geographic, convert to meters m
+                if data.rio.crs.is_geographic:
+                    dy = dy * 111000     
+                # Determine required resolution in metres based on lonlim, latlim, width, height
+                req_dy = 0.5 * 111000 * (latlim[1] - latlim[0]) / height
+                # Derefine if necessary
+                if dy < req_dy:
+                    # Derefine by a factor of 2, 4, 8, ...
+                    fact = int(np.ceil(req_dy / dy))
+                    # Find next power of 2
+                    if fact <= 2:
+                        fact = 2
+                    elif fact <= 4:
+                        fact = 4
+                    elif fact <= 8:
+                        fact = 8
+                    elif fact <= 16:
+                        fact = 16
+                    elif fact <= 32:
+                        fact = 32
+                    else:
+                        fact = 64    
+                    data = data.isel(x=slice(0, None, fact), y=slice(0, None, fact))
 
-        #     band1 = np.flipud(band1)
-        #     cminimum = np.nanmin(band1)
-        #     cmaximum = np.nanmax(band1)
+            if data_is_rgb:
 
-        #     norm = matplotlib.colors.Normalize(vmin=cminimum, vmax=cmaximum)
-        #     vnorm = norm(band1)
-
-        #     cmap = cm.get_cmap(self.color_map)
-        #     im = Image.fromarray(np.uint8(cmap(vnorm) * 255))
-
-        #     overlay_file = "./overlays/" + self.file_name
-        #     im.save(os.path.join(self.map.server_path, overlay_file))
-
-        #     # Bounds
-        #     bounds = [[new_bounds[0], new_bounds[2]], [new_bounds[3], new_bounds[1]]]
-
-        # else:
-
-            # We now first want to clip the data to the current view and if necessary adjust the resolution (data may be too fine)
-            # Then we create an image (in the CRS of the data)
-            # Then we reproject the image to Web Mercator
-
-            # # Clip
-            # data = self.data.rio.clip_box(minx=xlim[0],
-            #                               miny=ylim[0],
-            #                               maxx=xlim[1],
-            #                               maxy=ylim[1],
-            #                               crs="EPSG:4326",
-            #                              )
-            # Derefine (skip for now)
-
-            data = self.data
-
-            if self.rgb:
-
-                # RGB data
+                # RGB data, y and rgb are already in the right order (top to bottom)
 
                 plot_legend = False # No legend for RGB data
+
+                x = data["x"].values[:]
+                y = data["y"].values[:]
+                rgb = data.values[:].astype(np.uint8)
+                # rgb must be uint8
+                # if rgb.dtype != np.uint8:
+                #     rgb_float = rgb.astype(np.float32) 
+                #     # Scale to 0–255
+                #     rgb = np.clip(rgb_float / 65535 * 255, 0, 255).astype(np.uint8)                    
+                # Add 4th band if not present
+                if rgb.shape[0] == 3:
+                    alpha = np.ones((1, rgb.shape[1], rgb.shape[2]), dtype=rgb.dtype) * 255
+                    rgb = np.vstack((rgb, alpha))
 
             else:
 
@@ -238,7 +252,11 @@ class RasterImageLayer(Layer):
 
                 x = data["x"].values[:]
                 y = data["y"].values[:]
-                z = np.flipud(data.values[:])
+                if y[0] < y[-1]:
+                    y = np.flipud(y)
+                    z = np.flipud(data.values[:])
+                else:
+                    z = data.values[:]
 
                 # Generate RGB Numpy array 
 
@@ -281,6 +299,8 @@ class RasterImageLayer(Layer):
                         contour.append(cnt)
 
                     rgb = rgba * 255
+                    # Need to transpose so that shape is (4, height, width)
+                    rgb = np.transpose(rgb, (2, 0, 1))
 
                     legend = {}
                     legend["title"] = self.legend_title
@@ -324,7 +344,7 @@ class RasterImageLayer(Layer):
                     if self.hillshading:
                         ls = LightSource(azdeg=315, altdeg=30)
                         dx = (x[1] - x[0]) / 2
-                        dy = (y[1] - y[0]) / 2
+                        dy = - (y[1] - y[0]) / 2
                         rgb = ls.shade(z, cmap,
                                     vmin=cmin,
                                     vmax=cmax,
@@ -339,36 +359,40 @@ class RasterImageLayer(Layer):
                         vnorm = norm(z)
                         rgb = cmap(vnorm) * 255
 
-                # Create xarray DataArray with RGBA values of the rgb array
-                rgba_da = xr.DataArray(np.transpose(rgb, (2, 0, 1)),
-                                    dims=["band", "y", "x"],
-                                    coords={ "band": [0, 1, 2, 3], "y": np.flip(y), "x": x})
+                    # Need to transpose so that shape is (4, height, width)
+                    rgb = np.transpose(rgb, (2, 0, 1))    
 
-                # 1. Assign CRS and spatial dims
-                rgba_da.rio.set_spatial_dims(x_dim="x", y_dim="y", inplace=True)
-                rgba_da.rio.write_crs(src_crs, inplace=True)  # e.g., EPSG:32633
+            # Create xarray DataArray with RGBA values of the rgb array
+            rgba_da = xr.DataArray(rgb,
+                                dims=["band", "y", "x"],
+                                coords={ "band": [0, 1, 2, 3], "y": y, "x": x})
 
-                # 2. Reproject to Web Mercator
-                rgba_3857 = rgba_da.rio.reproject("EPSG:3857")
+            # 1. Assign CRS and spatial dims
+            src_crs = data.rio.crs            
+            rgba_da.rio.set_spatial_dims(x_dim="x", y_dim="y", inplace=True)
+            rgba_da.rio.write_crs(src_crs, inplace=True)  # e.g., EPSG:32633
 
-                # 3. Export as PNG
-                # Convert to uint8 and rearrange shape for Pillow
-                # There may be NaN values in the data that cannot be converted to uint8
-                # So we need to fill them with 0 (transparent)
-                # and convert to uint8
-                rgba_3857 = rgba_3857.fillna(0)
-                rgba_3857 = rgba_3857.clip(min=0, max=255)
-                # Convert to uint8
-                img_data = rgba_3857.values.astype(np.uint8)  # shape: (height, width, 4)
+            # 2. Reproject to Web Mercator
+            rgba_3857 = rgba_da.rio.reproject("EPSG:3857")
 
-                # In case of xarray with shape (band, y, x)
-                if img_data.shape[0] == 4:
-                    img_data = np.transpose(img_data, (1, 2, 0))  # to (y, x, 4)
+            # 3. Export as PNG
+            # Convert to uint8 and rearrange shape for Pillow
+            # There may be NaN values in the data that cannot be converted to uint8
+            # So we need to fill them with 0 (transparent)
+            # and convert to uint8
+            rgba_3857 = rgba_3857.fillna(0)
+            rgba_3857 = rgba_3857.clip(min=0, max=255)
+            # Convert to uint8
+            img_data = rgba_3857.values.astype(np.uint8)  # shape: (height, width, 4)
 
-                image = Image.fromarray(img_data, mode="RGBA")
+            # In case of xarray with shape (band, y, x)
+            if img_data.shape[0] == 4:
+                img_data = np.transpose(img_data, (1, 2, 0))  # to (y, x, 4)
 
-                overlay_file = "./overlays/" + self.file_name # To be used in call to javascript
-                image.save(os.path.join(self.map.server_path, "overlays", self.file_name))
+            image = Image.fromarray(img_data, mode="RGBA")
+
+            overlay_file = "./overlays/" + self.file_name # To be used in call to javascript
+            image.save(os.path.join(self.map.server_path, "overlays", self.file_name))
 
 
             # Overlay image has been created. Now check if it crosses the date line. If so, we need to split it in two images.
@@ -462,7 +486,7 @@ class RasterImageLayer(Layer):
             self.map.runjs(self.main_js, "showLayer", arglist=[self.map_id + ".b", self.side])
 
             # Now we need to update the layers with the new bounds and opacity
-            self.map.runjs("/js/image_layer.js", "updateLayer",
+            self.map.runjs("/js/raster_image_layer.js", "updateLayer",
                            id=self.map_id + ".a",
                            filename=overlay_file_a,
                            bounds=bounds_a,
@@ -471,7 +495,7 @@ class RasterImageLayer(Layer):
                            side=self.side,
                            opacity=self.opacity)
             
-            self.map.runjs("/js/image_layer.js", "updateLayer",
+            self.map.runjs("/js/raster_image_layer.js", "updateLayer",
                            id=self.map_id + ".b",
                            filename=overlay_file_b,
                            bounds=bounds_b,
@@ -480,7 +504,7 @@ class RasterImageLayer(Layer):
 
         else:
             # Just update the layer with the new bounds and opacity
-            self.map.runjs("/js/image_layer.js", "updateLayer",
+            self.map.runjs("/js/raster_image_layer.js", "updateLayer",
                            id=self.map_id + ".a",
                            filename=overlay_file,
                            bounds=bounds,
@@ -491,3 +515,50 @@ class RasterImageLayer(Layer):
 
             # Make the east and west layers invisible
             self.map.runjs(self.main_js, "hideLayer", arglist=[self.map_id + ".b", self.side])
+
+def get_appropriate_overview_level(
+    src: rasterio.io.DatasetReader, max_pixel_size: float
+) -> int:
+    """
+    Given a rasterio dataset `src` and a desired `max_pixel_size`,
+    determine the appropriate overview level (zoom level) that fits
+    the maximum resolution allowed by `max_pixel_size`.
+
+    Parameters:
+    src (rasterio.io.DatasetReader): The rasterio dataset reader object.
+    max_pixel_size (float): The maximum pixel size for the resolution.
+
+    Returns:
+    int: The appropriate overview level.
+    """
+    # Get the original resolution (pixel size) in terms of x and y
+    original_resolution = src.res  # Tuple of (x_resolution, y_resolution)
+    if src.crs.is_geographic:
+        original_resolution = (
+            original_resolution[0] * 111000,
+            original_resolution[1] * 111000,
+        )  # Convert to meters
+    # Get the overviews for the dataset
+    overview_levels = src.overviews(
+        1
+    )  # Overview levels for the first band (if multi-band, you can adjust this)
+
+    # If there are no overviews, return 0 (native resolution)
+    if not overview_levels:
+        return 0, False
+
+    # Calculate the resolution for each overview by multiplying the original resolution by the overview factor
+    resolutions = [
+        (original_resolution[0] * factor, original_resolution[1] * factor)
+        for factor in overview_levels
+    ]
+
+    # Find the highest overview level that is smaller than or equal to the max_pixel_size
+    selected_overview = 0
+    for i, (x_res, y_res) in enumerate(resolutions):
+        if x_res <= max_pixel_size and y_res <= max_pixel_size:
+            selected_overview = i
+        else:
+            break
+
+    return selected_overview, True

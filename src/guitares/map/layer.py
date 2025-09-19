@@ -28,6 +28,7 @@ class Layer:
         self.url = None
         self.option = None
         self.zbmax = 0.1
+        self.get_data = None  # Function to get data for this layer, if needed
 
         # Legend
         self.legend_position = "bottom-right" # Options are "top-left", "top-right", "bottom-left", "bottom-right"
@@ -43,7 +44,7 @@ class Layer:
         self.color_scale_cmax =  1000.0
         self.color_scale_symmetric = True
         self.color_scale_symmetric_side = "min"
-        self.hillshading = True
+        self.hillshading = False
         self.hillshading_exaggeration = 10.0
         self.hillshading_azimuth = 315.0
         self.hillshading_altitude = 30.0
