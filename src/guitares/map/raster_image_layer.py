@@ -136,18 +136,20 @@ class RasterImageLayer(Layer):
 
             # Data should be a rioxarray DataArray or a method to get the data
 
+            clip = True
+            derefine = True
+            data_is_rgb = False
+
             if self.get_data is not None:
                 # There is a get_data method that needs to be called now. This is for example the case for the topography layer in Delft Dashboard.
                 # This method should return a rioxarray DataArray
                 self.data = self.get_data()
+                clip = False # No need to clip, data is already for the current view
+                derefine = False # No need to derefine, data is already for the current view
 
             # if self.data is still None, then it was never defined
             if self.data is None:
                 return  
-
-            clip = True
-            derefine = True
-            data_is_rgb = False
 
             if isinstance(self.data, (str, os.PathLike)):
 
@@ -184,6 +186,7 @@ class RasterImageLayer(Layer):
                 # Little buffer
                 dlon = (lonlim[1] - lonlim[0]) / 10
                 dlat = (latlim[1] - latlim[0]) / 10
+
                 data = data.rio.clip_box(minx=lonlim[0]-dlon,
                                          miny=latlim[0]-dlat,
                                          maxx=lonlim[1]+dlon,
