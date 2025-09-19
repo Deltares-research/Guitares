@@ -16,9 +16,6 @@ class RasterFromTilesLayer(Layer):
 
     def set_data(self, data):
         self.data = data
-        self.map.runjs("/js/image_layer.js",
-                       "addLayer",
-                       id=self.map_id)
         self.update()
 
     def update(self):
@@ -121,24 +118,14 @@ class RasterFromTilesLayer(Layer):
 
             clrbar_dict = "./overlays/" + legend_file
 
-        # if self.new:
+        if self.new:
+            self.map.runjs("/js/image_layer.js", "addLayer", arglist=[self.map_id, self.side])
+            # Set legend position (should make this generic for all layers)
+            self.map.runjs("/js/image_layer.js", "setLegendPosition", arglist=[self.map_id, self.legend_position, self.side])
 
-        #     self.map.runjs("/js/image_layer.js", "addLayer", arglist=[self.map_id, self.side])
+        self.map.runjs("/js/image_layer.js", "updateLayer", arglist=[overlay_url, self.map_id, bounds, clrbar_dict, self.side])
 
-        #     # Set legend position (should make this generic for all layers)
-        #     self.map.runjs("/js/image_layer.js", "setLegendPosition", arglist=[self.map_id, self.legend_position, self.side])
-
-        # self.map.runjs("/js/image_layer.js", "updateLayer", arglist=[overlay_url, self.map_id, bounds, clrbar_dict, self.side])
-        self.map.runjs("/js/image_layer.js", "updateLayer",
-                        id=self.map_id,
-                        filename=overlay_url,
-                        bounds=bounds,
-                        colorbar=clrbar_dict,
-                        legend_position=self.legend_position,
-                        side=self.side,
-                        opacity=self.opacity)
-
-        # self.map.runjs("/js/image_layer.js", "setOpacity", arglist=[self.map_id, self.opacity, self.side])
+        self.map.runjs("/js/image_layer.js", "setOpacity", arglist=[self.map_id, self.opacity, self.side])
         self.new = False
 
     def redraw(self):

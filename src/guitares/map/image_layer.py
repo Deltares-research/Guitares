@@ -11,115 +11,67 @@ import shutil
 from .layer import Layer
 
 class ImageLayer(Layer):
-    def __init__(self, map, id, map_id, **kwargs):
-        super().__init__(map, id, map_id, **kwargs)
-
+    def __init__(self, map, id, map_id):
+        super().__init__(map, id, map_id)
         self.active = False
         self.type   = "image"
         self.file_name = map_id + ".png"
 
     def activate(self):
-
         self.active = True
         self.show()
 
     def deactivate(self):
-
         self.active = False
 
     def clear(self):
-
         self.active = False
+        # js_string = "import('/js/main.js').then(module => {module.removeLayer('" + self.map_id + "')});"
+        # self.map.view.page().runJavaScript(js_string)
         self.map.runjs("/js/main.js", "removeLayer", arglist=[self.map_id])
 
-    def set_data(self, data, image_file=None, xlim=None, ylim=None):
 
-        # If data is a string or a path, assume it is an image file
-        if isinstance(data, (str, os.PathLike)):
-            # Read the image file (lazily)
-            data = rasterio.open(image_file)
-
-        self.data = data
-
-        # self.map.runjs("/js/image_layer.js", "addLayer", arglist=[self.map_id])
-        self.map.runjs("/js/image_layer.js",
-                       "addLayer",
-                       id=self.map_id,
-                       side=self.side)
-
-        self.update()
-
-    def update(self):
-
+    def make_overlay(self):    
+        fname = os.path.join(self.map.server_path, "overlays", self.file_name)
         coords = self.map.map_extent
         xlim = [coords[0][0], coords[1][0]]
         ylim = [coords[0][1], coords[1][1]]
         width = self.map.view.geometry().width()
+        okay = self.data.map_overlay(fname, xlim=xlim, ylim=ylim, width=width)
+        if okay:
+            return xlim, ylim
+        else:
+            return None, None
 
-        overlay_file = None
-        legend = None
-
+    def update(self):
         if hasattr(self.data, "map_overlay"):
-
-            fname = os.path.join(self.map.server_path, "overlays", self.file_name)
-            okay = self.data.map_overlay(fname, xlim=xlim, ylim=ylim, width=width)
-            # xlim, ylim = self.make_overlay()
-
-            if not okay:
+            xlim, ylim = self.make_overlay()
+            if xlim is None:
                 return
-
+            # if xlim[0] > xlim[1]:
+            #     xlim[0] -= 360.0
             bounds = [[xlim[0], xlim[1]], [ylim[0], ylim[1]]]
             overlay_file = f"./overlays/{self.file_name}"
+            self.map.runjs("/js/image_layer.js", "updateLayer", arglist=[overlay_file, self.map_id, bounds])
+            self.map.runjs("/js/image_layer.js", "setOpacity", arglist=[self.map_id, 1.0])
 
-            # If self.data has a legend attribute, pass it to the map
-            if hasattr(self.data, "legend"):
-                legend = self.data.legend
+    def set_data(self, data, image_file=None, xlim=None, ylim=None):
 
-        # check if self.data is a rasterio dataset
-        elif isinstance(self.data, rasterio.io.DatasetReader):
-            pass
+        self.data = data
+        self.map.runjs("/js/main.js", "removeLayer", arglist=[self.map_id])
 
-            # # Get bounds
-            # bnds = self.data.bounds
-            # bounds = [[bnds.left, bnds.right], [bnds.bottom, bnds.top]]
-            # # Copy the file to the overlays folder
-            # # Need to make a png file from the dataset within the bound
-            # fname = os.path.join(self.map.server_path, "overlays", "image.png")
-            # # Reproject to web mercator
-            # src_crs = self.data.crs
-            # dst_crs = 'EPSG:3857'
-            # transform, width, height = calculate_default_transform(
-            #     self.data.crs, dst_crs, self.data.width, self.data.height, *self.data.bounds)
-            # kwargs = self.data.meta.copy()
-            # kwargs.update({
-            #     'crs': dst_crs,
-            #     'transform': transform,
-            #     'width': width,
-            #     'height': height
-            # })
+        try:
+            xlim, ylim = self.make_overlay()
+            if xlim is None:
+                return
+        except Exception as e:
+            print(f"Something went wrong with map overlay: {self.map_id}, {e}")
+            return
 
-
-        if overlay_file:
-            self.map.runjs("/js/image_layer.js", "updateLayer",
-                           id=self.map_id,
-                           filename=overlay_file,
-                           bounds=bounds,
-                           colorbar=legend,
-                           legend_position=self.legend_position,
-                           side=self.side,
-                           opacity=self.opacity)
-        # self.map.runjs("/js/image_layer.js", "setOpacity", id=self.map_id, opacity=self.opacity)
-            # self.map.runjs("/js/image_layer.js", "setOpacity", arglist=[self.map_id, self.opacity])
-            # if legend is not None:
-            #     self.map.runjs("/js/image_layer.js", "setLegendPosition", arglist=[self.map_id, self.legend_position, self.side])
-
-    def set_opacity(self, opacity):
-        self.opacity = opacity
-        # self.map.runjs("/js/image_layer.js", "setOpacity", arglist=[self.map_id, opacity])
-        self.map.runjs("/js/image_layer.js",
-                       "setOpacity",
-                       id=self.map_id,
-                       opacity=self.opacity)
+        bounds = [[xlim[0], xlim[1]], [ylim[0], ylim[1]]]
+        overlay_file = f"./overlays/{self.file_name}"
+        self.map.runjs("/js/image_layer.js", "addLayer", arglist=[self.map_id])
+        self.map.runjs("/js/image_layer.js", "updateLayer", arglist=[overlay_file, self.map_id, bounds])
 
     # def set_data(self,
     #              data,
