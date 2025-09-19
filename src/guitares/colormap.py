@@ -44,18 +44,27 @@ def cm2png(cmap,
     # Create figure
     if orientation == "horizontal":
         fig = plt.figure(figsize=(width, height))
-        ax = fig.add_axes([0.05, 0.80, 0.9, 0.15])
+        ax = fig.add_axes([0.05, 0.80, 0.9, 0.12])
     else:
         fig = plt.figure(figsize=(width, height))
-        ax = fig.add_axes([0.80, 0.05, 0.15, 0.90])
+        ax = fig.add_axes([0.80, 0.05, 0.12, 0.90])
 
     norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
     cb = mpl.colorbar.ColorbarBase(ax,
                                    cmap=cmap,
                                    norm=norm,
-                                   orientation=orientation,
-                                   label=legend_label)
+                                   orientation=orientation)
+    
+
     cb.ax.tick_params(labelsize=6)
+    if legend_label != "":
+        cb.set_label(legend_label, fontsize=6, labelpad=3)  # initial label
+        cb.ax.yaxis.set_label_position('left')  # put label on left side
+        cb.ax.yaxis.set_tick_params(labelsize=6)  # optional: set tick font size
+
+    if decimals > -1:    
+        cb.formatter = mpl.ticker.FormatStrFormatter(f'%.{decimals}f')  # set decimals
+        cb.update_ticks()
 
     # Save figure
     fig.savefig(file_name, dpi=150, bbox_inches='tight')

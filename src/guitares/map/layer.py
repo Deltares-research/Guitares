@@ -28,7 +28,6 @@ class Layer:
         self.url = None
         self.option = None
         self.zbmax = 0.1
-        self.get_data = None  # Function to get data for this layer, if needed
 
         # Legend
         self.legend_position = "bottom-right" # Options are "top-left", "top-right", "bottom-left", "bottom-right"

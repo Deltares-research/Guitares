@@ -447,6 +447,7 @@ class RasterImageLayer(Layer):
             cm2png(cmap,
                 file_name = os.path.join(self.map.server_path, "overlays", legend_file),
                 orientation="vertical",
+                legend_label=self.legend_label,
                 vmin=cmin,
                 vmax=cmax,
                 width=width,
