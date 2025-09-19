@@ -78,8 +78,12 @@ class ListBox(QListWidget):
                     name  = self.element.option_value.variable
                     group = self.element.option_value.variable_group
                     vals = self.element.getvar(group, name)
-                    if not vals:
+                    # if vals is None, or an empty list, set it to [""] to avoid index errors
+                    if vals is None:
                         vals = [""]
+                    elif isinstance(vals, list):
+                        if len(vals) == 0:
+                            vals = [""]
                 else:
                     vals = self.element.option_value.list
 
