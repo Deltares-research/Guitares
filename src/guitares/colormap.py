@@ -11,9 +11,9 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 def read_color_maps(path_name):
-    """Read all colormaps from a folder and register them (add them to matplotlib.colormaps). Return list of colormap names."""    
+    """Read all colormaps from a folder and register them (add them to matplotlib.colormaps). Return list of colormap names."""
     # Get list of files in path
-    files = os.listdir(path_name)    
+    files = os.listdir(path_name)
     # Loop over files
     for file in files:
         if file.endswith(".txt"):
@@ -23,7 +23,7 @@ def read_color_maps(path_name):
             rgb = read_colormap(os.path.join(path_name, file))
             cmap = mpl.colors.ListedColormap(rgb, name=name)
             mpl.colormaps.register(cmap=cmap)
-    return plt.colormaps()    
+    return plt.colormaps()
 
 
 def cm2png(cmap,
@@ -33,6 +33,8 @@ def cm2png(cmap,
            vmax=1.0,
            legend_title="",
            legend_label="",
+           label_size=8,
+           tick_size=6,
            units="",
            unit_string="",
            decimals=-1,
@@ -54,15 +56,16 @@ def cm2png(cmap,
                                    cmap=cmap,
                                    norm=norm,
                                    orientation=orientation)
-    
 
-    cb.ax.tick_params(labelsize=6)
+
+    cb.ax.tick_params(labelsize=tick_size)
+    cb.set_label(legend_label, size=label_size)
     if legend_label != "":
         cb.set_label(legend_label, fontsize=6, labelpad=3)  # initial label
         cb.ax.yaxis.set_label_position('left')  # put label on left side
         cb.ax.yaxis.set_tick_params(labelsize=6)  # optional: set tick font size
 
-    if decimals > -1:    
+    if decimals > -1:
         cb.formatter = mpl.ticker.FormatStrFormatter(f'%.{decimals}f')  # set decimals
         cb.update_ticks()
 
