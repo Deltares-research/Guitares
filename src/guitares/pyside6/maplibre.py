@@ -1,14 +1,15 @@
-from PySide6 import QtWebEngineWidgets, QtWebEngineCore, QtCore, QtWebChannel
-
 import json
+import os
+import sys
+
+import requests
 from geopandas import GeoDataFrame
 from pandas import DataFrame
 from pyproj import CRS, Transformer
-import os
-import sys
-import requests
+from PySide6 import QtCore, QtWebChannel, QtWebEngineCore, QtWebEngineWidgets
 
-from guitares.map.layer import Layer, list_layers, find_layer_by_id
+from guitares.map.layer import Layer, find_layer_by_id, list_layers
+
 
 class WebEnginePage(QtWebEngineCore.QWebEnginePage):
     def __init__(self, view, print_messages):
@@ -30,11 +31,10 @@ class WebEnginePage(QtWebEngineCore.QWebEnginePage):
 
     def javaScriptPrompt(self, security_origin, msg, default):
         # Suppress prompt(), return empty string by default
-        return ''
+        return ""
 
 
 class MapLibre(QtCore.QObject):
-
     def __init__(self, element):
         super().__init__(element.parent.widget)
 
@@ -73,12 +73,18 @@ class MapLibre(QtCore.QObject):
         icon_list_string = ""
         for icon_file in icon_files:
             icon_list_string = icon_list_string + "'/icons/" + icon_file + "',"
-        icon_list_string = "[" + icon_list_string + "]"    
+        icon_list_string = "[" + icon_list_string + "]"
 
         file_name = os.path.join(self.gui.server_path, "js", "defaults.js")
         with open(file_name, "w") as f:
             f.write("window.default_style = '" + map_style + "';\n")
-            f.write("window.default_center = [" + str(element.map_center[0]) + "," + str(element.map_center[1]) + "]\n")
+            f.write(
+                "window.default_center = ["
+                + str(element.map_center[0])
+                + ","
+                + str(element.map_center[1])
+                + "]\n"
+            )
             f.write("window.default_zoom = " + str(element.map_zoom) + ";\n")
             f.write("window.default_projection = '" + element.map_projection + "';\n")
             f.write("window.iconUrls = " + icon_list_string + ";\n")
@@ -96,7 +102,9 @@ class MapLibre(QtCore.QObject):
         self.view.setPage(WebEnginePage(self.view, self.gui.js_messages))
         # self.view.page().profile().clearHttpCache()
         # self.view.page().settings().setAttribute(QtWebEngineCore.QWebEngineSettings.WebAttribute.WebGLEnabled, True)
-        self.view.page().settings().setAttribute(QtWebEngineCore.QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
+        self.view.page().settings().setAttribute(
+            QtWebEngineCore.QWebEngineSettings.LocalContentCanAccessRemoteUrls, True
+        )
 
         self.channel = QtWebChannel.QWebChannel()
         self.channel.registerObject("MapLibre", self)
@@ -109,7 +117,7 @@ class MapLibre(QtCore.QObject):
         self.view.setUrl(QtCore.QUrl(self.url))
 
     def load_finished(self, message):
-        self.timer_ping = QtCore.QTimer()        
+        self.timer_ping = QtCore.QTimer()
         self.timer_ping.timeout.connect(self.ping)
         self.timer_ping.start(1000)
 
@@ -305,10 +313,7 @@ class MapLibre(QtCore.QObject):
     def redraw_layers(self):
         # Redraw all layers (after map style has changed)
         # First clear the layer list in the draw_layer.js file
-        self.runjs(
-            "/js/draw_layer.js",
-            "clearLayerList"
-        )
+        self.runjs("/js/draw_layer.js", "clearLayerList")
         layers = self.list_layers()
         for layer in layers:
             layer.redraw()
@@ -316,42 +321,97 @@ class MapLibre(QtCore.QObject):
     def compare(self):
         self.runjs("/js/main.js", "compare", arglist=[])
 
-    def runjs(self, module, function, arglist=None):
-        if not arglist:
-            arglist = []
-        string = "import('" + self.url + module + "').then(module => {module." + function + "("
-        # string = "import(" + module + "').then(module => {module." + function + "("
-        for iarg, arg in enumerate(arglist):
-            if isinstance(arg, bool):
-                if arg:
-                    string = string + "true"
+    def runjs(self, module, function, **kwargs):
+        string = (
+            "import('"
+            + self.url
+            + module
+            + "').then(module => {module."
+            + function
+            + "("
+        )
+
+        if "arglist" in kwargs:
+            # "old" way of passing arguments
+            arglist = kwargs["arglist"]
+
+            for iarg, arg in enumerate(arglist):
+                if isinstance(arg, bool):
+                    if arg:
+                        string = string + "true"
+                    else:
+                        string = string + "false"
+                elif isinstance(arg, int):
+                    string = string + str(arg)
+                elif isinstance(arg, float):
+                    string = string + str(arg)
+                elif isinstance(arg, dict):
+                    string = string + json.dumps(arg).replace('"', "'")
+                elif isinstance(arg, list):
+                    string = string + json.dumps(arg).replace('"', "'")
+                elif isinstance(arg, tuple):
+                    string = string + json.dumps(arg).replace('"', "'")
+                elif isinstance(arg, GeoDataFrame):
+                    if len(arg) == 0:
+                        string = string + "{}"
+                    else:
+                        # Need to remove timeseries from geodataframe
+                        for columnName, columnData in arg.items():
+                            if isinstance(columnData.iloc[0], DataFrame):
+                                arg = arg.drop([columnName], axis=1)
+                        string = string + arg.to_json()
+                elif arg is None:
+                    string = string + "null"
                 else:
-                    string = string + "false"
-            elif isinstance(arg, int):
-                string = string + str(arg)
-            elif isinstance(arg, float):
-                string = string + str(arg)
-            elif isinstance(arg, dict):
-                string = string + json.dumps(arg).replace('"',"'")
-            elif isinstance(arg, list):
-                string = string + json.dumps(arg).replace('"',"'")
-            elif isinstance(arg, tuple):
-                string = string + json.dumps(arg).replace('"',"'")
-            elif isinstance(arg, GeoDataFrame):
-                if len(arg) == 0:
-                    string = string + "{}"
+                    string = string + "'" + arg + "'"
+                if iarg < len(arglist) - 1:
+                    string = string + ","
+
+            string = string + ")});"
+            # print(string)
+
+        elif len(kwargs) > 0:
+            # Loop through the kwargs and add them to the arglist
+
+            string = string + "{"
+
+            for key, value in kwargs.items():
+                if isinstance(value, bool):
+                    if value:
+                        argstr = key + ": true"
+                    else:
+                        argstr = key + ": false"
+                elif isinstance(value, int):
+                    argstr = key + ": " + str(value)
+                elif isinstance(value, float):
+                    argstr = key + ": " + str(value)
+                elif isinstance(value, dict):
+                    argstr = key + ": " + json.dumps(value).replace('"', "'")
+                elif isinstance(value, list):
+                    argstr = key + ": " + json.dumps(value).replace('"', "'")
+                elif isinstance(value, tuple):
+                    argstr = key + ": " + json.dumps(value).replace('"', "'")
+                elif isinstance(value, GeoDataFrame):
+                    if len(value) == 0:
+                        argstr = key + ": {}"
+                    else:
+                        # Need to remove timeseries from geodataframe
+                        for columnName, columnData in value.items():
+                            if isinstance(columnData.iloc[0], DataFrame):
+                                value = value.drop([columnName], axis=1)
+                        argstr = key + ": " + value.to_json()
+                elif value is None:
+                    argstr = key + ": null"
                 else:
-                    # Need to remove timeseries from geodataframe
-                    for columnName, columnData in arg.items():
-                        if isinstance(columnData.iloc[0], DataFrame):
-                            arg = arg.drop([columnName], axis=1)
-                    string = string + arg.to_json()
-            elif arg is None:
-                string = string + "null"        
-            else:
-                string = string + "'" + arg + "'"
-            if iarg < len(arglist) - 1:
-                string = string + ","
-        string = string + ")});"
-        # print(string)
+                    argstr = key + ": '" + value + "'"
+
+                argstr = argstr + ", "
+
+                string = string + argstr
+
+            string = string + "})});"
+
+        else:
+            string = string + ")});"
+
         self.view.page().runJavaScript(string)

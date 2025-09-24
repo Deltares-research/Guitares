@@ -11,9 +11,9 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 def read_color_maps(path_name):
-    """Read all colormaps from a folder and register them (add them to matplotlib.colormaps). Return list of colormap names."""    
+    """Read all colormaps from a folder and register them (add them to matplotlib.colormaps). Return list of colormap names."""
     # Get list of files in path
-    files = os.listdir(path_name)    
+    files = os.listdir(path_name)
     # Loop over files
     for file in files:
         if file.endswith(".txt"):
@@ -23,7 +23,7 @@ def read_color_maps(path_name):
             rgb = read_colormap(os.path.join(path_name, file))
             cmap = mpl.colors.ListedColormap(rgb, name=name)
             mpl.colormaps.register(cmap=cmap)
-    return plt.colormaps()    
+    return plt.colormaps()
 
 
 def cm2png(cmap,
@@ -46,19 +46,29 @@ def cm2png(cmap,
     # Create figure
     if orientation == "horizontal":
         fig = plt.figure(figsize=(width, height))
-        ax = fig.add_axes([0.05, 0.80, 0.9, 0.15])
+        ax = fig.add_axes([0.05, 0.80, 0.9, 0.12])
     else:
         fig = plt.figure(figsize=(width, height))
-        ax = fig.add_axes([0.80, 0.05, 0.15, 0.90])
+        ax = fig.add_axes([0.80, 0.05, 0.12, 0.90])
 
     norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
     cb = mpl.colorbar.ColorbarBase(ax,
                                    cmap=cmap,
                                    norm=norm,
-                                   orientation=orientation,
-                                   label=legend_label)
+                                   orientation=orientation)
+
+
     cb.ax.tick_params(labelsize=tick_size)
     cb.set_label(legend_label, size=label_size)
+    if legend_label != "":
+        cb.set_label(legend_label, fontsize=6, labelpad=3)  # initial label
+        cb.ax.yaxis.set_label_position('left')  # put label on left side
+        cb.ax.yaxis.set_tick_params(labelsize=6)  # optional: set tick font size
+
+    if decimals > -1:
+        cb.formatter = mpl.ticker.FormatStrFormatter(f'%.{decimals}f')  # set decimals
+        cb.update_ticks()
+
     # Save figure
     fig.savefig(file_name, dpi=150, bbox_inches='tight')
     plt.close(fig)

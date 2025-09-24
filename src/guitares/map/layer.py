@@ -28,6 +28,7 @@ class Layer:
         self.url = None
         self.option = None
         self.zbmax = 0.1
+        self.get_data = None  # Function to get data for this layer, if needed
 
         # Legend
         self.legend_position = "bottom-right" # Options are "top-left", "top-right", "bottom-left", "bottom-right"
@@ -35,6 +36,7 @@ class Layer:
         self.legend_label = "" # The text that appears next to the legend (e.g. elevation [m])
         self.legend_units = "" # The unit string that may appear in the individual tick labels (e.g. "m")
         self.legend_decimals = -1 # -1 means automatic
+        self.legend_dict = None # A dictionary with the legend values and colors
 
         # Raster layers
         self.color_scale_auto = True # automatically scale from min to max
@@ -42,7 +44,7 @@ class Layer:
         self.color_scale_cmax =  1000.0
         self.color_scale_symmetric = True
         self.color_scale_symmetric_side = "min"
-        self.hillshading = True
+        self.hillshading = False
         self.hillshading_exaggeration = 10.0
         self.hillshading_azimuth = 315.0
         self.hillshading_altitude = 30.0
@@ -248,6 +250,10 @@ class Layer:
             elif type == "raster":
                 from .raster_layer import RasterLayer
                 self.layer[layer_id] = RasterLayer(self.map, layer_id, map_id, **kwargs)
+
+            elif type == "raster_image":
+                from .raster_image_layer import RasterImageLayer
+                self.layer[layer_id] = RasterImageLayer(self.map, layer_id, map_id, **kwargs)
 
             elif type == "raster_from_tiles":
                 from .raster_from_tiles_layer import RasterFromTilesLayer

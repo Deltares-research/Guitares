@@ -271,6 +271,7 @@ function onMoveEnd(evt) {
 export function removeLayer(id, side) {
   // Remove the layer, source and legend etc.
   // Remove layer
+  //console.log("Removing layer " + id + " on side " + side);
   var mapLayer = map.getLayer(id);
   if(typeof mapLayer !== 'undefined') {
     // Remove map layer
@@ -352,6 +353,7 @@ export function showLayer(id, side) {
   	map.setLayoutProperty(map_id, 'visibility', 'visible');
   }
   showLegend(id);
+  showLegend(id + '.a');
 }
 
 export function hideLayer(id, side) {
@@ -379,7 +381,9 @@ export function hideLayer(id, side) {
 	if (map.getLayer(map_id)) {
   	map.setLayoutProperty(map_id, 'visibility', 'none');
   }
+  //console.log("Hiding legend for layer " + id);
   hideLegend(id);
+  hideLegend(id + '.a');
 }
 
 export function showLegend(id) {
@@ -392,7 +396,9 @@ export function showLegend(id) {
 
 export function hideLegend(id) {
 	// Hide layer
+  //console.log("Hiding legend for layer " + id);
   var legend = document.getElementById("legend" + id);
+  //console.log("Legend: " + legend);
   if (legend) {
     legend.style.visibility = 'hidden';
   }
