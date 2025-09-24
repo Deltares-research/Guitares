@@ -81,7 +81,6 @@ export function addLayer(
   // Legend
   var legend     = document.createElement("div");
   legend.id        = "legend" + id;
-  //legend.className = "choropleth_legend";
   legend.className = legend_position;
   var newSpan = document.createElement('span');
   newSpan.class = 'title';
