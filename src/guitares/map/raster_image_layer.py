@@ -27,6 +27,7 @@ class RasterImageLayer(Layer):
 
     def activate(self):
         self.active = True
+        self.show()
 
     def deactivate(self):
         self.active = False
