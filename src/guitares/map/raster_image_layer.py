@@ -36,6 +36,8 @@ class RasterImageLayer(Layer):
         self.active = False
         self.map.runjs("/js/main.js", "removeLayer", arglist=[self.map_id])
         self.new = True
+        self.data = None
+        self.data_has_map_overlay = False
 
     def set_data(self, data):
 
