@@ -7,8 +7,13 @@ from PySide6.QtWidgets import (
     QProgressDialog,
     QFileDialog,
     QLineEdit,
-    QApplication
+    QApplication,
+    QGraphicsOpacityEffect
 )
+
+from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QTimer
+from PySide6.QtGui import QFont
+
 from PySide6 import QtCore
 import time
 import os
@@ -30,6 +35,67 @@ class CustomDialog(QDialog):
 
     def clicked(self, *args):
         self.answer = args[0].text().strip()
+
+class AutoCloseDialog(QDialog):
+    def __init__(self, window, text, timeout=500):
+        super().__init__(window)
+        self.setWindowTitle("Auto Close")
+        self.layout = QVBoxLayout(self)
+        self.layout.addWidget(QLabel(text))
+        QtCore.QTimer.singleShot(timeout, self.accept)
+
+class FadeLabel(QLabel):
+    def __init__(self, window, text, timeout=1500):
+        super().__init__(text, window)
+
+        self.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.setStyleSheet("""
+            QLabel {
+                color: white;
+                background-color: rgba(0, 0, 0, 180);
+                padding: 10px 20px;
+                border-radius: 8px;
+            }
+        """)
+
+        font = QFont()
+        font.setBold(True)
+        font.setPointSize(14)
+        self.setFont(font)
+
+        self.adjustSize()
+
+        # center inside parent
+        self.move(
+            (window.width() - self.width()) // 2,
+            (window.height() - self.height()) // 2,
+        )
+
+        # opacity effect
+        self.effect = QGraphicsOpacityEffect(self)
+        self.setGraphicsEffect(self.effect)
+
+        self.fade_anim = QPropertyAnimation(self.effect, b"opacity")
+        self.fade_anim.setDuration(400)
+        self.fade_anim.setStartValue(0)
+        self.fade_anim.setEndValue(1)
+        self.fade_anim.setEasingCurve(QEasingCurve.InOutQuad)
+
+        self.fade_out_anim = QPropertyAnimation(self.effect, b"opacity")
+        self.fade_out_anim.setDuration(400)
+        self.fade_out_anim.setStartValue(1)
+        self.fade_out_anim.setEndValue(0)
+        self.fade_out_anim.setEasingCurve(QEasingCurve.InOutQuad)
+
+        self.duration = timeout
+
+    def showEvent(self, event):
+        self.fade_anim.start()
+        QTimer.singleShot(self.duration, self.fade_out)
+
+    def fade_out(self):
+        self.fade_out_anim.finished.connect(self.deleteLater)
+        self.fade_out_anim.start()
 
 class StringDialog(QDialog):
     def __init__(self, text, title, string):
@@ -159,6 +225,7 @@ def dialog(
     selected_filter=None,
     path=None,
     file_name=None,
+    timeout=500,
     string=""
 ):
     if type == "warning":
@@ -169,6 +236,11 @@ def dialog(
             window, title, text, QMessageBox.Ok, QMessageBox.Ok
         )
         return ret
+    elif type == "auto_close":
+        dlg = AutoCloseDialog(window, text, timeout=timeout)
+        dlg.exec()
+    elif type == "fade_label":
+        dlg = FadeLabel(window, text).show()
     elif type == "critical":
         ret = QMessageBox.critical(window, title, text, QMessageBox.Ok, QMessageBox.Ok)
         return ret

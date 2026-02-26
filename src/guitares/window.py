@@ -343,6 +343,12 @@ class Window:
     def dialog_info(self, text, title=" "):
         window_dialog(self, text, type="info", title=title)
 
+    def dialog_auto_close(self, text, timeout=1500):
+        window_dialog(self, text, type="auto_close", timeout=timeout)
+
+    def dialog_fade_label(self, text, timeout=1500):
+        window_dialog(self, text, type="fade_label", timeout=timeout)
+
     def dialog_critical(self, text, title="Critical"):
         window_dialog(self, text, type="critical", title=title)
 

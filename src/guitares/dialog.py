@@ -11,6 +11,7 @@ def window_dialog(
     filter="*.*",
     selected_filter=None,
     path=None,
+    timeout=500,
     file_name=None
 ):
     mod = importlib.import_module(f"guitares.{window.gui.framework}.dialog")  
@@ -26,6 +27,7 @@ def window_dialog(
         filter=filter,
         selected_filter=selected_filter,
         path=path,
+        timeout=timeout,
         file_name=file_name
     )
 
