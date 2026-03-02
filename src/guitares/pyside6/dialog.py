@@ -199,20 +199,6 @@ class WaitDialog(QProgressDialog):
     def set_value(self, i):
         self.setValue(i)
 
-# class StringDialog(QProgressDialog):
-#     def __init__(self, window, text, title):
-#         super().__init__(text, "Abort", 0, 100, window)
-#         self.setWindowModality(QtCore.Qt.WindowModal)
-#         self.setMinimumDuration(1)
-#         self.setMaximum(100)
-#         self.setWindowTitle(title)
-#         self.children()[1].setVisible(False)  # Make progress bar invisible
-#         self.children()[3].setVisible(False)  # Make push button invisible
-#         self.show()
-
-#     def set_value(self, i):
-#         self.setValue(i)
-
 def dialog(
     window,
     text,

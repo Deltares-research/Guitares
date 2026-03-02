@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+from collections import deque
 
 import requests
 from geopandas import GeoDataFrame
@@ -37,6 +38,9 @@ class WebEnginePage(QtWebEngineCore.QWebEnginePage):
 class MapLibre(QtCore.QObject):
     def __init__(self, element):
         super().__init__(element.parent.widget)
+
+        self._js_queue = deque()
+        self._js_running = False
 
         self.gui = element.gui
         self.element = element
@@ -367,7 +371,7 @@ class MapLibre(QtCore.QObject):
                 if iarg < len(arglist) - 1:
                     string = string + ","
 
-            string = string + ")});"
+            string = string + ")}); void 0;"
             # print(string)
 
         elif len(kwargs) > 0:
@@ -409,9 +413,29 @@ class MapLibre(QtCore.QObject):
 
                 string = string + argstr
 
-            string = string + "})});"
+            string = string + "})}); void 0;"
 
         else:
-            string = string + ")});"
+            string = string + ")}); void 0;"
 
-        self.view.page().runJavaScript(string)
+        #self.view.page().runJavaScript(string)
+        self.run_js_serial(string)
+
+    def run_js_serial(self, code):
+        self._js_queue.append(code)
+        if not self._js_running:
+            self._run_next()
+
+    def _run_next(self):
+        if not self._js_queue:
+            self._js_running = False
+            return
+
+        self._js_running = True
+        code = self._js_queue.popleft()
+
+        self.view.page().runJavaScript(
+            code,
+            lambda _: self._run_next()
+        )
+        

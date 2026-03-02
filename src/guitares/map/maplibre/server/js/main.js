@@ -72,6 +72,7 @@ waitForQWebChannel()
           pointClicked      = function(coords) { MapLibre.pointClicked(JSON.stringify(coords))};
           layerStyleSet     = function() { MapLibre.layerStyleSet('')};
           layerAdded        = function(layerId) { MapLibre.layerAdded(layerId)};
+          webChannelReady   = true;
         }
       });
   
@@ -123,7 +124,7 @@ waitForQWebChannel()
       };
     };
   
-    webChannelReady = true;
+//    webChannelReady = true;
 
   })
 

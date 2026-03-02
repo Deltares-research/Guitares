@@ -6,6 +6,8 @@ import shapely
 from shapely.geometry import Polygon
 from shapely.ops import transform
 import pyproj
+import random
+import string
 
 from .layer import Layer
 
@@ -166,10 +168,15 @@ class DrawLayer(Layer):
         for index, row in gdf.to_crs(4326).iterrows():
             # Add feature to draw layer, which has CRS=4326
             gdf2plot = gpd.GeoDataFrame(geometry=[row["geometry"]])
+            # Get feature ID
+            feature_id = makeid(8)
+            # gdf2plot["id"] = feature_id
+            # Set the id in self.gdf
+            self.gdf.at[index, "id"] = feature_id
             # if "name" in row:
             #     gdf["name"] = row["name"]
             self.map.runjs(
-                "/js/draw_layer.js", "addFeature", arglist=[gdf2plot, self.map_id]
+                "/js/draw_layer.js", "addFeature", arglist=[gdf2plot, self.map_id, feature_id]
             )
 
     def add_rectangle(self, x0, y0, lenx, leny, rotation):
@@ -454,3 +461,8 @@ def fix_rectangle_geometry(geom):
     # Update the geometry
     geom = new_polygon.__geo_interface__
     return geom
+
+
+def makeid(length):
+    characters = string.ascii_letters + string.digits
+    return ''.join(random.choices(characters, k=length))

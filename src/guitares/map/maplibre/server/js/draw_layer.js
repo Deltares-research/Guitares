@@ -245,7 +245,7 @@ function rectangleSelectionChanged(e) {
 
 /// FEATURES \\\
 
-export function addFeature(featureCollection, layerId) {
+export function addFeature(featureCollection, layerId, featureId) {
   setDrawEvents();
   activeLayerId = layerId;
   // Geometry comes in as a feature collection
@@ -262,7 +262,7 @@ export function addFeature(featureCollection, layerId) {
     return
   }
   // Make random featureId 
-  var featureId = makeid(15);
+  //var featureId = makeid(15);
   // Plot feature and add to feature list
   var feature = plotFeature(featureId, geometry, layerProps.paintProps);
   addToFeatureList(feature, featureId, featureName, layerId, layerProps.shape, geometry);
@@ -270,12 +270,15 @@ export function addFeature(featureCollection, layerId) {
   updateInactiveLayerGeometry(layerId);
   // Set the layer mode
   setLayerMode(layerId, layerProps.mode);
-  if (layerProps.mode == "active") {
-    var featureCollection = getFeatureCollectionInActiveLayer(layerId);
-  } else {
-    var featureCollection = getFeatureCollectionInInactiveLayer(layerId);
-  }
-  featureAdded(JSON.stringify(featureCollection), featureId, layerId);
+
+
+//  if (layerProps.mode == "active") {
+//    var featureCollection = getFeatureCollectionInActiveLayer(layerId);
+//  } else {
+//    var featureCollection = getFeatureCollectionInInactiveLayer(layerId);
+//  }
+//  featureAdded(JSON.stringify(featureCollection), featureId, layerId);
+
 }
 
 function plotFeature(featureId, geometry, paintProps) {
@@ -294,7 +297,13 @@ function plotFeature(featureId, geometry, paintProps) {
 }
 
 export function deleteFeature(featureId) {
-  var layerId = getFeatureProps(featureId).layerId;
+  //var layerId = getFeatureProps(featureId).layerId;
+  var featureProps = featureList.find(v => v.featureId === featureId) || null;
+  if (featureProps == null) {
+    console.log('Feature ' + featureId + ' not found in feature list !');
+    return;
+  }
+  var layerId = featureProps.layerId;
   draw.delete(featureId);
   removeFromFeatureList(featureId);
   updateInactiveLayerGeometry(layerId);
@@ -355,11 +364,15 @@ function removeFromFeatureList(featureId) {
   featureList.splice(featureList.findIndex(v => v.featureId === featureId), 1);
 }
 
+//function getFeatureProps(featureId) {
+//  var props = null
+//  var index = featureList.findIndex(v => v.featureId === featureId);
+//  if (index>=0) {props = featureList[index]};
+//  return props
+//}
+
 function getFeatureProps(featureId) {
-  var props = null
-  var index = featureList.findIndex(v => v.featureId === featureId);
-  if (index>=0) {props = featureList[index]};
-  return props
+  return featureList.find(v => v.featureId === featureId) || null;
 }
 
 function getFeatureCollectionInActiveLayer(layerId) {
