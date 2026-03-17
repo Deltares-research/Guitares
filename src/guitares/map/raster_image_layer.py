@@ -121,6 +121,7 @@ class RasterImageLayer(Layer):
             north = latlim[1] 
 
             if not okay:
+                self.clear()
                 return
 
             overlay_file = f"./overlays/{self.file_name}"
