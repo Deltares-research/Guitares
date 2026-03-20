@@ -403,3 +403,6 @@ class Window:
  
     def dialog_string(self, text, title=" "):
         return window_dialog(self, text, type="string", title=title)
+
+    def dialog_popupmenu(self, text, title=" ", options=[]):
+        return window_dialog(self, text, type="popupmenu", title=title, options=options)

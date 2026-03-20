@@ -8,7 +8,8 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QLineEdit,
     QApplication,
-    QGraphicsOpacityEffect
+    QGraphicsOpacityEffect,
+    QComboBox
 )
 
 from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QTimer
@@ -121,6 +122,33 @@ class StringDialog(QDialog):
         else:
             self.answer = ("", False)
 
+class PopupmenuDialog(QDialog):
+    def __init__(self, text, title, options):
+        super().__init__()
+        self.setWindowTitle(title)
+        self.buttonBox = QDialogButtonBox()
+        self.buttonBox.addButton("  " + "OK" + "  ", QDialogButtonBox.AcceptRole)
+        self.buttonBox.addButton("  " + "Cancel" + "  ", QDialogButtonBox.AcceptRole)
+        self.buttonBox.clicked.connect(self.clicked)
+        self.buttonBox.accepted.connect(self.accept)
+        self.layout = QVBoxLayout()
+        message = QLabel(text)
+        self.layout.addWidget(message)
+        # Add a combo box with options
+        self.combo = QComboBox()
+        self.combo.addItems(options)
+        self.layout.addWidget(self.combo)
+        self.layout.addWidget(self.buttonBox)
+        self.setLayout(self.layout)
+
+    def clicked(self, *args):
+        answer = args[0].text().strip()
+        if answer == "OK":
+            self.answer = (self.combo.currentText(), True)
+        else:
+            self.answer = ("", False)
+
+
 class ProgressDialog(QProgressDialog):
     def __init__(self, window, text, title, nmax):
         super().__init__(text, "Abort", 0, nmax, window)
@@ -205,6 +233,7 @@ def dialog(
     title=" ",
     type="warning",
     button_text=None,
+    options=[],
     nmax=100,
     cancel=None,
     filter=None,
@@ -287,5 +316,9 @@ def dialog(
         return new_path
     elif type == "string":
         dlg = StringDialog(text, title, string)
+        dlg.exec()
+        return dlg.answer[0], dlg.answer[1]
+    elif type == "popupmenu":
+        dlg = PopupmenuDialog(text, title, options)
         dlg.exec()
         return dlg.answer[0], dlg.answer[1]
