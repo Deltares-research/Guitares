@@ -84,6 +84,13 @@ class Element:
         self.full_path = False
         self.allow_directory_change = True
 
+        # Spinbox
+        self.minimum = 0
+        self.maximum = 100
+        self.step = None  # None means auto (1 for int, 0.1 for float)
+        self.decimals = 2
+        self.suffix = ""
+
         # Map
         if self.gui.map_engine == "mapbox":
             self.map_style = "mapbox://styles/mapbox/streets-v12"
@@ -255,6 +262,21 @@ class Element:
 
         if "allow_directory_change" in dct:
             self.allow_directory_change = dct["allow_directory_change"]
+
+        if "minimum" in dct:
+            self.minimum = dct["minimum"]
+
+        if "maximum" in dct:
+            self.maximum = dct["maximum"]
+
+        if "step" in dct:
+            self.step = dct["step"]
+
+        if "decimals" in dct:
+            self.decimals = dct["decimals"]
+
+        if "suffix" in dct:
+            self.suffix = dct["suffix"]
 
         if "url" in dct:
             if isinstance(dct["url"], dict):
@@ -433,6 +455,10 @@ class Element:
         elif self.style == "slider":
             mod = importlib.import_module(f"guitares.{self.gui.framework}.slider")
             self.widget = mod.Slider(self)
+
+        elif self.style == "spinbox":
+            mod = importlib.import_module(f"guitares.{self.gui.framework}.spinbox")
+            self.widget = mod.SpinBox(self)
 
         elif self.style == "pushselectfile":
             mod = importlib.import_module(f"guitares.{self.gui.framework}.pushopenfile")

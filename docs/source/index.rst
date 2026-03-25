@@ -1,30 +1,30 @@
 Welcome to the Guitares documentation!
 ======================================
 
-.. figure:: ./img/main/delftdashboard.png
-   :width: 600px
-   :align: center
+Guitares is a Python package for building configurable Graphical User Interfaces (GUIs) using PySide6.
+GUI layouts are defined in YAML configuration files rather than code, keeping application logic cleanly separated from the interface description.
 
-Guitares is a Python package for building configurable Graphical User Interfaces (GUIs) using the PyQt5 framework. GUI configurations can be defined programmatically, but are typically provided by the developer in YAML configuration files.
-
-A Guitares GUI consists of a main window (with optional drop-down menu) that contains one or more UI elements. Guitares currently supports the following UI elements (or widgets):
+A Guitares GUI consists of a main window (with optional drop-down menu) that contains one or more UI elements.
+The following elements are currently supported:
 
 * Tab panels
-* Frames
+* Frames (panels)
 * Edit boxes
-* Text
-* Pop-up menus
+* Spin boxes
+* Text labels
+* Pop-up menus (dropdowns)
 * List boxes
 * Check boxes
-* Radio buttons
+* Radio button groups
 * Sliders
 * Push buttons
+* Date/time edit boxes
+* Table views
+* File/directory chooser buttons
 * Web views
-* MapBox maps
+* Map (MapLibre GL or Mapbox GL)
 
-Please see the Elements section for more information about each UI element.
-
-Check out the :doc:`getting_started` section for instructions on how to get started!
+Check out the :doc:`getting_started` section for installation instructions and a quick-start guide.
 
 .. note::
 
@@ -34,18 +34,20 @@ Contents
 --------
 
 .. toctree::
+   :maxdepth: 2
 
    getting_started
    simple_example
+   configuration
+   positioning
    elements
-   menu
    variables
    callbacks
-   positioning
-   guiobject
-   configuration
    dependencies
    tabpanels
-   mapbox
+   menu
+   map
+   popup_window
    stylesheets
+   guiobject
    examples
