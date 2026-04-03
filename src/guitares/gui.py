@@ -61,7 +61,9 @@ class GUI:
             import guitares.pyside6.icons_rc
 
         QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
-        self.qtapp = QApplication(sys.argv)
+        self.qtapp = QApplication.instance()
+        if self.qtapp is None:
+            self.qtapp = QApplication(sys.argv)
 
         # Show splash screen
         self.show_splash()

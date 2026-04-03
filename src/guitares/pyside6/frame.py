@@ -17,6 +17,10 @@ class Frame(QGroupBox):
             # Add pushbutton to collapse
             self.pushbutton = QPushButton("", self)
             self.pushbutton.clicked.connect(self.collapse_callback)
+            if element.collapsed:
+                self.pushbutton.setToolTip("Show information panel")
+            else:
+                self.pushbutton.setToolTip("Hide information panel")
 
         if hasattr(element.parent, "style"):
             if element.parent.style == "panel" and element.parent.collapse:
@@ -92,7 +96,8 @@ class Frame(QGroupBox):
                 else:
                     arrow_file = "icons8-triangle-arrow-16_white_right.png"                    
                 self.element.parent.widget.pushbutton.setStyleSheet(
-                    "background-image : url(:/img/" + arrow_file + "); border: none")
+                    "QPushButton { background-image: url(:/img/" + arrow_file + "); background-color: transparent; border: none; }"
+                    " QToolTip { color: #fff; background-color: #333; border: 1px solid #555; padding: 4px; }")
 
                 if self.element == self.element.parent.elements[0]:
                     # First panel
@@ -118,8 +123,10 @@ class Frame(QGroupBox):
         try:
             if self.element.collapsed:
                 self.element.collapsed = False
+                self.pushbutton.setToolTip("Hide information panel")
             else:
                 self.element.collapsed = True
+                self.pushbutton.setToolTip("Show information panel")
             self.element.gui.window.resize_elements(self.element.parent.elements)
             if self.element.callback:
                 self.element.callback(self)

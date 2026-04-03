@@ -1,12 +1,14 @@
-import os
-from PySide6 import QtWebEngineWidgets, QtWebEngineCore, QtCore, QtWidgets, QtWebChannel
 import json
-# from urllib.request import urlopen
-# import urllib
+import os
+import sys
+from collections import deque
+
 from geopandas import GeoDataFrame
 from pandas import DataFrame
+from PySide6 import QtCore, QtWidgets, QtWebChannel, QtWebEngineCore, QtWebEngineWidgets
 
 from guitares.map.layer import Layer, list_layers
+
 
 class WebEnginePage(QtWebEngineCore.QWebEnginePage):
     def __init__(self, view, print_messages):
@@ -15,12 +17,25 @@ class WebEnginePage(QtWebEngineCore.QWebEnginePage):
 
     def javaScriptConsoleMessage(self, level, message, lineNumber, sourceID):
         if self.print_messages:
-            print("javaScriptConsoleMessage: ", level, message, lineNumber, sourceID)
+            print(f"[JS] {message} (line {lineNumber}, source: {sourceID})")
+            sys.stdout.flush()
+
+    def javaScriptAlert(self, security_origin, msg):
+        pass
+
+    def javaScriptConfirm(self, security_origin, msg):
+        return False
+
+    def javaScriptPrompt(self, security_origin, msg, default):
+        return ""
 
 
 class MapLibreCompare(QtWidgets.QWidget):
     def __init__(self, element):
         super().__init__(element.parent.widget)
+
+        self._js_queue = deque()
+        self._js_running = False
 
         self.gui = element.gui
         self.element = element
@@ -289,58 +304,42 @@ class MapLibreCompare(QtWidgets.QWidget):
             elif isinstance(arg, float):
                 string = string + str(arg)
             elif isinstance(arg, dict):
-                string = string + json.dumps(arg).replace('"',"'")
+                string = string + json.dumps(arg).replace('"', "'")
             elif isinstance(arg, list):
-                string = string + json.dumps(arg).replace('"',"'")
+                string = string + json.dumps(arg).replace('"', "'")
             elif isinstance(arg, tuple):
-                string = string + json.dumps(arg).replace('"',"'")
+                string = string + json.dumps(arg).replace('"', "'")
             elif isinstance(arg, GeoDataFrame):
                 if len(arg) == 0:
                     string = string + "{}"
                 else:
-                    # Need to remove timeseries from geodataframe
                     for columnName, columnData in arg.items():
                         if isinstance(columnData.iloc[0], DataFrame):
                             arg = arg.drop([columnName], axis=1)
                     string = string + arg.to_json()
             elif arg is None:
-                string = string + "null"        
+                string = string + "null"
             else:
                 string = string + "'" + arg + "'"
             if iarg < len(arglist) - 1:
                 string = string + ","
-        string = string + ")});"
-        # print(string)
-        self.view.page().runJavaScript(string)
+        string = string + ")}); void 0;"
+        self.run_js_serial(string)
 
+    def run_js_serial(self, code):
+        self._js_queue.append(code)
+        if not self._js_running:
+            self._run_next()
 
+    def _run_next(self):
+        if not self._js_queue:
+            self._js_running = False
+            return
 
-    # def runjs(self, module, function, arglist=None):
-    #     if not arglist:
-    #         arglist = []
-    #     string = "import('" + module + "').then(module => {module." + function + "("
-    #     for iarg, arg in enumerate(arglist):
-    #         if isinstance(arg, bool):
-    #             if arg:
-    #                 string = string + "true"
-    #             else:
-    #                 string = string + "false"
-    #         elif isinstance(arg, int):
-    #             string = string + str(arg)
-    #         elif isinstance(arg, float):
-    #             string = string + str(arg)
-    #         elif isinstance(arg, dict):
-    #             string = string + json.dumps(arg).replace('"',"'")
-    #         elif isinstance(arg, list):
-    #             string = string + json.dumps(arg).replace('"',"'")
-    #         elif isinstance(arg, GeoDataFrame):
-    #             if len(arg) == 0:
-    #                 string = string + "{}"
-    #             else:
-    #                 string = string + arg.to_json()
-    #         else:
-    #             string = string + "'" + arg + "'"
-    #         if iarg < len(arglist) - 1:
-    #             string = string + ","
-    #     string = string + ")});"
-    #     self.view.page().runJavaScript(string)
+        self._js_running = True
+        code = self._js_queue.popleft()
+
+        self.view.page().runJavaScript(
+            code,
+            lambda _: self._run_next()
+        )

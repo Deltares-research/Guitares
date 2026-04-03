@@ -24,34 +24,35 @@ export function addMap() {
 
   var default_style = 'osm';
 
+  console.log("default_compare_style: " + default_compare_style);
+  console.log("mapStyles keys: " + Object.keys(window.mapStyles));
+  console.log("style object: " + JSON.stringify(window.mapStyles[default_compare_style]).substring(0, 200));
+
   console.log("Adding Maplibre Compare Map A ...")
   mapA = new maplibregl.Map({
     container: 'compare1',
-    // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
-    style: mapStyles[default_compare_style],
-    center: default_compare_center, // starting position [lng, lat]
-    zoom: default_compare_zoom, // starting zoom
-    projection: default_compare_projection // display the map as a 3D globe
+    style: window.mapStyles[default_compare_style],
+    center: default_compare_center,
+    zoom: default_compare_zoom,
   });
+
+  mapA.on('error', (e) => { console.log('Map A error: ' + e.error.message); });
 
   console.log("Adding Maplibre Compare Map B ...")
   mapB = new maplibregl.Map({
     container: 'compare2',
-    style: mapStyles[default_style],
-    center: default_compare_center, // starting position [lng, lat]
-    zoom: default_compare_zoom, // starting zoom
-    projection: default_compare_projection // display the map as a 3D globe
-    }
-  );
+    style: window.mapStyles[default_compare_style],
+    center: default_compare_center,
+    zoom: default_compare_zoom,
+  });
+
+  mapB.on('error', (e) => { console.log('Map B error: ' + e.error.message); });
 
   // A selector or reference to HTML element
   const container = '#comparison-container';
 
   console.log("Adding Maplibre Compare ...")
   var mapContainer = new maplibregl.Compare(mapA, mapB, container, {
-    //main_map.style.display = 'none';
-    // Set this to enable comparing two maps by mouse movement:
-    // mousemove: true
   });
 
   mapA.on('wheel', () => {
