@@ -1,128 +1,352 @@
 /**
- * Add a circle layer to the map with optional hover popups.
- * @param {string} id - Unique layer/source identifier
- * @param {object} data - GeoJSON data for the source
- * @param {string} hover_property - Feature property name shown on hover (empty string to disable)
- * @param {number} min_zoom - Minimum zoom level for layer visibility
- * @param {string|Array} lineColor - Circle stroke color
- * @param {number|Array} lineWidth - Circle stroke width
- * @param {number|Array} lineOpacity - Circle stroke opacity
- * @param {string|Array} fillColor - Circle fill color
- * @param {number|Array} fillOpacity - Circle fill opacity
- * @param {number|Array} circleRadius - Circle radius in pixels
- * @param {string} unit - Unit label shown in hover popup
+ * Circle layer with optional selection and hover popups.
+ *
+ * When selector mode is enabled (options.selector=true), the layer
+ * supports hover popups, single/multiple click selection, and
+ * feature state management (hovered, selected).
+ *
+ * Also supports custom paint dicts (options.paintDict) for
+ * data-driven styling (choropleth-style circles).
+ *
+ * @module circle_layer
  */
-export function addLayer(id, data, hover_property, min_zoom,
-  lineColor,
-  lineWidth,
-  lineOpacity,
-  fillColor,
-  fillOpacity,
-  circleRadius,
-  unit) {
 
-  // Always remove old layer and source first to avoid errors
-  if (map.getLayer(id)) {
-    map.removeLayer(id);
-  }
+// ── Module state (for selector mode) ─────────────────────────────────
 
-  if (map.getSource(id)) {
-    map.removeSource(id);
-  }
+let hoverProperty = null;
+let hoveredId = null;
+let activeLayerId = null;
+let selectedIndex = null;
+let popup = null;
+let selectedFeatures = [];
 
-  map.addSource(id, {
-    type: 'geojson',
-    data: data
-  });
-
-  map.addLayer({
-    'id': id,
-    'type': 'circle',
-    'source': id,
-    'minzoom': min_zoom,
-    'paint': {
-      'circle-color': fillColor,
-      'circle-stroke-width': lineWidth,
-      'circle-stroke-color': lineColor,
-      'circle-stroke-opacity': lineOpacity,
-      'circle-radius': circleRadius,
-      'circle-opacity': fillOpacity
-    }
-  });
-
-  map.setLayoutProperty(id, 'visibility', 'visible');
-
-  if (hover_property !== "") {
-
-    // Create a popup, but don't add it to the map yet
-    const popup = new maplibregl.Popup({
-      closeButton: false,
-      closeOnClick: false
-    });
-
-    if (hover_property) {
-
-      map.on('mouseenter', id, (e) => {
-        map.getCanvas().style.cursor = 'pointer';
-
-        // Copy coordinates array
-        const coordinates = e.features[0].geometry.coordinates.slice();
-
-        // Ensure that if the map is zoomed out such that multiple
-        // copies of the feature are visible, the popup appears
-        // over the copy being pointed to.
-        while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-          coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-        }
-
-        popup.setLngLat(e.lngLat)
-          .setText(hover_property + ": " + (e.features[0].properties[hover_property])
-          + " " + unit)
-          .addTo(map);
-      });
-
-      map.on('mouseleave', id, () => {
-        map.getCanvas().style.cursor = window.currentCursor;
-        popup.remove();
-      });
-    }
-  }
-}
+// ── Main entry point ─────────────────────────────────────────────────
 
 /**
- * Update the GeoJSON data for a circle layer source.
- * @param {string} id - Layer/source identifier
- * @param {object} data - New GeoJSON data
+ * Add a circle layer to the map.
+ *
+ * @param {string} id - Layer/source identifier.
+ * @param {Object} data - GeoJSON FeatureCollection.
+ * @param {Object} pp - Paint properties dict:
+ *   lineColor, lineWidth, lineOpacity, fillColor, fillOpacity, circleRadius.
+ *   For selector mode also: lineColorSelected, fillColorSelected, circleRadiusSelected.
+ * @param {Object} [options] - Additional options:
+ *   selector (bool), index (int), hoverProperty (string), unit (string),
+ *   selectionOption ("single"|"multiple"), minZoom (number),
+ *   paintDict (object - custom MapLibre paint), legendItems (array),
+ *   legendTitle (string), legendPosition (string).
  */
-export function setData(id, data) {
-  var source = map.getSource(id);
-  source.setData(data);
+export function addLayer(id, data, pp, options) {
+  var opts = options || {};
+  var selector = opts.selector || false;
+  var minZoom = opts.minZoom || 0;
+
+  // Clean up
+  if (map.getLayer(id)) map.removeLayer(id);
+  if (map.getSource(id)) map.removeSource(id);
+  var legend = document.getElementById('legend' + id);
+  if (legend) legend.remove();
+
+  var sourceConfig = { type: 'geojson', data: data };
+  if (selector) sourceConfig.promoteId = 'index';
+
+  map.addSource(id, sourceConfig);
+
+  // ── Circle layer paint ─────────────────────────────────────────
+
+  var paint;
+
+  if (opts.paintDict) {
+    // Custom paint dict (for data-driven coloring)
+    paint = opts.paintDict;
+  } else if (selector) {
+    // Selector mode: feature-state-driven styling
+    paint = {
+      'circle-stroke-color': [
+        'case',
+        ['boolean', ['feature-state', 'selected'], false], pp.lineColorSelected || pp.lineColor,
+        ['boolean', ['feature-state', 'hovered'], false], pp.lineColorSelected || pp.lineColor,
+        pp.lineColor,
+      ],
+      'circle-color': [
+        'case',
+        ['boolean', ['feature-state', 'selected'], false], pp.fillColorSelected || pp.fillColor,
+        ['boolean', ['feature-state', 'hovered'], false], pp.fillColorSelected || pp.fillColor,
+        pp.fillColor,
+      ],
+      'circle-stroke-width': pp.lineWidth,
+      'circle-radius': [
+        'case',
+        ['boolean', ['feature-state', 'selected'], false], pp.circleRadiusSelected || pp.circleRadius,
+        ['boolean', ['feature-state', 'hovered'], false], pp.circleRadiusSelected || pp.circleRadius,
+        pp.circleRadius,
+      ],
+      'circle-opacity': pp.fillOpacity,
+    };
+  } else {
+    // Simple static paint
+    paint = {
+      'circle-color': pp.fillColor,
+      'circle-stroke-width': pp.lineWidth,
+      'circle-stroke-color': pp.lineColor,
+      'circle-stroke-opacity': pp.lineOpacity,
+      'circle-radius': pp.circleRadius,
+      'circle-opacity': pp.fillOpacity,
+    };
+  }
+
+  map.addLayer({
+    id: id,
+    type: 'circle',
+    source: id,
+    minzoom: minZoom,
+    layout: { visibility: 'visible' },
+    paint: paint,
+  });
+
+  // ── Hover popup (non-selector simple mode) ─────────────────────
+
+  if (!selector && opts.hoverProperty) {
+    var hoverPopup = new maplibregl.Popup({
+      closeButton: false,
+      closeOnClick: false,
+    });
+    var unit = opts.unit || '';
+
+    map.on('mouseenter', id, function(e) {
+      map.getCanvas().style.cursor = 'pointer';
+      var val = e.features[0].properties[opts.hoverProperty];
+      var text = opts.hoverProperty + ': ' + val;
+      if (unit) text += ' ' + unit;
+      hoverPopup.setLngLat(e.lngLat).setText(text).addTo(map);
+    });
+
+    map.on('mouseleave', id, function() {
+      map.getCanvas().style.cursor = window.currentCursor || '';
+      hoverPopup.remove();
+    });
+  }
+
+  // ── Legend (optional, for custom paint mode) ───────────────────
+
+  if (opts.legendItems && opts.legendItems.length > 0) {
+    var legendDiv = document.createElement('div');
+    legendDiv.id = 'legend' + id;
+    legendDiv.className = 'legend ' + (opts.legendPosition || 'bottom-right');
+    if (opts.legendTitle) {
+      var t = document.createElement('div');
+      t.innerHTML = '<strong>' + opts.legendTitle + '</strong>';
+      legendDiv.appendChild(t);
+    }
+    for (var i = 0; i < opts.legendItems.length; i++) {
+      var item = document.createElement('div');
+      item.innerHTML =
+        '<i style="' + opts.legendItems[i].style + '; width:18px; height:18px; display:inline-block; margin-right:5px;"></i>' +
+        '<span>' + opts.legendItems[i].label + '</span>';
+      legendDiv.appendChild(item);
+    }
+    document.body.appendChild(legendDiv);
+  }
+
+  // ── Selector mode setup ────────────────────────────────────────
+
+  if (selector) {
+    hoverProperty = opts.hoverProperty || null;
+    var selectionOption = opts.selectionOption || 'single';
+
+    layers[id] = {
+      data: data,
+      mode: 'active',
+      selectionOption: selectionOption,
+    };
+
+    popup = new maplibregl.Popup({
+      offset: 10,
+      closeButton: false,
+      closeOnClick: false,
+    });
+
+    map.on('mouseenter', id, mouseEnter);
+    map.on('mouseleave', id, mouseLeave);
+
+    if (selectionOption === 'single') {
+      map.on('click', id, clickSingle);
+    } else {
+      map.on('click', id, clickMultiple);
+    }
+
+    map.once('idle', () => {
+      deselectAll(id);
+      layerAdded(id);
+    });
+
+    var index = opts.index || 0;
+    if (index >= 0) {
+      select(id, [index]);
+      selectedIndex = index;
+    }
+  }
 }
+
+// ── Paint property updates ───────────────────────────────────────────
 
 /**
  * Update paint properties for an existing circle layer.
- * @param {string} id - Layer identifier
- * @param {string|Array} lineColor - Circle stroke color
- * @param {number|Array} lineWidth - Circle stroke width
- * @param {number|Array} lineOpacity - Circle stroke opacity
- * @param {string|Array} fillColor - Circle fill color
- * @param {number|Array} fillOpacity - Circle fill opacity
- * @param {number|Array} circleRadius - Circle radius in pixels
+ * @param {string} id - Layer identifier.
+ * @param {Object} pp - Paint properties dict.
  */
-export function setPaintProperties(id,
-  lineColor,
-  lineWidth,
-  lineOpacity,
-  fillColor,
-  fillOpacity,
-  circleRadius) {
+export function setPaintProperties(id, pp) {
+  if (!map.getLayer(id)) return;
+  map.setPaintProperty(id, 'circle-stroke-color', pp.lineColor);
+  map.setPaintProperty(id, 'circle-stroke-width', pp.lineWidth);
+  map.setPaintProperty(id, 'circle-stroke-opacity', pp.lineOpacity);
+  map.setPaintProperty(id, 'circle-color', pp.fillColor);
+  map.setPaintProperty(id, 'circle-opacity', pp.fillOpacity);
+  map.setPaintProperty(id, 'circle-radius', pp.circleRadius);
+}
 
-  if (map.getLayer(id)) {
-    map.setPaintProperty(id, 'circle-stroke-color', lineColor);
-    map.setPaintProperty(id, 'circle-stroke-width', lineWidth);
-    map.setPaintProperty(id, 'circle-stroke-opacity', lineOpacity);
-    map.setPaintProperty(id, 'circle-color', fillColor);
-    map.setPaintProperty(id, 'circle-opacity', fillOpacity);
-    map.setPaintProperty(id, 'circle-radius', circleRadius);
+/**
+ * Update the GeoJSON data for an existing source.
+ * @param {string} id - Layer/source identifier.
+ * @param {Object} data - New GeoJSON data.
+ */
+export function setData(id, data) {
+  var source = map.getSource(id);
+  if (source) source.setData(data);
+}
+
+// ── Selector: selection ──────────────────────────────────────────────
+
+/**
+ * Select a feature by index, deselecting all others.
+ * @param {string} id - Layer identifier.
+ * @param {number} index - Feature index to select.
+ */
+export function selectByIndex(id, index) {
+  deselectAll(id);
+  select(id, [index]);
+  selectedIndex = index;
+}
+
+/**
+ * Set the layer to active mode.
+ * @param {string} id - Layer identifier.
+ * @param {Object} pp - Active paint properties.
+ */
+export function activate(id, pp) {
+  if (layers[id]) layers[id].mode = 'active';
+  setPaintProperties(id, pp);
+}
+
+/**
+ * Set the layer to inactive mode.
+ * @param {string} id - Layer identifier.
+ * @param {Object} pp - Inactive paint properties.
+ */
+export function deactivate(id, pp) {
+  if (layers[id]) layers[id].mode = 'inactive';
+  setPaintProperties(id, pp);
+}
+
+/**
+ * Remove the layer, source, legend, and event listeners.
+ * @param {string} id - Layer identifier.
+ */
+export function remove(id) {
+  var opt = layers[id] ? layers[id].selectionOption : null;
+  if (map.getLayer(id)) map.removeLayer(id);
+  if (map.getSource(id)) map.removeSource(id);
+  var legend = document.getElementById('legend' + id);
+  if (legend) legend.remove();
+  map.off('mouseenter', id, mouseEnter);
+  map.off('mouseleave', id, mouseLeave);
+  if (opt === 'single') {
+    map.off('click', id, clickSingle);
+  } else {
+    map.off('click', id, clickMultiple);
+  }
+}
+
+// ── Selector: hover handlers ─────────────────────────────────────────
+
+function mouseEnter(e) {
+  if (!e.features || e.features.length === 0) return;
+  map.getCanvas().style.cursor = 'pointer';
+  var feature = e.features[0];
+  if (feature.properties.hover_popup_width) {
+    popup.setMaxWidth(feature.properties.hover_popup_width);
+  }
+  if (hoverProperty && feature.properties[hoverProperty]) {
+    var coords = feature.geometry.coordinates.slice();
+    while (Math.abs(e.lngLat.lng - coords[0]) > 180) {
+      coords[0] += e.lngLat.lng > coords[0] ? 360 : -360;
+    }
+    popup.setLngLat(coords).setText(feature.properties[hoverProperty]).addTo(map);
+  }
+  if (hoveredId !== null) {
+    map.setFeatureState({ source: activeLayerId, id: hoveredId }, { hovered: false });
+  }
+  map.setFeatureState({ source: feature.source, id: feature.id }, { hovered: true });
+  hoveredId = feature.id;
+  activeLayerId = feature.source;
+}
+
+function mouseLeave() {
+  map.getCanvas().style.cursor = window.currentCursor || '';
+  if (popup) popup.remove();
+  if (hoveredId !== null) {
+    map.setFeatureState({ source: activeLayerId, id: hoveredId }, { hovered: false });
+  }
+  hoveredId = null;
+}
+
+// ── Selector: click handlers ─────────────────────────────────────────
+
+function clickSingle(e) {
+  if (!e.features || e.features.length === 0) return;
+  var layerId = e.features[0].source;
+  if (selectedIndex !== null) deselect(layerId, [selectedIndex]);
+  selectedIndex = e.features[0].id;
+  select(layerId, [selectedIndex]);
+  featureClicked(layerId, e.features[0]);
+}
+
+function clickMultiple(e) {
+  if (!e.features || e.features.length === 0) return;
+  var layerId = e.features[0].source;
+  var index = e.features[0].id;
+  var state = map.getFeatureState({ source: layerId, id: index });
+  if (state.selected) {
+    deselect(layerId, [index]);
+  } else {
+    select(layerId, [index]);
+  }
+  selectedFeatures = [];
+  for (var i = 0; i < layers[layerId].data.features.length; i++) {
+    var fs = map.getFeatureState({ source: layerId, id: i });
+    if (fs.selected) selectedFeatures.push(layers[layerId].data.features[i]);
+  }
+  featureClicked(layerId, selectedFeatures);
+}
+
+// ── Selector: selection helpers ──────────────────────────────────────
+
+function select(layerId, indices) {
+  for (var idx of indices) {
+    map.setFeatureState({ source: layerId, id: idx }, { selected: true });
+  }
+}
+
+function deselect(layerId, indices) {
+  for (var idx of indices) {
+    map.setFeatureState({ source: layerId, id: idx }, { selected: false });
+  }
+}
+
+function deselectAll(layerId) {
+  var features = layers[layerId]?.data?.features;
+  if (!features) return;
+  for (var i = 0; i < features.length; i++) {
+    map.setFeatureState({ source: layerId, id: i }, { selected: false });
   }
 }

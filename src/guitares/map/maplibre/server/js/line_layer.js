@@ -1,108 +1,319 @@
 /**
- * Add a line layer with optional circle vertices to the map.
- * @param {string} id - Unique layer/source identifier
- * @param {object} data - GeoJSON data for the source
- * @param {string|Array} lineColor - Line and circle stroke color
- * @param {number|Array} lineWidth - Line and circle stroke width
- * @param {number|Array} lineOpacity - Line and circle stroke opacity
- * @param {string|Array} fillColor - Circle fill color
- * @param {number|Array} fillOpacity - Circle fill opacity
- * @param {number|Array} circleRadius - Circle radius in pixels (0 to skip circle layer)
+ * Line layer with optional circle vertices and optional selection.
+ *
+ * When selector mode is enabled (options.selector=true), the layer
+ * supports hover popups, single/multiple click selection, and
+ * feature state management (hovered, selected).
+ *
+ * @module line_layer
  */
-export function addLayer(id, data,
-  lineColor,
-  lineWidth,
-  lineOpacity,
-  fillColor,
-  fillOpacity,
-  circleRadius) {
 
-  let lineId = id + ".line";
-  let circleId = id + ".circle";
+// ── Module state (for selector mode) ─────────────────────────────────
 
-  // Always remove old layer and source first to avoid errors
-  if (map.getLayer(lineId)) {
-    map.removeLayer(lineId);
-  }
-  if (map.getLayer(circleId)) {
-    map.removeLayer(circleId);
-  }
-  var mapSource = map.getSource(id);
-  if (typeof mapSource !== 'undefined') {
-    map.removeSource(id);
+let hoverProperty = null;
+let hoveredId = null;
+let activeLayerId = null;
+let selectedIndex = null;
+let popup = null;
+let selectedFeatures = [];
+
+// ── Utility ──────────────────────────────────────────────────────────
+
+/**
+ * Convert a dash style string to a MapLibre line-dasharray value.
+ * @param {string} style - "-" (solid), "--" (dashed), ".." (dotted).
+ * @returns {number[]}
+ */
+function getDashArray(style) {
+  if (style === '--') return [2, 1];
+  if (style === '..') return [0.5, 1];
+  return [1];
+}
+
+// ── Main entry point ─────────────────────────────────────────────────
+
+/**
+ * Add a line layer to the map.
+ *
+ * @param {string} id - Layer/source identifier.
+ * @param {Object} data - GeoJSON FeatureCollection.
+ * @param {Object} pp - Paint properties dict:
+ *   lineColor, lineWidth, lineOpacity, lineStyle,
+ *   fillColor, fillOpacity, circleRadius,
+ *   lineColorSelected, lineWidthSelected (for selector mode).
+ * @param {Object} [options] - Additional options:
+ *   selector (bool), index (int), hoverProperty (string),
+ *   selectionOption ("single"|"multiple").
+ */
+export function addLayer(id, data, pp, options) {
+  var opts = options || {};
+  var selector = opts.selector || false;
+  var lineId = id + '.line';
+  var circleId = id + '.circle';
+
+  // Clean up
+  if (map.getLayer(lineId)) map.removeLayer(lineId);
+  if (map.getLayer(circleId)) map.removeLayer(circleId);
+  if (map.getSource(id)) map.removeSource(id);
+
+  var sourceConfig = { type: 'geojson', data: data };
+  if (selector) sourceConfig.promoteId = 'index';
+
+  map.addSource(id, sourceConfig);
+
+  // ── Line sub-layer ─────────────────────────────────────────────
+
+  var linePaint = {
+    'line-color': pp.lineColor,
+    'line-width': pp.lineWidth,
+    'line-opacity': pp.lineOpacity,
+  };
+
+  if (selector && pp.lineColorSelected) {
+    linePaint['line-color'] = [
+      'case',
+      ['boolean', ['feature-state', 'selected'], false], pp.lineColorSelected,
+      ['boolean', ['feature-state', 'hovered'], false], pp.lineColorSelected,
+      pp.lineColor,
+    ];
+    linePaint['line-width'] = [
+      'case',
+      ['boolean', ['feature-state', 'selected'], false], pp.lineWidthSelected || pp.lineWidth,
+      ['boolean', ['feature-state', 'hovered'], false], pp.lineWidthSelected || pp.lineWidth,
+      pp.lineWidth,
+    ];
   }
 
-  map.addSource(id, {
-    type: 'geojson',
-    data: data
-  });
+  if (pp.lineStyle) {
+    linePaint['line-dasharray'] = getDashArray(pp.lineStyle);
+  }
 
   map.addLayer({
-    'id': lineId,
-    'type': 'line',
-    'source': id,
-    'layout': {},
-    'paint': {
-      'line-color': lineColor,
-      'line-width': lineWidth,
-      'line-opacity': lineOpacity,
-    }
+    id: lineId,
+    type: 'line',
+    source: id,
+    layout: { visibility: 'visible', 'line-cap': 'round', 'line-join': 'round' },
+    paint: linePaint,
   }, 'dummy_layer_1');
 
+  // ── Circle sub-layer (optional) ────────────────────────────────
+
+  var circleRadius = pp.circleRadius || 0;
   if (circleRadius > 0) {
     map.addLayer({
-      'id': circleId,
-      'type': 'circle',
-      'source': id,
-      'paint': {
-        'circle-color': fillColor,
-        'circle-stroke-width': lineWidth,
-        'circle-stroke-color': lineColor,
-        'circle-stroke-opacity': lineOpacity,
+      id: circleId,
+      type: 'circle',
+      source: id,
+      paint: {
+        'circle-color': pp.fillColor || pp.lineColor,
+        'circle-stroke-width': pp.lineWidth,
+        'circle-stroke-color': pp.lineColor,
+        'circle-stroke-opacity': pp.lineOpacity,
         'circle-radius': circleRadius,
-        'circle-opacity': fillOpacity
-      }
+        'circle-opacity': pp.fillOpacity || 1,
+      },
     }, 'dummy_layer_1');
+  }
+
+  // ── Selector mode setup ────────────────────────────────────────
+
+  if (selector) {
+    hoverProperty = opts.hoverProperty || null;
+    var selectionOption = opts.selectionOption || 'single';
+
+    layers[id] = {
+      data: data,
+      mode: 'active',
+      selectionOption: selectionOption,
+    };
+
+    popup = new maplibregl.Popup({
+      offset: 10,
+      closeButton: false,
+      closeOnClick: false,
+    });
+
+    map.on('mouseenter', lineId, mouseEnter);
+    map.on('mouseleave', lineId, mouseLeave);
+
+    if (selectionOption === 'single') {
+      map.on('click', lineId, clickSingle);
+    } else {
+      map.on('click', lineId, clickMultiple);
+    }
+
+    map.once('idle', () => {
+      deselectAll(id);
+      layerAdded(id);
+    });
+
+    var index = opts.index || 0;
+    if (index >= 0) {
+      select(id, [index]);
+      selectedIndex = index;
+    }
+  }
+}
+
+// ── Paint property updates ───────────────────────────────────────────
+
+/**
+ * Update paint properties for an existing line (and circle) layer.
+ * @param {string} id - Base layer identifier.
+ * @param {Object} pp - Paint properties dict.
+ */
+export function setPaintProperties(id, pp) {
+  if (map.getLayer(id + '.line')) {
+    map.setPaintProperty(id + '.line', 'line-color', pp.lineColor);
+    map.setPaintProperty(id + '.line', 'line-width', pp.lineWidth);
+  }
+  if (map.getLayer(id + '.circle')) {
+    map.setPaintProperty(id + '.circle', 'circle-stroke-color', pp.lineColor);
+    map.setPaintProperty(id + '.circle', 'circle-stroke-width', pp.lineWidth);
+    map.setPaintProperty(id + '.circle', 'circle-stroke-opacity', pp.lineOpacity);
+    map.setPaintProperty(id + '.circle', 'circle-color', pp.fillColor || pp.lineColor);
+    map.setPaintProperty(id + '.circle', 'circle-opacity', pp.fillOpacity || 1);
+    map.setPaintProperty(id + '.circle', 'circle-radius', pp.circleRadius || 0);
   }
 }
 
 /**
- * Update the GeoJSON data for a line layer source.
- * @param {string} id - Layer/source identifier
- * @param {object} data - New GeoJSON data
+ * Update the GeoJSON data for an existing source.
+ * @param {string} id - Layer/source identifier.
+ * @param {Object} data - New GeoJSON data.
  */
 export function setData(id, data) {
   var source = map.getSource(id);
-  source.setData(data);
+  if (source) source.setData(data);
+}
+
+// ── Selector: selection ──────────────────────────────────────────────
+
+/**
+ * Select a feature by index, deselecting all others.
+ * @param {string} id - Layer identifier.
+ * @param {number} index - Feature index to select.
+ */
+export function setSelectedIndex(id, index) {
+  deselectAll(id);
+  select(id, [index]);
+  selectedIndex = index;
 }
 
 /**
- * Update paint properties for an existing line layer and its circle sublayer.
- * @param {string} id - Base layer identifier
- * @param {string|Array} lineColor - Line and circle stroke color
- * @param {number|Array} lineWidth - Line and circle stroke width
- * @param {number|Array} lineOpacity - Line opacity
- * @param {string|Array} fillColor - Circle fill color
- * @param {number|Array} fillOpacity - Circle fill opacity
- * @param {number|Array} circleRadius - Circle radius in pixels
+ * Set the layer to active mode.
+ * @param {string} id - Layer identifier.
+ * @param {Object} pp - Active paint properties.
  */
-export function setPaintProperties(id,
-  lineColor,
-  lineWidth,
-  lineOpacity,
-  fillColor,
-  fillOpacity,
-  circleRadius) {
+export function activate(id, pp) {
+  if (layers[id]) layers[id].mode = 'active';
+  setPaintProperties(id, pp);
+}
 
-  if (map.getLayer(id)) {
-    map.setPaintProperty(id + ".circle", 'circle-stroke-color', lineColor);
-    map.setPaintProperty(id + ".circle", 'circle-stroke-width', lineWidth);
-    map.setPaintProperty(id + ".circle", 'circle-stroke-opacity', lineOpacity);
-    map.setPaintProperty(id + ".circle", 'circle-color', fillColor);
-    map.setPaintProperty(id + ".circle", 'circle-opacity', fillOpacity);
-    map.setPaintProperty(id + ".circle", 'circle-radius', circleRadius);
+/**
+ * Set the layer to inactive mode.
+ * @param {string} id - Layer identifier.
+ * @param {Object} pp - Inactive paint properties.
+ */
+export function deactivate(id, pp) {
+  if (layers[id]) layers[id].mode = 'inactive';
+  setPaintProperties(id, pp);
+}
 
-    map.setPaintProperty(id + ".line", 'line-color', lineColor);
-    map.setPaintProperty(id + ".line", 'line-width', lineWidth);
+/**
+ * Remove the layer, source, and event listeners.
+ * @param {string} id - Layer identifier.
+ */
+export function remove(id) {
+  var opt = layers[id] ? layers[id].selectionOption : null;
+  if (map.getLayer(id + '.line')) map.removeLayer(id + '.line');
+  if (map.getLayer(id + '.circle')) map.removeLayer(id + '.circle');
+  if (map.getSource(id)) map.removeSource(id);
+  map.off('mouseenter', id + '.line', mouseEnter);
+  map.off('mouseleave', id + '.line', mouseLeave);
+  if (opt === 'single') {
+    map.off('click', id + '.line', clickSingle);
+  } else {
+    map.off('click', id + '.line', clickMultiple);
+  }
+}
+
+// ── Selector: hover handlers ─────────────────────────────────────────
+
+function mouseEnter(e) {
+  if (!e.features || e.features.length === 0) return;
+  map.getCanvas().style.cursor = 'pointer';
+  var feature = e.features[0];
+  if (feature.properties.hover_popup_width) {
+    popup.setMaxWidth(feature.properties.hover_popup_width);
+  }
+  if (hoverProperty && feature.properties[hoverProperty]) {
+    popup.setLngLat(e.lngLat).setText(feature.properties[hoverProperty]).addTo(map);
+  }
+  if (hoveredId !== null) {
+    map.setFeatureState({ source: activeLayerId, id: hoveredId }, { hovered: false });
+  }
+  map.setFeatureState({ source: feature.source, id: feature.id }, { hovered: true });
+  hoveredId = feature.id;
+  activeLayerId = feature.source;
+}
+
+function mouseLeave() {
+  map.getCanvas().style.cursor = window.currentCursor || '';
+  if (popup) popup.remove();
+  if (hoveredId !== null) {
+    map.setFeatureState({ source: activeLayerId, id: hoveredId }, { hovered: false });
+  }
+  hoveredId = null;
+}
+
+// ── Selector: click handlers ─────────────────────────────────────────
+
+function clickSingle(e) {
+  if (!e.features || e.features.length === 0) return;
+  var layerId = e.features[0].source;
+  if (selectedIndex !== null) deselect(layerId, [selectedIndex]);
+  selectedIndex = e.features[0].id;
+  select(layerId, [selectedIndex]);
+  featureClicked(layerId, e.features[0]);
+}
+
+function clickMultiple(e) {
+  if (!e.features || e.features.length === 0) return;
+  var layerId = e.features[0].source;
+  var index = e.features[0].id;
+  var state = map.getFeatureState({ source: layerId, id: index });
+  if (state.selected) {
+    deselect(layerId, [index]);
+  } else {
+    select(layerId, [index]);
+  }
+  selectedFeatures = [];
+  for (var i = 0; i < layers[layerId].data.features.length; i++) {
+    var fs = map.getFeatureState({ source: layerId, id: i });
+    if (fs.selected) selectedFeatures.push(layers[layerId].data.features[i]);
+  }
+  featureClicked(layerId, selectedFeatures);
+}
+
+// ── Selector: selection helpers ──────────────────────────────────────
+
+function select(layerId, indices) {
+  for (var idx of indices) {
+    map.setFeatureState({ source: layerId, id: idx }, { selected: true });
+  }
+}
+
+function deselect(layerId, indices) {
+  for (var idx of indices) {
+    map.setFeatureState({ source: layerId, id: idx }, { selected: false });
+  }
+}
+
+function deselectAll(layerId) {
+  var features = layers[layerId]?.data?.features;
+  if (!features) return;
+  for (var i = 0; i < features.length; i++) {
+    map.setFeatureState({ source: layerId, id: i }, { selected: false });
   }
 }

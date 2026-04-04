@@ -1,73 +1,112 @@
-import os
+"""Line layer with optional circle vertices and optional selection.
 
-import geojson
+When ``selector=True`` is passed as a keyword argument, the layer supports
+hover popups and click-based feature selection (single or multiple).
+"""
+
+from geopandas import GeoDataFrame
 
 from .layer import Layer
-from geopandas import GeoDataFrame
-import matplotlib.colors as mcolors
+
 
 class LineLayer(Layer):
+    """Line layer with optional interactive selection."""
+
     def __init__(self, map, id, map_id, **kwargs):
         super().__init__(map, id, map_id, **kwargs)
+        # Default to no circles and no selection
+        self.circle_radius = kwargs.get("circle_radius", 0)
+        # Selector mode is enabled when a select callback is provided
+        self.selector = "select" in kwargs and kwargs["select"] is not None
+        self.index = 0
 
-        # Set some default paint values for line layer
-        self.circle_radius = 0
+    def set_data(self, data, index=None):
+        """Set the GeoJSON data and render the line layer.
 
+        Parameters
+        ----------
+        data : GeoDataFrame
+            LineString geometries to display.
+        index : int, optional
+            Initially selected feature index (selector mode only).
+        """
+        self.data = data
 
-    def set_data(self,
-                 data):
-
-        self.data = data   
-
-        # Make sure this is not an empty GeoDataFrame
         if isinstance(data, GeoDataFrame):
-            # Data is GeoDataFrame
             if len(data) == 0:
-                # Need to remove existing layer in MapLibre
                 self.map.runjs("/js/main.js", "removeLayer", arglist=[self.map_id])
                 return
+            data["index"] = range(len(data))
+            data_in = data.to_crs(4326)
         else:
-            print("Data is not a GeoDataFrame")
-            return    
+            return
 
-        # Add new layer        
-        self.map.runjs("/js/line_layer.js", "addLayer", arglist=[self.map_id,
-                                                                     data.to_crs(4326),
-                                                                     self.line_color,
-                                                                     self.line_width,
-                                                                     self.line_opacity,
-                                                                     self.fill_color,
-                                                                     self.fill_opacity,
-                                                                     self.circle_radius])
-    def redraw(self):
-        if isinstance(self.data, GeoDataFrame):
-            self.set_data(self.data)
-        if not self.get_visibility():
-            self.set_visibility(False)
+        if index is not None:
+            self.index = index
+
+        pp = self.get_paint_props()
+
+        # Add selected paint props for selector mode
+        if self.selector:
+            pp["lineColorSelected"] = self.line_color_selected
+            pp["lineWidthSelected"] = self.line_width_selected
+
+        options = {}
+        if self.selector:
+            options["selector"] = True
+            options["index"] = self.index
+            options["hoverProperty"] = getattr(self, "hover_property", None) or getattr(self, "hover_param", None)
+            options["selectionOption"] = getattr(self, "selection_type", "single")
+
+        self.map.runjs(
+            "/js/line_layer.js",
+            "addLayer",
+            arglist=[self.map_id, data_in, pp, options],
+        )
+
+        if not self.active:
+            self.deactivate()
+
+    def set_selected_index(self, index):
+        """Select a feature by index (selector mode only).
+
+        Parameters
+        ----------
+        index : int
+            Feature index to select.
+        """
+        self.index = index
+        self.map.runjs(
+            "/js/line_layer.js",
+            "setSelectedIndex",
+            arglist=[self.map_id, index],
+        )
 
     def activate(self):
-        self.map.runjs("/js/line_layer.js", "setPaintProperties", arglist=[self.map_id,
-                                                                               self.line_color,
-                                                                               self.line_width,
-                                                                               self.line_opacity,
-                                                                               self.fill_color,
-                                                                               self.fill_opacity,
-                                                                               self.circle_radius])
-  
+        """Set the layer to active paint style."""
+        self.active = True
+        pp = self.get_paint_props("active")
+        if self.selector:
+            pp["lineColorSelected"] = self.line_color_selected
+            pp["lineWidthSelected"] = self.line_width_selected
+        self.map.runjs(
+            "/js/line_layer.js",
+            "setPaintProperties",
+            arglist=[self.map_id, pp],
+        )
+
     def deactivate(self):
-        self.map.runjs("/js/line_layer.js", "setPaintProperties", arglist=[self.map_id,
-                                                                               self.line_color_inactive,
-                                                                               self.line_width_inactive,
-                                                                               self.line_opacity_inactive,
-                                                                               self.fill_color_inactive,
-                                                                               self.fill_opacity_inactive,
-                                                                               self.circle_radius_inactive])
+        """Set the layer to inactive paint style."""
+        self.active = False
+        self.map.runjs(
+            "/js/line_layer.js",
+            "setPaintProperties",
+            arglist=[self.map_id, self.get_paint_props("inactive")],
+        )
 
-    # def set_visibility(self, true_or_false):
-    #     if true_or_false:
-    #         self.map.runjs("/js/main.js", "showLayer", arglist=[self.map_id + ".line"])
-    #         self.map.runjs("/js/main.js", "showLayer", arglist=[self.map_id + ".circle"])
-    #     else:
-    #         self.map.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".line"])
-    #         self.map.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".circle"])
-
+    def redraw(self):
+        """Redraw the layer (e.g. after a style change)."""
+        if isinstance(self.data, GeoDataFrame):
+            self.set_data(self.data, self.index)
+        if not self.get_visibility():
+            self.set_visibility(False)

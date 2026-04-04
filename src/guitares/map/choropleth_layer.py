@@ -29,8 +29,8 @@ class ChoroplethLayer(Layer):
             if color_by_attribute is None:
                 # Add new layer
                 self.map.runjs(
-                    "/js/choropleth_layer.js",
-                    "addLayer",
+                    "/js/polygon_layer.js",
+                    "addLayerBins",
                     arglist=[
                         self.map_id,
                         self.data,
@@ -55,8 +55,8 @@ class ChoroplethLayer(Layer):
             ):
                 # Color by attribute
                 self.map.runjs(
-                    "/js/polygon_layer_custom.js",
-                    "addLayer",
+                    "/js/polygon_layer.js",
+                    "addLayerCustom",
                     arglist=[
                         self.map_id,
                         self.data,
@@ -72,8 +72,8 @@ class ChoroplethLayer(Layer):
             ):
                 # Color by attribute
                 self.map.runjs(
-                    "/js/polygon_layer_additional_attr.js",
-                    "addLayer",
+                    "/js/polygon_layer.js",
+                    "addLayerCustomNoLegend",
                     arglist=[
                         self.map_id,
                         self.data,
@@ -108,7 +108,7 @@ class ChoroplethLayer(Layer):
                 # Remove existing layer
                 # Add new layer
                 self.map.runjs(
-                    "/js/choropleth_layer.js",
+                    "/js/polygon_layer.js",
                     "addLayer",
                     arglist=[
                         self.map_id,
@@ -137,7 +137,7 @@ class ChoroplethLayer(Layer):
     def activate(self):
         self.active = True
         self.map.runjs(
-            "/js/choropleth_layer.js",
+            "/js/polygon_layer.js",
             "activate",
             arglist=[
                 self.map_id,
@@ -151,7 +151,7 @@ class ChoroplethLayer(Layer):
     def deactivate(self):
         self.active = False
         self.map.runjs(
-            "/js/choropleth_layer.js",
+            "/js/polygon_layer.js",
             "deactivate",
             arglist=[
                 self.map_id,

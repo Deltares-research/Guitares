@@ -1,169 +1,172 @@
-from .layer import Layer
+"""Circle layer with optional selection and custom paint.
+
+When a ``select`` callback is provided, the layer supports hover popups
+and click-based feature selection (single or multiple). Also supports
+custom paint dicts for data-driven colouring.
+"""
+
 from geopandas import GeoDataFrame
-from pyogrio import read_dataframe
+
+from .layer import Layer
 
 
 class CircleLayer(Layer):
+    """Circle layer with optional interactive selection."""
+
     def __init__(self, map, id, map_id, **kwargs):
         super().__init__(map, id, map_id, **kwargs)
-        self.color_by_attribute = dict()
-        self.legend_items = list()
-        pass
+        self.selector = "select" in kwargs and kwargs["select"] is not None
+        self.index = 0
+        self.color_by_attribute = {}
+        self.legend_items = []
 
-    def set_data(
-        self, data, color_by_attribute: dict = dict(), legend_items: list = []
-    ):
-        # Make sure this is not an empty GeoDataFrame
-        if isinstance(data, GeoDataFrame):
-            # Data is GeoDataFrame
-            if len(data) == 0:
-                return
-            if data.crs != 4326:
-                data = data.to_crs(4326)
-        else:
-            # Read geodataframe from shape file
+    def set_data(self, data, index=None, color_by_attribute=None, legend_items=None):
+        """Set the GeoJSON data and render the circle layer.
+
+        Parameters
+        ----------
+        data : GeoDataFrame or str
+            Point geometries, or a file path to read.
+        index : int, optional
+            Initially selected feature index (selector mode only).
+        color_by_attribute : dict, optional
+            Custom MapLibre paint dict for data-driven colouring.
+        legend_items : list, optional
+            Pre-built legend items [{style, label}].
+        """
+        if not isinstance(data, GeoDataFrame):
+            from pyogrio import read_dataframe
             data = read_dataframe(data)
 
-        self.color_by_attribute = color_by_attribute
-        self.legend_items = legend_items
-        self.data = data
-        
-        self.unit = getattr(self, 'unit', '')
-        
-        if not self.big_data:
-            if len(self.color_by_attribute) == 0:
-                # Add new layer
-                #TODO: take unit info from settings.toml
-                self.map.runjs(
-                    "/js/circle_layer.js",
-                    "addLayer",
-                    arglist=[
-                        self.map_id,
-                        self.data,
-                        self.hover_property,
-                        self.min_zoom,
-                        self.line_color,
-                        self.line_width,
-                        self.line_opacity,
-                        self.fill_color,
-                        self.fill_opacity,
-                        self.circle_radius,
-                        self.unit
-                    ],
-                )
-            elif len(self.color_by_attribute) > 0:
-                # Color by attribute
-                self.map.runjs(
-                    "/js/circle_layer_custom.js",
-                    "addLayer",
-                    arglist=[
-                        self.map_id,
-                        self.data,
-                        self.hover_property,
-                        self.unit,
-                        self.min_zoom,
-                        self.color_by_attribute,
-                        self.legend_items,
-                        self.legend_position,
-                        self.legend_title,
-                    ],
-                )
+        if isinstance(data, GeoDataFrame) and len(data) == 0:
+            if self.selector:
+                self.clear()
+            return
 
-        self.update()
+        if data.crs and data.crs != 4326:
+            data = data.to_crs(4326)
+
+        self.data = data
+
+        if color_by_attribute is not None:
+            self.color_by_attribute = color_by_attribute
+        if legend_items is not None:
+            self.legend_items = legend_items
+
+        if index is not None:
+            self.index = index
+
+        if self.selector:
+            data["index"] = range(len(data))
+
+        pp = self.get_paint_props()
+        if self.selector:
+            pp["lineColorSelected"] = self.line_color_selected
+            pp["fillColorSelected"] = self.fill_color_selected
+            pp["circleRadiusSelected"] = self.circle_radius_selected
+
+        options = {"minZoom": getattr(self, "min_zoom", 0)}
+
+        if self.selector:
+            options["selector"] = True
+            options["index"] = self.index
+            options["hoverProperty"] = self.hover_property
+            options["selectionOption"] = getattr(self, "selection_type", "single")
+        elif self.hover_property:
+            options["hoverProperty"] = self.hover_property
+            options["unit"] = getattr(self, "unit", "")
+
+        if self.color_by_attribute:
+            options["paintDict"] = self.color_by_attribute
+        if self.legend_items:
+            options["legendItems"] = self.legend_items
+            options["legendTitle"] = getattr(self, "legend_title", "")
+            options["legendPosition"] = self.legend_position
+
+        if not self.big_data:
+            self.map.runjs(
+                "/js/circle_layer.js", "addLayer",
+                arglist=[self.map_id, data, pp, options],
+            )
+        else:
+            self.update()
+
+        if self.selector and not self.active:
+            self.deactivate()
 
     def update(self):
-        if not self.map.zoom:
+        """Update for big-data mode (clip to viewport)."""
+        if not self.map.zoom or self.data is None or len(self.data) == 0:
             return
-        if self.data is None:
+        if not self.big_data or not self.get_visibility():
             return
-        if len(self.data) == 0:
-            # Empty GeoDataFrame
-            return            
-        if self.map.zoom > self.min_zoom and self.big_data and self.visible:
+        if self.map.zoom > self.min_zoom:
             coords = self.map.map_extent
-            xl0 = coords[0][0]
-            xl1 = coords[1][0]
-            yl0 = coords[0][1]
-            yl1 = coords[1][1]
-            
-            # Limits WGS 84
-            gdf = self.data.cx[xl0:xl1, yl0:yl1]
-            
-            self.unit = getattr(self, 'unit', '')
-            if len(self.color_by_attribute) == 0:
-                # Add new layer
-                self.map.runjs(
-                    "/js/circle_layer.js",
-                    "addLayer",
-                    arglist=[
-                        self.map_id,
-                        gdf,
-                        self.hover_property,
-                        self.min_zoom,
-                        self.line_color,
-                        self.line_width,
-                        self.line_opacity,
-                        self.fill_color,
-                        self.fill_opacity,
-                        self.circle_radius,
-                        self.unit                        
-                    ],
-                )
-            elif len(self.color_by_attribute) > 0:
-                # Color by attribute
-                self.map.runjs(
-                    "/js/circle_layer_custom.js",
-                    "addLayer",
-                    arglist=[
-                        self.map_id,
-                        self.data,
-                        self.hover_property,
-                        self.unit,
-                        self.min_zoom,
-                        self.color_by_attribute,
-                        self.legend_items,
-                        self.legend_position,
-                        self.legend_title,
-                    ],
-                )
+            gdf = self.data.cx[coords[0][0]:coords[1][0], coords[0][1]:coords[1][1]]
+            if len(gdf) == 0:
+                return
+            pp = self.get_paint_props()
+            options = {"minZoom": self.min_zoom}
+            if self.hover_property:
+                options["hoverProperty"] = self.hover_property
+                options["unit"] = getattr(self, "unit", "")
+            if self.color_by_attribute:
+                options["paintDict"] = self.color_by_attribute
+            if self.legend_items:
+                options["legendItems"] = self.legend_items
+                options["legendTitle"] = getattr(self, "legend_title", "")
+                options["legendPosition"] = self.legend_position
+            self.map.runjs(
+                "/js/circle_layer.js", "addLayer",
+                arglist=[self.map_id, gdf, pp, options],
+            )
+
+    def select_by_index(self, index):
+        """Select a feature by index (selector mode only)."""
+        self.index = index
+        self.map.runjs(
+            "/js/circle_layer.js", "selectByIndex",
+            arglist=[self.map_id, index],
+        )
 
     def activate(self):
+        """Set the layer to active paint style."""
+        self.active = True
+        if self.data is None or len(self.data) == 0:
+            return
         self.show()
+        pp = self.get_paint_props("active")
+        if self.selector:
+            pp["lineColorSelected"] = self.line_color_selected
+            pp["fillColorSelected"] = self.fill_color_selected
+            pp["circleRadiusSelected"] = self.circle_radius_selected
         self.map.runjs(
             "/js/circle_layer.js",
-            "setPaintProperties",
-            arglist=[
-                self.map_id,
-                self.line_color,
-                self.line_width,
-                self.line_opacity,
-                self.fill_color,
-                self.fill_opacity,
-                self.circle_radius,
-            ],
+            "activate" if self.selector else "setPaintProperties",
+            arglist=[self.map_id, pp],
         )
-        
-        #Not working for color_by_attribute, so fixed with self.update()
-        #TODO: make pretty
-        self.update()
+        if self.big_data:
+            self.update()
 
     def deactivate(self):
+        """Set the layer to inactive paint style."""
+        self.active = False
+        if self.data is None or len(self.data) == 0:
+            return
+        pp = self.get_paint_props("inactive")
+        if self.selector:
+            pp["lineColorSelected"] = self.line_color_inactive
+            pp["fillColorSelected"] = self.fill_color_inactive
+            pp["circleRadiusSelected"] = self.circle_radius_inactive
         self.map.runjs(
             "/js/circle_layer.js",
-            "setPaintProperties",
-            arglist=[
-                self.map_id,
-                self.line_color_inactive,
-                self.line_width_inactive,
-                self.line_opacity_inactive,
-                self.fill_color_inactive,
-                self.fill_opacity_inactive,
-                self.circle_radius_inactive,
-            ],
+            "deactivate" if self.selector else "setPaintProperties",
+            arglist=[self.map_id, pp],
         )
 
     def redraw(self):
+        """Redraw the layer (e.g. after a style change)."""
         if isinstance(self.data, GeoDataFrame):
-            self.set_data(self.data)
+            self.set_data(self.data, self.index)
         if not self.get_visibility():
             self.set_visibility(False)

@@ -186,6 +186,30 @@ class Layer:
                                  }
 
 
+    def get_paint_props(self, state="active"):
+        """Return a paint properties dict for the given state.
+
+        Parameters
+        ----------
+        state : str
+            One of "active", "inactive", "selected", "selected_inactive", "hover".
+
+        Returns
+        -------
+        dict
+            Paint properties with camelCase keys matching the JS conventions.
+        """
+        suffix = "" if state == "active" else f"_{state}"
+        return {
+            "lineColor": getattr(self, f"line_color{suffix}"),
+            "lineWidth": getattr(self, f"line_width{suffix}"),
+            "lineStyle": getattr(self, f"line_style{suffix}", "-"),
+            "lineOpacity": getattr(self, f"line_opacity{suffix}"),
+            "fillColor": getattr(self, f"fill_color{suffix}"),
+            "fillOpacity": getattr(self, f"fill_opacity{suffix}"),
+            "circleRadius": getattr(self, f"circle_radius{suffix}"),
+        }
+
     def add_layer(self, layer_id, type=None, **kwargs):
 
         if layer_id in self.layer:
@@ -207,34 +231,18 @@ class Layer:
                 print("Error! Can not add layer to layer of type : " + self.type)
                 return None
 
-            if type == "circle_selector":
-                from .circle_selector_layer import CircleSelectorLayer
-                self.layer[layer_id] = CircleSelectorLayer(self.map, layer_id, map_id, **kwargs)
+            if type == "circle" or type == "circle_selector": # keep circle_selector for backward compatibility
+                from .circle_layer import CircleLayer
+                self.layer[layer_id] = CircleLayer(self.map, layer_id, map_id, **kwargs)
 
-            elif type == "polygon":
+            elif type == "line" or type == "line_selector": # keep line_selector for backward compatibility
+                from .line_layer import LineLayer
+                self.layer[layer_id] = LineLayer(self.map, layer_id, map_id, **kwargs)
+            
+            elif type == "polygon" or type == "choropleth" or type == "polygon_selector": # keep choropleth and polygon_selector for backward compatibility
                 from .polygon_layer import PolygonLayer
                 self.layer[layer_id] = PolygonLayer(self.map, layer_id, map_id, **kwargs)	
                 
-            elif type == "polygon_selector":
-                from .polygon_selector_layer import PolygonSelectorLayer
-                self.layer[layer_id] = PolygonSelectorLayer(self.map, layer_id, map_id, **kwargs)
-
-            elif type == "line_selector":
-                from .line_selector_layer import LineSelectorLayer
-                self.layer[layer_id] = LineSelectorLayer(self.map, layer_id, map_id, **kwargs)
-
-            elif type == "circle":
-                from .circle_layer import CircleLayer
-                self.layer[layer_id] = CircleLayer(self.map, layer_id, map_id, **kwargs)
-            
-            elif type == "line":
-                from .line_layer import LineLayer
-                self.layer[layer_id] = LineLayer(self.map, layer_id, map_id, **kwargs)
-
-            elif type == "choropleth":
-                from .choropleth_layer import ChoroplethLayer
-                self.layer[layer_id] = ChoroplethLayer(self.map, layer_id, map_id, **kwargs)
-            
             elif type == "heatmap":
                 from .heatmap_layer import HeatmapLayer
                 self.layer[layer_id] = HeatmapLayer(self.map, layer_id, map_id, **kwargs)
@@ -243,21 +251,21 @@ class Layer:
                 from .draw_layer import DrawLayer
                 self.layer[layer_id] = DrawLayer(self.map, layer_id, map_id, **kwargs)
 
-            elif type == "image":
-                from .image_layer import ImageLayer
-                self.layer[layer_id] = ImageLayer(self.map, layer_id, map_id, **kwargs)
+            #elif type == "image":
+            #    from .image_layer import ImageLayer
+            #    self.layer[layer_id] = ImageLayer(self.map, layer_id, map_id, **kwargs)
 
-            elif type == "raster":
-                from .raster_layer import RasterLayer
-                self.layer[layer_id] = RasterLayer(self.map, layer_id, map_id, **kwargs)
+            #elif type == "raster":
+            #    from .raster_layer import RasterLayer
+            #    self.layer[layer_id] = RasterLayer(self.map, layer_id, map_id, **kwargs)
 
             elif type == "raster_image":
                 from .raster_image_layer import RasterImageLayer
                 self.layer[layer_id] = RasterImageLayer(self.map, layer_id, map_id, **kwargs)
 
-            elif type == "raster_from_tiles":
-                from .raster_from_tiles_layer import RasterFromTilesLayer
-                self.layer[layer_id] = RasterFromTilesLayer(self.map, layer_id, map_id, **kwargs)
+            #elif type == "raster_from_tiles":
+            #    from .raster_from_tiles_layer import RasterFromTilesLayer
+            #    self.layer[layer_id] = RasterFromTilesLayer(self.map, layer_id, map_id, **kwargs)
 
             # elif type == "deck_geojson":
             #     from .deck_geojson_layer import DeckGeoJSONLayer
@@ -275,9 +283,9 @@ class Layer:
                 from .marker_layer import MarkerLayer
                 self.layer[layer_id] = MarkerLayer(self.map, layer_id, map_id, **kwargs)
 
-            elif type == "raster_tile":
-                from .raster_tile_layer import RasterTileLayer
-                self.layer[layer_id] = RasterTileLayer(self.map, layer_id, map_id, **kwargs)
+            #elif type == "raster_tile":
+            #    from .raster_tile_layer import RasterTileLayer
+            #    self.layer[layer_id] = RasterTileLayer(self.map, layer_id, map_id, **kwargs)
 
             else:
                 print("Error! Layer type " + self.type + " not recognized!")
