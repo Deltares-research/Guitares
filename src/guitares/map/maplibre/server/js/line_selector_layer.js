@@ -1,230 +1,290 @@
+/**
+ * Line selector layer — interactive lines with hover/click/selection.
+ * Follows the same pattern as polygon_selector_layer.js:
+ * uses direct setFeatureState for selection with 'hovered' state name.
+ * @module line_selector_layer
+ */
+
+// ── Module state ─────────────────────────────────────────────────────
+
+let hoverProperty = null;
+let hoveredId = null;
+let activeLayerId = null;
+let selectedIndex = null;
+let popup = null;
+let selectedFeatures = [];
+
+// ── Utility ──────────────────────────────────────────────────────────
+
+/**
+ * Convert a dash style string to a MapLibre line-dasharray value.
+ * @param {string} lineStyle - "-" (solid), "--" (dashed), or ".." (dotted).
+ * @returns {number[]} Dash array.
+ */
 function getLineDashArray(lineStyle) {
-  if (lineStyle === '-') {
-    return [1];  // Continuous line
-  } else if (lineStyle === '--') {
-    return [2, 1];  // Dashed line
-  } else if (lineStyle === '..') {
-    return [0.5, 1];  // Dotted line
-  }
+  if (lineStyle === '-') return [1];
+  if (lineStyle === '--') return [2, 1];
+  if (lineStyle === '..') return [0.5, 1];
+  return [1];
 }
 
-export function addLayer(id,
-                         data,
-                         index,
-                         lineColor,
-                         lineWidth,
-                         lineStyle,
-                         lineOpacity,
-                         lineColorSelected,
-                         lineWidthSelected,
-                         lineStyleSelected,
-                         lineOpacitySelected,
-                         hoverParam,
-                         selectionOption) {
+// ── Exported functions ───────────────────────────────────────────────
 
-  // Always remove old layer and source first to avoid errors
-  if (map.getLayer(id)) {
-    map.removeLayer(id);
-  }
-  if (map.getSource(id)) {
-    map.removeSource(id);
-  }
+/**
+ * Add a line selector layer to the map.
+ * @param {string} id - Layer identifier.
+ * @param {Object} data - GeoJSON FeatureCollection.
+ * @param {number} index - Initially selected feature index.
+ * @param {string} lineColor - Default line color.
+ * @param {number} lineWidth - Default line width.
+ * @param {string} lineStyle - Dash style ("-", "--", "..").
+ * @param {number} lineOpacity - Default line opacity.
+ * @param {string} lineColorSelected - Color when selected/hovered.
+ * @param {number} lineWidthSelected - Width when selected/hovered.
+ * @param {string} lineStyleSelected - Dash style when selected.
+ * @param {number} lineOpacitySelected - Opacity when selected.
+ * @param {string} hoverParam - Property name for hover popup text.
+ * @param {string} selectionOption - "single" or "multiple".
+ */
+export function addLayer(id, data, index,
+  lineColor, lineWidth, lineStyle, lineOpacity,
+  lineColorSelected, lineWidthSelected, lineStyleSelected, lineOpacitySelected,
+  hoverParam, selectionOption) {
 
-  let hoveredId = null;
+  hoverProperty = hoverParam;
 
-  var selectedFeatures = []
+  // Remove old layer and source
+  if (map.getLayer(id)) map.removeLayer(id);
+  if (map.getSource(id)) map.removeSource(id);
+
+  popup = new maplibregl.Popup({
+    offset: 10,
+    closeButton: false,
+    closeOnClick: false,
+  });
+
+  layers[id] = {
+    data: data,
+    mode: 'active',
+    selectionOption: selectionOption,
+  };
 
   map.addSource(id, {
     type: 'geojson',
-    data: data
+    data: data,
+    promoteId: 'index',
   });
 
-  let lineDashArray = getLineDashArray(lineStyle);
-
-  // Add a symbol layer
   map.addLayer({
-    'id': id,
-    'type': 'line',
-    'source': id,
-    'paint': {      
-      'line-color': ['case',
-                             ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
-                             lineColorSelected,
-                             lineColor],
-      'line-width': ['case',
-                             ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
-                             lineWidthSelected,
-                             lineWidth],
-      'line-dasharray': lineDashArray,
-    }
+    id: id,
+    type: 'line',
+    source: id,
+    layout: {
+      visibility: 'visible',
+      'line-cap': 'round',
+      'line-join': 'round',
+    },
+    paint: {
+      'line-color': [
+        'case',
+        ['boolean', ['feature-state', 'selected'], false], lineColorSelected,
+        ['boolean', ['feature-state', 'hovered'], false], lineColorSelected,
+        lineColor,
+      ],
+      'line-width': [
+        'case',
+        ['boolean', ['feature-state', 'selected'], false], lineWidthSelected,
+        ['boolean', ['feature-state', 'hovered'], false], lineWidthSelected,
+        lineWidth,
+      ],
+      'line-dasharray': getLineDashArray(lineStyle),
+      'line-opacity': lineOpacity,
+    },
   });
+
+  // Event handlers
+  map.on('mouseenter', id, mouseEnter);
+  map.on('mouseleave', id, mouseLeave);
+
+  if (selectionOption === 'single') {
+    map.on('click', id, clickSingle);
+  } else {
+    map.on('click', id, clickMultiple);
+  }
 
   map.once('idle', () => {
-    setSelectedIndex(id, index);
+    deselectAll(id);
+    layerAdded(id);
   });
 
-  // Create a popup, but don't add it to the map yet.
-  const popup = new maplibregl.Popup({
-      closeButton: false,
-      closeOnClick: false
-  });
-
-  map.on('mouseenter', id, (e) => {
-
-    if (map.getFeatureState({ source: id, id: e.features[0].id }).active) { 
-
-      // Change the cursor style as a UI indicator.
-      map.getCanvas().style.cursor = 'pointer';
-
-      var description   = e.features[0].properties[hoverParam];
-
-
-      if (e.features[0].properties.hasOwnProperty('hover_popup_width')) {  
-	    	popup.setMaxWidth(e.features[0].properties.hover_popup_width);
-      }
-
-      // Copy coordinates array.
-      const coordinates = e.lngLat;
-      // Ensure that if the map is zoomed out such that multiple
-      // copies of the feature are visible, the popup appears
-      // over the copy being pointed to.
-      while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-          coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-      }
-
-      // Populate the popup and set its coordinates
-      // based on the feature found.
-      popup.setLngLat(coordinates).setHTML(description).addTo(map);
-
-    } 
-  });
-
-  map.on('mouseleave', id, () => {
-      map.getCanvas().style.cursor = currentCursor;
-      popup.remove();
-  });
-
-  // When the user moves their mouse over a line, we'll update the
-  // feature state for the feature under the mouse.
-  map.on('mousemove', id, (e) => {
-
-    if (e.features.length > 0) {
-      if (map.getFeatureState({ source: id, id: e.features[0].id }).active) { 
-        if (hoveredId !== null) {
-          map.setFeatureState(
-            { source: id, id: hoveredId },
-            { hover: false }
-          ); 
-        }
-        hoveredId = e.features[0].id;
-        map.setFeatureState(
-          { source: id, id: hoveredId },
-          { hover: true }
-        );
-      }
-    }
-  });
-
-  // When the mouse leaves the line, update the feature state of the
-  // previously hovered feature.
-  map.on('mouseleave', id, () => {
-    if (hoveredId !== null) {
-      map.setFeatureState(
-        { source: id, id: hoveredId },
-        { hover: false }
-      );
-    }
-    hoveredId = null;
-  });
-
-  if (selectionOption == "single") {
-    map.on('click', id, (e) => {
-      if (map.getFeatureState({ source: id, id: e.features[0].id }).active) { 
-        setSelectedIndex(id, e.features[0].id);
-        featureClicked(id, e.features[0]);
-      }
-    });
-  } else {
-    map.on('click', id, (e) => {
-      if (e.features.length > 0) {
-        var featureState = map.getFeatureState({ source: id, id: e.features[0].id });
-        if (featureState.selected) {
-          // Was selected, now deselect
-          map.setFeatureState(
-            { source: id, id: e.features[0].id },
-            { selected: false }
-          );
-          selectedFeatures.pop(e.features[0]);
-        } else {
-          // Select
-          map.setFeatureState(
-            { source: id, id: e.features[0].id },
-            { selected: true }
-          );
-          selectedFeatures.push(e.features[0]);
-        };
-        featureClicked(id, selectedFeatures);
-      };
-    });
+  // Apply initial selection
+  if (index >= 0) {
+    select(id, [index]);
+    selectedIndex = index;
   }
-};
+}
 
+/**
+ * Select a feature by index, deselecting all others first.
+ * @param {string} id - Layer identifier.
+ * @param {number} index - Feature index to select.
+ */
 export function setSelectedIndex(id, index) {
-  const features = map.querySourceFeatures(id, {sourceLayer: id});
-  for (let i = 0; i < features.length; i++) {
-    if (features[i].properties.index == index) {
-      map.setFeatureState(
-        { source: id, id: features[i].id },
-        { selected: true, active: true }
-      );
-    } else {
-      map.setFeatureState(
-        { source: id, id: features[i].id  },
-        { selected: false, active: true }
-      );
+  deselectAll(id);
+  select(id, [index]);
+  selectedIndex = index;
+}
+
+/**
+ * Set the layer to active mode with specified paint properties.
+ */
+export function activate(id,
+  lineColor, lineWidth, lineStyle, lineOpacity,
+  lineColorSelected, lineWidthSelected, lineStyleSelected, lineOpacitySelected) {
+
+  layers[id].mode = 'active';
+  if (map.getLayer(id)) {
+    map.setPaintProperty(id, 'line-color', [
+      'case',
+      ['boolean', ['feature-state', 'selected'], false], lineColorSelected,
+      ['boolean', ['feature-state', 'hovered'], false], lineColorSelected,
+      lineColor,
+    ]);
+    map.setPaintProperty(id, 'line-width', [
+      'case',
+      ['boolean', ['feature-state', 'selected'], false], lineWidthSelected,
+      ['boolean', ['feature-state', 'hovered'], false], lineWidthSelected,
+      lineWidth,
+    ]);
+  }
+}
+
+/**
+ * Set the layer to inactive mode with specified paint properties.
+ */
+export function deactivate(id,
+  lineColor, lineWidth, lineStyle, lineOpacity) {
+
+  layers[id].mode = 'inactive';
+  if (map.getLayer(id)) {
+    map.setPaintProperty(id, 'line-color', lineColor);
+    map.setPaintProperty(id, 'line-width', lineWidth);
+  }
+}
+
+/**
+ * Remove the layer, source, and all event listeners.
+ * @param {string} id - Layer identifier.
+ */
+export function remove(id) {
+  var opt = layers[id] ? layers[id].selectionOption : null;
+  if (map.getLayer(id)) map.removeLayer(id);
+  if (map.getSource(id)) map.removeSource(id);
+  map.off('mouseenter', id, mouseEnter);
+  map.off('mouseleave', id, mouseLeave);
+  if (opt === 'single') {
+    map.off('click', id, clickSingle);
+  } else {
+    map.off('click', id, clickMultiple);
+  }
+}
+
+// ── Internal hover handlers ──────────────────────────────────────────
+
+function mouseEnter(e) {
+  if (!e.features || e.features.length === 0) return;
+  map.getCanvas().style.cursor = 'pointer';
+
+  const feature = e.features[0];
+  if (feature.properties.hover_popup_width) {
+    popup.setMaxWidth(feature.properties.hover_popup_width);
+  }
+
+  if (hoverProperty && feature.properties[hoverProperty]) {
+    popup.setLngLat(e.lngLat).setText(feature.properties[hoverProperty]).addTo(map);
+  }
+
+  if (hoveredId !== null) {
+    map.setFeatureState(
+      { source: activeLayerId, id: hoveredId },
+      { hovered: false }
+    );
+  }
+
+  map.setFeatureState(
+    { source: feature.source, id: feature.id },
+    { hovered: true }
+  );
+  hoveredId = feature.id;
+  activeLayerId = feature.source;
+}
+
+function mouseLeave() {
+  map.getCanvas().style.cursor = window.currentCursor || '';
+  if (popup) popup.remove();
+  if (hoveredId !== null) {
+    map.setFeatureState(
+      { source: activeLayerId, id: hoveredId },
+      { hovered: false }
+    );
+  }
+  hoveredId = null;
+}
+
+// ── Internal click handlers ──────────────────────────────────────────
+
+function clickSingle(e) {
+  if (!e.features || e.features.length === 0) return;
+  const layerId = e.features[0].source;
+
+  if (selectedIndex !== null) {
+    deselect(layerId, [selectedIndex]);
+  }
+  selectedIndex = e.features[0].id;
+  select(layerId, [selectedIndex]);
+  featureClicked(layerId, e.features[0]);
+}
+
+function clickMultiple(e) {
+  if (!e.features || e.features.length === 0) return;
+  const layerId = e.features[0].source;
+  const index = e.features[0].id;
+  const state = map.getFeatureState({ source: layerId, id: index });
+
+  if (state.selected) {
+    deselect(layerId, [index]);
+  } else {
+    select(layerId, [index]);
+  }
+
+  selectedFeatures = [];
+  for (let i = 0; i < layers[layerId].data.features.length; i++) {
+    const fs = map.getFeatureState({ source: layerId, id: i });
+    if (fs.selected) {
+      selectedFeatures.push(layers[layerId].data.features[i]);
     }
   }
+  featureClicked(layerId, selectedFeatures);
 }
 
-export function activate(id,
-    lineColor,
-    lineWidth,
-    lineStyle,
-    lineOpacity,
-    lineColorSelected,
-    lineWidthSelected,
-    lineStyleSelected,
-    lineOpacitySelected) {
+// ── Internal selection helpers ───────────────────────────────────────
 
-  const features = map.querySourceFeatures(id, {sourceLayer: id});
-  for (let i = 0; i < features.length; i++) {
-    map.setFeatureState(
-      { source: id, id: i },
-      { active: true }
-    );
+function select(layerId, indices) {
+  for (const idx of indices) {
+    map.setFeatureState({ source: layerId, id: idx }, { selected: true });
   }
-  if (map.getLayer(id)) {  
-    map.setPaintProperty(id, 'line-color', ['case',
-      ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
-      lineColorSelected,
-      lineColor]);                          
-  }                           
 }
 
-export function deactivate(id,
-  lineColor,
-  lineWidth,
-  lineStyle,
-  lineOpacity) {
+function deselect(layerId, indices) {
+  for (const idx of indices) {
+    map.setFeatureState({ source: layerId, id: idx }, { selected: false });
+  }
+}
 
-  const features = map.querySourceFeatures(id, {sourceLayer: id});
+function deselectAll(layerId) {
+  const features = layers[layerId]?.data?.features;
+  if (!features) return;
   for (let i = 0; i < features.length; i++) {
-    map.setFeatureState(
-      { source: id, id: i },
-      { active: false }
-    );
-  }  
-  if (map.getLayer(id)) {  
-    map.setPaintProperty(id, 'line-color', lineColor);                          
+    map.setFeatureState({ source: layerId, id: i }, { selected: false });
   }
 }

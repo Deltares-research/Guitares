@@ -1,5 +1,14 @@
-let activeLayerId = null
+let activeLayerId = null;
 
+/**
+ * Add a simple polygon layer with a styled line outline.
+ * @param {string} id - Layer identifier
+ * @param {Object} data - GeoJSON data
+ * @param {string} lineColor - CSS color for the line
+ * @param {number} lineWidth - Line width in pixels
+ * @param {number} lineOpacity - Line opacity (0-1)
+ * @param {string} lineStyle - Line style ("--" for dashed)
+ */
 export function addLayer(id,
   data,
   lineColor,
@@ -32,26 +41,24 @@ export function addLayer(id,
 
   var lineDasharray = [1];
   if (lineStyle == "--") {
-    var lineDasharray = [2, 2];
-  }   
+    lineDasharray = [2, 2];
+  }
+
   // Add line layer
   map.addLayer({
     'id': lineId,
     'type': 'line',
     'source': id,
-    'layout': {},
+    'layout': {
+      'visibility': 'visible'
+    },
     'paint': {
       'line-color': lineColor,
       'line-width': lineWidth,
       'line-opacity': lineOpacity,
       'line-dasharray': lineDasharray
-    },
-    'layout': {
-      // Make the layer visible by default.
-      'visibility': 'visible'
     }
   });
-
 
   map.setLayoutProperty(lineId, 'visibility', 'visible');
 
@@ -62,6 +69,10 @@ export function addLayer(id,
   });
 }
 
+/**
+ * Update the active/inactive feature state for all features in a layer.
+ * @param {string} layerId - Layer identifier
+ */
 function updateFeatureState(layerId) {
   if (layers[layerId].mode == "active") {
     var active = true;
@@ -78,24 +89,38 @@ function updateFeatureState(layerId) {
   }
 }
 
+/**
+ * Mark a layer as active and update its line color.
+ * @param {string} id - Layer identifier
+ * @param {string} lineColor - CSS color for the active state
+ */
 export function activate(id,
   lineColor) {
-  layers[layerId].mode = "active"
+  layers[layerId].mode = "active";
   if (map.getLayer(id)) {
     map.setPaintProperty(id, 'circle-stroke-color', lineColor);
   }
   updateFeatureState(id);
 }
 
+/**
+ * Mark a layer as inactive and update its line color.
+ * @param {string} id - Layer identifier
+ * @param {string} lineColor - CSS color for the inactive state
+ */
 export function deactivate(id,
   lineColor) {
-  layers[id].mode = "inactive"
+  layers[id].mode = "inactive";
   if (map.getLayer(id)) {
     map.setPaintProperty(id, 'circle-stroke-color', lineColor);
   }
   updateFeatureState(id);
 }
 
+/**
+ * Remove a polygon layer (line, fill, and source) from the map.
+ * @param {string} id - Layer identifier
+ */
 export function remove(id) {
   // Remove line layer
   var mapLayer = map.getLayer(id + '.line');
@@ -105,7 +130,7 @@ export function remove(id) {
   // Remove fill layer
   var mapLayer = map.getLayer(id + '.fill');
   if (typeof mapLayer !== 'undefined') {
-    map.removeLayer(id + '.line');
+    map.removeLayer(id + '.fill');
   }
   // Remove source
   var mapSource = map.getSource(id);

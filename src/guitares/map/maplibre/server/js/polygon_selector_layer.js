@@ -1,172 +1,187 @@
-let hover_property
-let hoveredId = null
-let activeLayerId = null
-let selectedIndex = null // Only used for single selection
-let popup
-let selectedFeatures = []
-let paintProperties = {}
+/**
+ * Polygon selector layer — interactive polygons with hover/click/selection.
+ * Uses fill + line sub-layers. Hover state uses 'hovered' (not 'hover')
+ * because polygons use mousemove rather than mouseenter for detection.
+ *
+ * Note: this layer uses direct setFeatureState calls rather than the
+ * data-array pattern from selectable_layer_base, because polygon
+ * selection works with index arrays rather than single indices.
+ *
+ * @module polygon_selector_layer
+ */
 
-export function addLayer(id,
-  data,
-  index,
-  hovprop,
-  paintProperties,
-  selectionOption) {
+import {
+  initPopup,
+  removeLayerAndSource,
+} from './selectable_layer_base.js';
 
-  hover_property = hovprop  
+// ── Module state ─────────────────────────────────────────────────────
 
-  let hoveredId = null
-  let fillId = id + ".fill"
-  let lineId = id + ".line"
+let hoverProperty = null;
+let hoveredId = null;
+let activeLayerId = null;
+let selectedIndex = null;
+let popup = null;
+let selectedFeatures = [];
 
-  // Always remove old layers first to avoid errors
-  if (map.getLayer(fillId)) {
-    map.removeLayer(fillId);
-  }
-  if (map.getLayer(lineId)) {
-    map.removeLayer(lineId);
-  }
-  if (map.getSource(id)) {
-    map.removeSource(id);
-  }
+// ── Exported functions ───────────────────────────────────────────────
 
-  // Hover popup
+/**
+ * Add a polygon selector layer to the map (fill + line sub-layers).
+ * @param {string} id - Layer identifier.
+ * @param {Object} data - GeoJSON FeatureCollection.
+ * @param {number[]} index - Initially selected feature indices.
+ * @param {string} hovprop - Property name for hover popup text.
+ * @param {Object} pp - Paint properties for normal/selected/hover states.
+ * @param {string} selectionOption - "single" or "multiple".
+ */
+export function addLayer(id, data, index, hovprop, pp, selectionOption) {
+  hoverProperty = hovprop;
+
+  const fillId = id + '.fill';
+  const lineId = id + '.line';
+
+  // Remove old layers and source
+  removeLayerAndSource(id, ['.fill', '.line']);
+
+  // Popup
   popup = new maplibregl.Popup({
     offset: 10,
     closeButton: false,
-    closeOnClick: false
+    closeOnClick: false,
   });
-  
-  // Define the layer (are we using this?)
-  layers[id] = {};
-  layers[id].data = data; 
-  layers[id].mode = "active"; 
 
-  // Add source
-  // The feature id is promoted to the index property
+  // Store layer state
+  layers[id] = {
+    data: data,
+    mode: 'active',
+    selectionOption: selectionOption,
+  };
+
+  // Add source with promoted feature id
   map.addSource(id, {
     type: 'geojson',
     data: data,
-    promoteId: "index"
+    promoteId: 'index',
   });
 
-  // Add line layer
+  // Add line sub-layer
   map.addLayer({
-    'id': lineId,
-    'type': 'line',
-    'source': id,
-    'layout': {},
-    'paint': {
+    id: lineId,
+    type: 'line',
+    source: id,
+    layout: { visibility: 'visible' },
+    paint: {
       'line-color': [
         'case',
-        ['boolean', ['feature-state', 'selected'], false], paintProperties.lineColorSelected,
-//        ['boolean', ['feature-state', 'hovered'], false], paintProperties.lineColorHover,
-        paintProperties.lineColor
-      ], 
+        ['boolean', ['feature-state', 'selected'], false], pp.lineColorSelected,
+        pp.lineColor,
+      ],
       'line-opacity': [
         'case',
-        ['boolean', ['feature-state', 'selected'], false], paintProperties.lineOpacitySelected,
-        paintProperties.lineOpacity
-      ], 
+        ['boolean', ['feature-state', 'selected'], false], pp.lineOpacitySelected,
+        pp.lineOpacity,
+      ],
       'line-width': [
         'case',
-        ['boolean', ['feature-state', 'selected'], false], paintProperties.lineWidthSelected,
-        ['boolean', ['feature-state', 'hovered'], false], paintProperties.lineWidthHover,
-        paintProperties.lineWidth
-      ], 
+        ['boolean', ['feature-state', 'selected'], false], pp.lineWidthSelected,
+        ['boolean', ['feature-state', 'hovered'], false], pp.lineWidthHover,
+        pp.lineWidth,
+      ],
     },
-    'layout': {
-      // Make the layer visible by default.
-      'visibility': 'visible'
-      }
   });
 
-  // Add fill layer
+  // Add fill sub-layer
   map.addLayer({
-    'id': fillId,
-    'type': 'fill',
-    'source': id,
-    'paint': {
+    id: fillId,
+    type: 'fill',
+    source: id,
+    layout: { visibility: 'visible' },
+    paint: {
       'fill-color': [
         'case',
-        ['boolean', ['feature-state', 'selected'], false], paintProperties.fillColorSelected,
-        ['boolean', ['feature-state', 'hovered'], false], paintProperties.fillColorHover,
-        paintProperties.fillColor
-      ], 
+        ['boolean', ['feature-state', 'selected'], false], pp.fillColorSelected,
+        ['boolean', ['feature-state', 'hovered'], false], pp.fillColorHover,
+        pp.fillColor,
+      ],
       'fill-opacity': [
         'case',
-        ['boolean', ['feature-state', 'selected'], false], paintProperties.fillOpacitySelected,
-        ['boolean', ['feature-state', 'hovered'], false], paintProperties.fillOpacityHover,
-        paintProperties.fillOpacity
-      ], 
-      'fill-outline-color': 'transparent'
+        ['boolean', ['feature-state', 'selected'], false], pp.fillOpacitySelected,
+        ['boolean', ['feature-state', 'hovered'], false], pp.fillOpacityHover,
+        pp.fillOpacity,
+      ],
+      'fill-outline-color': 'transparent',
     },
-    'layout': {
-     // Make the layer visible by default.
-    'visibility': 'visible'
-    }
   });
 
-  map.setLayoutProperty(fillId, 'visibility', 'visible');
-  map.setLayoutProperty(lineId, 'visibility', 'visible');
-
-  // Update feature state after moving
-  map.on('moveend', () => {moveEnd(id)} );
-
-  // Hover pop-up
+  // Event handlers — polygon uses mousemove on fill layer
   map.on('mousemove', fillId, mouseEnter);
   map.on('mouseleave', fillId, mouseLeave);
 
-  // Clicking
-  if (selectionOption == "single") {
+  if (selectionOption === 'single') {
     map.off('click', fillId, clickSingle);
     map.on('click', fillId, clickSingle);
   } else {
     map.off('click', fillId, clickMultiple);
     map.on('click', fillId, clickMultiple);
-  }  
+  }
 
   map.once('idle', () => {
     deselectAll(id);
-    // Call layerAdded in main.js
     layerAdded(id);
   });
 
-  // If there are any selected features, select them 
+  // Apply initial selection
   if (index.length > 0) {
     select(id, index);
   }
+}
 
-};
+/**
+ * Select features by index, deselecting all others first.
+ * @param {string} layerId - Layer identifier.
+ * @param {number[]} indices - Feature indices to select.
+ */
+export function selectByIndex(layerId, indices) {
+  deselectAll(layerId);
+  select(layerId, indices);
+}
+
+// ── Internal hover handlers ──────────────────────────────────────────
 
 function mouseEnter(e) {
-    // Change the cursor style as a UI indicator.
-    map.getCanvas().style.cursor = 'pointer';
-    if (e.features[0].properties.hasOwnProperty('hover_popup_width')) {  
-      popup.setMaxWidth(e.features[0].properties.hover_popup_width);
-    }
-    var text = e.features[0].properties[hover_property];
-    var lngLat = e.lngLat;
-    popup.setLngLat(lngLat).setText(text).addTo(map);
-    // Unset old hovered feature 
-    if (hoveredId !== null) {
-      map.setFeatureState(
-        { source: e.features[0].source, id: hoveredId },
-        { hovered: false }
-      );
-    }  
-    // Set hovered feature 
-    map.setFeatureState(
-      { source: e.features[0].source, id: e.features[0].id },
-      { hovered: true }
-    );
-    hoveredId = e.features[0].id;
-    activeLayerId = e.features[0].source;
-  } 
+  if (!e.features || e.features.length === 0) return;
+  map.getCanvas().style.cursor = 'pointer';
 
-function mouseLeave(e) {
-  map.getCanvas().style.cursor = currentCursor;
-  popup.remove();
+  const feature = e.features[0];
+  if (feature.properties.hover_popup_width) {
+    popup.setMaxWidth(feature.properties.hover_popup_width);
+  }
+
+  if (hoverProperty && feature.properties[hoverProperty]) {
+    popup.setLngLat(e.lngLat).setText(feature.properties[hoverProperty]).addTo(map);
+  }
+
+  // Clear previous hover
+  if (hoveredId !== null) {
+    map.setFeatureState(
+      { source: activeLayerId, id: hoveredId },
+      { hovered: false }
+    );
+  }
+
+  // Set new hover
+  map.setFeatureState(
+    { source: feature.source, id: feature.id },
+    { hovered: true }
+  );
+  hoveredId = feature.id;
+  activeLayerId = feature.source;
+}
+
+function mouseLeave() {
+  map.getCanvas().style.cursor = window.currentCursor || '';
+  if (popup) popup.remove();
   if (hoveredId !== null) {
     map.setFeatureState(
       { source: activeLayerId, id: hoveredId },
@@ -176,92 +191,61 @@ function mouseLeave(e) {
   hoveredId = null;
 }
 
-function moveEnd(layerId) {
-}
+// ── Internal click handlers ──────────────────────────────────────────
 
-// for a single selection type
 function clickSingle(e) {
+  if (!e.features || e.features.length === 0) return;
+  const layerId = e.features[0].source;
 
-  // Get the layer id
-  var layerId = e.features[0].source;
-
-  // First deselect previous feature
   if (selectedIndex !== null) {
     deselect(layerId, [selectedIndex]);
-  }  
-
-  // Then select the clicked feature
+  }
   selectedIndex = e.features[0].id;
   select(layerId, [selectedIndex]);
-
-  // And call main.js
-  featureClicked(e.features[0].source, e.features[0]);
-
+  featureClicked(layerId, e.features[0]);
 }
 
-// for a multiple selection type
 function clickMultiple(e) {
+  if (!e.features || e.features.length === 0) return;
+  const layerId = e.features[0].source;
+  const index = e.features[0].id;
+  const state = map.getFeatureState({ source: layerId, id: index });
 
-  // Get the layer id and index
-  var layerId = e.features[0].source;
-  var index = e.features[0].id;
-
-  // Get the feature state
-  var featureState = map.getFeatureState({ source: e.features[0].source, id: e.features[0].id });
-
-  if (featureState.selected) {
-    // Was selected before, now deselect
+  if (state.selected) {
     deselect(layerId, [index]);
   } else {
-    // Was deselected, now select
     select(layerId, [index]);
-  };
-  // Find the selected features
+  }
+
+  // Rebuild selected features list
   selectedFeatures = [];
   for (let i = 0; i < layers[layerId].data.features.length; i++) {
-    var featureState = map.getFeatureState({ source: layerId, id: i });
-    if (featureState.selected) {
+    const fs = map.getFeatureState({ source: layerId, id: i });
+    if (fs.selected) {
       selectedFeatures.push(layers[layerId].data.features[i]);
     }
-  }  
-  // And call main.js
+  }
   featureClicked(layerId, selectedFeatures);
 }
 
+// ── Internal selection helpers ───────────────────────────────────────
+
 function select(layerId, indices) {
-  // indices is an array
-  for (let i = 0; i < indices.length; i++) {
-    map.setFeatureState(
-      { source: layerId, id: indices[i] },
-      { selected: true }
-    );
+  for (const idx of indices) {
+    map.setFeatureState({ source: layerId, id: idx }, { selected: true });
   }
 }
 
 function deselect(layerId, indices) {
-  // indices is an array
-  for (let i = 0; i < indices.length; i++) {
-    map.setFeatureState(
-      { source: layerId, id: indices[i] },
-      { selected: false }
-    );
+  for (const idx of indices) {
+    map.setFeatureState({ source: layerId, id: idx }, { selected: false });
   }
 }
 
 function deselectAll(layerId) {
-  for (let i = 0; i < layers[layerId].data.features.length; i++) {
-    map.setFeatureState(
-      { source: layerId, id: i },
-      { selected: false }
-    );
+  const features = layers[layerId]?.data?.features;
+  if (!features) return;
+  for (let i = 0; i < features.length; i++) {
+    map.setFeatureState({ source: layerId, id: i }, { selected: false });
   }
-}
-
-// method to select features by index (called from python layer object)
-export function selectByIndex(layerId, indices) {
-  // indices is an array
-  // console.log(layerId, indices)
-  // console.log(indices);
-  deselectAll(layerId);
-  select(layerId, indices);
 }

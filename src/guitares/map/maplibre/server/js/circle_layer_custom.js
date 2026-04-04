@@ -1,3 +1,15 @@
+/**
+ * Add a custom circle layer with data-driven paint properties and a legend.
+ * @param {string} id - Unique layer/source identifier
+ * @param {object} data - GeoJSON data for the source
+ * @param {string} hover_property - Feature property name used for hover popups and promoteId
+ * @param {string} unit - Unit label shown in hover popup
+ * @param {number} min_zoom - Minimum zoom level for layer visibility
+ * @param {object} paint_dict - MapLibre paint properties object for the circle layer
+ * @param {Array} legendItems - Array of legend entries with style and label properties
+ * @param {string} legend_position - CSS class name for legend positioning
+ * @param {string} legend_title - Title text displayed at the top of the legend
+ */
 export function addLayer(
   id,
   data,
@@ -8,7 +20,7 @@ export function addLayer(
   legendItems,
   legend_position,
   legend_title,
-  ) {
+) {
 
   // Always remove old layer and source first to avoid errors
   if (map.getLayer(id)) {
@@ -28,7 +40,6 @@ export function addLayer(
     promoteId: hover_property
   });
 
-  // Add a symbol layer
   map.addLayer({
     'id': id,
     'type': 'circle',
@@ -41,7 +52,7 @@ export function addLayer(
 
   if (hover_property !== "") {
 
-    // Create a popup, but don't add it to the map yet.
+    // Create a popup, but don't add it to the map yet
     const popup = new maplibregl.Popup({
       closeButton: false,
       closeOnClick: false
@@ -50,11 +61,9 @@ export function addLayer(
     if (hover_property) {
 
       map.on('mouseenter', id, (e) => {
-
-        // Change the cursor style as a UI indicator.
         map.getCanvas().style.cursor = 'pointer';
 
-        // Copy coordinates array.
+        // Copy coordinates array
         const coordinates = e.features[0].geometry.coordinates.slice();
 
         // Ensure that if the map is zoomed out such that multiple
@@ -64,7 +73,6 @@ export function addLayer(
           coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
         }
 
-        // Display a popup 
         popup.setLngLat(e.lngLat)
           .setText(hover_property + ": " + (e.features[0].properties[hover_property])
           + " " + unit)
@@ -76,11 +84,11 @@ export function addLayer(
         popup.remove();
       });
     }
-  };
+  }
 
-  // Legend
-  var legend     = document.createElement("div");
-  legend.id        = "legend" + id;
+  // Build the legend element
+  var legend = document.createElement("div");
+  legend.id = "legend" + id;
   legend.className = legend_position;
   var newSpan = document.createElement('span');
   newSpan.class = 'title';
@@ -88,24 +96,38 @@ export function addLayer(
   legend.appendChild(newSpan);
   legend.appendChild(document.createElement("br"));
   for (let i = 0; i < legendItems.length; i++) {
-  let cnt = legendItems[i]
-      var newI = document.createElement('i');
-      newI.setAttribute('style','background:' + cnt["style"] + '; border-radius: 50%; width: 10px; height: 10px; display: inline-block;');
-      legend.appendChild(newI);
-      var newSpan = document.createElement('span');
-      newSpan.innerHTML = cnt["label"];
-      legend.appendChild(newSpan);
-      legend.appendChild(document.createElement("br"));
+    let cnt = legendItems[i];
+    var newI = document.createElement('i');
+    newI.setAttribute('style', 'background:' + cnt["style"] + '; border-radius: 50%; width: 10px; height: 10px; display: inline-block;');
+    legend.appendChild(newI);
+    var newSpan = document.createElement('span');
+    newSpan.innerHTML = cnt["label"];
+    legend.appendChild(newSpan);
+    legend.appendChild(document.createElement("br"));
   }
   document.body.appendChild(legend);
+}
 
-};
-
+/**
+ * Update the GeoJSON data for a custom circle layer source.
+ * @param {string} id - Layer/source identifier
+ * @param {object} data - New GeoJSON data
+ */
 export function setData(id, data) {
   var source = map.getSource(id);
   source.setData(data);
 }
 
+/**
+ * Update paint properties for an existing custom circle layer.
+ * @param {string} id - Layer identifier
+ * @param {string|Array} lineColor - Circle stroke color
+ * @param {number|Array} lineWidth - Circle stroke width
+ * @param {number|Array} lineOpacity - Circle stroke opacity
+ * @param {string|Array} fillColor - Circle fill color
+ * @param {number|Array} fillOpacity - Circle fill opacity
+ * @param {number|Array} circleRadius - Circle radius in pixels
+ */
 export function setPaintProperties(id,
   lineColor,
   lineWidth,

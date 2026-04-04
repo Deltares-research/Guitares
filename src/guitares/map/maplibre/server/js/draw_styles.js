@@ -1,4 +1,22 @@
+/**
+ * draw_styles.js
+ *
+ * Custom MapboxDraw style definitions used by draw_layer.js.
+ * Overrides the default draw styles to support user-defined paint
+ * properties (colours, widths, opacities) via feature user-properties.
+ *
+ * Styles are grouped into sections:
+ *   - Polygon styles (fill and stroke, active/inactive/static)
+ *   - Line styles (active/inactive/static)
+ *   - Point / vertex styles (active/inactive/static, midpoints)
+ *   - Rotate / scale widget styles (used by scale_rotate mode)
+ */
+
 export const drawStyles = [
+
+  // ── Polygon styles ────────────────────────────────────────────────
+
+  /** Inactive polygon fill -- uses user-defined colour and opacity. */
   {
     'id': 'gl-draw-polygon-fill-inactive',
     'type': 'fill',
@@ -13,6 +31,8 @@ export const drawStyles = [
       'fill-opacity': ['get', 'user_polygon_fill_opacity']
     }
   },
+
+  /** Active polygon fill -- highlighted with selection colour. */
   {
     'id': 'gl-draw-polygon-fill-active',
     'type': 'fill',
@@ -23,6 +43,8 @@ export const drawStyles = [
       'fill-opacity': 0.1
     }
   },
+
+  /** Midpoint circles shown on polygon edges for vertex insertion. */
   {
     'id': 'gl-draw-polygon-midpoint',
     'type': 'circle',
@@ -34,6 +56,8 @@ export const drawStyles = [
       'circle-color': '#fbb03b'
     }
   },
+
+  /** Inactive polygon stroke -- uses user-defined colour and width. */
   {
     'id': 'gl-draw-polygon-stroke-inactive',
     'type': 'line',
@@ -52,6 +76,8 @@ export const drawStyles = [
       'line-opacity': ['get', 'user_polygon_line_opacity']
     }
   },
+
+  /** Active polygon stroke -- dashed highlight. */
   {
     'id': 'gl-draw-polygon-stroke-active',
     'type': 'line',
@@ -66,6 +92,10 @@ export const drawStyles = [
       'line-width': 2
     }
   },
+
+  // ── Line styles ───────────────────────────────────────────────────
+
+  /** Inactive line -- uses user-defined colour and width. */
   {
     'id': 'gl-draw-line-inactive',
     'type': 'line',
@@ -84,6 +114,8 @@ export const drawStyles = [
       'line-opacity': ['get', 'user_polyline_line_opacity']
     }
   },
+
+  /** Active line -- dashed highlight. */
   {
     'id': 'gl-draw-line-active',
     'type': 'line',
@@ -101,6 +133,10 @@ export const drawStyles = [
       'line-width': 2
     }
   },
+
+  // ── Point / vertex styles ─────────────────────────────────────────
+
+  /** Vertex stroke (white outline) for polygon/line edit handles. */
   {
     'id': 'gl-draw-polygon-and-line-vertex-stroke-inactive',
     'type': 'circle',
@@ -114,6 +150,8 @@ export const drawStyles = [
       'circle-color': '#fff'
     }
   },
+
+  /** Vertex fill for polygon/line edit handles. */
   {
     'id': 'gl-draw-polygon-and-line-vertex-inactive',
     'type': 'circle',
@@ -127,6 +165,8 @@ export const drawStyles = [
       'circle-color': '#fbb03b'
     }
   },
+
+  /** Inactive point feature stroke (white outline). */
   {
     'id': 'gl-draw-point-point-stroke-inactive',
     'type': 'circle',
@@ -142,6 +182,8 @@ export const drawStyles = [
       'circle-color': '#fff'
     }
   },
+
+  /** Inactive point feature fill. */
   {
     'id': 'gl-draw-point-inactive',
     'type': 'circle',
@@ -156,6 +198,8 @@ export const drawStyles = [
       'circle-color': '#3bb2d0'
     }
   },
+
+  /** Active point stroke (white outline, larger). */
   {
     'id': 'gl-draw-point-stroke-active',
     'type': 'circle',
@@ -169,6 +213,8 @@ export const drawStyles = [
       'circle-color': '#fff'
     }
   },
+
+  /** Active point fill (selection colour). */
   {
     'id': 'gl-draw-point-active',
     'type': 'circle',
@@ -181,6 +227,10 @@ export const drawStyles = [
       'circle-color': '#fbb03b'
     }
   },
+
+  // ── Static styles (read-only features) ────────────────────────────
+
+  /** Static polygon fill. */
   {
     'id': 'gl-draw-polygon-fill-static',
     'type': 'fill',
@@ -191,6 +241,8 @@ export const drawStyles = [
       'fill-opacity': 0.1
     }
   },
+
+  /** Static polygon stroke. */
   {
     'id': 'gl-draw-polygon-stroke-static',
     'type': 'line',
@@ -204,6 +256,8 @@ export const drawStyles = [
       'line-width': 2
     }
   },
+
+  /** Static line stroke. */
   {
     'id': 'gl-draw-line-static',
     'type': 'line',
@@ -217,6 +271,8 @@ export const drawStyles = [
       'line-width': 2
     }
   },
+
+  /** Static point. */
   {
     'id': 'gl-draw-point-static',
     'type': 'circle',
@@ -227,7 +283,9 @@ export const drawStyles = [
     }
   },
 
-// Rotate and scale additions
+  // ── Rotate / scale widget styles ──────────────────────────────────
+
+  /** Dashed line connecting rotation handle to feature edge midpoint. */
   {
     id: 'gl-draw-line-rotate-point',
     type: 'line',
@@ -237,7 +295,6 @@ export const drawStyles = [
       ['==', 'icon', 'rotate'],
       ['==', '$type', 'LineString'],
       ['!=', 'mode', 'static'],
-      // ['==', 'active', 'true']
     ],
     layout: {
       'line-cap': 'round',
@@ -249,6 +306,8 @@ export const drawStyles = [
       'line-width': 2,
     },
   },
+
+  /** White outline stroke for rotation handle point. */
   {
     id: 'gl-draw-polygon-rotate-point-stroke',
     type: 'circle',
@@ -264,6 +323,8 @@ export const drawStyles = [
       'circle-color': '#fff',
     },
   },
+
+  /** Inner fill for rotation handle point. */
   {
     id: 'gl-draw-polygon-rotate-point',
     type: 'circle',
@@ -279,6 +340,8 @@ export const drawStyles = [
       'circle-color': '#fbb03b',
     },
   },
+
+  /** Rotation icon overlay on the rotation handle point. */
   {
     id: 'gl-draw-polygon-rotate-point-icon',
     type: 'symbol',

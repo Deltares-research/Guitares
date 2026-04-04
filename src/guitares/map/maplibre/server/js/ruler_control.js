@@ -7,7 +7,9 @@
  */
 
 /**
- * Deactivate the ruler if it's active. Called from setMouseDefault.
+ * Deactivate the ruler if it is currently active.
+ * Called from setMouseDefault to ensure the ruler does not interfere
+ * with other map interactions.
  */
 export function deactivateRuler() {
   if (window.rulerControl && window.rulerControl._active) {
@@ -15,6 +17,11 @@ export function deactivateRuler() {
   }
 }
 
+/**
+ * A MapLibre GL control that measures great-circle distances on the map.
+ * Two clicks define a measurement; Escape cancels. The measured line is
+ * drawn as a great-circle arc with a popup showing the distance.
+ */
 export class RulerControl {
   constructor() {
     this._active = false;
@@ -31,6 +38,12 @@ export class RulerControl {
     this._onKeyDown = this._onKeyDown.bind(this);
   }
 
+  /**
+   * Called by MapLibre when the control is added to the map.
+   * Creates the button element with a ruler SVG icon.
+   * @param {Object} map - The MapLibre map instance.
+   * @returns {HTMLElement} The control container element.
+   */
   onAdd(map) {
     this._map = map;
 
@@ -41,13 +54,12 @@ export class RulerControl {
     button.type = 'button';
     button.title = 'Measure distance';
     button.setAttribute('aria-label', 'Measure distance');
-    button.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;">
-      <line x1="3" y1="21" x2="21" y2="3"/>
-      <line x1="3" y1="21" x2="3" y2="16"/>
-      <line x1="3" y1="21" x2="8" y2="21"/>
-      <line x1="7" y1="17" x2="7" y2="14"/>
-      <line x1="11" y1="13" x2="11" y2="10"/>
-      <line x1="15" y1="9" x2="15" y2="6"/>
+    button.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" style="fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;">
+      <rect x="2" y="9" width="20" height="6" rx="1" transform="rotate(-45 12 12)"/>
+      <line x1="6.5" y1="12.5" x2="8.5" y2="10.5"/>
+      <line x1="9" y1="15" x2="12" y2="12"/>
+      <line x1="11.5" y1="12.5" x2="13.5" y2="10.5"/>
+      <line x1="14" y1="15" x2="17" y2="12"/>
     </svg>`;
 
     button.addEventListener('click', () => this._toggle());
@@ -57,12 +69,16 @@ export class RulerControl {
     return this._container;
   }
 
+  /**
+   * Called by MapLibre when the control is removed from the map.
+   */
   onRemove() {
     this._deactivate();
     this._container.parentNode.removeChild(this._container);
     this._map = null;
   }
 
+  /** Toggle ruler activation state. */
   _toggle() {
     if (this._active) {
       this._deactivate();
@@ -71,6 +87,10 @@ export class RulerControl {
     }
   }
 
+  /**
+   * Activate the ruler: add map sources/layers, attach event listeners,
+   * and set the cursor to crosshair.
+   */
   _activate() {
     this._active = true;
     this._startPoint = null;
@@ -128,6 +148,10 @@ export class RulerControl {
     document.addEventListener('keydown', this._onKeyDown);
   }
 
+  /**
+   * Deactivate the ruler: remove map layers/sources, detach listeners,
+   * and restore the default cursor.
+   */
   _deactivate() {
     this._active = false;
     this._startPoint = null;
@@ -154,6 +178,11 @@ export class RulerControl {
     }
   }
 
+  /**
+   * Handle map clicks: first click sets start point, second click
+   * finishes the measurement.
+   * @param {Object} e - MapLibre click event.
+   */
   _onClick(e) {
     if (!this._startPoint) {
       // First click: set start point
@@ -166,17 +195,29 @@ export class RulerControl {
     }
   }
 
+  /**
+   * Update the ruler line and distance popup as the mouse moves.
+   * @param {Object} e - MapLibre mousemove event.
+   */
   _onMouseMove(e) {
     if (!this._startPoint) return;
     this._updateLine(e.lngLat);
   }
 
+  /**
+   * Cancel the ruler on Escape key.
+   * @param {KeyboardEvent} e - Keydown event.
+   */
   _onKeyDown(e) {
     if (e.key === 'Escape') {
       this._deactivate();
     }
   }
 
+  /**
+   * Redraw the great-circle arc and update the distance popup.
+   * @param {Object} lngLat - Current cursor position {lng, lat}.
+   */
   _updateLine(lngLat) {
     const start = this._startPoint;
     const end = [lngLat.lng, lngLat.lat];
@@ -214,8 +255,14 @@ export class RulerControl {
       .addTo(this._map);
   }
 
+  /**
+   * Generate points along a great-circle arc between two coordinates.
+   * @param {number[]} start - [lng, lat] of the start point.
+   * @param {number[]} end - [lng, lat] of the end point.
+   * @param {number} nPoints - Number of intermediate points.
+   * @returns {number[][]} Array of [lng, lat] coordinates along the arc.
+   */
   _greatCircleArc(start, end, nPoints) {
-    // Generate points along a great-circle arc
     const toRad = Math.PI / 180;
     const toDeg = 180 / Math.PI;
 
@@ -248,6 +295,12 @@ export class RulerControl {
     return points;
   }
 
+  /**
+   * Compute the Haversine distance between two points in metres.
+   * @param {number[]} start - [lng, lat] of the start point.
+   * @param {number[]} end - [lng, lat] of the end point.
+   * @returns {number} Distance in metres.
+   */
   _haversineDistance(start, end) {
     const R = 6371000; // Earth radius in metres
     const toRad = Math.PI / 180;
@@ -261,6 +314,11 @@ export class RulerControl {
     return R * c;
   }
 
+  /**
+   * Format a distance in metres to a human-readable string.
+   * @param {number} metres - Distance in metres.
+   * @returns {string} Formatted distance (e.g. "123 m" or "4.56 km").
+   */
   _formatDistance(metres) {
     if (metres < 1000) {
       return Math.round(metres) + ' m';

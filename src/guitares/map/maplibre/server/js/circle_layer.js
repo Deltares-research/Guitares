@@ -1,11 +1,25 @@
-export function addLayer(id, data, hover_property,   min_zoom, 
-  lineColor, 
-  lineWidth, 
-  lineOpacity, 
-  fillColor, 
-  fillOpacity, 
+/**
+ * Add a circle layer to the map with optional hover popups.
+ * @param {string} id - Unique layer/source identifier
+ * @param {object} data - GeoJSON data for the source
+ * @param {string} hover_property - Feature property name shown on hover (empty string to disable)
+ * @param {number} min_zoom - Minimum zoom level for layer visibility
+ * @param {string|Array} lineColor - Circle stroke color
+ * @param {number|Array} lineWidth - Circle stroke width
+ * @param {number|Array} lineOpacity - Circle stroke opacity
+ * @param {string|Array} fillColor - Circle fill color
+ * @param {number|Array} fillOpacity - Circle fill opacity
+ * @param {number|Array} circleRadius - Circle radius in pixels
+ * @param {string} unit - Unit label shown in hover popup
+ */
+export function addLayer(id, data, hover_property, min_zoom,
+  lineColor,
+  lineWidth,
+  lineOpacity,
+  fillColor,
+  fillOpacity,
   circleRadius,
-  unit) {  
+  unit) {
 
   // Always remove old layer and source first to avoid errors
   if (map.getLayer(id)) {
@@ -15,13 +29,12 @@ export function addLayer(id, data, hover_property,   min_zoom,
   if (map.getSource(id)) {
     map.removeSource(id);
   }
-  
+
   map.addSource(id, {
     type: 'geojson',
     data: data
   });
 
-  // Add a symbol layer
   map.addLayer({
     'id': id,
     'type': 'circle',
@@ -41,64 +54,75 @@ export function addLayer(id, data, hover_property,   min_zoom,
 
   if (hover_property !== "") {
 
-    // Create a popup, but don't add it to the map yet.
+    // Create a popup, but don't add it to the map yet
     const popup = new maplibregl.Popup({
       closeButton: false,
       closeOnClick: false
-      });
+    });
 
     if (hover_property) {
 
       map.on('mouseenter', id, (e) => {
-
-        // Change the cursor style as a UI indicator.
         map.getCanvas().style.cursor = 'pointer';
-     
-        // Copy coordinates array.
+
+        // Copy coordinates array
         const coordinates = e.features[0].geometry.coordinates.slice();
-     
+
         // Ensure that if the map is zoomed out such that multiple
         // copies of the feature are visible, the popup appears
         // over the copy being pointed to.
         while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
           coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
         }
-     
-        // Display a popup 
+
         popup.setLngLat(e.lngLat)
           .setText(hover_property + ": " + (e.features[0].properties[hover_property])
           + " " + unit)
           .addTo(map);
       });
-     
+
       map.on('mouseleave', id, () => {
-        map.getCanvas().style.cursor = currentCursor;
+        map.getCanvas().style.cursor = window.currentCursor;
         popup.remove();
       });
     }
-  };
-};
+  }
+}
 
+/**
+ * Update the GeoJSON data for a circle layer source.
+ * @param {string} id - Layer/source identifier
+ * @param {object} data - New GeoJSON data
+ */
 export function setData(id, data) {
   var source = map.getSource(id);
   source.setData(data);
 }
 
+/**
+ * Update paint properties for an existing circle layer.
+ * @param {string} id - Layer identifier
+ * @param {string|Array} lineColor - Circle stroke color
+ * @param {number|Array} lineWidth - Circle stroke width
+ * @param {number|Array} lineOpacity - Circle stroke opacity
+ * @param {string|Array} fillColor - Circle fill color
+ * @param {number|Array} fillOpacity - Circle fill opacity
+ * @param {number|Array} circleRadius - Circle radius in pixels
+ */
 export function setPaintProperties(id,
   lineColor,
   lineWidth,
   lineOpacity,
   fillColor,
-  fillOpacity,                         
+  fillOpacity,
   circleRadius) {
 
-  if (map.getLayer(id)) {  
+  if (map.getLayer(id)) {
     map.setPaintProperty(id, 'circle-stroke-color', lineColor);
     map.setPaintProperty(id, 'circle-stroke-width', lineWidth);
     map.setPaintProperty(id, 'circle-stroke-opacity', lineOpacity);
-    map.setPaintProperty(id, 'circle-color', fillColor);   
-    map.setPaintProperty(id, 'circle-opacity', fillOpacity);                
-    map.setPaintProperty(id, 'circle-radius', circleRadius);  
+    map.setPaintProperty(id, 'circle-color', fillColor);
+    map.setPaintProperty(id, 'circle-opacity', fillOpacity);
+    map.setPaintProperty(id, 'circle-radius', circleRadius);
   }
 }
-

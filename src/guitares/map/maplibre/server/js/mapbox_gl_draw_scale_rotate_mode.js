@@ -1,41 +1,68 @@
-const Constants = MapboxDraw.constants
+/**
+ * mapbox_gl_draw_scale_rotate_mode.js
+ *
+ * A custom MapboxDraw mode that allows scaling and rotating polygon
+ * features. Rotation uses a rotation handle placed at a configurable
+ * offset from the feature centre; scaling uses the corner vertices.
+ * Individual vertex dragging is also supported for rectangles.
+ *
+ * Based on mapbox-gl-draw-scale-rotate-mode, adapted for MapLibre 5.x
+ * with async image loading and custom vertex-drag logic for rectangles.
+ */
+
+// ══════════════════════════════════════════════════════════════════════
+//  Imports and dependencies
+// ══════════════════════════════════════════════════════════════════════
+
+const Constants = MapboxDraw.constants;
 const CommonSelectors = MapboxDraw.lib.CommonSelectors;
 const doubleClickZoom = MapboxDraw.lib.doubleClickZoom;
 const createSupplementaryPoints = MapboxDraw.lib.createSupplementaryPoints;
 const moveFeatures = MapboxDraw.lib.moveFeatures;
 
-let lineString = turf.lineString
-let point = turf.point
-let bearing = turf.bearing
-let center = turf.center
-let midpoint = turf.midpoint
-let distance = turf.distance
-let destination = turf.destination
-let transformRotate = turf.transformRotate
-let transformScale = turf.transformScale
+let lineString = turf.lineString;
+let point = turf.point;
+let bearing = turf.bearing;
+let center = turf.center;
+let midpoint = turf.midpoint;
+let distance = turf.distance;
+let destination = turf.destination;
+let transformRotate = turf.transformRotate;
+let transformScale = turf.transformScale;
 
-//import { lineString, point } from '@turf/helpers';
-//import bearing from '@turf/bearing';
-//import center from '@turf/center';
-//import midpoint from '@turf/midpoint';
-//import distance from '@turf/distance';
-//import destination from '@turf/destination';
-//import transformRotate from '@turf/transform-rotate';
-//import transformScale from '@turf/transform-scale';
-
-//var rotate = require('./img/rotate.png');
-//var scale  = require('./img/scale.png');
 var rotate = '/js/img/rotate.png';
-var scale  = '/js/img/scale.png';
+var scale = '/js/img/scale.png';
 
-export const SRMode = {}; //scale rotate mode
+// ══════════════════════════════════════════════════════════════════════
+//  Exports: mode object and enumerations
+// ══════════════════════════════════════════════════════════════════════
 
+/** The scale/rotate mode object. Methods are attached below. */
+export const SRMode = {};
+
+/**
+ * Enum for pivot/centre options used by rotation and scaling.
+ * @enum {number}
+ */
 export const SRCenter = {
-  Center: 0, // rotate or scale around center of polygon
-  Opposite: 1, // rotate or scale around opposite side of polygon
+  /** Rotate or scale around the centre of the polygon. */
+  Center: 0,
+  /** Rotate or scale around the opposite side of the polygon. */
+  Opposite: 1,
 };
 
+// ══════════════════════════════════════════════════════════════════════
+//  Style definitions for scale/rotate mode
+// ══════════════════════════════════════════════════════════════════════
+
+/**
+ * MapboxDraw style array used when scale/rotate mode is active.
+ * Includes polygon, line, point, vertex, and rotation widget styles.
+ */
 export const SRStyle = [
+
+  // ── Polygon fill styles ─────────────────────────────────────────
+
   {
     id: 'gl-draw-polygon-fill-inactive',
     type: 'fill',
@@ -67,7 +94,6 @@ export const SRStyle = [
       'fill-opacity': 0.2,
     },
   },
-
   {
     id: 'gl-draw-overlay-polygon-fill-inactive',
     type: 'fill',
@@ -100,6 +126,8 @@ export const SRStyle = [
     },
   },
 
+  // ── Polygon stroke styles ───────────────────────────────────────
+
   {
     id: 'gl-draw-polygon-stroke-inactive',
     type: 'line',
@@ -119,7 +147,6 @@ export const SRStyle = [
       'line-width': 2,
     },
   },
-
   {
     id: 'gl-draw-polygon-stroke-active',
     type: 'line',
@@ -135,6 +162,8 @@ export const SRStyle = [
     },
   },
 
+  // ── Midpoint styles ─────────────────────────────────────────────
+
   {
     id: 'gl-draw-polygon-midpoint',
     type: 'circle',
@@ -144,6 +173,8 @@ export const SRStyle = [
       'circle-color': '#fbb03b',
     },
   },
+
+  // ── Line styles ─────────────────────────────────────────────────
 
   {
     id: 'gl-draw-line-inactive',
@@ -177,6 +208,9 @@ export const SRStyle = [
       'line-width': 2,
     },
   },
+
+  // ── Vertex styles ───────────────────────────────────────────────
+
   {
     id: 'gl-draw-polygon-and-line-vertex-stroke-inactive',
     type: 'circle',
@@ -206,6 +240,8 @@ export const SRStyle = [
     },
   },
 
+  // ── Scale icon on vertices ──────────────────────────────────────
+
   {
     id: 'gl-draw-polygon-and-line-vertex-scale-icon',
     type: 'symbol',
@@ -231,6 +267,8 @@ export const SRStyle = [
       },
     },
   },
+
+  // ── Point feature styles ────────────────────────────────────────
 
   {
     id: 'gl-draw-point-point-stroke-inactive',
@@ -292,6 +330,9 @@ export const SRStyle = [
       'circle-opacity': 1,
     },
   },
+
+  // ── Static styles (read-only) ──────────────────────────────────
+
   {
     id: 'gl-draw-polygon-fill-static',
     type: 'fill',
@@ -338,18 +379,9 @@ export const SRStyle = [
     },
   },
 
-  // {
-  //     'id': 'gl-draw-polygon-rotate-point',
-  //     'type': 'circle',
-  //     'filter': ['all',
-  //         ['==', '$type', 'Point'],
-  //         ['==', 'meta', 'rotate_point']],
-  //     'paint': {
-  //         'circle-radius': 5,
-  //         'circle-color': '#fbb03b'
-  //     }
-  // },
+  // ── Rotation widget styles ──────────────────────────────────────
 
+  /** Dashed line connecting rotation handle to feature edge. */
   {
     id: 'gl-draw-line-rotate-point',
     type: 'line',
@@ -359,7 +391,6 @@ export const SRStyle = [
       ['==', 'icon', 'rotate'],
       ['==', '$type', 'LineString'],
       ['!=', 'mode', 'static'],
-      // ['==', 'active', 'true']
     ],
     layout: {
       'line-cap': 'round',
@@ -371,6 +402,8 @@ export const SRStyle = [
       'line-width': 2,
     },
   },
+
+  /** White outline for rotation handle circle. */
   {
     id: 'gl-draw-polygon-rotate-point-stroke',
     type: 'circle',
@@ -386,6 +419,8 @@ export const SRStyle = [
       'circle-color': '#fff',
     },
   },
+
+  /** Inner fill for rotation handle circle. */
   {
     id: 'gl-draw-polygon-rotate-point',
     type: 'circle',
@@ -401,6 +436,8 @@ export const SRStyle = [
       'circle-color': '#fbb03b',
     },
   },
+
+  /** Rotation icon symbol on the rotation handle. */
   {
     id: 'gl-draw-polygon-rotate-point-icon',
     type: 'symbol',
@@ -428,34 +465,49 @@ export const SRStyle = [
   },
 ];
 
+// ══════════════════════════════════════════════════════════════════════
+//  Helper functions
+// ══════════════════════════════════════════════════════════════════════
+
+/**
+ * Parse a pivot/centre option into an SRCenter enum value.
+ * Accepts numeric enum values or the strings "center" / "opposite".
+ * @param {number|string|undefined} value - The value to parse.
+ * @param {number} [defaultSRCenter=SRCenter.Center] - Fallback value.
+ * @returns {number} An SRCenter enum value.
+ * @throws {Error} If the value is not a valid SRCenter.
+ */
 function parseSRCenter(value, defaultSRCenter = SRCenter.Center) {
   if (value == undefined || value == null) return defaultSRCenter;
-
   if (value === SRCenter.Center || value === SRCenter.Opposite) return value;
-
   if (value == 'center') return SRCenter.Center;
-
   if (value == 'opposite') return SRCenter.Opposite;
-
   throw Error('Invalid SRCenter: ' + value);
 }
 
-/*
-    opts = {
-        featureId: ...,
+// ══════════════════════════════════════════════════════════════════════
+//  SRMode lifecycle methods
+// ══════════════════════════════════════════════════════════════════════
 
-        canScale: default true,
-        canRotate: default true,
-
-        rotatePivot: default 'center' or 'opposite',
-        scaleCenter: default 'center' or 'opposite',
-
-        canSelectFeatures: default true,    // can exit to simple_select mode
-    }
+/**
+ * Initialise scale/rotate mode for the currently selected feature.
+ * Loads rotation and scale icon images (async for MapLibre 5.x),
+ * configures state from options, and disables double-click zoom.
+ *
+ * @param {Object} opts - Mode options.
+ * @param {string} opts.featureId - ID of the feature to transform.
+ * @param {boolean} [opts.canScale=true] - Whether scaling is enabled.
+ * @param {boolean} [opts.canRotate=true] - Whether rotation is enabled.
+ * @param {boolean} [opts.canTrash=true] - Whether deletion is enabled.
+ * @param {boolean} [opts.singleRotationPoint=false] - Show only one rotation handle.
+ * @param {number} [opts.rotationPointRadius=1.0] - Offset multiplier for the rotation handle.
+ * @param {number|string} [opts.rotatePivot='center'] - Rotation pivot: 'center' or 'opposite'.
+ * @param {number|string} [opts.scaleCenter='center'] - Scale centre: 'center' or 'opposite'.
+ * @param {boolean} [opts.canSelectFeatures=true] - Whether clicking away exits the mode.
+ * @returns {Object} The initial mode state.
  */
 SRMode.onSetup = function (opts) {
   const featureId = this.getSelected()[0].id;
-
   const feature = this.getFeature(featureId);
 
   if (!feature) {
@@ -468,13 +520,6 @@ SRMode.onSetup = function (opts) {
   ) {
     throw new TypeError('SRMode can not handle points');
   }
-  //   if (
-  //     feature.coordinates === undefined ||
-  //     feature.coordinates.length != 1 ||
-  //     feature.coordinates[0].length <= 2
-  //   ) {
-  //     throw new TypeError('SRMode can only handle polygons');
-  //   }
 
   const state = {
     featureId,
@@ -495,7 +540,6 @@ SRMode.onSetup = function (opts) {
 
     canSelectFeatures:
       opts.canSelectFeatures != undefined ? opts.canSelectFeatures : true,
-    // selectedFeatureMode: opts.selectedFeatureMode != undefined ? opts.selectedFeatureMode : 'simple_select',
 
     dragMoveLocation: opts.startPos || null,
     dragMoving: false,
@@ -518,9 +562,10 @@ SRMode.onSetup = function (opts) {
     uncombineFeatures: false,
     trash: state.canTrash,
   });
-  var _this = this;
+
   // MapLibre 5.x uses promise-based loadImage instead of callback
-  (async function() {
+  var _this = this;
+  (async function () {
     try {
       if (!_this.map.hasImage('rotate')) {
         var rotateImg = await _this.map.loadImage('/js/img/rotate.png');
@@ -538,6 +583,17 @@ SRMode.onSetup = function (opts) {
   return state;
 };
 
+// ══════════════════════════════════════════════════════════════════════
+//  SRMode display and rendering
+// ══════════════════════════════════════════════════════════════════════
+
+/**
+ * Render the feature and its supplementary points (scale handles,
+ * rotation handles) for the current frame.
+ * @param {Object} state - Current mode state.
+ * @param {Object} geojson - GeoJSON feature being rendered.
+ * @param {Function} push - Callback to push features for display.
+ */
 SRMode.toDisplayFeatures = function (state, geojson, push) {
   if (state.featureId === geojson.properties.id) {
     geojson.properties.active = Constants.activeStates.ACTIVE;
@@ -563,28 +619,44 @@ SRMode.toDisplayFeatures = function (state, geojson, push) {
     push(geojson);
   }
 
-  // this.fireActionable(state);
   this.setActionableState({
     combineFeatures: false,
     uncombineFeatures: false,
     trash: state.canTrash,
   });
-
-  // this.fireUpdate();
 };
 
+/**
+ * Clean up when exiting scale/rotate mode.
+ * Re-enables double-click zoom and clears coordinate selections.
+ */
 SRMode.onStop = function () {
   doubleClickZoom.enable(this);
   this.clearSelectedCoordinates();
 };
 
-// TODO why I need this?
+// ══════════════════════════════════════════════════════════════════════
+//  SRMode geometry helpers
+// ══════════════════════════════════════════════════════════════════════
+
+/**
+ * Convert coordinate path strings to the format expected by
+ * setSelectedCoordinates.
+ * @param {string} featureId - The feature these paths belong to.
+ * @param {string[]} paths - Array of coordinate path strings (e.g. "0.1").
+ * @returns {Array<{feature_id: string, coord_path: string}>}
+ */
 SRMode.pathsToCoordinates = function (featureId, paths) {
   return paths.map((coord_path) => {
     return { feature_id: featureId, coord_path };
   });
 };
 
+/**
+ * Compute the bisectrix heading for each vertex point, used to orient
+ * the scale icon at each corner of the polygon.
+ * @param {Object[]} points - Array of supplementary point GeoJSON features.
+ */
 SRMode.computeBisectrix = function (points) {
   for (var i1 = 0; i1 < points.length; i1++) {
     var i0 = (i1 - 1 + points.length) % points.length;
@@ -616,6 +688,15 @@ SRMode.computeBisectrix = function (points) {
   }
 };
 
+/**
+ * Create a single rotation handle widget positioned between two vertices.
+ * @param {Object[]} rotationWidgets - Array to push the widget feature into.
+ * @param {string} featureId - ID of the parent feature.
+ * @param {Object} v1 - First vertex GeoJSON point.
+ * @param {Object} v2 - Second vertex GeoJSON point.
+ * @param {Object} rotCenter - Centre point for rotation reference.
+ * @param {number} radiusScale - Multiplier to offset the handle from the edge midpoint.
+ */
 SRMode._createRotationPoint = function (
   rotationWidgets,
   featureId,
@@ -627,7 +708,7 @@ SRMode._createRotationPoint = function (
   var cR0 = midpoint(v1, v2).geometry.coordinates;
   var heading = bearing(rotCenter, cR0);
   var distance0 = distance(rotCenter, cR0);
-  var distance1 = radiusScale * distance0; // TODO depends on map scale
+  var distance1 = radiusScale * distance0;
   var cR1 = destination(rotCenter, distance1, heading, {}).geometry.coordinates;
   rotationWidgets.push({
     type: Constants.geojsonTypes.FEATURE,
@@ -647,6 +728,15 @@ SRMode._createRotationPoint = function (
   });
 };
 
+/**
+ * Create rotation handle widgets for the feature. If singleRotationPoint
+ * is true, only one handle is created (between the first two vertices);
+ * otherwise one handle per edge.
+ * @param {Object} state - Current mode state.
+ * @param {Object} geojson - The feature's GeoJSON.
+ * @param {Object[]} suppPoints - Supplementary vertex points.
+ * @returns {Object[]} Array of rotation widget GeoJSON features.
+ */
 SRMode.createRotationPoints = function (state, geojson, suppPoints) {
   const { type, coordinates } = geojson.geometry;
   const featureId = geojson.properties && geojson.properties.id;
@@ -663,7 +753,6 @@ SRMode.createRotationPoints = function (state, geojson, suppPoints) {
   corners[corners.length] = corners[0];
 
   var v1 = null;
-
   var rotCenter = this.computeRotationCenter(state, geojson);
 
   if (state.singleRotationPoint) {
@@ -687,19 +776,31 @@ SRMode.createRotationPoints = function (state, geojson, suppPoints) {
           state.rotationPointRadius
         );
       }
-
       v1 = v2;
     });
   }
   return rotationWidgets;
 };
 
+// ══════════════════════════════════════════════════════════════════════
+//  SRMode drag state management
+// ══════════════════════════════════════════════════════════════════════
+
+/**
+ * Begin a drag operation: disable map panning and record the start position.
+ * @param {Object} state - Current mode state.
+ * @param {Object} e - Mouse/touch event.
+ */
 SRMode.startDragging = function (state, e) {
   this.map.dragPan.disable();
   state.canDragMove = true;
   state.dragMoveLocation = e.lngLat;
 };
 
+/**
+ * End a drag operation: re-enable map panning and clear drag state.
+ * @param {Object} state - Current mode state.
+ */
 SRMode.stopDragging = function (state) {
   this.map.dragPan.enable();
   state.dragMoving = false;
@@ -707,49 +808,79 @@ SRMode.stopDragging = function (state) {
   state.dragMoveLocation = null;
 };
 
+// ══════════════════════════════════════════════════════════════════════
+//  SRMode input event handlers
+// ══════════════════════════════════════════════════════════════════════
+
+/** Selector: true when the event target is a rotation midpoint. */
 const isRotatePoint = CommonSelectors.isOfMetaType(Constants.meta.MIDPOINT);
+
+/** Selector: true when the event target is a vertex point. */
 const isVertex = CommonSelectors.isOfMetaType(Constants.meta.VERTEX);
 
+/**
+ * Handle mouse-down / touch-start: dispatch to vertex, rotation, or
+ * feature drag handler depending on what was clicked.
+ * @param {Object} state - Current mode state.
+ * @param {Object} e - Mouse/touch event.
+ */
 SRMode.onTouchStart = SRMode.onMouseDown = function (state, e) {
   if (isVertex(e)) return this.onVertex(state, e);
   if (isRotatePoint(e)) return this.onRotatePoint(state, e);
   if (CommonSelectors.isActiveFeature(e)) return this.onFeature(state, e);
-  // if (isMidpoint(e)) return this.onMidpoint(state, e);
 };
 
+/**
+ * Enum for the type of transformation being performed during a drag.
+ * @enum {number}
+ */
 const TxMode = {
   Scale: 1,
   Rotate: 2,
   Vertex: 3,
 };
 
+/**
+ * Handle clicking on a vertex: prepare for individual vertex dragging.
+ * @param {Object} state - Current mode state.
+ * @param {Object} e - Mouse/touch event on a vertex.
+ */
 SRMode.onVertex = function (state, e) {
-  // convert internal MapboxDraw feature to valid GeoJSON:
   this.computeAxes(state, state.feature.toGeoJSON());
-
   this.startDragging(state, e);
   const about = e.featureTarget.properties;
   state.selectedCoordPaths = [about.coord_path];
-
-  // Dragging a vertex moves it individually
   state.txMode = TxMode.Vertex;
 };
 
+/**
+ * Handle clicking on a rotation point: prepare for rotation dragging.
+ * @param {Object} state - Current mode state.
+ * @param {Object} e - Mouse/touch event on a rotation handle.
+ */
 SRMode.onRotatePoint = function (state, e) {
-  // convert internal MapboxDraw feature to valid GeoJSON:
   this.computeAxes(state, state.feature.toGeoJSON());
-
   this.startDragging(state, e);
   const about = e.featureTarget.properties;
   state.selectedCoordPaths = [about.coord_path];
   state.txMode = TxMode.Rotate;
 };
 
+/**
+ * Handle clicking on the feature body: prepare for translation dragging.
+ * @param {Object} state - Current mode state.
+ * @param {Object} e - Mouse/touch event on the feature.
+ */
 SRMode.onFeature = function (state, e) {
   state.selectedCoordPaths = [];
   this.startDragging(state, e);
 };
 
+/**
+ * Extract the coordinate index from the first selected coordinate path.
+ * @param {string[]} coordPaths - Array of coordinate path strings.
+ * @returns {number} The parsed coordinate index.
+ */
 SRMode.coordinateIndex = function (coordPaths) {
   if (coordPaths.length >= 1) {
     var parts = coordPaths[0].split('.');
@@ -759,13 +890,31 @@ SRMode.coordinateIndex = function (coordPaths) {
   }
 };
 
+// ══════════════════════════════════════════════════════════════════════
+//  SRMode transformation computations
+// ══════════════════════════════════════════════════════════════════════
+
+/**
+ * Compute the rotation centre for the polygon.
+ * Currently returns the geometric centre (centroid).
+ * @param {Object} state - Current mode state.
+ * @param {Object} polygon - GeoJSON polygon feature.
+ * @returns {Object} Turf point at the rotation centre.
+ */
 SRMode.computeRotationCenter = function (state, polygon) {
   var center0 = center(polygon);
   return center0;
 };
 
+/**
+ * Pre-compute rotation and scaling axes/distances for the polygon.
+ * Stores initial headings, centres, and distances in state.rotation
+ * and state.scaling so that drag operations can compute deltas
+ * without re-reading the original geometry each frame.
+ * @param {Object} state - Current mode state.
+ * @param {Object} polygon - GeoJSON polygon feature (initial state).
+ */
 SRMode.computeAxes = function (state, polygon) {
-  // TODO check min 3 points
   const center0 = this.computeRotationCenter(state, polygon);
   let corners;
   if (polygon.geometry.type === Constants.geojsonTypes.POLYGON)
@@ -795,6 +944,7 @@ SRMode.computeAxes = function (state, polygon) {
   const n = corners.length - 1;
   const iHalf = Math.floor(n / 2);
 
+  // Compute rotation centres and initial headings per vertex
   var rotateCenters = [];
   var headings = [];
 
@@ -808,7 +958,7 @@ SRMode.computeAxes = function (state, polygon) {
 
     var rotCenter = center0;
     if (SRCenter.Opposite === state.rotatePivot) {
-      var i3 = (i1 + iHalf) % n; // opposite corner
+      var i3 = (i1 + iHalf) % n;
       var i2 = i3 - 1;
       if (i2 < 0) i2 += n;
 
@@ -822,20 +972,19 @@ SRMode.computeAxes = function (state, polygon) {
   }
 
   state.rotation = {
-    feature0: polygon, // initial feature state
+    feature0: polygon,
     centers: rotateCenters,
-    headings: headings, // rotation start heading for each point
+    headings: headings,
   };
 
-  // compute current distances from centers for scaling
-
+  // Compute scale centres and initial distances per vertex
   var scaleCenters = [];
   var distances = [];
   for (var i = 0; i < n; i++) {
     var c1 = corners[i];
     var c0 = center0.geometry.coordinates;
     if (SRCenter.Opposite === state.scaleCenter) {
-      var i2 = (i + iHalf) % n; // opposite corner
+      var i2 = (i + iHalf) % n;
       c0 = corners[i2];
     }
     scaleCenters[i] = c0;
@@ -843,12 +992,22 @@ SRMode.computeAxes = function (state, polygon) {
   }
 
   state.scaling = {
-    feature0: polygon, // initial feature state
+    feature0: polygon,
     centers: scaleCenters,
     distances: distances,
   };
 };
 
+// ══════════════════════════════════════════════════════════════════════
+//  SRMode drag handlers
+// ══════════════════════════════════════════════════════════════════════
+
+/**
+ * Main drag handler: dispatches to rotate, scale, vertex-drag, or
+ * feature-translate depending on the current transformation mode.
+ * @param {Object} state - Current mode state.
+ * @param {Object} e - Mouse/touch drag event.
+ */
 SRMode.onDrag = function (state, e) {
   if (state.canDragMove !== true) return;
   state.dragMoving = true;
@@ -877,6 +1036,14 @@ SRMode.onDrag = function (state, e) {
   state.dragMoveLocation = e.lngLat;
 };
 
+/**
+ * Rotate the feature by computing the bearing delta between the initial
+ * heading and the current cursor position relative to the rotation centre.
+ * Shift-key snaps to 5-degree increments.
+ * @param {Object} state - Current mode state.
+ * @param {Object} e - Mouse/touch drag event.
+ * @param {Object} delta - Lng/lat delta from last position.
+ */
 SRMode.dragRotatePoint = function (state, e, delta) {
   if (state.rotation === undefined || state.rotation == null) {
     throw new Error('state.rotation required');
@@ -887,14 +1054,12 @@ SRMode.dragRotatePoint = function (state, e, delta) {
 
   const n = state.rotation.centers.length;
   var cIdx = (this.coordinateIndex(state.selectedCoordPaths) + 1) % n;
-  // TODO validate cIdx
   var cCenter = state.rotation.centers[cIdx];
   var center = point(cCenter);
 
   var heading1 = bearing(center, m1);
-
   var heading0 = state.rotation.headings[cIdx];
-  var rotateAngle = heading1 - heading0; // in degrees
+  var rotateAngle = heading1 - heading0;
   if (CommonSelectors.isShiftDown(e)) {
     rotateAngle = 5.0 * Math.round(rotateAngle / 5.0);
   }
@@ -905,10 +1070,16 @@ SRMode.dragRotatePoint = function (state, e, delta) {
   });
 
   state.feature.incomingCoords(rotatedFeature.geometry.coordinates);
-  // TODO add option for this:
-//  this.fireUpdate();
 };
 
+/**
+ * Scale the feature by computing the distance ratio between the initial
+ * vertex distance and the current cursor distance from the scale centre.
+ * Shift-key snaps to 5% increments.
+ * @param {Object} state - Current mode state.
+ * @param {Object} e - Mouse/touch drag event.
+ * @param {Object} delta - Lng/lat delta from last position.
+ */
 SRMode.dragScalePoint = function (state, e, delta) {
   if (state.scaling === undefined || state.scaling == null) {
     throw new Error('state.scaling required');
@@ -917,8 +1088,6 @@ SRMode.dragScalePoint = function (state, e, delta) {
   var polygon = state.feature.toGeoJSON();
 
   var cIdx = this.coordinateIndex(state.selectedCoordPaths);
-  // TODO validate cIdx
-
   var cCenter = state.scaling.centers[cIdx];
   var center = point(cCenter);
   var m1 = point([e.lngLat.lng, e.lngLat.lat]);
@@ -927,7 +1096,6 @@ SRMode.dragScalePoint = function (state, e, delta) {
   var scale = dist / state.scaling.distances[cIdx];
 
   if (CommonSelectors.isShiftDown(e)) {
-    // TODO discrete scaling
     scale = 0.05 * Math.round(scale / 0.05);
   }
 
@@ -937,19 +1105,22 @@ SRMode.dragScalePoint = function (state, e, delta) {
   });
 
   state.feature.incomingCoords(scaledFeature.geometry.coordinates);
-  // TODO add option for this:
-//  this.fireUpdate();
 };
 
+/**
+ * Move a rectangle vertex while keeping the shape rectangular.
+ * Works for both axis-aligned and rotated rectangles.
+ *
+ * Strategy: the opposite corner stays fixed. We use the rectangle's
+ * edge directions (computed from the opposite corner) to project the
+ * cursor and rebuild all four corners. Then we set all coordinates
+ * at once via incomingCoords to avoid inserting extra vertices.
+ *
+ * @param {Object} state - Current mode state.
+ * @param {Object} e - Mouse/touch drag event.
+ * @param {Object} delta - Lng/lat delta from last position.
+ */
 SRMode.dragVertexPoint = function (state, e, delta) {
-  // Move a rectangle vertex while keeping the shape rectangular.
-  // Works for both axis-aligned and rotated rectangles.
-  //
-  // Strategy: the opposite corner stays fixed. We use the rectangle's
-  // edge directions (computed from the opposite corner) to project the
-  // cursor and rebuild all four corners. Then we set all coordinates
-  // at once via incomingCoords to avoid inserting extra vertices.
-
   var coordIdx = this.coordinateIndex(state.selectedCoordPaths);
   var coords = state.feature.getCoordinates()[0].slice(); // copy
   var n = coords.length - 1; // last index is closing vertex
@@ -995,17 +1166,29 @@ SRMode.dragVertexPoint = function (state, e, delta) {
   // Close the ring (vertex 4 = vertex 0)
   newCoords.push([newCoords[0][0], newCoords[0][1]]);
 
-  // Set all coordinates at once — avoids inserting extra vertices
+  // Set all coordinates at once -- avoids inserting extra vertices
   state.feature.incomingCoords([newCoords]);
 };
 
+/**
+ * Translate the entire feature by the given delta.
+ * @param {Object} state - Current mode state.
+ * @param {Object} e - Mouse/touch drag event.
+ * @param {Object} delta - Lng/lat delta from last position.
+ */
 SRMode.dragFeature = function (state, e, delta) {
   moveFeatures(this.getSelected(), delta);
   state.dragMoveLocation = e.lngLat;
-  // TODO add option for this:
-//  this.fireUpdate();
 };
 
+// ══════════════════════════════════════════════════════════════════════
+//  SRMode update and click handlers
+// ══════════════════════════════════════════════════════════════════════
+
+/**
+ * Fire an UPDATE event with the current feature coordinates.
+ * Called at the end of drag operations to notify the map.
+ */
 SRMode.fireUpdate = function () {
   this.map.fire(Constants.events.UPDATE, {
     action: Constants.updateActions.CHANGE_COORDINATES,
@@ -1013,13 +1196,21 @@ SRMode.fireUpdate = function () {
   });
 };
 
+/**
+ * When the mouse leaves the canvas during a drag, fire an update
+ * so the feature state is not lost.
+ * @param {Object} state - Current mode state.
+ */
 SRMode.onMouseOut = function (state) {
-  // As soon as you mouse leaves the canvas, update the feature
   if (state.dragMoving) {
     this.fireUpdate();
   }
 };
 
+/**
+ * Handle mouse-up / touch-end: fire update if dragging, then stop.
+ * @param {Object} state - Current mode state.
+ */
 SRMode.onTouchEnd = SRMode.onMouseUp = function (state) {
   if (state.dragMoving) {
     this.fireUpdate();
@@ -1027,12 +1218,22 @@ SRMode.onTouchEnd = SRMode.onMouseUp = function (state) {
   this.stopDragging(state);
 };
 
+/**
+ * Handle clicking on the active feature: deselect coordinates.
+ * @param {Object} state - Current mode state.
+ */
 SRMode.clickActiveFeature = function (state) {
   state.selectedCoordPaths = [];
   this.clearSelectedCoordinates();
   state.feature.changed();
 };
 
+/**
+ * Main click handler: dispatches to no-target, active-feature, or
+ * inactive-feature click handlers.
+ * @param {Object} state - Current mode state.
+ * @param {Object} e - Click event.
+ */
 SRMode.onClick = function (state, e) {
   if (CommonSelectors.noTarget(e)) return this.clickNoTarget(state, e);
   if (CommonSelectors.isActiveFeature(e))
@@ -1041,10 +1242,20 @@ SRMode.onClick = function (state, e) {
   this.stopDragging(state);
 };
 
+/**
+ * Handle clicking on empty space: exit to simple_select if allowed.
+ * @param {Object} state - Current mode state.
+ * @param {Object} e - Click event.
+ */
 SRMode.clickNoTarget = function (state, e) {
   if (state.canSelectFeatures) this.changeMode(Constants.modes.SIMPLE_SELECT);
 };
 
+/**
+ * Handle clicking on an inactive feature: select it if allowed.
+ * @param {Object} state - Current mode state.
+ * @param {Object} e - Click event.
+ */
 SRMode.clickInactive = function (state, e) {
   if (state.canSelectFeatures)
     this.changeMode(Constants.modes.SIMPLE_SELECT, {
@@ -1052,7 +1263,9 @@ SRMode.clickInactive = function (state, e) {
     });
 };
 
+/**
+ * Handle the trash action: delete the selected feature.
+ */
 SRMode.onTrash = function () {
   this.deleteFeature(this.getSelectedIds());
-  // this.fireActionable();
 };

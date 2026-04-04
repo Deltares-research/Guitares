@@ -11,6 +11,11 @@ var hoverPopup = new maplibregl.Popup({
   offset: [0, -12]
 });
 
+/**
+ * Add a marker/symbol layer with hover and click popup support.
+ * @param {string} id - Unique layer/source identifier
+ * @param {object} data - GeoJSON data with icon_url, hover_html, and click_html feature properties
+ */
 export function addLayer(id, data) {
 
   map.off('click', id, onClick);
@@ -23,87 +28,80 @@ export function addLayer(id, data) {
   }
 
   var mapSource = map.getSource(id);
-  if(typeof mapSource !== 'undefined') {
+  if (typeof mapSource !== 'undefined') {
     map.removeSource(id);
   }
-  
+
   map.addSource(id, {
     type: 'geojson',
     data: data
   });
 
   var prop0 = map.getSource(id)._data.features[0].properties;
-  // Check if icon_size is defined.
   var iconSize = prop0.icon_size;
-  if (!iconSize) {iconSize = 1.0;}
-  // Check if icon_color is defined.
+  if (!iconSize) { iconSize = 1.0; }
   var iconColor = prop0.icon_color;
-  if (!iconColor) {iconColor = 'red';}
+  if (!iconColor) { iconColor = 'red'; }
 
-  // Add a layer for the points with icons based on icon URL property
-  // console.log('Adding layer with id: ' + id);
   map.addLayer({
     id: id,
     type: 'symbol',
     source: id,
-    layout: { 
+    layout: {
       'icon-image': ['get', 'icon_url'],
-      'icon-size': iconSize, // Adjust the icon size as needed
+      'icon-size': iconSize,
       'icon-allow-overlap': true
     }
   }, 'dummy_layer_1');
 
-  // Add an event listener for mouseenter on the points
   map.on('mouseenter', id, mouseEnter);
-
-  // Remove the popup when the mouse leaves the points
-  map.on('mouseleave', id, mouseLeave)
-
-  // Open popup on click. Should only work if click_html is defined.
+  map.on('mouseleave', id, mouseLeave);
   map.on('click', id, onClick);
-
 }
 
+/**
+ * Handle mouseenter events to show hover popup and change cursor.
+ * @param {object} e - MapLibre mouse event
+ */
 function mouseEnter(e) {
   map.getCanvas().style.cursor = 'pointer';
   var coordinates = e.features[0].geometry.coordinates.slice();
-  // If hover_property is defined, 
+  var html = null;
   if (e.features[0].properties.hasOwnProperty('hover_html')) {
-      var html = e.features[0].properties.hover_html;
-  } else {var html = null;}    
-  // Ensure that if the map is zoomed out, the popup does not appear beyond the visible bounds
-  while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-      coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+    html = e.features[0].properties.hover_html;
   }
-  // Set the popup content and coordinates
+  while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+    coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+  }
   if (html) {
     hoverPopup.setLngLat(coordinates).setHTML(html).addTo(map);
-  }  
-}  
+  }
+}
 
+/**
+ * Handle mouseleave events to restore cursor and remove hover popup.
+ * @param {object} e - MapLibre mouse event
+ */
 function mouseLeave(e) {
-  map.getCanvas().style.cursor = currentCursor;
+  map.getCanvas().style.cursor = window.currentCursor;
   hoverPopup.remove();
 }
 
+/**
+ * Handle click events to show a click popup if click_html is defined.
+ * @param {object} e - MapLibre mouse event
+ */
 function onClick(e) {
-    if (e.features[0].properties.hasOwnProperty('click_html')) {
-      var coordinates = e.features[0].geometry.coordinates.slice();
-      // Let the popup be slightly offset from the point, depending on the zoom level
-      var offset = 0.0005 * Math.pow(2, 14 - map.getZoom());
-      var html = e.features[0].properties.click_html;
-//      if (e.features[0].properties.hasOwnProperty('click_popup_width')) {
-//        var maxWidth = e.features[0].properties.click_popup_width.toString() + 'px';
-//      } else {
-//        var maxWidth = "none";
-//      }
-      var maxWidth = "none";
-      // Ensure that if the map is zoomed out, the popup does not appear beyond the visible bounds
-      while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-        coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-      }
-      if (html) {
-        clickPopup.setLngLat(coordinates).setHTML(html).setMaxWidth(maxWidth).addTo(map);
-      }
-    }  
+  if (e.features[0].properties.hasOwnProperty('click_html')) {
+    var coordinates = e.features[0].geometry.coordinates.slice();
+    var offset = 0.0005 * Math.pow(2, 14 - map.getZoom());
+    var html = e.features[0].properties.click_html;
+    var maxWidth = "none";
+    while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+      coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+    }
+    if (html) {
+      clickPopup.setLngLat(coordinates).setHTML(html).setMaxWidth(maxWidth).addTo(map);
+    }
+  }
 }
