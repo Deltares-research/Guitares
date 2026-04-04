@@ -519,14 +519,21 @@ SRMode.onSetup = function (opts) {
     trash: state.canTrash,
   });
   var _this = this;
-  this.map.loadImage('/js/img/rotate.png', function (error, image) {
-    if (error) throw error;
-    _this.map.addImage('rotate', image);
-  });
-  this.map.loadImage('/js/img/scale.png', function (error, image) {
-    if (error) throw error;
-    _this.map.addImage('scale', image);
-  });
+  // MapLibre 5.x uses promise-based loadImage instead of callback
+  (async function() {
+    try {
+      if (!_this.map.hasImage('rotate')) {
+        var rotateImg = await _this.map.loadImage('/js/img/rotate.png');
+        _this.map.addImage('rotate', rotateImg.data);
+      }
+      if (!_this.map.hasImage('scale')) {
+        var scaleImg = await _this.map.loadImage('/js/img/scale.png');
+        _this.map.addImage('scale', scaleImg.data);
+      }
+    } catch (e) {
+      console.warn('Could not load rotate/scale icons:', e);
+    }
+  })();
 
   return state;
 };
@@ -713,6 +720,7 @@ SRMode.onTouchStart = SRMode.onMouseDown = function (state, e) {
 const TxMode = {
   Scale: 1,
   Rotate: 2,
+  Vertex: 3,
 };
 
 SRMode.onVertex = function (state, e) {
@@ -722,7 +730,9 @@ SRMode.onVertex = function (state, e) {
   this.startDragging(state, e);
   const about = e.featureTarget.properties;
   state.selectedCoordPaths = [about.coord_path];
-  state.txMode = TxMode.Scale;
+
+  // Dragging a vertex moves it individually
+  state.txMode = TxMode.Vertex;
 };
 
 SRMode.onRotatePoint = function (state, e) {
@@ -856,6 +866,9 @@ SRMode.onDrag = function (state, e) {
       case TxMode.Scale:
         this.dragScalePoint(state, e, delta);
         break;
+      case TxMode.Vertex:
+        this.dragVertexPoint(state, e, delta);
+        break;
     }
   } else {
     this.dragFeature(state, e, delta);
@@ -926,6 +939,64 @@ SRMode.dragScalePoint = function (state, e, delta) {
   state.feature.incomingCoords(scaledFeature.geometry.coordinates);
   // TODO add option for this:
 //  this.fireUpdate();
+};
+
+SRMode.dragVertexPoint = function (state, e, delta) {
+  // Move a rectangle vertex while keeping the shape rectangular.
+  // Works for both axis-aligned and rotated rectangles.
+  //
+  // Strategy: the opposite corner stays fixed. We use the rectangle's
+  // edge directions (computed from the opposite corner) to project the
+  // cursor and rebuild all four corners. Then we set all coordinates
+  // at once via incomingCoords to avoid inserting extra vertices.
+
+  var coordIdx = this.coordinateIndex(state.selectedCoordPaths);
+  var coords = state.feature.getCoordinates()[0].slice(); // copy
+  var n = coords.length - 1; // last index is closing vertex
+
+  // Treat closing vertex as vertex 0
+  if (coordIdx >= n) coordIdx = 0;
+  if (coordIdx < 0 || coordIdx >= 4) return;
+
+  // Opposite corner (diagonally across in a 4-vertex rectangle)
+  var oppIdx = (coordIdx + 2) % 4;
+  // The two neighbours of the opposite corner
+  var adjA = (oppIdx + 1) % 4;
+  var adjB = (oppIdx + 3) % 4; // same as (oppIdx - 1 + 4) % 4
+
+  var anchor = coords[oppIdx];
+
+  // Edge unit vectors from the fixed anchor to its two neighbours
+  var eA = [coords[adjA][0] - anchor[0], coords[adjA][1] - anchor[1]];
+  var eB = [coords[adjB][0] - anchor[0], coords[adjB][1] - anchor[1]];
+
+  var lenA = Math.sqrt(eA[0] * eA[0] + eA[1] * eA[1]);
+  var lenB = Math.sqrt(eB[0] * eB[0] + eB[1] * eB[1]);
+  if (lenA < 1e-12 || lenB < 1e-12) return;
+
+  var uA = [eA[0] / lenA, eA[1] / lenA];
+  var uB = [eB[0] / lenB, eB[1] / lenB];
+
+  // Project cursor onto the two edge directions
+  var cursor = [e.lngLat.lng - anchor[0], e.lngLat.lat - anchor[1]];
+  var projA = cursor[0] * uA[0] + cursor[1] * uA[1];
+  var projB = cursor[0] * uB[0] + cursor[1] * uB[1];
+
+  // Compute new positions for the 4 corners
+  var newCoords = new Array(4);
+  newCoords[oppIdx] = [anchor[0], anchor[1]]; // stays fixed
+  newCoords[adjA] = [anchor[0] + projA * uA[0], anchor[1] + projA * uA[1]];
+  newCoords[adjB] = [anchor[0] + projB * uB[0], anchor[1] + projB * uB[1]];
+  newCoords[coordIdx] = [
+    anchor[0] + projA * uA[0] + projB * uB[0],
+    anchor[1] + projA * uA[1] + projB * uB[1],
+  ];
+
+  // Close the ring (vertex 4 = vertex 0)
+  newCoords.push([newCoords[0][0], newCoords[0][1]]);
+
+  // Set all coordinates at once — avoids inserting extra vertices
+  state.feature.incomingCoords([newCoords]);
 };
 
 SRMode.dragFeature = function (state, e, delta) {

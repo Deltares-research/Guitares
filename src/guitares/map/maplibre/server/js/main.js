@@ -41,6 +41,7 @@ export let pointClicked;
 export let layerStyleSet;
 export let marker;
 import { BackgroundLayerSelector, setMapStyle } from "./basemap_control.js";
+import { RulerControl, deactivateRuler } from "./ruler_control.js";
 let webChannelReady = false;
 let firstPong = true;
 
@@ -182,6 +183,10 @@ export function addMap() {
 
   // Scale
   map.addControl(new maplibregl.ScaleControl({maxWidth: 80}), 'bottom-left');
+
+  // Ruler (distance measurement) — below the layer selector on the left
+  window.rulerControl = new RulerControl();
+  map.addControl(window.rulerControl, 'top-left');
 
   // // Terrain (turn this off for now, need to add user-defined maptiler api key first)
   // map.addControl(
@@ -326,6 +331,7 @@ export function setMouseDefault() {
   map.getCanvas().style.cursor = '';
   currentCursor = '';
   map.off('click', onPointClicked);
+  deactivateRuler();
 }
 
 export function showLayer(id, side) {
