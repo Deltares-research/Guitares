@@ -40,16 +40,23 @@ def cm2png(cmap,
            decimals=-1,
            width=2.5,
            height=1.0):
-
-    """Create png image of colormap"""
+    """Create a high-resolution PNG image of a colorbar with transparent background."""
     plt.ioff()
-    # Create figure
+
+    # Render at 3× size and high DPI so the browser scales down crisply
+    scale = 3
+    dpi = 200
+
     if orientation == "horizontal":
-        fig = plt.figure(figsize=(width, height))
+        fig = plt.figure(figsize=(width * scale, height * scale))
         ax = fig.add_axes([0.05, 0.80, 0.9, 0.12])
     else:
-        fig = plt.figure(figsize=(width, height))
+        fig = plt.figure(figsize=(width * scale, height * scale))
         ax = fig.add_axes([0.80, 0.05, 0.12, 0.90])
+
+    # Transparent background
+    fig.patch.set_alpha(0)
+    ax.patch.set_alpha(0)
 
     norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
     cb = mpl.colorbar.ColorbarBase(ax,
@@ -57,20 +64,17 @@ def cm2png(cmap,
                                    norm=norm,
                                    orientation=orientation)
 
-
-    cb.ax.tick_params(labelsize=tick_size)
-    cb.set_label(legend_label, size=label_size)
+    cb.ax.tick_params(labelsize=tick_size * scale)
     if legend_label != "":
-        cb.set_label(legend_label, fontsize=6, labelpad=3)  # initial label
-        cb.ax.yaxis.set_label_position('left')  # put label on left side
-        cb.ax.yaxis.set_tick_params(labelsize=6)  # optional: set tick font size
+        cb.set_label(legend_label, fontsize=6 * scale, labelpad=3 * scale)
+        cb.ax.yaxis.set_label_position('left')
 
     if decimals > -1:
-        cb.formatter = mpl.ticker.FormatStrFormatter(f'%.{decimals}f')  # set decimals
+        cb.formatter = mpl.ticker.FormatStrFormatter(f'%.{decimals}f')
         cb.update_ticks()
 
-    # Save figure
-    fig.savefig(file_name, dpi=150, bbox_inches='tight')
+    fig.savefig(file_name, dpi=dpi, bbox_inches='tight', pad_inches=0.02,
+                transparent=True, facecolor='none', edgecolor='none')
     plt.close(fig)
 
 def read_colormap(file_name):

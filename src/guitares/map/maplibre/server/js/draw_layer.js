@@ -27,6 +27,15 @@ var featureList = [];
 /** All registered draw layers and their properties. */
 var layerList = [];
 
+/** Check if a layer has show_endpoints enabled (handles bool/string from Python). */
+function hasEndpoints(layerIdOrProps) {
+  var props = (typeof layerIdOrProps === 'string') ? getLayerProps(layerIdOrProps) : layerIdOrProps;
+  if (!props) return false;
+  var pp = props.paintProps || props;
+  var v = pp.show_endpoints;
+  return v === true || v === "True" || v === "true";
+}
+
 /** The layer that is currently receiving draw interactions. */
 let activeLayerId;
 
@@ -152,6 +161,8 @@ function activateScaleRotateMode(featureId) {
  */
 function activateDirectSelectMode(featureId) {
   draw.changeMode('direct_select', { featureId: featureId });
+  // Hide endpoints while editing vertices
+  if (activeLayerId && hasEndpoints(activeLayerId)) _hideEndpoints(activeLayerId);
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -227,6 +238,8 @@ export function drawPolyline(id) {
   activeLayerId = id;
   setLayerMode(id, 'active');
   draw.changeMode('draw_line_string');
+  // Hide endpoints while drawing
+  if (hasEndpoints(id)) _hideEndpoints(id);
   map.off('draw.create', createListener);
   createListener = polylineCreated;
   map.on('draw.create', createListener);
@@ -242,6 +255,9 @@ function polylineCreated(e) {
     draw.setFeatureProperty(id, key, value);
   }
   addToFeatureList(feature, id, "name_polyline", activeLayerId, 'polyline', feature.geometry);
+  updateInactiveLayerGeometry(activeLayerId);
+  // Show endpoints again after drawing finishes
+  if (hasEndpoints(activeLayerId)) _showEndpoints(activeLayerId);
   var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
   featureDrawn(JSON.stringify(featureCollection), id, activeLayerId);
 }
@@ -253,6 +269,8 @@ function polylineUpdated(e) {
   setGeometryInFeatureList(featureId, feature.geometry);
   var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
   updateInactiveLayerGeometry(activeLayerId);
+  // Show updated endpoints after edit
+  if (hasEndpoints(activeLayerId)) _showEndpoints(activeLayerId);
   featureModified(JSON.stringify(featureCollection), featureId, activeLayerId);
 }
 
@@ -440,16 +458,21 @@ function setGeometryInFeatureList(featureId, geometry) {
  * @param {Object} geometry - New GeoJSON geometry.
  */
 export function setFeatureGeometry(layerId, featureId, geometry) {
-  var feature = draw.get(featureId);
-  var properties = feature.properties;
-  draw.delete(featureId);
-  draw.add({
-    id: featureId,
-    type: 'Feature',
-    properties: properties,
-    geometry: geometry
-  });
   setGeometryInFeatureList(featureId, geometry);
+  // Update in MapboxDraw if the feature is currently in draw
+  var feature = draw.get(featureId);
+  if (feature) {
+    var properties = feature.properties;
+    draw.delete(featureId);
+    draw.add({
+      id: featureId,
+      type: 'Feature',
+      properties: properties,
+      geometry: geometry,
+    });
+  }
+  // Always update the inactive backing source
+  updateInactiveLayerGeometry(layerId);
 }
 
 /** Remove a feature from the internal tracking list by ID. */
@@ -496,24 +519,6 @@ function getFeatureCollectionInActiveLayer(layerId) {
  * @param {string} layerId - The layer to collect features from.
  * @returns {Object} A GeoJSON FeatureCollection.
  */
-function getFeatureCollectionInInactiveLayer(layerId) {
-  var featureCollection = {};
-  featureCollection.type = "FeatureCollection";
-  featureCollection.features = [];
-  for (let i = 0; i < featureList.length; i++) {
-    if (featureList[i].layerId == layerId) {
-      var feature = {};
-      feature.type = "Feature";
-      feature.properties = {};
-      feature.properties["id"] = featureList[i].featureId;
-      feature.id = featureList[i].featureId;
-      feature.name = featureList[i].name;
-      feature.geometry = featureList[i].geometry;
-      featureCollection.features.push(feature);
-    }
-  }
-  return featureCollection;
-}
 
 // ══════════════════════════════════════════════════════════════════════
 //  LAYER MANAGEMENT
@@ -567,6 +572,87 @@ export function addLayer(layerId, mode, paintProps, shape) {
       }
     });
   }
+
+  // Endpoint markers for polylines (start + end circles)
+  if (shape == 'polyline' && hasEndpoints({paintProps: paintProps})) {
+    _createEndpointLayers(layerId, paintProps);
+  }
+}
+
+/**
+ * Create the endpoint circle layers and legend for a polyline draw layer.
+ * Deferred until map style is loaded to avoid silent failures.
+ */
+function _createEndpointLayers(layerId, paintProps) {
+  function create() {
+    // Guard against duplicate creation
+    if (map.getSource(layerId + ".startpts")) return;
+
+    map.addSource(layerId + ".startpts", {
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: [] },
+    });
+    map.addSource(layerId + ".endpts", {
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: [] },
+    });
+    map.addLayer({
+      id: layerId + ".startcircle",
+      type: 'circle',
+      source: layerId + ".startpts",
+      layout: { visibility: 'visible' },
+      paint: {
+        'circle-color': paintProps.endpoint_start_color,
+        'circle-radius': paintProps.endpoint_radius,
+        'circle-stroke-color': '#fff',
+        'circle-stroke-width': 1.5,
+      },
+    });
+    map.addLayer({
+      id: layerId + ".endcircle",
+      type: 'circle',
+      source: layerId + ".endpts",
+      layout: { visibility: 'visible' },
+      paint: {
+        'circle-color': paintProps.endpoint_end_color,
+        'circle-radius': paintProps.endpoint_radius,
+        'circle-stroke-color': '#fff',
+        'circle-stroke-width': 1.5,
+      },
+    });
+
+    // Build legend
+    var labels = paintProps.endpoint_labels || { start: "Start", end: "End" };
+    var legendDiv = document.createElement('div');
+    legendDiv.id = 'legend' + layerId;
+    legendDiv.className = 'legend bottom-right-2';
+
+    var items = [
+      { color: paintProps.endpoint_start_color, text: labels.start },
+      { color: paintProps.endpoint_end_color, text: labels.end },
+    ];
+    for (var item of items) {
+      var row = document.createElement('div');
+      var swatch = document.createElement('i');
+      swatch.classList.add('circle');
+      swatch.setAttribute('style', 'background:' + item.color);
+      row.appendChild(swatch);
+      var span = document.createElement('span');
+      span.textContent = item.text;
+      row.appendChild(span);
+      legendDiv.appendChild(row);
+    }
+    legendDiv.style.visibility = 'hidden';
+    document.body.appendChild(legendDiv);
+  }
+
+  // Try immediately; if map isn't ready yet, retry on 'idle'
+  try {
+    create();
+  } catch (e) {
+    console.log("Deferring endpoint layer creation for " + layerId);
+    map.once('idle', create);
+  }
 }
 
 /**
@@ -576,6 +662,12 @@ export function addLayer(layerId, mode, paintProps, shape) {
 function updateInactiveLayerGeometry(layerId) {
   var featureCollection = getFeatureCollectionInActiveLayer(layerId);
   map.getSource(layerId).setData(featureCollection);
+
+  // Update endpoint markers if enabled
+  var layerProps = getLayerProps(layerId);
+  if (hasEndpoints(layerId)) {
+    _updateEndpoints(layerId, featureCollection);
+  }
 }
 
 /**
@@ -594,6 +686,14 @@ export function deleteLayer(layerId) {
   if (map.getLayer(layerId + ".fill")) {
     map.removeLayer(layerId + ".fill");
   }
+  // Clean up endpoint layers
+  if (map.getLayer(layerId + ".startcircle")) map.removeLayer(layerId + ".startcircle");
+  if (map.getLayer(layerId + ".endcircle")) map.removeLayer(layerId + ".endcircle");
+  if (map.getSource(layerId + ".startpts")) map.removeSource(layerId + ".startpts");
+  if (map.getSource(layerId + ".endpts")) map.removeSource(layerId + ".endpts");
+  var legend = document.getElementById('legend' + layerId);
+  if (legend) legend.remove();
+
   map.removeSource(layerId);
   removeFromLayerList(layerId);
 }
@@ -632,19 +732,84 @@ export function setLayerMode(layerId, mode) {
   setLayerProps(layerId, "mode", mode);
 
   // Toggle visibility of the static backing layers
+  var showEndpoints = hasEndpoints(layerProps);
   if (mode == "inactive") {
     map.setLayoutProperty(layerId + ".line", 'visibility', 'visible');
     var fillLayer = map.getLayer(layerId + '.fill');
     if (typeof fillLayer !== 'undefined') {
       map.setLayoutProperty(layerId + ".fill", 'visibility', 'visible');
     }
-  } else {
+    if (showEndpoints) {
+      _showEndpoints(layerId);
+    }
+  } else if (mode == "invisible") {
     map.setLayoutProperty(layerId + ".line", 'visibility', 'none');
     var fillLayer = map.getLayer(layerId + '.fill');
     if (typeof fillLayer !== 'undefined') {
       map.setLayoutProperty(layerId + ".fill", 'visibility', 'none');
     }
+    if (showEndpoints) {
+      _hideEndpoints(layerId);
+    }
+  } else {
+    // active mode — hide static layers, MapboxDraw handles rendering
+    // But show endpoints (they hide only during vertex editing / drawing)
+    map.setLayoutProperty(layerId + ".line", 'visibility', 'none');
+    var fillLayer = map.getLayer(layerId + '.fill');
+    if (typeof fillLayer !== 'undefined') {
+      map.setLayoutProperty(layerId + ".fill", 'visibility', 'none');
+    }
+    if (showEndpoints) {
+      _showEndpoints(layerId);
+    }
   }
+}
+
+/**
+ * Extract start and end points from polyline features and update
+ * the endpoint GeoJSON sources.
+ */
+function _showEndpoints(layerId) {
+  var fc = getFeatureCollectionInActiveLayer(layerId);
+  _updateEndpoints(layerId, fc);
+  if (map.getLayer(layerId + ".startcircle")) map.setLayoutProperty(layerId + ".startcircle", 'visibility', 'visible');
+  if (map.getLayer(layerId + ".endcircle")) map.setLayoutProperty(layerId + ".endcircle", 'visibility', 'visible');
+  var legend = document.getElementById('legend' + layerId);
+  if (legend) legend.style.visibility = 'visible';
+}
+
+function _hideEndpoints(layerId) {
+  if (map.getLayer(layerId + ".startcircle")) map.setLayoutProperty(layerId + ".startcircle", 'visibility', 'none');
+  if (map.getLayer(layerId + ".endcircle")) map.setLayoutProperty(layerId + ".endcircle", 'visibility', 'none');
+  var legend = document.getElementById('legend' + layerId);
+  if (legend) legend.style.visibility = 'hidden';
+}
+
+function _updateEndpoints(layerId, featureCollection) {
+  var startFeatures = [];
+  var endFeatures = [];
+
+  for (var feature of featureCollection.features) {
+    if (!feature.geometry || feature.geometry.type !== 'LineString') continue;
+    var coords = feature.geometry.coordinates;
+    if (coords.length < 2) continue;
+
+    startFeatures.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: coords[0] },
+      properties: { id: feature.properties.id },
+    });
+    endFeatures.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: coords[coords.length - 1] },
+      properties: { id: feature.properties.id },
+    });
+  }
+
+  var startSrc = map.getSource(layerId + ".startpts");
+  var endSrc = map.getSource(layerId + ".endpts");
+  if (startSrc) startSrc.setData({ type: 'FeatureCollection', features: startFeatures });
+  if (endSrc) endSrc.setData({ type: 'FeatureCollection', features: endFeatures });
 }
 
 // ── Layer list helpers ────────────────────────────────────────────────
@@ -658,8 +823,12 @@ function addToLayerList(layerId, mode, paintProps, shape) {
 }
 
 /** Remove a layer from the internal tracking list. */
-function removeFromLayerList(featureId) {
-  layerList.splice(layerList.findIndex(v => v.featureId === featureId), 1);
+/** Remove a layer from the internal tracking list by layer ID. */
+function removeFromLayerList(layerId) {
+  var index = layerList.findIndex(v => v.layerId === layerId);
+  if (index >= 0) {
+    layerList.splice(index, 1);
+  }
 }
 
 /** Clear all entries from the layer tracking list. */
@@ -701,19 +870,3 @@ export function setMouseDefault() {
   draw.changeMode('simple_select', { featureIds: [] });
 }
 
-/**
- * Generate a random alphanumeric string of the given length.
- * @param {number} length - Desired string length.
- * @returns {string} Random ID string.
- */
-function makeid(length) {
-  let result = '';
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  const charactersLength = characters.length;
-  let counter = 0;
-  while (counter < length) {
-    result += characters.charAt(Math.floor(Math.random() * charactersLength));
-    counter += 1;
-  }
-  return result;
-}

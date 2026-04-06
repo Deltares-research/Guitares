@@ -328,7 +328,10 @@ class Element:
             self.map_zoom = dct["map_zoom"]
 
         if "map_projection" in dct:
-            self.map_projection = dct["map_projection"]    
+            self.map_projection = dct["map_projection"]
+
+        if "terrain_sources" in dct:
+            self.terrain_sources = dct["terrain_sources"]
 
         if "dependency" in dct:
             for dep in dct["dependency"]:

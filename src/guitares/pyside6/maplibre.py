@@ -97,6 +97,30 @@ class MapLibre(QtCore.QObject):
             else:
                 f.write("window.offline = false;\n")
 
+            # Mapbox token (if available)
+            mapbox_token = getattr(element, "mapbox_token", None)
+            if not mapbox_token:
+                # Check for mapbox_token.js written by gui.py
+                token_file = os.path.join(self.gui.server_path, "mapbox_token.js")
+                if os.path.exists(token_file):
+                    with open(token_file) as tf:
+                        content = tf.read()
+                        # Parse: mapbox_token = 'pk.xxx';
+                        if "'" in content:
+                            mapbox_token = content.split("'")[1]
+            if mapbox_token:
+                f.write("window.mapboxToken = '" + mapbox_token + "';\n")
+            else:
+                f.write("window.mapboxToken = null;\n")
+
+            # Terrain sources (optional, set by application)
+            terrain_sources = getattr(element, "terrain_sources", None)
+            if terrain_sources:
+                import json
+                f.write("window.terrainSources = " + json.dumps(terrain_sources) + ";\n")
+            else:
+                f.write("window.terrainSources = null;\n")
+
         self.webchannel_ok = False
         self.ready = False
 

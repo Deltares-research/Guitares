@@ -23,6 +23,10 @@ class PolygonLayer(Layer):
         self.color_by_attribute = {}
         self.legend_items_list = []
 
+    def _get_map_layer_ids(self):
+        """Polygon layer creates .fill and .line sub-layers."""
+        return [self.map_id + ".fill", self.map_id + ".line"]
+
     def set_data(self, data, index=None, color_by_attribute=None, legend_items=None):
         """Set GeoJSON data and render the polygon layer.
 
@@ -78,6 +82,7 @@ class PolygonLayer(Layer):
         pp = self.get_paint_props()
 
         options = {
+            "beforeIds": self._get_before_ids(),
             "lineStyle": getattr(self, "line_style", "-"),
             "minZoom": getattr(self, "min_zoom", 0),
         }

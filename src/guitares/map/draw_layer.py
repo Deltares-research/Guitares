@@ -41,6 +41,10 @@ class DrawLayer(Layer):
         circle_fill_color="orangered",
         circle_fill_opacity=0.5,
         circle_radius=4,
+        show_endpoints=False,
+        endpoint_start_color="blue",
+        endpoint_end_color="red",
+        endpoint_radius=5,
     ):
         super().__init__(map, layer_id, map_id)
 
@@ -76,6 +80,12 @@ class DrawLayer(Layer):
         self.paint_props["circle_fill_opacity"] = circle_fill_opacity
         self.paint_props["circle_radius"] = circle_radius
         self.paint_props["rotate"] = rotate
+        self.paint_props["show_endpoints"] = show_endpoints
+        if show_endpoints:
+            self.paint_props["endpoint_start_color"] = mcolors.to_hex(endpoint_start_color)
+            self.paint_props["endpoint_end_color"] = mcolors.to_hex(endpoint_end_color)
+            self.paint_props["endpoint_radius"] = endpoint_radius
+            self.paint_props["endpoint_labels"] = {"start": "Start", "end": "End"}
 
         # Add this layer
         self.map.runjs(
@@ -112,21 +122,6 @@ class DrawLayer(Layer):
         self.map.runjs(
             "/js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "inactive"]
         )
-
-    # def show(self):
-    #     self.visible = True
-    #     if self.active:
-    #         self.map.runjs("/js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "active"])
-    #     else:
-    #         self.map.runjs("/js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "inactive"])
-
-    # def hide(self):
-    #     self.visible = False
-    #     self.map.runjs("/js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "invisible"])
-
-    # def set_mode(self, mode):
-    #     self.mode = mode
-    #     self.map.runjs("/js/draw_layer.js", "setLayerMode", arglist=[self.map_id, mode])
 
     def set_visibility(self, true_or_false):
         if true_or_false:
@@ -170,11 +165,8 @@ class DrawLayer(Layer):
             gdf2plot = gpd.GeoDataFrame(geometry=[row["geometry"]])
             # Get feature ID
             feature_id = makeid(8)
-            # gdf2plot["id"] = feature_id
             # Set the id in self.gdf
             self.gdf.at[index, "id"] = feature_id
-            # if "name" in row:
-            #     gdf["name"] = row["name"]
             self.map.runjs(
                 "/js/draw_layer.js", "addFeature", arglist=[gdf2plot, self.map_id, feature_id]
             )
@@ -232,7 +224,6 @@ class DrawLayer(Layer):
             new_row = gpd.GeoDataFrame(d).set_crs(self.map.crs)
             # Add new row to self.gdf (this means that the dataframe will get a new memory address)
             self.gdf = pd.concat([self.gdf, new_row], ignore_index=True)
-            pass
         else:
             # Only change the geometry of the selected feature and copy the id
             # self.gdf.at[index, "id"] = gdf.at[index, "id"]
@@ -351,10 +342,19 @@ class DrawLayer(Layer):
         self.map.runjs("/js/draw_layer.js", "activateFeature", arglist=[feature_id])
 
     def set_feature_geometry(self, feature_id, geom):
-        # This does not work!
+        """Update a feature's geometry on the map.
+
+        Parameters
+        ----------
+        feature_id : str
+            The feature ID.
+        geom : shapely geometry or dict
+            New geometry (in EPSG:4326).
+        """
         if hasattr(geom, "__geo_interface__"):
-            # Shapely geometry, turn into dict
             geom = geom.__geo_interface__
+        # Ensure coordinates are lists, not tuples (JSON serialization)
+        geom = _geometry_to_lists(geom)
         self.map.runjs(
             "/js/draw_layer.js",
             "setFeatureGeometry",
@@ -466,3 +466,24 @@ def fix_rectangle_geometry(geom):
 def makeid(length):
     characters = string.ascii_letters + string.digits
     return ''.join(random.choices(characters, k=length))
+
+
+def _geometry_to_lists(geom):
+    """Convert a GeoJSON geometry dict so all coordinate tuples are lists.
+
+    Shapely's ``__geo_interface__`` returns tuples, but ``json.dumps``
+    in ``runjs`` replaces double quotes with single quotes — tuples
+    serialise as ``(x, y)`` which is invalid JSON.  Converting to lists
+    ensures correct ``[x, y]`` output.
+    """
+    def _convert(obj):
+        if isinstance(obj, (list, tuple)):
+            if obj and isinstance(obj[0], (list, tuple, float, int)):
+                return [_convert(item) for item in obj]
+            return list(obj)
+        return obj
+
+    geom = dict(geom)
+    if "coordinates" in geom:
+        geom["coordinates"] = _convert(geom["coordinates"])
+    return geom

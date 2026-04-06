@@ -13,17 +13,43 @@ from pyproj import Transformer
 from guitares.colormap import cm2png
 from .layer import Layer
 
-# This is a combo of image_layer.py and raster_layer.py
 
 class RasterImageLayer(Layer):
+    """Raster image layer that renders data as a PNG overlay on the map.
+
+    Supports four data modes (set via ``set_data``):
+
+    1. **File path** — GeoTIFF, optionally with overview levels.
+    2. **DataArray** — rioxarray DataArray (scalar or RGB).
+    3. **map_overlay object** — any object with a ``map_overlay()`` method
+       that writes a PNG and returns True/False.
+    4. **Callable** — a function that returns a DataArray for the current
+       view extent.
+    """
+
     def __init__(self, map, id, map_id, **kwargs):
         super().__init__(map, id, map_id, **kwargs)
         self.active = False
-        self.type   = "raster"
-        self.new    = True
+        self.type = "raster"
+        self.new = True
         self.file_name = map_id + ".png"
         self.data_has_map_overlay = False
-        self.rgb = False # True if data is RGB
+        self.rgb = False
+
+        # Reserve z-order position by creating blank placeholder layers.
+        before_ids = self._get_before_ids()
+        self.map.runjs(
+            "/js/raster_image_layer.js", "addLayer",
+            id=self.map_id + ".a", side=self.side, beforeIds=before_ids,
+        )
+        self.map.runjs(
+            "/js/raster_image_layer.js", "addLayer",
+            id=self.map_id + ".b", side=self.side, beforeIds=before_ids,
+        )
+
+    def _get_map_layer_ids(self):
+        """Raster image layer creates .a and .b sub-layers."""
+        return [self.map_id + ".a", self.map_id + ".b"]
 
     def activate(self):
         self.active = True
@@ -40,527 +66,513 @@ class RasterImageLayer(Layer):
         self.data_has_map_overlay = False
 
     def set_data(self, data):
+        """Set the data source and trigger an initial render.
 
-        # data can be either a:
-        #     1) file path (in case of a GeoTIFF file)
-        #     2) rioxarray.DataArray
-        #     3) object that has a make_overlay method (this method should create a png file and return True/False)
-        #     4) a method to get the data (this method should return a rioxarray DataArray)
-
-        # Furthermore, type of data can be a scalar field, or RGB
-
+        Parameters
+        ----------
+        data : str, PathLike, DataArray, object, or callable
+            One of: file path (GeoTIFF), rioxarray DataArray,
+            object with ``map_overlay()`` method, or callable
+            returning a DataArray.
+        """
         self.data_has_map_overlay = False
         self.data_has_overview_levels = False
 
         if isinstance(data, (str, os.PathLike)):
-            # 1) file path
-            # Read the image file (lazily)
             self.data = data
-            # self.data = rioxarray.open_rasterio(data)
             with rasterio.open(data) as src:
-                ovr = src.overviews(1)
-                if len(ovr) > 0:
-                    self.data_has_overview_levels = True
-                else:
-                    self.data_has_overview_levels = False
-            # Check for overview levels
-            # self.overview_level, _ = get_appropriate_overview_level(self.data, 1000)
-            # If self.data has 3 or 4 bands, then it's RGB(A)
-            # if self.data.shape[0] == 3 or self.data.shape[0] == 4:
-            #     self.rgb = True
+                self.data_has_overview_levels = len(src.overviews(1)) > 0
 
         elif hasattr(data, "rio") and hasattr(data.rio, "reproject"):
-            # 2) rioxarray.DataArray
             self.data = data
 
         elif hasattr(data, "map_overlay") and callable(getattr(data, "map_overlay")):
-            # 3) object that has a map_overlay method
             self.data = data
             self.data_has_map_overlay = True
 
         elif callable(data):
-            # 4) a method to get the data
-            # self.data = rioxarray.DataArray()
             self.get_data = data
 
         else:
-            raise ValueError("Data must be either a file path, a rioxarray DataArray, or an object with a make_overlay method")
+            raise ValueError(
+                "Data must be a file path, DataArray, object with "
+                "map_overlay(), or a callable"
+            )
 
         self.update()
 
-    def update(self):
+    # ------------------------------------------------------------------
+    # Update — called on every map pan / zoom
+    # ------------------------------------------------------------------
 
-        # Method is called whenever the map view changes (zoom or pan)
+    def update(self):
+        """Re-render the overlay for the current map extent."""
+        if not self.map.map_extent:
+            return
 
         coords = self.map.map_extent
         lonlim = [coords[0][0], coords[1][0]]
         latlim = [coords[0][1], coords[1][1]]
         width = self.map.view.geometry().width()
         height = self.map.view.geometry().height()
-        
-        overlay_file = None
-        legend = None
-        plot_legend = False
-
-        # There are now a few options:
-        # 1) self.data has a make_overlay method
-        # 2) self.data is a rioxarray DataArray
-        #   a) with RGB values
-        #   b) with scalar values 
 
         if self.data_has_map_overlay:
-
-            # Let the object create the overlay
-
-            fname = os.path.join(self.map.server_path, "overlays", self.file_name)
-            okay = self.data.map_overlay(fname, xlim=lonlim, ylim=latlim, width=width)
-
-            west = lonlim[0]
-            east = lonlim[1]
-            south = latlim[0]
-            north = latlim[1] 
-
-            if not okay:
-                self.clear()
-                return
-
-            overlay_file = f"./overlays/{self.file_name}"
-
-            # If self.data has a legend attribute, pass it to the map
-            # Legend can be a dict with color map info, or a file name !
-            if hasattr(self.data, "legend"):
-                legend = self.data.legend
-                if "cmap" in legend and "cmin" in legend and "cmax" in legend:
-                    cmin = legend["cmin"]
-                    cmax = legend["cmax"]
-                    cmap = cm.get_cmap(legend["cmap"])
-                    plot_legend = True
-           
+            result = self._update_from_map_overlay(lonlim, latlim, width)
         else:
+            result = self._update_from_raster(lonlim, latlim, height)
 
-            # Data should be a rioxarray DataArray or a method to get the data
+        if result is None:
+            return
 
-            clip = True
-            derefine = True
+        overlay_file, west, east, south, north, legend = result
+
+        # Generate continuous colorbar PNG if needed
+        if isinstance(legend, str) and legend == "__plot_png__":
+            legend = self._create_legend_png()
+
+        # Handle dateline crossing and send to map
+        self._send_to_map(overlay_file, west, east, south, north, legend)
+
+    # ------------------------------------------------------------------
+    # Data mode: map_overlay object
+    # ------------------------------------------------------------------
+
+    def _update_from_map_overlay(self, lonlim, latlim, width):
+        """Delegate rendering to the data object's map_overlay method."""
+        fname = os.path.join(self.map.server_path, "overlays", self.file_name)
+
+        # Resolve map_overlay_options (dict or callable)
+        opts = self.map_overlay_options
+        if callable(opts):
+            opts = opts()
+        if not isinstance(opts, dict):
+            opts = {}
+
+        okay = self.data.map_overlay(
+            fname, xlim=lonlim, ylim=latlim, width=width, **opts
+        )
+
+        if not okay:
+            self.clear()
+            return None
+
+        overlay_file = f"./overlays/{self.file_name}"
+        legend = self._build_legend_from_options(opts)
+
+        return overlay_file, lonlim[0], lonlim[1], latlim[0], latlim[1], legend
+
+    # ------------------------------------------------------------------
+    # Data mode: raster DataArray / file path / callable
+    # ------------------------------------------------------------------
+
+    def _update_from_raster(self, lonlim, latlim, height):
+        """Render a raster DataArray (or file / callable) to a PNG overlay."""
+        clip = True
+        derefine = True
+
+        if self.get_data is not None:
+            self.data = self.get_data()
+            clip = False
+            derefine = False
+
+        if self.data is None:
+            return None
+
+        # Load data from file or use in-memory DataArray
+        data, data_is_rgb = self._load_raster_data(latlim, height)
+        if data is None:
+            data = self.data
             data_is_rgb = False
 
-            if self.get_data is not None:
-                # There is a get_data method that needs to be called now. This is for example the case for the topography layer in Delft Dashboard.
-                # This method should return a rioxarray DataArray
-                self.data = self.get_data()
-                clip = False # No need to clip, data is already for the current view
-                derefine = False # No need to derefine, data is already for the current view
+        if clip:
+            data = self._clip_to_view(data, lonlim, latlim)
 
-            # if self.data is still None, then it was never defined
-            if self.data is None:
-                return  
+        if derefine:
+            data = self._derefine(data, latlim, height)
 
-            if isinstance(self.data, (str, os.PathLike)):
+        # Convert to RGBA array
+        if data_is_rgb:
+            x, y, rgb = self._render_rgb(data)
+            legend = None
+        else:
+            x, y, rgb, legend = self._render_scalar(data)
 
-                # File path with GeoTIFF. Read (again and again).
+        # Reproject to Web Mercator, save PNG, compute bounds
+        overlay_file, west, east, south, north = self._reproject_and_save(
+            x, y, rgb, data
+        )
 
-                if self.data_has_overview_levels:
-                    # Determine max_cell_size based on map width and number of pixels
-                    max_cell_size = (latlim[1] - latlim[0]) / height  # times 2 to be sure
-                    # multiply to get meters (assume web mercator)
-                    max_cell_size = max_cell_size * 111000
-                    # Need to re-open the filen
-                    with rasterio.open(self.data) as src:                    
-                        overview_level, ok = get_appropriate_overview_level(src, max_cell_size)
-                        data = rioxarray.open_rasterio(self.data, masked=False, overview_level=overview_level)
-                        derefine = False # No derefining needed, overview level is used
-                else:
-                    # Get the entire dataset
-                    data = rioxarray.open_rasterio(self.data, masked=False)        
+        return overlay_file, west, east, south, north, legend
 
-                # If self.data has 3 or 4 bands, then it's RGB(A)
-                if data.shape[0] == 3 or data.shape[0] == 4:
-                    data_is_rgb = True
-                else:
-                    data_is_rgb = False
-                    # Need to squeeze to 2D array
-                    if data.shape[0] == 1:
-                        data = data.squeeze("band", drop=True)
+    def _load_raster_data(self, latlim, height):
+        """Load raster data from file path, detecting RGB and overview levels."""
+        if not isinstance(self.data, (str, os.PathLike)):
+            return None, False
 
+        if self.data_has_overview_levels:
+            max_cell_size = (latlim[1] - latlim[0]) / height * 111000
+            with rasterio.open(self.data) as src:
+                overview_level, _ = get_appropriate_overview_level(
+                    src, max_cell_size
+                )
+                data = rioxarray.open_rasterio(
+                    self.data, masked=False, overview_level=overview_level
+                )
+        else:
+            data = rioxarray.open_rasterio(self.data, masked=False)
+
+        data_is_rgb = data.shape[0] in (3, 4)
+        if not data_is_rgb and data.shape[0] == 1:
+            data = data.squeeze("band", drop=True)
+
+        return data, data_is_rgb
+
+    def _clip_to_view(self, data, lonlim, latlim):
+        """Clip DataArray to the current map view with a small buffer."""
+        dlon = (lonlim[1] - lonlim[0]) / 10
+        dlat = (latlim[1] - latlim[0]) / 10
+        return data.rio.clip_box(
+            minx=lonlim[0] - dlon,
+            miny=latlim[0] - dlat,
+            maxx=lonlim[1] + dlon,
+            maxy=latlim[1] + dlat,
+            crs="EPSG:4326",
+        )
+
+    def _derefine(self, data, latlim, height):
+        """Down-sample data if it's finer than the screen resolution."""
+        y = data["y"].values[:]
+        dy = abs(y[1] - y[0]) if len(y) > 1 else 1e6
+        if data.rio.crs.is_geographic:
+            dy *= 111000
+        req_dy = 0.5 * 111000 * (latlim[1] - latlim[0]) / height
+        if dy < req_dy:
+            fact = int(np.ceil(req_dy / dy))
+            # Round up to next power of 2 (max 64)
+            for p2 in (2, 4, 8, 16, 32, 64):
+                if fact <= p2:
+                    fact = p2
+                    break
             else:
+                fact = 64
+            data = data.isel(x=slice(0, None, fact), y=slice(0, None, fact))
+        return data
 
-                data = self.data
+    def _build_legend_from_options(self, opts):
+        """Build a legend dict from map_overlay_options.
 
-            if clip:
-                # Little buffer
-                dlon = (lonlim[1] - lonlim[0]) / 10
-                dlat = (latlim[1] - latlim[0]) / 10
+        Supports two legend types based on the options keys:
 
-                data = data.rio.clip_box(minx=lonlim[0]-dlon,
-                                         miny=latlim[0]-dlat,
-                                         maxx=lonlim[1]+dlon,
-                                         maxy=latlim[1]+dlat,
-                                         crs="EPSG:4326")
-            if derefine:
-                # Derefine data if too fine compared to screen resolution
-                # Determine current resolution of data
-                y = data["y"].values[:]
-                if len(y) > 1:
-                    dy = abs(y[1] - y[0])
-                else:
-                    dy = 1000000.0
-                # if geographic, convert to meters m
-                if data.rio.crs.is_geographic:
-                    dy = dy * 111000     
-                # Determine required resolution in metres based on lonlim, latlim, width, height
-                req_dy = 0.5 * 111000 * (latlim[1] - latlim[0]) / height
-                # Derefine if necessary
-                if dy < req_dy:
-                    # Derefine by a factor of 2, 4, 8, ...
-                    fact = int(np.ceil(req_dy / dy))
-                    # Find next power of 2
-                    if fact <= 2:
-                        fact = 2
-                    elif fact <= 4:
-                        fact = 4
-                    elif fact <= 8:
-                        fact = 8
-                    elif fact <= 16:
-                        fact = 16
-                    elif fact <= 32:
-                        fact = 32
-                    else:
-                        fact = 64    
-                    data = data.isel(x=slice(0, None, fact), y=slice(0, None, fact))
+        - **Discrete** (``labels`` + ``colors``): builds a contour-style
+          legend with colored swatches. If ``colors`` has ``shape`` info
+          or the values are rendered as dots, use ``"circle"`` shape.
+        - **Continuous** (``cmap`` + ``cmin`` + ``cmax``): triggers PNG
+          colorbar generation.
 
-            if data_is_rgb:
+        Returns None if the options don't contain legend info.
+        """
+        if "labels" in opts and "colors" in opts:
+            contour = []
+            for val, color in opts["colors"].items():
+                text = opts["labels"].get(val, str(val))
+                contour.append({"color": color, "text": text, "shape": "circle"})
+            title = opts.get("legend_title", self.legend_title or "")
+            return {"title": title, "contour": contour}
 
-                # RGB data, y and rgb are already in the right order (top to bottom)
+        if "cmin" in opts and "cmax" in opts and "cmap" in opts:
+            self._cmin = opts["cmin"]
+            self._cmax = opts["cmax"]
+            self._cmap = cm.get_cmap(opts["cmap"])
+            return "__plot_png__"
 
-                plot_legend = False # No legend for RGB data
+        return None
 
-                x = data["x"].values[:]
-                y = data["y"].values[:]
-                rgb = data.values[:].astype(np.uint8)
-                # rgb must be uint8
-                # if rgb.dtype != np.uint8:
-                #     rgb_float = rgb.astype(np.float32) 
-                #     # Scale to 0–255
-                #     rgb = np.clip(rgb_float / 65535 * 255, 0, 255).astype(np.uint8)                    
-                # Add 4th band if not present
-                if rgb.shape[0] == 3:
-                    alpha = np.ones((1, rgb.shape[1], rgb.shape[2]), dtype=rgb.dtype) * 255
-                    rgb = np.vstack((rgb, alpha))
+    def _render_rgb(self, data):
+        """Extract x, y, rgba from an RGB(A) DataArray."""
+        x = data["x"].values[:]
+        y = data["y"].values[:]
+        rgb = data.values[:].astype(np.uint8)
+        if rgb.shape[0] == 3:
+            alpha = np.ones((1, rgb.shape[1], rgb.shape[2]), dtype=rgb.dtype) * 255
+            rgb = np.vstack((rgb, alpha))
+        return x, y, rgb
 
+    def _render_scalar(self, data):
+        """Render a scalar DataArray to an RGBA array with color mapping.
+
+        Returns (x, y, rgb, legend) where legend is either a dict
+        (discrete contour), ``"__plot_png__"`` (continuous colorbar), or None.
+        """
+        x = data["x"].values[:]
+        y = data["y"].values[:]
+        if y[0] < y[-1]:
+            y = np.flipud(y)
+            z = np.flipud(data.values[:])
+        else:
+            z = data.values[:]
+
+        if self.color_values is not None:
+            rgb, legend = self._render_discrete(z, data.shape)
+        else:
+            rgb, legend = self._render_continuous(x, y, z)
+
+        rgb = np.transpose(rgb, (2, 0, 1))
+        return x, y, rgb, legend
+
+    def _render_discrete(self, z, shape):
+        """Map scalar values to discrete RGBA classes."""
+        rgba = np.zeros((shape[0], shape[1], 4), dtype=np.float32)
+        contour = []
+
+        for color_value in self.color_values:
+            cnt = {"color": color_value["color"]}
+            color_rgba = cm.colors.to_rgba(color_value["color"])
+
+            if "lower_value" in color_value and "upper_value" in color_value:
+                mask = (z >= color_value["lower_value"]) & (z < color_value["upper_value"])
+                cnt["text"] = color_value.get(
+                    "text",
+                    f"{color_value['lower_value']} - {color_value['upper_value']}",
+                )
+            elif "lower_value" in color_value:
+                mask = z >= color_value["lower_value"]
+                cnt["text"] = color_value.get(
+                    "text", f">= {color_value['lower_value']}"
+                )
+            elif "upper_value" in color_value:
+                mask = z < color_value["upper_value"]
+                cnt["text"] = color_value.get(
+                    "text", f"< {color_value['upper_value']}"
+                )
             else:
+                continue
 
-                # Scalar data
+            rgba[mask, :] = color_rgba
+            contour.append(cnt)
 
-                # Determine whether to use continuous or discrete color scale
-                # Options are: 1) Discrete colors: layer has color_values
-                #              2) Continuous colors: layer has no color_values
-                #               a) use hillshading
-                #               b) no hillshading  
+        rgb = rgba * 255
+        legend = {"title": self.legend_title, "contour": contour}
+        return rgb, legend
 
-                x = data["x"].values[:]
-                y = data["y"].values[:]
-                if y[0] < y[-1]:
-                    y = np.flipud(y)
-                    z = np.flipud(data.values[:])
+    def _render_continuous(self, x, y, z):
+        """Map scalar values to a continuous colormap, optionally with hillshading."""
+        # Determine color scale
+        if self.color_scale_auto:
+            if self.color_scale_symmetric:
+                if self.color_scale_symmetric_side == "min":
+                    cmin = np.nanmin(z)
+                    if cmin > 0:
+                        cmin = -cmin
+                    cmax = -cmin
+                elif self.color_scale_symmetric_side == "max":
+                    cmax = np.nanmax(z)
+                    if cmax < 0:
+                        cmax = -cmax
+                    cmin = -cmax
                 else:
-                    z = data.values[:]
+                    cmx = max(abs(np.nanmin(z)), abs(np.nanmax(z)))
+                    cmin, cmax = -cmx, cmx
+            else:
+                cmin = np.nanmin(z)
+                cmax = np.nanmax(z)
+            if cmax < cmin + 0.01:
+                cmin, cmax = -0.01, 0.01
+        else:
+            cmin = self.color_scale_cmin
+            cmax = self.color_scale_cmax
 
-                # Generate RGB Numpy array 
+        cmap = cm.get_cmap(self.color_map)
 
-                if self.color_values is not None:
+        # Store for use by other layers (e.g. model bathymetry overlay)
+        self.current_cmin = cmin
+        self.current_cmax = cmax
+        self.current_cmap = cmap
+        self._cmin = cmin
+        self._cmax = cmax
+        self._cmap = cmap
 
-                    # 1) Discrete colors
+        if self.hillshading:
+            ls = LightSource(azdeg=315, altdeg=30)
+            dx = (x[1] - x[0]) / 2
+            dy = -(y[1] - y[0]) / 2
+            rgb = ls.shade(
+                z, cmap, vmin=cmin, vmax=cmax,
+                dx=dx * 0.5, dy=dy * 0.5,
+                vert_exag=10.0, blend_mode="soft",
+            )
+            rgb = rgb * 255
+        else:
+            norm = matplotlib.colors.Normalize(vmin=cmin, vmax=cmax)
+            rgb = cmap(norm(z)) * 255
 
-                    plot_legend = False # Legend is made in javascript
+        return rgb, "__plot_png__"
 
-                    # Initialize an RGBA array with zeros
-                    rgba = np.zeros((data.shape[0], data.shape[1], 4), dtype=np.float32)
-                    # Loop through color classes
-                    contour = []
+    # ------------------------------------------------------------------
+    # Image output helpers
+    # ------------------------------------------------------------------
 
-                    for icolor, color_value in enumerate(self.color_values):
+    def _reproject_and_save(self, x, y, rgb, data):
+        """Reproject RGBA to EPSG:3857, save PNG, return overlay path and bounds."""
+        rgba_da = xr.DataArray(
+            rgb,
+            dims=["band", "y", "x"],
+            coords={"band": [0, 1, 2, 3], "y": y, "x": x},
+        )
 
-                        # Add contour for legend
-                        cnt = {}
-                        cnt["color"] = color_value["color"]
-                        # Get rgb float values for this color (between 0.0 and 1.0)
-                        color_rgba = cm.colors.to_rgba(color_value["color"])
-                        if "lower_value" in color_value and "upper_value" in color_value:
-                            rgba[(z >= color_value["lower_value"]) & (z < color_value["upper_value"]), :] = color_rgba
-                            if "text" in color_value:
-                                cnt["text"] = color_value["text"]
-                            else:
-                                cnt["text"] = f"{color_value['lower_value']} - {color_value['upper_value']}"   
-                        elif "lower_value" in color_value:
-                            rgba[(z >= color_value["lower_value"]), :] = color_rgba
-                            if "text" in color_value:
-                                cnt["text"] = color_value["text"]
-                            else:
-                                cnt["text"] = f">= {color_value['lower_value']}"
-                        elif "upper_value" in color_value:
-                            rgba[(z < color_value["upper_value"]), :] = color_rgba
-                            if "text" in color_value:
-                                cnt["text"] = color_value["text"]
-                            else:
-                                cnt["text"] = f"< {color_value['upper_value']}"
-                        contour.append(cnt)
+        src_crs = data.rio.crs
+        rgba_da.rio.set_spatial_dims(x_dim="x", y_dim="y", inplace=True)
+        rgba_da.rio.write_crs(src_crs, inplace=True)
 
-                    rgb = rgba * 255
-                    # Need to transpose so that shape is (4, height, width)
-                    rgb = np.transpose(rgb, (2, 0, 1))
+        rgba_3857 = rgba_da.rio.reproject("EPSG:3857")
 
-                    legend = {}
-                    legend["title"] = self.legend_title
-                    legend["contour"] = contour
+        # Export as PNG
+        rgba_3857 = rgba_3857.fillna(0).clip(min=0, max=255)
+        img_data = rgba_3857.values.astype(np.uint8)
+        if img_data.shape[0] == 4:
+            img_data = np.transpose(img_data, (1, 2, 0))
 
-                else:    
+        image = Image.fromarray(img_data, mode="RGBA")
+        overlay_file = "./overlays/" + self.file_name
+        image.save(os.path.join(self.map.server_path, "overlays", self.file_name))
 
-                    # 2) Continuous colors
+        # Compute geographic bounds from the reprojected raster
+        left, bottom, right, top = rgba_3857.rio.bounds()
+        transformer = Transformer.from_crs("EPSG:3857", "EPSG:4326", always_xy=True)
+        west, south = transformer.transform(left, bottom)
+        east, north = transformer.transform(right, top)
 
-                    plot_legend = True # Legend png needs to be made
+        # Handle full-globe edge case
+        if left < -19800000.0 and right > 19800000.0:
+            if west > 0.0:
+                west = -180.0
+            if east < 0.0:
+                east = 180.0
 
-                    # Color scale (cmin, cmax)
-                    if self.color_scale_auto:
-                        if self.color_scale_symmetric:
-                            if self.color_scale_symmetric_side == "min":
-                                cmin = np.nanmin(z)
-                                if cmin > 0:
-                                    cmin = -cmin
-                                cmax = -cmin
-                            elif self.color_scale_symmetric_side == "max":
-                                cmax = np.nanmax(z)
-                                if cmax < 0:
-                                    cmax = -cmax
-                                cmin = -cmax
-                            else:
-                                cmx = max(abs(np.nanmin(z)), abs(np.nanmax(z)))
-                                cmin = -cmx
-                                cmax = cmx
-                        else:
-                            cmin = np.nanmin(z)
-                            cmax = np.nanmax(z)
-                        if cmax < cmin + 0.01:
-                            cmin = -0.01
-                            cmax = 0.01    
-                    else:    
-                        cmin = self.color_scale_cmin
-                        cmax = self.color_scale_cmax
+        if west > east:
+            west -= 360.0
+        if west < -180.0:
+            west += 360.0
+            east += 360.0
 
-                    cmap = cm.get_cmap(self.color_map)    
+        return overlay_file, west, east, south, north
 
-                    if self.hillshading:
-                        ls = LightSource(azdeg=315, altdeg=30)
-                        dx = (x[1] - x[0]) / 2
-                        dy = - (y[1] - y[0]) / 2
-                        rgb = ls.shade(z, cmap,
-                                    vmin=cmin,
-                                    vmax=cmax,
-                                    dx=dx*0.5,
-                                    dy=dy*0.5,
-                                    vert_exag=10.0,
-                                    blend_mode="soft")
-                        rgb = rgb * 255
+    def _create_legend_png(self):
+        """Generate a continuous colorbar PNG and return its relative URL."""
+        overlays = os.path.join(self.map.server_path, "overlays")
 
-                    else:
-                        norm = matplotlib.colors.Normalize(vmin=cmin, vmax=cmax)
-                        vnorm = norm(z)
-                        rgb = cmap(vnorm) * 255
+        # Clean up old legend files
+        for f in glob.glob(os.path.join(overlays, self.map_id + ".legend.*.png")):
+            try:
+                os.remove(f)
+            except OSError:
+                pass
 
-                    # Need to transpose so that shape is (4, height, width)
-                    rgb = np.transpose(rgb, (2, 0, 1))    
+        # Random suffix to bust browser cache
+        rstring = str(np.random.randint(1, 1_000_000))
+        legend_file = f"{self.map_id}.legend.{rstring}.png"
 
-            # Create xarray DataArray with RGBA values of the rgb array
-            rgba_da = xr.DataArray(rgb,
-                                dims=["band", "y", "x"],
-                                coords={ "band": [0, 1, 2, 3], "y": y, "x": x})
+        cm2png(
+            self._cmap,
+            file_name=os.path.join(overlays, legend_file),
+            orientation="vertical",
+            legend_label=self.legend_label,
+            vmin=self._cmin,
+            vmax=self._cmax,
+            width=1.0,
+            height=1.5,
+        )
 
-            # 1. Assign CRS and spatial dims
-            src_crs = data.rio.crs            
-            rgba_da.rio.set_spatial_dims(x_dim="x", y_dim="y", inplace=True)
-            rgba_da.rio.write_crs(src_crs, inplace=True)  # e.g., EPSG:32633
+        return "./overlays/" + legend_file
 
-            # 2. Reproject to Web Mercator
-            rgba_3857 = rgba_da.rio.reproject("EPSG:3857")
-
-            # 3. Export as PNG
-            # Convert to uint8 and rearrange shape for Pillow
-            # There may be NaN values in the data that cannot be converted to uint8
-            # So we need to fill them with 0 (transparent)
-            # and convert to uint8
-            rgba_3857 = rgba_3857.fillna(0)
-            rgba_3857 = rgba_3857.clip(min=0, max=255)
-            # Convert to uint8
-            img_data = rgba_3857.values.astype(np.uint8)  # shape: (height, width, 4)
-
-            # In case of xarray with shape (band, y, x)
-            if img_data.shape[0] == 4:
-                img_data = np.transpose(img_data, (1, 2, 0))  # to (y, x, 4)
-
-            image = Image.fromarray(img_data, mode="RGBA")
-
-            overlay_file = "./overlays/" + self.file_name # To be used in call to javascript
-            image.save(os.path.join(self.map.server_path, "overlays", self.file_name))
-
-
-            # Overlay image has been created. Now check if it crosses the date line. If so, we need to split it in two images.
-
-            # Get bounds in EPSG:3857
-            left, bottom, right, top = rgba_3857.rio.bounds()
-
-            # Reproject bounds to EPSG:4326
-            transformer = Transformer.from_crs("EPSG:3857", "EPSG:4326", always_xy=True)
-            west, south = transformer.transform(left, bottom)
-            east, north = transformer.transform(right, top)
-
-            # It's possible that the dst.bounds cover the entire globe, and that bounds will
-            # then run from 179.888 to 179.999
-            # In that case bounds[0][0] = bounds[0][0] - 360.0
-            if left < -19800000.0 and right > 19800000.0:
-                if west > 0.0:
-                    west = -180.0
-                if east < 0.0:
-                    east = 180.0    
-
-            if west > east:
-                west -= 360.0
-            if west < -180.0:
-                west += 360.0
-                east += 360.0
+    def _send_to_map(self, overlay_file, west, east, south, north, legend):
+        """Send the overlay image to MapLibre, handling dateline splits."""
+        before_ids = self._get_before_ids()
 
         if east > 180.0:
-
-            # Image crosses date line
-            # Need to create two images, west and east
-            # First read in the png file
-            im = Image.open(os.path.join(self.map.server_path, overlay_file))
-
-            # find pixel index
+            # Dateline crossing — split into two images
+            im = Image.open(
+                os.path.join(self.map.server_path, overlay_file)
+            )
             npixx = im.size[0]
             dlon = east - west
             ipixx = int(npixx * (180.0 - west) / dlon)
-            im1 = im.crop((0, 0, ipixx, im.size[1]))
-            im2 = im.crop((ipixx + 1, 0, im.size[0], im.size[1]))
-            im1.save(os.path.join(self.map.server_path, overlay_file.replace(".png", ".a.png")))
-            im2.save(os.path.join(self.map.server_path, overlay_file.replace(".png", ".b.png")))
-            overlay_file_a = overlay_file.replace(".png", ".a.png")
-            overlay_file_b = overlay_file.replace(".png", ".b.png")
 
-            west_a = west
-            east_a = 180.0
-            west_b = -180.0
-            east_b = east - 360.0
+            file_a = overlay_file.replace(".png", ".a.png")
+            file_b = overlay_file.replace(".png", ".b.png")
+            im.crop((0, 0, ipixx, im.size[1])).save(
+                os.path.join(self.map.server_path, file_a)
+            )
+            im.crop((ipixx + 1, 0, im.size[0], im.size[1])).save(
+                os.path.join(self.map.server_path, file_b)
+            )
 
-            bounds_a = [[west_a, east_a], [south, north]]
-            bounds_b = [[west_b, east_b], [south, north]]
-
-            split_image = True
-
+            self.map.runjs(
+                self.main_js, "showLayer",
+                arglist=[self.map_id + ".b", self.side],
+            )
+            self.map.runjs(
+                "/js/raster_image_layer.js", "updateLayer",
+                id=self.map_id + ".a", filename=file_a,
+                bounds=[[west, 180.0], [south, north]],
+                colorbar=legend, legend_position=self.legend_position,
+                side=self.side, opacity=self.opacity,
+                beforeIds=before_ids,
+            )
+            self.map.runjs(
+                "/js/raster_image_layer.js", "updateLayer",
+                id=self.map_id + ".b", filename=file_b,
+                bounds=[[-180.0, east - 360.0], [south, north]],
+                side=self.side, opacity=self.opacity,
+                beforeIds=before_ids,
+            )
         else:
-            bounds = [[west, east], [south, north]]
-            split_image = False
+            self.map.runjs(
+                "/js/raster_image_layer.js", "updateLayer",
+                id=self.map_id + ".a", filename=overlay_file,
+                bounds=[[west, east], [south, north]],
+                colorbar=legend, legend_position=self.legend_position,
+                side=self.side, opacity=self.opacity,
+                beforeIds=before_ids,
+            )
+            self.map.runjs(
+                self.main_js, "hideLayer",
+                arglist=[self.map_id + ".b", self.side],
+            )
 
-
-        if plot_legend:
-
-            # Delete old legend files
-            for file_name in glob.glob(os.path.join(self.map.server_path, "overlays", self.map_id + ".legend.*.png")):
-                try:
-                    os.remove(file_name)
-                except:
-                    pass
-
-            # add random integer string to legend file to force reload                
-            # create string with random integer between 1 and 1,000,000
-            rstring = str(np.random.randint(1, 1000000))
-            legend_file = self.map_id + ".legend." + rstring + ".png"
-            width = 1.0
-            height = 1.5
-            cm2png(cmap,
-                file_name = os.path.join(self.map.server_path, "overlays", legend_file),
-                orientation="vertical",
-                legend_label=self.legend_label,
-                vmin=cmin,
-                vmax=cmax,
-                width=width,
-                height=height)
-
-            # legend is a file name
-            legend = "./overlays/" + legend_file
-
-        if split_image:
-
-            # Make the east layer visible
-            self.map.runjs(self.main_js, "showLayer", arglist=[self.map_id + ".b", self.side])
-
-            # Now we need to update the layers with the new bounds and opacity
-            self.map.runjs("/js/raster_image_layer.js", "updateLayer",
-                           id=self.map_id + ".a",
-                           filename=overlay_file_a,
-                           bounds=bounds_a,
-                           colorbar=legend,
-                           legend_position=self.legend_position,
-                           side=self.side,
-                           opacity=self.opacity)
-            
-            self.map.runjs("/js/raster_image_layer.js", "updateLayer",
-                           id=self.map_id + ".b",
-                           filename=overlay_file_b,
-                           bounds=bounds_b,
-                           side=self.side,
-                           opacity=self.opacity)
-
-        else:
-            # Just update the layer with the new bounds and opacity
-            self.map.runjs("/js/raster_image_layer.js", "updateLayer",
-                           id=self.map_id + ".a",
-                           filename=overlay_file,
-                           bounds=bounds,
-                           colorbar=legend,
-                           legend_position=self.legend_position,
-                           side=self.side,
-                           opacity=self.opacity)
-
-            # Make the east and west layers invisible
-            self.map.runjs(self.main_js, "hideLayer", arglist=[self.map_id + ".b", self.side])
 
 def get_appropriate_overview_level(
     src: rasterio.io.DatasetReader, max_pixel_size: float
 ) -> int:
-    """
-    Given a rasterio dataset `src` and a desired `max_pixel_size`,
-    determine the appropriate overview level (zoom level) that fits
-    the maximum resolution allowed by `max_pixel_size`.
+    """Determine the appropriate rasterio overview level for a given pixel size.
 
-    Parameters:
-    src (rasterio.io.DatasetReader): The rasterio dataset reader object.
-    max_pixel_size (float): The maximum pixel size for the resolution.
+    Parameters
+    ----------
+    src : rasterio.io.DatasetReader
+        The rasterio dataset reader.
+    max_pixel_size : float
+        Maximum pixel size in metres.
 
-    Returns:
-    int: The appropriate overview level.
+    Returns
+    -------
+    tuple of (int, bool)
+        Overview level index and whether overviews exist.
     """
-    # Get the original resolution (pixel size) in terms of x and y
-    original_resolution = src.res  # Tuple of (x_resolution, y_resolution)
+    original_resolution = src.res
     if src.crs.is_geographic:
         original_resolution = (
             original_resolution[0] * 111000,
             original_resolution[1] * 111000,
-        )  # Convert to meters
-    # Get the overviews for the dataset
-    overview_levels = src.overviews(
-        1
-    )  # Overview levels for the first band (if multi-band, you can adjust this)
+        )
 
-    # If there are no overviews, return 0 (native resolution)
+    overview_levels = src.overviews(1)
     if not overview_levels:
         return 0, False
 
-    # Calculate the resolution for each overview by multiplying the original resolution by the overview factor
     resolutions = [
         (original_resolution[0] * factor, original_resolution[1] * factor)
         for factor in overview_levels
     ]
 
-    # Find the highest overview level that is smaller than or equal to the max_pixel_size
     selected_overview = 0
     for i, (x_res, y_res) in enumerate(resolutions):
         if x_res <= max_pixel_size and y_res <= max_pixel_size:

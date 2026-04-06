@@ -1,27 +1,19 @@
-/**
- * Return the map object for the given side panel.
- * @param {string} side - Panel identifier ("a", "b", or undefined for default)
- * @returns {object} The corresponding map instance
- */
-function getMap(side) {
-  if (side == "a") { return mapA; }
-  else if (side == "b") { return mapB; }
-  else { return map; }
-}
+import { getMap, findBeforeId } from './utils.js';
 
 /**
  * Add a raster image layer initialized with a blank pixel.
  * @param {object} options - Named parameters
  * @param {string} options.id - Unique layer/source identifier
  * @param {string} options.side - Panel identifier ("a", "b", or undefined)
+ * @param {string[]} options.beforeIds - Layer IDs to insert before for z-ordering
  */
-export function addLayer({id = undefined, side = undefined} = {}) {
+export function addLayer({id = undefined, side = undefined, beforeIds = undefined} = {}) {
 
   const blankPixel =
     "data:image/png;base64," +
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=";
 
-  var mp = getMap(side);
+  const mp = getMap(side);
 
   // Always remove the layer first to avoid an error
   if (mp.getLayer(id)) {
@@ -43,6 +35,8 @@ export function addLayer({id = undefined, side = undefined} = {}) {
     ]
   });
 
+  const beforeId = findBeforeId(mp, beforeIds) || 'dummy_layer_1';
+
   mp.addLayer({
     'id': id,
     'source': id,
@@ -50,7 +44,7 @@ export function addLayer({id = undefined, side = undefined} = {}) {
     'paint': {
       'raster-resampling': 'nearest'
     }
-  }, 'dummy_layer_1');
+  }, beforeId);
   mp.setLayoutProperty(id, 'visibility', 'visible');
   mp.setPaintProperty(id, 'raster-opacity', 0.5);
 }
@@ -72,16 +66,21 @@ export function updateLayer({filename = undefined,
                              colorbar = undefined,
                              legend_position = "bottom-left",
                              opacity = 1.0,
-                             side = undefined} = {}) {
+                             side = undefined,
+                             beforeIds = undefined} = {}) {
 
-  var mp = getMap(side);
+  const mp = getMap(side);
 
-  // If the layer does not exist, add it (this should never happen)
+  // If the layer does not exist (e.g. after clear()), re-create it.
   if (!mp.getLayer(id)) {
-    addLayer({id: id, side: side});
+    addLayer({id: id, side: side, beforeIds: beforeIds});
+  } else if (beforeIds && beforeIds.length > 0) {
+    // Layer exists but may be in wrong z-order position — move it.
+    const target = findBeforeId(mp, beforeIds);
+    if (target) mp.moveLayer(id, target);
   }
 
-  var source = mp.getSource(id);
+  const source = mp.getSource(id);
 
   // Update the image
   source.updateImage({
@@ -115,15 +114,15 @@ export function updateLayer({filename = undefined,
  */
 function setLegend(mp, id, colorbar, legend_position) {
 
-  var legend = document.getElementById("legend" + id);
-  var legendImage = document.getElementById("legend_image_" + id);
+  let legend = document.getElementById("legend" + id);
+  let legendImage = document.getElementById("legend_image_" + id);
 
   // If legend does not exist, create it
   if (!legend) {
-    var legend = document.createElement("div");
+    legend = document.createElement("div");
     legend.id = "legend" + id;
     legend.className = "legend_bottom_left";
-    var legendImage = document.createElement('img');
+    legendImage = document.createElement('img');
     legendImage.id = "legend_image_" + id;
     legend.appendChild(legendImage);
     document.body.appendChild(legend);
@@ -131,7 +130,7 @@ function setLegend(mp, id, colorbar, legend_position) {
 
   if (!legendImage) {
     // Legend image does not exist yet, so create it
-    var legendImage = document.createElement('img');
+    legendImage = document.createElement('img');
     legendImage.id = "legend_image_" + id;
     legend.appendChild(legendImage);
   }
@@ -141,15 +140,15 @@ function setLegend(mp, id, colorbar, legend_position) {
   // and just show the image. Otherwise, clear the image src.
   if (typeof colorbar === 'string' || colorbar instanceof String) {
     // Remove all spans and i elements
-    var spans = legend.getElementsByTagName('span');
+    const spans = legend.getElementsByTagName('span');
     while (spans.length > 0) {
       spans[0].parentNode.removeChild(spans[0]);
     }
-    var is = legend.getElementsByTagName('i');
+    const is = legend.getElementsByTagName('i');
     while (is.length > 0) {
       is[0].parentNode.removeChild(is[0]);
     }
-    var brs = legend.getElementsByTagName('br');
+    const brs = legend.getElementsByTagName('br');
     while (brs.length > 0) {
       brs[0].parentNode.removeChild(brs[0]);
     }
@@ -176,22 +175,20 @@ function setLegend(mp, id, colorbar, legend_position) {
     legend.innerHTML = '';
     legend.classList.add("legend");
 
-    var newSpan = document.createElement('span');
-    newSpan.classList.add('title');
-    newSpan.innerHTML = '<b>' + colorbar["title"] + '</b>';
-    legend.appendChild(newSpan);
+    const titleSpan = document.createElement('span');
+    titleSpan.classList.add('title');
+    titleSpan.innerHTML = '<b>' + colorbar["title"] + '</b>';
+    legend.appendChild(titleSpan);
     legend.appendChild(document.createElement("br"));
 
     for (let i = 0; i < colorbar["contour"].length; i++) {
-      let cnt = colorbar["contour"][i];
-      var newI = document.createElement('i');
-      newI.setAttribute(
-        'style',
-        'background:' + cnt["color"]
-      );
+      const cnt = colorbar["contour"][i];
+      const newI = document.createElement('i');
+      newI.setAttribute('style', 'background:' + cnt["color"]);
+      if (cnt["shape"] === "circle") newI.classList.add("circle");
       legend.appendChild(newI);
 
-      var newSpan = document.createElement('span');
+      const newSpan = document.createElement('span');
       newSpan.innerHTML = cnt["text"];
       legend.appendChild(newSpan);
       legend.appendChild(document.createElement("br"));
@@ -215,9 +212,9 @@ function setLegend(mp, id, colorbar, legend_position) {
  * @param {string} options.position - Position string (e.g. "bottom-left", "top-right")
  */
 export function setLegendPosition({id = undefined, position = "bottom-left"} = {}) {
-  var legend = document.getElementById("legend" + id);
+  const legend = document.getElementById("legend" + id);
   if (legend) {
-    legend.classList.remove("bottom-left", "bottom-right", "top-left", "top-right", "bottom", "top", "left", "right");
+    legend.classList.remove("bottom-left", "bottom-right", "bottom-right-2", "top-left", "top-right", "bottom", "top", "left", "right");
     legend.classList.add("legend");
     legend.classList.add(position);
   }
@@ -235,6 +232,6 @@ export function setOpacity({
     opacity = 1.0,
     side = undefined
   } = {}) {
-  var mp = getMap(side);
+  const mp = getMap(side);
   mp.setPaintProperty(id, 'raster-opacity', opacity);
 }

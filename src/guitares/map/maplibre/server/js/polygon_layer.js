@@ -8,6 +8,8 @@
  * @module polygon_layer
  */
 
+import { getMap, findBeforeId, getDashArray, cleanUp } from './utils.js';
+
 // ── Module state (for selector mode) ─────────────────────────────────
 
 let hoverProperty = null;
@@ -22,27 +24,6 @@ let selectedFeatures = [];
 function numberWithCommas(x) {
   if (x === null || x === undefined) return '';
   return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-}
-
-function getMap(side) {
-  if (side === 'a') return window.mapA || map;
-  if (side === 'b') return window.mapB || map;
-  return map;
-}
-
-function cleanUp(mp, id) {
-  for (var suffix of ['.line', '.fill']) {
-    if (mp.getLayer(id + suffix)) mp.removeLayer(id + suffix);
-  }
-  if (mp.getSource(id)) mp.removeSource(id);
-  var legend = document.getElementById('legend' + id);
-  if (legend) legend.remove();
-}
-
-function getDashArray(style) {
-  if (style === '--') return [2, 1];
-  if (style === '..') return [0.5, 1];
-  return [1];
 }
 
 // ── Main entry point ─────────────────────────────────────────────────
@@ -65,19 +46,19 @@ function getDashArray(style) {
  *   lineWidthHover, fillColorHover, fillOpacityHover.
  */
 export function addLayer(id, data, pp, options) {
-  var opts = options || {};
-  var mp = getMap(opts.side);
-  var selector = opts.selector || false;
+  const opts = options || {};
+  const mp = getMap(opts.side);
+  const selector = opts.selector || false;
 
   cleanUp(mp, id);
 
-  var lineColor   = pp.lineColor || 'black';
-  var lineWidth   = pp.lineWidth !== undefined ? pp.lineWidth : 1;
-  var lineOpacity = pp.lineOpacity !== undefined ? pp.lineOpacity : 1;
-  var lineStyle   = pp.lineStyle || opts.lineStyle || '-';
-  var fillColor   = pp.fillColor || 'transparent';
-  var fillOpacity = pp.fillOpacity !== undefined ? pp.fillOpacity : 0.5;
-  var minZoom     = opts.minZoom || 0;
+  const lineColor   = pp.lineColor || 'black';
+  const lineWidth   = pp.lineWidth !== undefined ? pp.lineWidth : 1;
+  const lineOpacity = pp.lineOpacity !== undefined ? pp.lineOpacity : 1;
+  const lineStyle   = pp.lineStyle || opts.lineStyle || '-';
+  const fillColor   = pp.fillColor || 'transparent';
+  const fillOpacity = pp.fillOpacity !== undefined ? pp.fillOpacity : 0.5;
+  const minZoom     = opts.minZoom || 0;
 
   layers[id] = { data: data, mode: 'active', selectionOption: opts.selectionOption || 'single' };
 
@@ -88,28 +69,30 @@ export function addLayer(id, data, pp, options) {
     generateId: !selector,
   });
 
+  const beforeId = findBeforeId(mp, opts.beforeIds) || 'dummy_layer_1';
+
   // ── Fill layer ─────────────────────────────────────────────────
 
-  var hasFill = false;
+  let hasFill = false;
 
   if (opts.paintDict) {
     mp.addLayer({
       id: id + '.fill', type: 'fill', source: id,
       minzoom: minZoom, layout: { visibility: 'visible' },
       paint: opts.paintDict,
-    });
+    }, beforeId);
     hasFill = true;
 
   } else if (opts.bins && opts.colors && opts.colorProperty) {
-    var expr = ['step', ['get', opts.colorProperty], opts.colors[0]];
-    for (var i = 0; i < opts.bins.length; i++) {
+    const expr = ['step', ['get', opts.colorProperty], opts.colors[0]];
+    for (let i = 0; i < opts.bins.length; i++) {
       expr.push(opts.bins[i], opts.colors[i + 1]);
     }
     mp.addLayer({
       id: id + '.fill', type: 'fill', source: id,
       minzoom: minZoom, layout: { visibility: 'visible' },
       paint: { 'fill-color': expr, 'fill-opacity': fillOpacity },
-    });
+    }, beforeId);
     hasFill = true;
 
   } else if (selector) {
@@ -131,7 +114,7 @@ export function addLayer(id, data, pp, options) {
         ],
         'fill-outline-color': 'transparent',
       },
-    });
+    }, beforeId);
     hasFill = true;
 
   } else if (fillColor && fillColor !== 'transparent') {
@@ -139,13 +122,13 @@ export function addLayer(id, data, pp, options) {
       id: id + '.fill', type: 'fill', source: id,
       minzoom: minZoom, layout: { visibility: 'visible' },
       paint: { 'fill-color': fillColor, 'fill-opacity': fillOpacity },
-    });
+    }, beforeId);
     hasFill = true;
   }
 
   // ── Line layer ─────────────────────────────────────────────────
 
-  var linePaint = {
+  const linePaint = {
     'line-color': lineColor,
     'line-width': lineWidth,
     'line-opacity': lineOpacity,
@@ -175,18 +158,18 @@ export function addLayer(id, data, pp, options) {
     id: id + '.line', type: 'line', source: id,
     minzoom: minZoom, layout: { visibility: 'visible' },
     paint: linePaint,
-  });
+  }, beforeId);
 
   // ── Hover popup (non-selector) ─────────────────────────────────
 
   if (!selector && opts.hoverProperty) {
-    var hoverLayerId = hasFill ? id + '.fill' : id + '.line';
-    var hoverPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false });
+    const hoverLayerId = hasFill ? id + '.fill' : id + '.line';
+    const hoverPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false });
 
     mp.on('mouseenter', hoverLayerId, function(e) {
       mp.getCanvas().style.cursor = 'pointer';
-      var val = e.features[0].properties[opts.hoverProperty];
-      var text = opts.hoverProperty + ': ' + numberWithCommas(val);
+      const val = e.features[0].properties[opts.hoverProperty];
+      let text = opts.hoverProperty + ': ' + numberWithCommas(val);
       if (opts.unit) text += ' ' + opts.unit;
       hoverPopup.setLngLat(e.lngLat).setText(text).addTo(mp);
     });
@@ -208,8 +191,8 @@ export function addLayer(id, data, pp, options) {
 
   if (selector) {
     hoverProperty = opts.hoverProperty || null;
-    var fillId = id + '.fill';
-    var selectionOption = opts.selectionOption || 'single';
+    const fillId = id + '.fill';
+    const selectionOption = opts.selectionOption || 'single';
 
     popup = new maplibregl.Popup({ offset: 10, closeButton: false, closeOnClick: false });
 
@@ -229,9 +212,9 @@ export function addLayer(id, data, pp, options) {
       layerAdded(id);
     });
 
-    var index = opts.index;
+    const index = opts.index;
     if (index !== undefined && index !== null) {
-      var indices = Array.isArray(index) ? index : [index];
+      const indices = Array.isArray(index) ? index : [index];
       if (indices.length > 0) select(id, indices);
     }
   } else {
@@ -256,8 +239,8 @@ export function deactivate(id, lineColor) {
 }
 
 export function remove(id, side) {
-  var mp = side ? getMap(side) : map;
-  var fillId = id + '.fill';
+  const mp = side ? getMap(side) : map;
+  const fillId = id + '.fill';
   mp.off('mousemove', fillId, mouseEnter);
   mp.off('mouseleave', fillId, mouseLeave);
   mp.off('click', fillId, clickSingle);
@@ -266,23 +249,23 @@ export function remove(id, side) {
 }
 
 export function updateData(id, data, side) {
-  var mp = side ? getMap(side) : map;
-  var source = mp.getSource(id);
+  const mp = side ? getMap(side) : map;
+  const source = mp.getSource(id);
   if (source) source.setData(data);
 }
 
 export function setLegendPosition(id, position) {
-  var el = document.getElementById('legend' + id);
+  const el = document.getElementById('legend' + id);
   if (el) el.className = 'legend ' + position;
 }
 
 export function showLegend(id) {
-  var el = document.getElementById('legend' + id);
+  const el = document.getElementById('legend' + id);
   if (el) el.style.display = 'block';
 }
 
 export function hideLegend(id) {
-  var el = document.getElementById('legend' + id);
+  const el = document.getElementById('legend' + id);
   if (el) el.style.display = 'none';
 }
 
@@ -299,7 +282,7 @@ export function selectByIndex(id, indices) {
 function mouseEnter(e) {
   if (!e.features || e.features.length === 0) return;
   map.getCanvas().style.cursor = 'pointer';
-  var feature = e.features[0];
+  const feature = e.features[0];
   if (feature.properties.hover_popup_width) {
     popup.setMaxWidth(feature.properties.hover_popup_width);
   }
@@ -327,7 +310,7 @@ function mouseLeave() {
 
 function clickSingle(e) {
   if (!e.features || e.features.length === 0) return;
-  var layerId = e.features[0].source;
+  const layerId = e.features[0].source;
   if (selectedIndex !== null) deselect(layerId, [selectedIndex]);
   selectedIndex = e.features[0].id;
   select(layerId, [selectedIndex]);
@@ -336,17 +319,17 @@ function clickSingle(e) {
 
 function clickMultiple(e) {
   if (!e.features || e.features.length === 0) return;
-  var layerId = e.features[0].source;
-  var index = e.features[0].id;
-  var state = map.getFeatureState({ source: layerId, id: index });
+  const layerId = e.features[0].source;
+  const index = e.features[0].id;
+  const state = map.getFeatureState({ source: layerId, id: index });
   if (state.selected) {
     deselect(layerId, [index]);
   } else {
     select(layerId, [index]);
   }
   selectedFeatures = [];
-  for (var i = 0; i < layers[layerId].data.features.length; i++) {
-    var fs = map.getFeatureState({ source: layerId, id: i });
+  for (let i = 0; i < layers[layerId].data.features.length; i++) {
+    const fs = map.getFeatureState({ source: layerId, id: i });
     if (fs.selected) selectedFeatures.push(layers[layerId].data.features[i]);
   }
   featureClicked(layerId, selectedFeatures);
@@ -355,21 +338,21 @@ function clickMultiple(e) {
 // ── Selector: selection helpers ──────────────────────────────────────
 
 function select(layerId, indices) {
-  for (var idx of indices) {
+  for (const idx of indices) {
     map.setFeatureState({ source: layerId, id: idx }, { selected: true });
   }
 }
 
 function deselect(layerId, indices) {
-  for (var idx of indices) {
+  for (const idx of indices) {
     map.setFeatureState({ source: layerId, id: idx }, { selected: false });
   }
 }
 
 function deselectAll(layerId) {
-  var features = layers[layerId]?.data?.features;
+  const features = layers[layerId]?.data?.features;
   if (!features) return;
-  for (var i = 0; i < features.length; i++) {
+  for (let i = 0; i < features.length; i++) {
     map.setFeatureState({ source: layerId, id: i }, { selected: false });
   }
 }
@@ -377,14 +360,14 @@ function deselectAll(layerId) {
 // ── Legend builders ──────────────────────────────────────────────────
 
 function buildLegend(id, title, position, colors, labels) {
-  var old = document.getElementById('legend' + id);
+  const old = document.getElementById('legend' + id);
   if (old) old.remove();
-  var el = document.createElement('div');
+  const el = document.createElement('div');
   el.id = 'legend' + id;
   el.className = 'legend ' + (position || 'bottom-right');
-  if (title) { var t = document.createElement('div'); t.innerHTML = '<strong>' + title + '</strong>'; el.appendChild(t); }
-  for (var i = 0; i < labels.length; i++) {
-    var item = document.createElement('div');
+  if (title) { const t = document.createElement('div'); t.innerHTML = '<strong>' + title + '</strong>'; el.appendChild(t); }
+  for (let i = 0; i < labels.length; i++) {
+    const item = document.createElement('div');
     item.innerHTML = '<i style="background:' + colors[i] + '; width:18px; height:18px; display:inline-block; margin-right:5px;"></i><span>' + labels[i] + '</span>';
     el.appendChild(item);
   }
@@ -392,14 +375,14 @@ function buildLegend(id, title, position, colors, labels) {
 }
 
 function buildLegendFromItems(id, title, position, items) {
-  var old = document.getElementById('legend' + id);
+  const old = document.getElementById('legend' + id);
   if (old) old.remove();
-  var el = document.createElement('div');
+  const el = document.createElement('div');
   el.id = 'legend' + id;
   el.className = 'legend ' + (position || 'bottom-right');
-  if (title) { var t = document.createElement('div'); t.innerHTML = '<strong>' + title + '</strong>'; el.appendChild(t); }
-  for (var i = 0; i < items.length; i++) {
-    var item = document.createElement('div');
+  if (title) { const t = document.createElement('div'); t.innerHTML = '<strong>' + title + '</strong>'; el.appendChild(t); }
+  for (let i = 0; i < items.length; i++) {
+    const item = document.createElement('div');
     item.innerHTML = '<i style="' + items[i].style + '; width:18px; height:18px; display:inline-block; margin-right:5px;"></i><span>' + items[i].label + '</span>';
     el.appendChild(item);
   }

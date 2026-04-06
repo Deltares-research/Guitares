@@ -29,6 +29,7 @@ class Layer:
         self.option = None
         self.zbmax = 0.1
         self.get_data = None  # Function to get data for this layer, if needed
+        self.map_overlay_options = {}  # Dict or callable returning dict, passed to map_overlay()
 
         # Legend
         self.legend_position = "bottom-right" # Options are "top-left", "top-right", "bottom-left", "bottom-right"
@@ -185,6 +186,39 @@ class Layer:
                                  "circleRadiusHover": self.circle_radius_hover
                                  }
 
+
+    def _get_map_layer_ids(self):
+        """Return the MapLibre layer IDs this layer creates on the map.
+
+        Subclasses override this to list the actual sub-layer IDs they use
+        (e.g. ``[id + '.fill', id + '.line']`` for polygons).
+        """
+        return [self.map_id]
+
+    def _get_before_ids(self):
+        """Return MapLibre layer IDs from later siblings for z-ordering.
+
+        When a layer is (re-)added to MapLibre, it should be inserted
+        before the first of these IDs that already exists on the map.
+        This preserves the intended stacking order defined by the Python
+        layer tree.
+        """
+        if self.parent is None:
+            return []
+        siblings = list(self.parent.layer.values())
+        found_self = False
+        before_ids = []
+        for sibling in siblings:
+            if sibling is self:
+                found_self = True
+                continue
+            if found_self:
+                before_ids.extend(sibling._get_map_layer_ids())
+                # Also recurse into container children
+                if sibling.layer:
+                    for child in sibling.layer.values():
+                        before_ids.extend(child._get_map_layer_ids())
+        return before_ids
 
     def get_paint_props(self, state="active"):
         """Return a paint properties dict for the given state.

@@ -1,13 +1,4 @@
-/**
- * Return the map object for the given side panel.
- * @param {string} side - Panel identifier ("a", "b", or undefined for default)
- * @returns {object} The corresponding map instance
- */
-function getMap(side) {
-  if (side == "a") { return mapA; }
-  else if (side == "b") { return mapB; }
-  else { return map; }
-}
+import { getMap } from './utils.js';
 
 /**
  * Add a raster tile layer from a tile URL template.

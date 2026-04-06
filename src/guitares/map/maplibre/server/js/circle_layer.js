@@ -11,6 +11,8 @@
  * @module circle_layer
  */
 
+import { findBeforeId } from './utils.js';
+
 // ── Module state (for selector mode) ─────────────────────────────────
 
 let hoverProperty = null;
@@ -37,24 +39,24 @@ let selectedFeatures = [];
  *   legendTitle (string), legendPosition (string).
  */
 export function addLayer(id, data, pp, options) {
-  var opts = options || {};
-  var selector = opts.selector || false;
-  var minZoom = opts.minZoom || 0;
+  const opts = options || {};
+  const selector = opts.selector || false;
+  const minZoom = opts.minZoom || 0;
 
   // Clean up
   if (map.getLayer(id)) map.removeLayer(id);
   if (map.getSource(id)) map.removeSource(id);
-  var legend = document.getElementById('legend' + id);
+  const legend = document.getElementById('legend' + id);
   if (legend) legend.remove();
 
-  var sourceConfig = { type: 'geojson', data: data };
+  const sourceConfig = { type: 'geojson', data: data };
   if (selector) sourceConfig.promoteId = 'index';
 
   map.addSource(id, sourceConfig);
 
   // ── Circle layer paint ─────────────────────────────────────────
 
-  var paint;
+  let paint;
 
   if (opts.paintDict) {
     // Custom paint dict (for data-driven coloring)
@@ -102,21 +104,21 @@ export function addLayer(id, data, pp, options) {
     minzoom: minZoom,
     layout: { visibility: 'visible' },
     paint: paint,
-  });
+  }, findBeforeId(map, opts.beforeIds) || 'dummy_layer_1');
 
   // ── Hover popup (non-selector simple mode) ─────────────────────
 
   if (!selector && opts.hoverProperty) {
-    var hoverPopup = new maplibregl.Popup({
+    const hoverPopup = new maplibregl.Popup({
       closeButton: false,
       closeOnClick: false,
     });
-    var unit = opts.unit || '';
+    const unit = opts.unit || '';
 
     map.on('mouseenter', id, function(e) {
       map.getCanvas().style.cursor = 'pointer';
-      var val = e.features[0].properties[opts.hoverProperty];
-      var text = opts.hoverProperty + ': ' + val;
+      const val = e.features[0].properties[opts.hoverProperty];
+      let text = opts.hoverProperty + ': ' + val;
       if (unit) text += ' ' + unit;
       hoverPopup.setLngLat(e.lngLat).setText(text).addTo(map);
     });
@@ -130,16 +132,16 @@ export function addLayer(id, data, pp, options) {
   // ── Legend (optional, for custom paint mode) ───────────────────
 
   if (opts.legendItems && opts.legendItems.length > 0) {
-    var legendDiv = document.createElement('div');
+    const legendDiv = document.createElement('div');
     legendDiv.id = 'legend' + id;
     legendDiv.className = 'legend ' + (opts.legendPosition || 'bottom-right');
     if (opts.legendTitle) {
-      var t = document.createElement('div');
+      const t = document.createElement('div');
       t.innerHTML = '<strong>' + opts.legendTitle + '</strong>';
       legendDiv.appendChild(t);
     }
-    for (var i = 0; i < opts.legendItems.length; i++) {
-      var item = document.createElement('div');
+    for (let i = 0; i < opts.legendItems.length; i++) {
+      const item = document.createElement('div');
       item.innerHTML =
         '<i style="' + opts.legendItems[i].style + '; width:18px; height:18px; display:inline-block; margin-right:5px;"></i>' +
         '<span>' + opts.legendItems[i].label + '</span>';
@@ -152,7 +154,7 @@ export function addLayer(id, data, pp, options) {
 
   if (selector) {
     hoverProperty = opts.hoverProperty || null;
-    var selectionOption = opts.selectionOption || 'single';
+    const selectionOption = opts.selectionOption || 'single';
 
     layers[id] = {
       data: data,
@@ -180,7 +182,7 @@ export function addLayer(id, data, pp, options) {
       layerAdded(id);
     });
 
-    var index = opts.index || 0;
+    const index = opts.index || 0;
     if (index >= 0) {
       select(id, [index]);
       selectedIndex = index;
@@ -211,7 +213,7 @@ export function setPaintProperties(id, pp) {
  * @param {Object} data - New GeoJSON data.
  */
 export function setData(id, data) {
-  var source = map.getSource(id);
+  const source = map.getSource(id);
   if (source) source.setData(data);
 }
 
@@ -253,10 +255,10 @@ export function deactivate(id, pp) {
  * @param {string} id - Layer identifier.
  */
 export function remove(id) {
-  var opt = layers[id] ? layers[id].selectionOption : null;
+  const opt = layers[id] ? layers[id].selectionOption : null;
   if (map.getLayer(id)) map.removeLayer(id);
   if (map.getSource(id)) map.removeSource(id);
-  var legend = document.getElementById('legend' + id);
+  const legend = document.getElementById('legend' + id);
   if (legend) legend.remove();
   map.off('mouseenter', id, mouseEnter);
   map.off('mouseleave', id, mouseLeave);
@@ -272,12 +274,12 @@ export function remove(id) {
 function mouseEnter(e) {
   if (!e.features || e.features.length === 0) return;
   map.getCanvas().style.cursor = 'pointer';
-  var feature = e.features[0];
+  const feature = e.features[0];
   if (feature.properties.hover_popup_width) {
     popup.setMaxWidth(feature.properties.hover_popup_width);
   }
   if (hoverProperty && feature.properties[hoverProperty]) {
-    var coords = feature.geometry.coordinates.slice();
+    const coords = feature.geometry.coordinates.slice();
     while (Math.abs(e.lngLat.lng - coords[0]) > 180) {
       coords[0] += e.lngLat.lng > coords[0] ? 360 : -360;
     }
@@ -304,7 +306,7 @@ function mouseLeave() {
 
 function clickSingle(e) {
   if (!e.features || e.features.length === 0) return;
-  var layerId = e.features[0].source;
+  const layerId = e.features[0].source;
   if (selectedIndex !== null) deselect(layerId, [selectedIndex]);
   selectedIndex = e.features[0].id;
   select(layerId, [selectedIndex]);
@@ -313,17 +315,17 @@ function clickSingle(e) {
 
 function clickMultiple(e) {
   if (!e.features || e.features.length === 0) return;
-  var layerId = e.features[0].source;
-  var index = e.features[0].id;
-  var state = map.getFeatureState({ source: layerId, id: index });
+  const layerId = e.features[0].source;
+  const index = e.features[0].id;
+  const state = map.getFeatureState({ source: layerId, id: index });
   if (state.selected) {
     deselect(layerId, [index]);
   } else {
     select(layerId, [index]);
   }
   selectedFeatures = [];
-  for (var i = 0; i < layers[layerId].data.features.length; i++) {
-    var fs = map.getFeatureState({ source: layerId, id: i });
+  for (let i = 0; i < layers[layerId].data.features.length; i++) {
+    const fs = map.getFeatureState({ source: layerId, id: i });
     if (fs.selected) selectedFeatures.push(layers[layerId].data.features[i]);
   }
   featureClicked(layerId, selectedFeatures);
@@ -332,21 +334,21 @@ function clickMultiple(e) {
 // ── Selector: selection helpers ──────────────────────────────────────
 
 function select(layerId, indices) {
-  for (var idx of indices) {
+  for (const idx of indices) {
     map.setFeatureState({ source: layerId, id: idx }, { selected: true });
   }
 }
 
 function deselect(layerId, indices) {
-  for (var idx of indices) {
+  for (const idx of indices) {
     map.setFeatureState({ source: layerId, id: idx }, { selected: false });
   }
 }
 
 function deselectAll(layerId) {
-  var features = layers[layerId]?.data?.features;
+  const features = layers[layerId]?.data?.features;
   if (!features) return;
-  for (var i = 0; i < features.length; i++) {
+  for (let i = 0; i < features.length; i++) {
     map.setFeatureState({ source: layerId, id: i }, { selected: false });
   }
 }

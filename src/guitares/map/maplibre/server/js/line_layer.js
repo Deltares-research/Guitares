@@ -8,6 +8,8 @@
  * @module line_layer
  */
 
+import { findBeforeId, getDashArray } from './utils.js';
+
 // ── Module state (for selector mode) ─────────────────────────────────
 
 let hoverProperty = null;
@@ -16,19 +18,6 @@ let activeLayerId = null;
 let selectedIndex = null;
 let popup = null;
 let selectedFeatures = [];
-
-// ── Utility ──────────────────────────────────────────────────────────
-
-/**
- * Convert a dash style string to a MapLibre line-dasharray value.
- * @param {string} style - "-" (solid), "--" (dashed), ".." (dotted).
- * @returns {number[]}
- */
-function getDashArray(style) {
-  if (style === '--') return [2, 1];
-  if (style === '..') return [0.5, 1];
-  return [1];
-}
 
 // ── Main entry point ─────────────────────────────────────────────────
 
@@ -46,24 +35,24 @@ function getDashArray(style) {
  *   selectionOption ("single"|"multiple").
  */
 export function addLayer(id, data, pp, options) {
-  var opts = options || {};
-  var selector = opts.selector || false;
-  var lineId = id + '.line';
-  var circleId = id + '.circle';
+  const opts = options || {};
+  const selector = opts.selector || false;
+  const lineId = id + '.line';
+  const circleId = id + '.circle';
 
   // Clean up
   if (map.getLayer(lineId)) map.removeLayer(lineId);
   if (map.getLayer(circleId)) map.removeLayer(circleId);
   if (map.getSource(id)) map.removeSource(id);
 
-  var sourceConfig = { type: 'geojson', data: data };
+  const sourceConfig = { type: 'geojson', data: data };
   if (selector) sourceConfig.promoteId = 'index';
 
   map.addSource(id, sourceConfig);
 
   // ── Line sub-layer ─────────────────────────────────────────────
 
-  var linePaint = {
+  const linePaint = {
     'line-color': pp.lineColor,
     'line-width': pp.lineWidth,
     'line-opacity': pp.lineOpacity,
@@ -88,17 +77,19 @@ export function addLayer(id, data, pp, options) {
     linePaint['line-dasharray'] = getDashArray(pp.lineStyle);
   }
 
+  const beforeId = findBeforeId(map, opts.beforeIds) || 'dummy_layer_1';
+
   map.addLayer({
     id: lineId,
     type: 'line',
     source: id,
     layout: { visibility: 'visible', 'line-cap': 'round', 'line-join': 'round' },
     paint: linePaint,
-  }, 'dummy_layer_1');
+  }, beforeId);
 
   // ── Circle sub-layer (optional) ────────────────────────────────
 
-  var circleRadius = pp.circleRadius || 0;
+  const circleRadius = pp.circleRadius || 0;
   if (circleRadius > 0) {
     map.addLayer({
       id: circleId,
@@ -112,14 +103,14 @@ export function addLayer(id, data, pp, options) {
         'circle-radius': circleRadius,
         'circle-opacity': pp.fillOpacity || 1,
       },
-    }, 'dummy_layer_1');
+    }, beforeId);
   }
 
   // ── Selector mode setup ────────────────────────────────────────
 
   if (selector) {
     hoverProperty = opts.hoverProperty || null;
-    var selectionOption = opts.selectionOption || 'single';
+    const selectionOption = opts.selectionOption || 'single';
 
     layers[id] = {
       data: data,
@@ -147,7 +138,7 @@ export function addLayer(id, data, pp, options) {
       layerAdded(id);
     });
 
-    var index = opts.index || 0;
+    const index = opts.index || 0;
     if (index >= 0) {
       select(id, [index]);
       selectedIndex = index;
@@ -183,7 +174,7 @@ export function setPaintProperties(id, pp) {
  * @param {Object} data - New GeoJSON data.
  */
 export function setData(id, data) {
-  var source = map.getSource(id);
+  const source = map.getSource(id);
   if (source) source.setData(data);
 }
 
@@ -225,7 +216,7 @@ export function deactivate(id, pp) {
  * @param {string} id - Layer identifier.
  */
 export function remove(id) {
-  var opt = layers[id] ? layers[id].selectionOption : null;
+  const opt = layers[id] ? layers[id].selectionOption : null;
   if (map.getLayer(id + '.line')) map.removeLayer(id + '.line');
   if (map.getLayer(id + '.circle')) map.removeLayer(id + '.circle');
   if (map.getSource(id)) map.removeSource(id);
@@ -243,7 +234,7 @@ export function remove(id) {
 function mouseEnter(e) {
   if (!e.features || e.features.length === 0) return;
   map.getCanvas().style.cursor = 'pointer';
-  var feature = e.features[0];
+  const feature = e.features[0];
   if (feature.properties.hover_popup_width) {
     popup.setMaxWidth(feature.properties.hover_popup_width);
   }
@@ -271,7 +262,7 @@ function mouseLeave() {
 
 function clickSingle(e) {
   if (!e.features || e.features.length === 0) return;
-  var layerId = e.features[0].source;
+  const layerId = e.features[0].source;
   if (selectedIndex !== null) deselect(layerId, [selectedIndex]);
   selectedIndex = e.features[0].id;
   select(layerId, [selectedIndex]);
@@ -280,17 +271,17 @@ function clickSingle(e) {
 
 function clickMultiple(e) {
   if (!e.features || e.features.length === 0) return;
-  var layerId = e.features[0].source;
-  var index = e.features[0].id;
-  var state = map.getFeatureState({ source: layerId, id: index });
+  const layerId = e.features[0].source;
+  const index = e.features[0].id;
+  const state = map.getFeatureState({ source: layerId, id: index });
   if (state.selected) {
     deselect(layerId, [index]);
   } else {
     select(layerId, [index]);
   }
   selectedFeatures = [];
-  for (var i = 0; i < layers[layerId].data.features.length; i++) {
-    var fs = map.getFeatureState({ source: layerId, id: i });
+  for (let i = 0; i < layers[layerId].data.features.length; i++) {
+    const fs = map.getFeatureState({ source: layerId, id: i });
     if (fs.selected) selectedFeatures.push(layers[layerId].data.features[i]);
   }
   featureClicked(layerId, selectedFeatures);
@@ -299,21 +290,21 @@ function clickMultiple(e) {
 // ── Selector: selection helpers ──────────────────────────────────────
 
 function select(layerId, indices) {
-  for (var idx of indices) {
+  for (const idx of indices) {
     map.setFeatureState({ source: layerId, id: idx }, { selected: true });
   }
 }
 
 function deselect(layerId, indices) {
-  for (var idx of indices) {
+  for (const idx of indices) {
     map.setFeatureState({ source: layerId, id: idx }, { selected: false });
   }
 }
 
 function deselectAll(layerId) {
-  var features = layers[layerId]?.data?.features;
+  const features = layers[layerId]?.data?.features;
   if (!features) return;
-  for (var i = 0; i < features.length; i++) {
+  for (let i = 0; i < features.length; i++) {
     map.setFeatureState({ source: layerId, id: i }, { selected: false });
   }
 }

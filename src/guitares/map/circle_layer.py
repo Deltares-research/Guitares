@@ -20,6 +20,10 @@ class CircleLayer(Layer):
         self.color_by_attribute = {}
         self.legend_items = []
 
+    def _get_map_layer_ids(self):
+        """Circle layer uses a single MapLibre layer with the base id."""
+        return [self.map_id]
+
     def set_data(self, data, index=None, color_by_attribute=None, legend_items=None):
         """Set the GeoJSON data and render the circle layer.
 
@@ -65,7 +69,10 @@ class CircleLayer(Layer):
             pp["fillColorSelected"] = self.fill_color_selected
             pp["circleRadiusSelected"] = self.circle_radius_selected
 
-        options = {"minZoom": getattr(self, "min_zoom", 0)}
+        options = {
+            "minZoom": getattr(self, "min_zoom", 0),
+            "beforeIds": self._get_before_ids(),
+        }
 
         if self.selector:
             options["selector"] = True
@@ -106,7 +113,7 @@ class CircleLayer(Layer):
             if len(gdf) == 0:
                 return
             pp = self.get_paint_props()
-            options = {"minZoom": self.min_zoom}
+            options = {"minZoom": self.min_zoom, "beforeIds": self._get_before_ids()}
             if self.hover_property:
                 options["hoverProperty"] = self.hover_property
                 options["unit"] = getattr(self, "unit", "")

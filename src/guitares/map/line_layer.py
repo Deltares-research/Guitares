@@ -20,6 +20,10 @@ class LineLayer(Layer):
         self.selector = "select" in kwargs and kwargs["select"] is not None
         self.index = 0
 
+    def _get_map_layer_ids(self):
+        """Line layer creates .line and optionally .circle sub-layers."""
+        return [self.map_id + ".line", self.map_id + ".circle"]
+
     def set_data(self, data, index=None):
         """Set the GeoJSON data and render the line layer.
 
@@ -51,7 +55,7 @@ class LineLayer(Layer):
             pp["lineColorSelected"] = self.line_color_selected
             pp["lineWidthSelected"] = self.line_width_selected
 
-        options = {}
+        options = {"beforeIds": self._get_before_ids()}
         if self.selector:
             options["selector"] = True
             options["index"] = self.index
