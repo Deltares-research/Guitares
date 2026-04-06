@@ -1,8 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Apr 25 10:58:08 2021
-
-@author: ormondt
-"""
+"""Guitares GUI framework for building desktop applications with Qt and web-based maps."""
 
 __version__ = "0.1.5"

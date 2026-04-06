@@ -5,6 +5,8 @@ and click-based feature selection (single or multiple). Also supports
 custom paint dicts for data-driven colouring.
 """
 
+from typing import Any, Dict, List, Optional, Union
+
 from geopandas import GeoDataFrame
 
 from .layer import Layer
@@ -13,18 +15,24 @@ from .layer import Layer
 class CircleLayer(Layer):
     """Circle layer with optional interactive selection."""
 
-    def __init__(self, map, id, map_id, **kwargs):
+    def __init__(self, map: Any, id: str, map_id: str, **kwargs: Any) -> None:
         super().__init__(map, id, map_id, **kwargs)
         self.selector = "select" in kwargs and kwargs["select"] is not None
         self.index = 0
-        self.color_by_attribute = {}
-        self.legend_items = []
+        self.color_by_attribute: Dict[str, Any] = {}
+        self.legend_items: List[Dict[str, Any]] = []
 
-    def _get_map_layer_ids(self):
+    def _get_map_layer_ids(self) -> List[str]:
         """Circle layer uses a single MapLibre layer with the base id."""
         return [self.map_id]
 
-    def set_data(self, data, index=None, color_by_attribute=None, legend_items=None):
+    def set_data(
+        self,
+        data: Union[GeoDataFrame, str],
+        index: Optional[int] = None,
+        color_by_attribute: Optional[Dict[str, Any]] = None,
+        legend_items: Optional[List[Dict[str, Any]]] = None,
+    ) -> None:
         """Set the GeoJSON data and render the circle layer.
 
         Parameters
@@ -40,6 +48,7 @@ class CircleLayer(Layer):
         """
         if not isinstance(data, GeoDataFrame):
             from pyogrio import read_dataframe
+
             data = read_dataframe(data)
 
         if isinstance(data, GeoDataFrame) and len(data) == 0:
@@ -92,7 +101,8 @@ class CircleLayer(Layer):
 
         if not self.big_data:
             self.map.runjs(
-                "/js/circle_layer.js", "addLayer",
+                "/js/circle_layer.js",
+                "addLayer",
                 arglist=[self.map_id, data, pp, options],
             )
         else:
@@ -101,7 +111,7 @@ class CircleLayer(Layer):
         if self.selector and not self.active:
             self.deactivate()
 
-    def update(self):
+    def update(self) -> None:
         """Update for big-data mode (clip to viewport)."""
         if not self.map.zoom or self.data is None or len(self.data) == 0:
             return
@@ -109,7 +119,7 @@ class CircleLayer(Layer):
             return
         if self.map.zoom > self.min_zoom:
             coords = self.map.map_extent
-            gdf = self.data.cx[coords[0][0]:coords[1][0], coords[0][1]:coords[1][1]]
+            gdf = self.data.cx[coords[0][0] : coords[1][0], coords[0][1] : coords[1][1]]
             if len(gdf) == 0:
                 return
             pp = self.get_paint_props()
@@ -124,19 +134,21 @@ class CircleLayer(Layer):
                 options["legendTitle"] = getattr(self, "legend_title", "")
                 options["legendPosition"] = self.legend_position
             self.map.runjs(
-                "/js/circle_layer.js", "addLayer",
+                "/js/circle_layer.js",
+                "addLayer",
                 arglist=[self.map_id, gdf, pp, options],
             )
 
-    def select_by_index(self, index):
+    def select_by_index(self, index: int) -> None:
         """Select a feature by index (selector mode only)."""
         self.index = index
         self.map.runjs(
-            "/js/circle_layer.js", "selectByIndex",
+            "/js/circle_layer.js",
+            "selectByIndex",
             arglist=[self.map_id, index],
         )
 
-    def activate(self):
+    def activate(self) -> None:
         """Set the layer to active paint style."""
         self.active = True
         if self.data is None or len(self.data) == 0:
@@ -155,7 +167,7 @@ class CircleLayer(Layer):
         if self.big_data:
             self.update()
 
-    def deactivate(self):
+    def deactivate(self) -> None:
         """Set the layer to inactive paint style."""
         self.active = False
         if self.data is None or len(self.data) == 0:
@@ -171,7 +183,7 @@ class CircleLayer(Layer):
             arglist=[self.map_id, pp],
         )
 
-    def redraw(self):
+    def redraw(self) -> None:
         """Redraw the layer (e.g. after a style change)."""
         if isinstance(self.data, GeoDataFrame):
             self.set_data(self.data, self.index)

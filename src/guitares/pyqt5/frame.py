@@ -1,10 +1,22 @@
-import os
-from PyQt5.QtWidgets import QWidget, QFrame, QLabel, QPushButton
-from PyQt5 import QtCore, QtGui
+"""PyQt5 frame widget with optional collapsible panel support."""
+
 import traceback
+from typing import Any
+
+from PyQt5 import QtCore
+from PyQt5.QtWidgets import QFrame, QLabel, QPushButton
+
 
 class Frame(QFrame):
-    def __init__(self, element):
+    """Frame container widget that can optionally collapse/expand.
+
+    Parameters
+    ----------
+    element : Any
+        The GUI element descriptor with position, collapse, text, and parent info.
+    """
+
+    def __init__(self, element: Any) -> None:
         super().__init__(element.parent.widget)
 
         self.element = element
@@ -34,18 +46,22 @@ class Frame(QFrame):
 
         self.set_geometry()
 
-    def set(self):
+    def set(self) -> None:
+        """Update widget state (currently a no-op)."""
         pass
 
-    def showEvent(self, event):
-        # What is this for? It was added by Daley at some point.
-        # Setting the geometry at this point makes frames disappear because the size of the parent is 0,0,-1,-1 for some reason.
-        # Comment out for now
-        # self.set_geometry()
+    def showEvent(self, event: Any) -> None:
+        """Handle show event (no-op, geometry set elsewhere).
+
+        Parameters
+        ----------
+        event : Any
+            The show event.
+        """
         pass
 
-    def set_geometry(self):
-
+    def set_geometry(self) -> None:
+        """Set widget position and size, including text label and collapse button."""
         rf = self.element.gui.resize_factor
         button_size = 12
         x0, y0, wdt, hgt = self.element.get_position()
@@ -58,7 +74,9 @@ class Frame(QFrame):
             fm = self.text_widget.fontMetrics()
             hlab = fm.size(0, self.element.text).height()
             wlab = fm.size(0, self.element.text).width()
-            self.text_widget.setGeometry(int(x0 + 5*rf), int(y0 - 0.6*hlab), wlab, hlab)
+            self.text_widget.setGeometry(
+                int(x0 + 5 * rf), int(y0 - 0.6 * hlab), wlab, hlab
+            )
             self.text_widget.setAlignment(QtCore.Qt.AlignTop)
 
         # Push button
@@ -70,7 +88,7 @@ class Frame(QFrame):
             y0p = int(0.5 * hgt - 0.5 * hgtp)
             self.pushbutton.setGeometry(x0p, y0p, wdtp, hgtp)
 
-        # Check if these are collapable panels
+        # Check if these are collapsable panels
         collapsable = False
         if hasattr(self.element.parent, "style"):
             if self.element.parent.style == "panel" and self.element.parent.collapse:
@@ -79,9 +97,10 @@ class Frame(QFrame):
                 if self.element.parent.collapsed:
                     arrow_file = "icons8-triangle-arrow-16_white_left.png"
                 else:
-                    arrow_file = "icons8-triangle-arrow-16_white_right.png"                    
+                    arrow_file = "icons8-triangle-arrow-16_white_right.png"
                 self.element.parent.widget.pushbutton.setStyleSheet(
-                    "background-image : url(:/img/" + arrow_file + "); border: none")
+                    f"background-image : url(:/img/{arrow_file}); border: none"
+                )
 
                 if self.element == self.element.parent.elements[0]:
                     # First panel
@@ -103,7 +122,8 @@ class Frame(QFrame):
                     hgt = phgt
                 self.setGeometry(x0, y0, wdt, hgt)
 
-    def collapse_callback(self):
+    def collapse_callback(self) -> None:
+        """Toggle the collapsed state and update the layout."""
         try:
             if self.element.collapsed:
                 self.element.collapsed = False
@@ -114,5 +134,5 @@ class Frame(QFrame):
                 self.element.callback(self)
                 # Update GUI
                 self.element.window.update()
-        except:
+        except Exception:
             traceback.print_exc()

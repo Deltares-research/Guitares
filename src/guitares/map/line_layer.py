@@ -4,6 +4,8 @@ When ``selector=True`` is passed as a keyword argument, the layer supports
 hover popups and click-based feature selection (single or multiple).
 """
 
+from typing import Any, List, Optional
+
 from geopandas import GeoDataFrame
 
 from .layer import Layer
@@ -12,7 +14,7 @@ from .layer import Layer
 class LineLayer(Layer):
     """Line layer with optional interactive selection."""
 
-    def __init__(self, map, id, map_id, **kwargs):
+    def __init__(self, map: Any, id: str, map_id: str, **kwargs: Any) -> None:
         super().__init__(map, id, map_id, **kwargs)
         # Default to no circles and no selection
         self.circle_radius = kwargs.get("circle_radius", 0)
@@ -20,11 +22,11 @@ class LineLayer(Layer):
         self.selector = "select" in kwargs and kwargs["select"] is not None
         self.index = 0
 
-    def _get_map_layer_ids(self):
+    def _get_map_layer_ids(self) -> List[str]:
         """Line layer creates .line and optionally .circle sub-layers."""
-        return [self.map_id + ".line", self.map_id + ".circle"]
+        return [f"{self.map_id}.line", f"{self.map_id}.circle"]
 
-    def set_data(self, data, index=None):
+    def set_data(self, data: GeoDataFrame, index: Optional[int] = None) -> None:
         """Set the GeoJSON data and render the line layer.
 
         Parameters
@@ -59,7 +61,9 @@ class LineLayer(Layer):
         if self.selector:
             options["selector"] = True
             options["index"] = self.index
-            options["hoverProperty"] = getattr(self, "hover_property", None) or getattr(self, "hover_param", None)
+            options["hoverProperty"] = getattr(self, "hover_property", None) or getattr(
+                self, "hover_param", None
+            )
             options["selectionOption"] = getattr(self, "selection_type", "single")
 
         self.map.runjs(
@@ -71,7 +75,7 @@ class LineLayer(Layer):
         if not self.active:
             self.deactivate()
 
-    def set_selected_index(self, index):
+    def set_selected_index(self, index: int) -> None:
         """Select a feature by index (selector mode only).
 
         Parameters
@@ -86,7 +90,7 @@ class LineLayer(Layer):
             arglist=[self.map_id, index],
         )
 
-    def activate(self):
+    def activate(self) -> None:
         """Set the layer to active paint style."""
         self.active = True
         pp = self.get_paint_props("active")
@@ -99,7 +103,7 @@ class LineLayer(Layer):
             arglist=[self.map_id, pp],
         )
 
-    def deactivate(self):
+    def deactivate(self) -> None:
         """Set the layer to inactive paint style."""
         self.active = False
         self.map.runjs(
@@ -108,7 +112,7 @@ class LineLayer(Layer):
             arglist=[self.map_id, self.get_paint_props("inactive")],
         )
 
-    def redraw(self):
+    def redraw(self) -> None:
         """Redraw the layer (e.g. after a style change)."""
         if isinstance(self.data, GeoDataFrame):
             self.set_data(self.data, self.index)

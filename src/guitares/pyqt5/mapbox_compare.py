@@ -1,39 +1,80 @@
-import os
-from PyQt5 import QtWebEngineWidgets
-from PyQt5 import QtCore, QtWidgets, QtWebChannel
-import json
-from urllib.request import urlopen
-import urllib
-from geopandas import GeoDataFrame
+"""PyQt5 Mapbox GL JS comparison map widget with side-by-side views."""
 
-from guitares.map.layer import Layer, list_layers, find_layer_by_id
+import json
+import os
+from typing import Any, Optional
+
+from geopandas import GeoDataFrame
+from PyQt5 import QtCore, QtWebChannel, QtWebEngineWidgets, QtWidgets
+
+from guitares.map.layer import Layer, list_layers
 
 
 class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
-    def __init__(self, view, print_messages):
+    """Custom web engine page that optionally prints JS console messages.
+
+    Parameters
+    ----------
+    view : QtWebEngineWidgets.QWebEngineView
+        The parent web engine view.
+    print_messages : bool
+        Whether to print JavaScript console messages to stdout.
+    """
+
+    def __init__(
+        self, view: QtWebEngineWidgets.QWebEngineView, print_messages: bool
+    ) -> None:
         super().__init__(view)
         self.print_messages = print_messages
 
-    def javaScriptConsoleMessage(self, level, message, lineNumber, sourceID):
+    def javaScriptConsoleMessage(
+        self, level: int, message: str, lineNumber: int, sourceID: str
+    ) -> None:
+        """Handle JavaScript console messages.
+
+        Parameters
+        ----------
+        level : int
+            The message severity level.
+        message : str
+            The console message text.
+        lineNumber : int
+            The source line number.
+        sourceID : str
+            The source file identifier.
+        """
         if self.print_messages:
             print("javaScriptConsoleMessage: ", level, message, lineNumber, sourceID)
 
 
 class MapBoxCompare(QtWidgets.QWidget):
-    def __init__(self, element):
+    """Side-by-side Mapbox GL JS comparison map widget.
+
+    Parameters
+    ----------
+    element : Any
+        The GUI element descriptor with map style, center, zoom, projection,
+        and parent info.
+    """
+
+    def __init__(self, element: Any) -> None:
         super().__init__(element.parent.widget)
 
         self.gui = element.gui
         self.element = element
 
-        file_name = os.path.join(self.gui.server_path, "js", "mapbox_compare_defaults.js")
+        file_name = os.path.join(
+            self.gui.server_path, "js", "mapbox_compare_defaults.js"
+        )
         with open(file_name, "w") as f:
-            f.write("var default_compare_style = '" + element.map_style + "';\n")
-            f.write("var default_compare_center = [" + str(element.map_center[0]) + "," + str(element.map_center[1]) + "]\n")
-            f.write("var default_compare_zoom = " + str(element.map_zoom) + ";\n")
-            f.write("var default_compare_projection = '" + element.map_projection + "';\n")
+            f.write(f"var default_compare_style = '{element.map_style}';\n")
+            f.write(
+                f"var default_compare_center = [{element.map_center[0]},{element.map_center[1]}]\n"
+            )
+            f.write(f"var default_compare_zoom = {element.map_zoom};\n")
+            f.write(f"var default_compare_projection = '{element.map_projection}';\n")
 
-        url = "http://localhost:" + str(self.gui.server_port) + "/mapbox_compare.html"
+        url = f"http://localhost:{self.gui.server_port}/mapbox_compare.html"
         self.url = url
 
         self.ready = False
@@ -62,36 +103,53 @@ class MapBoxCompare(QtWidgets.QWidget):
 
         self.callback_module = element.module
 
-        self.layer = {}
-        self.map_extent = None
-        self.map_moved = None
-        self.point_clicked_callback = None
-        self.zoom = None
+        self.layer: dict[str, Layer] = {}
+        self.map_extent: Optional[list[Any]] = None
+        self.map_moved: Optional[Any] = None
+        self.point_clicked_callback: Optional[Any] = None
+        self.zoom: Optional[float] = None
 
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.reload)
         self.timer.setSingleShot(True)
         self.timer.start(1000)
 
-    def reload(self):
+    def reload(self) -> None:
+        """Reload the comparison map page."""
         print("Reloading ...")
         self.view.page().setWebChannel(self.channel)
         self.channel.registerObject("MapBoxCompare", self)
         self.view.load(QtCore.QUrl(self.url))
 
-    def set(self):
+    def set(self) -> None:
+        """Update widget state (currently a no-op)."""
         pass
 
-    def set_geometry(self):
+    def set_geometry(self) -> None:
+        """Set the web view position and size from the element descriptor."""
         resize_factor = self.element.gui.resize_factor
         x0, y0, wdt, hgt = self.element.get_position()
         self.view.setGeometry(x0, y0, wdt, hgt)
 
-    def take_screenshot(self, output_file):
+    def take_screenshot(self, output_file: str) -> None:
+        """Save a screenshot of the map to a PNG file.
+
+        Parameters
+        ----------
+        output_file : str
+            The output file path.
+        """
         self.view.grab().save(output_file, b"PNG")
 
     @QtCore.pyqtSlot(str)
-    def mapReady(self, inpstr):
+    def mapReady(self, inpstr: str) -> None:
+        """Handle map ready event for each side (a/b) of the comparison.
+
+        Parameters
+        ----------
+        inpstr : str
+            JSON string with extent and side identifier.
+        """
         inp = json.loads(inpstr)
         coords = inp[0:2]
         self.map_extent = coords
@@ -107,161 +165,155 @@ class MapBoxCompare(QtWidgets.QWidget):
                 self.callback_module.map_ready()
 
     @QtCore.pyqtSlot(str)
-    def layerStyleSet(self, coords):
+    def layerStyleSet(self, coords: str) -> None:
+        """Handle layer style change by redrawing all layers.
+
+        Parameters
+        ----------
+        coords : str
+            Unused parameter from JavaScript callback.
+        """
         self.redraw_layers()
 
-    # @QtCore.pyqtSlot(str)
-    # def mouseMoved(self, coords):
-    #     coords = json.loads(coords)
-    #     self.map_extent = coords
-    #     # Loop through layers to update each
-    #     layers = list_layers(self.layer)
-    #     for layer in layers:
-    #         layer.update()
-    #     if hasattr(self.callback_module, "map_moved"):
-    #         self.callback_module.map_moved(coords)
-
     @QtCore.pyqtSlot(str)
-    def mapMoved(self, coords):
+    def mapMoved(self, coords: str) -> None:
+        """Handle map pan/zoom events and update all layers.
+
+        Parameters
+        ----------
+        coords : str
+            JSON string with extent, center, and zoom data.
+        """
         coords = json.loads(coords)
         self.map_extent = coords[0:2]
         self.map_center = coords[2:5]
         self.zoom = coords[4]
-        # Loop through layers to update each
         layers = list_layers(self.layer)
         for layer in layers:
             layer.update()
         if hasattr(self.callback_module, "map_moved"):
             self.callback_module.map_moved(coords)
 
-    # @QtCore.pyqtSlot(str)
-    # def pointClicked(self, coords):
-    #     coords = json.loads(coords)
-    #     if self.point_clicked_callback:
-    #         self.point_clicked_callback(coords)
+    def jump_to(self, lon: float, lat: float, zoom: float) -> None:
+        """Jump to a location without animation.
 
-    # @QtCore.pyqtSlot(str)
-    # def getMapExtent(self, coords):
-    #     coords = json.loads(coords)
-    #     self.map_extent = coords
-
-    # @QtCore.pyqtSlot(str, str)
-    # def featureClicked(self, layer_id, feature_props):
-    #     # Find layer by ID
-    #     layer = find_layer_by_id(layer_id, self.layer)
-    #     if hasattr(layer, "select"):
-    #         if layer.select:
-    #             layer.select(json.loads(feature_props))
-
-    # @QtCore.pyqtSlot(str, str, str)
-    # def featureDrawn(self, feature_collection, feature_id, layer_id):
-    #     layer = find_layer_by_id(layer_id, self.layer)
-    #     layer.feature_drawn(json.loads(feature_collection), feature_id)
-
-    # @QtCore.pyqtSlot(str, str, str)
-    # def featureModified(self, feature_collection, feature_id, layer_id):
-    #     layer = find_layer_by_id(layer_id, self.layer)
-    #     layer.feature_modified(json.loads(feature_collection), feature_id)
-
-    # @QtCore.pyqtSlot(str, str, str)
-    # def featureSelected(self, feature_collection, feature_id, layer_id):
-    #     layer = find_layer_by_id(layer_id, self.layer)
-    #     layer.feature_selected(json.loads(feature_collection), feature_id)
-
-    # @QtCore.pyqtSlot(str)
-    # def featureDeselected(self, layer_id):
-    #     layer = find_layer_by_id(layer_id, self.layer)
-    #     if layer:
-    #         layer.feature_deselected()
-
-    # @QtCore.pyqtSlot(str, str, str)
-    # def featureAdded(self, feature_collection, feature_id, layer_id):
-    #     layer = find_layer_by_id(layer_id, self.layer)
-    #     layer.feature_added(json.loads(feature_collection), feature_id)
-
-    # def get_extent(self):
-    #     js_string = "import('/js/main.js').then(module => {module.getExtent()});"
-    #     self.view.page().runJavaScript(js_string)
-
-    # def click_point(self, callback):
-    #     self.point_clicked_callback = callback
-    #     self.runjs("/js/main.js", "clickPoint")
-
-    # def set_center(self, lon, lat):
-    #     self.runjs("/js/main.js", "setCenter", arglist=[lon, lat])
-
-    # def set_zoom(self, zoom):
-    #     self.runjs("/js/main.js", "setZoom", arglist=[zoom])
-
-    # def fit_bounds(self, lon1, lat1, lon2, lat2):
-    #     self.runjs("/js/main.js", "fitBounds", arglist=[lon1, lat1, lon2, lat2])
-
-    def jump_to(self, lon, lat, zoom):
+        Parameters
+        ----------
+        lon : float
+            Longitude.
+        lat : float
+            Latitude.
+        zoom : float
+            Zoom level.
+        """
         self.runjs("/js/compare.js", "jumpTo", arglist=[lon, lat, zoom])
 
-    def fly_to(self, lon, lat, zoom):
+    def fly_to(self, lon: float, lat: float, zoom: float) -> None:
+        """Fly to a location with animation.
+
+        Parameters
+        ----------
+        lon : float
+            Longitude.
+        lat : float
+            Latitude.
+        zoom : float
+            Zoom level.
+        """
         self.runjs("/js/compare.js", "flyTo", arglist=[lon, lat, zoom])
 
-    # def set_projection(self, projection):
-    #     self.runjs("/js/main.js", "setProjection", arglist=[projection])
+    def set_layer_style(self, style: str) -> None:
+        """Set the base map layer style.
 
-    def set_layer_style(self, style):
+        Parameters
+        ----------
+        style : str
+            The map style URL or name.
+        """
         self.runjs("/js/compare.js", "setLayerStyle", arglist=[style])
 
-    def set_slider(self, npix):
+    def set_slider(self, npix: int) -> None:
+        """Set the comparison slider position.
+
+        Parameters
+        ----------
+        npix : int
+            The slider position in pixels.
+        """
         self.runjs("/js/compare.js", "setSlider", arglist=[npix])
 
-    # def set_terrain(self, true_or_false, exaggeration):
-    #     self.runjs("/js/main.js", "setTerrain", arglist=[true_or_false, exaggeration])
+    def add_layer(self, layer_id: str) -> Layer:
+        """Add a container layer to the map.
 
-    # def set_mouse_default(self):
-    #     self.runjs("/js/draw.js", "setMouseDefault", arglist=[])
+        Parameters
+        ----------
+        layer_id : str
+            The unique layer identifier.
 
-    def add_layer(self, layer_id):
-        # Adds a container layer
+        Returns
+        -------
+        Layer
+            The created layer object.
+        """
         if layer_id not in self.layer:
             self.layer[layer_id] = Layer(self, layer_id, layer_id)
             self.layer[layer_id].map_id = layer_id
         else:
-            print("Layer " + layer_id + " already exists.")
+            print(f"Layer {layer_id} already exists.")
         return self.layer[layer_id]
 
-    def list_layers(self):
-        # Return a list with all layers
+    def list_layers(self) -> list[Any]:
+        """Return a flat list of all layers.
+
+        Returns
+        -------
+        list[Any]
+            All layer objects.
+        """
         return list_layers(self.layer)
 
-    def redraw_layers(self):
-        # Redraw all layers (after map style has changed)
+    def redraw_layers(self) -> None:
+        """Redraw all layers after a map style change."""
         layers = self.list_layers()
         for layer in layers:
             layer.redraw()
 
-    def runjs(self, module, function, arglist=None):
+    def runjs(
+        self, module: str, function: str, arglist: Optional[list[Any]] = None
+    ) -> None:
+        """Execute a JavaScript function via dynamic import.
+
+        Parameters
+        ----------
+        module : str
+            The JavaScript module path.
+        function : str
+            The function name to call.
+        arglist : list[Any], optional
+            Arguments to pass to the function.
+        """
         if not arglist:
             arglist = []
-        string = "import('" + module + "').then(module => {module." + function + "("
+        string = f"import('{module}').then(module => {{module.{function}("
         for iarg, arg in enumerate(arglist):
             if isinstance(arg, bool):
-                if arg:
-                    string = string + "true"
-                else:
-                    string = string + "false"
+                string += "true" if arg else "false"
             elif isinstance(arg, int):
-                string = string + str(arg)
+                string += str(arg)
             elif isinstance(arg, float):
-                string = string + str(arg)
+                string += str(arg)
             elif isinstance(arg, dict):
-                string = string + json.dumps(arg).replace('"',"'")
+                string += json.dumps(arg).replace('"', "'")
             elif isinstance(arg, list):
-                string = string + json.dumps(arg).replace('"',"'")
+                string += json.dumps(arg).replace('"', "'")
             elif isinstance(arg, GeoDataFrame):
                 if len(arg) == 0:
-                    string = string + "{}"
+                    string += "{}"
                 else:
-                    string = string + arg.to_json()
+                    string += arg.to_json()
             else:
-                string = string + "'" + arg + "'"
+                string += f"'{arg}'"
             if iarg < len(arglist) - 1:
-                string = string + ","
-        string = string + ")});"
+                string += ","
+        string += ")});"
         self.view.page().runJavaScript(string)

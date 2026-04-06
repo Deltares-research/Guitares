@@ -1,11 +1,25 @@
-from PySide6.QtWidgets import QListWidget
-from PySide6.QtWidgets import QLabel
-from PySide6 import QtCore
+"""PySide6 list box widget wrapper for Guitares GUI elements."""
+
 import traceback
+from typing import Any, List, Union
+
+from PySide6 import QtCore
+from PySide6.QtWidgets import QLabel, QListWidget
+
 
 class ListBox(QListWidget):
+    """List box that syncs selected item(s) with a Guitares variable.
 
-    def __init__(self, element):
+    Supports both single and multi-selection modes, and selection by
+    item value or by index.
+
+    Parameters
+    ----------
+    element : Any
+        The Guitares element descriptor for this list box.
+    """
+
+    def __init__(self, element: Any) -> None:
         super().__init__(element.parent.widget)
 
         self.element = element
@@ -18,16 +32,18 @@ class ListBox(QListWidget):
             if not self.element.option_value.variable:
                 # List
                 for i, val in enumerate(element.option_value.list):
-                    if element.type == float:
+                    if element.type is float:
                         element.option_value[i] = float(val)
-                    elif element.type == int:
+                    elif element.type is int:
                         element.option_value[i] = int(val)
 
         if element.text:
-            if type(element.text) == str:
+            if isinstance(element.text, str):
                 txt = element.text
             else:
-                txt = self.element.getvar(element.text.variable_group, element.text.variable)    
+                txt = self.element.getvar(
+                    element.text.variable_group, element.text.variable
+                )
             label = QLabel(txt, element.parent.widget)
             label.setStyleSheet("background: transparent; border: none")
             if not element.enable:
@@ -36,25 +52,26 @@ class ListBox(QListWidget):
             label.setVisible(True)
 
         if self.element.tooltip:
-            if type(self.element.tooltip) == str:
+            if isinstance(self.element.tooltip, str):
                 txt = self.element.tooltip
             else:
-                txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
+                txt = self.element.getvar(
+                    self.element.tooltip.variable_group, self.element.tooltip.variable
+                )
             self.setToolTip(txt)
-        
+
         if self.element.multiselection:
             self.setSelectionMode(3)
 
         # First call back to change the variable
         self.itemSelectionChanged.connect(self.callback)
-#        self.itemClicked.connect(self.callback)
 
         self.set_geometry()
 
-        self.execute_callback = True
+        self.execute_callback: bool = True
 
-    def set(self):
-
+    def set(self) -> None:
+        """Update the list items and selection from the linked variables."""
         self.execute_callback = False
 
         # First check if items need to be updated. This is only necessary when "option_string" is a dict
@@ -68,14 +85,15 @@ class ListBox(QListWidget):
 
         # Get value(s). If self.element.variable is not defined (i.e. None), we can skip setting the index
         if self.element.variable is not None:
-            
             # Get the variable
-            val = self.element.getvar(self.element.variable_group, self.element.variable)
+            val = self.element.getvar(
+                self.element.variable_group, self.element.variable
+            )
 
             # Now get the options
             if self.element.select == "item":
                 if self.element.option_value.variable:
-                    name  = self.element.option_value.variable
+                    name = self.element.option_value.variable
                     group = self.element.option_value.variable_group
                     vals = self.element.getvar(group, name)
                     # if vals is None, or an empty list, set it to [""] to avoid index errors
@@ -87,55 +105,58 @@ class ListBox(QListWidget):
                 else:
                     vals = self.element.option_value.list
 
-
             if self.element.multiselection:
                 for index, item in enumerate(items):
                     if self.element.select == "item":
-                        if vals[index] in val:   
+                        if vals[index] in val:
                             item.setSelected(True)
                         else:
                             item.setSelected(False)
                     else:
-                        if index in val:   
+                        if index in val:
                             item.setSelected(True)
                         else:
                             item.setSelected(False)
 
-            else:    
-
+            else:
                 # Now get the values
                 if self.element.select == "item":
                     if val in vals:
                         index = vals.index(val)
                     else:
                         index = 0
-                        if type(val) is not str:
+                        if not isinstance(val, str):
                             valstr = str(val)
                         else:
                             valstr = val
-                        print(f"Error in listbox: variable {self.element.variable} ({valstr}) not found in list!")
+                        print(
+                            f"Error in listbox: variable {self.element.variable} ({valstr}) not found in list!"
+                        )
                 else:
                     index = val
                 self.setCurrentItem(items[index])
 
-            self.execute_callback = True    
+            self.execute_callback = True
 
-        if type(self.element.text) != str:
-            txt = self.element.getvar(self.element.text.variable_group, self.element.text.variable)
+        if not isinstance(self.element.text, str):
+            txt = self.element.getvar(
+                self.element.text.variable_group, self.element.text.variable
+            )
             self.text_widget.setText(txt)
 
-        if type(self.element.tooltip) != str:
-            txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
+        if not isinstance(self.element.tooltip, str):
+            txt = self.element.getvar(
+                self.element.tooltip.variable_group, self.element.tooltip.variable
+            )
             self.setToolTip(txt)
 
-    def callback(self):
-
+    def callback(self) -> None:
+        """Handle selection change and fire the element callback."""
         if not self.execute_callback:
             return
 
         if self.element.multiselection:
-
-            newval  = []
+            newval: Union[List[Any], Any] = []
 
             if self.element.select == "item":
                 if self.element.option_value.variable:
@@ -151,10 +172,9 @@ class ListBox(QListWidget):
                 if self.element.select == "item":
                     newval.append(vals[indx.row()])
                 else:
-                    newval.append(indx.row())    
+                    newval.append(indx.row())
 
-        else:    
-
+        else:
             index = self.currentRow()
             if self.element.select == "item":
                 if self.element.option_value.variable:
@@ -169,7 +189,7 @@ class ListBox(QListWidget):
             else:
                 newval = index
 
-        name  = self.element.variable
+        name = self.element.variable
         group = self.element.variable_group
         self.element.setvar(group, name, newval)
 
@@ -178,18 +198,18 @@ class ListBox(QListWidget):
                 self.element.callback(newval, self)
             # Update GUI
             self.element.window.update()
-        except:
+        except Exception:
             traceback.print_exc()
 
-    def add_items(self):
-
+    def add_items(self) -> None:
+        """Populate the list box from the element's option strings."""
         # Delete existing items
         self.clear()
 
         if self.element.option_string.variable:
             group = self.element.option_string.variable_group
-            name  = self.element.option_string.variable
-            v     = self.element.getvar(group, name)
+            name = self.element.option_string.variable
+            v = self.element.getvar(group, name)
             if not v:
                 v = [""]
             for itxt, txt in enumerate(v):
@@ -198,8 +218,8 @@ class ListBox(QListWidget):
             for itxt, txt in enumerate(self.element.option_string.list):
                 self.insertItem(itxt, txt)
 
-    def set_geometry(self):
-
+    def set_geometry(self) -> None:
+        """Position and size the list box and its label."""
         resize_factor = self.element.gui.resize_factor
         x0, y0, wdt, hgt = self.element.get_position()
         self.setGeometry(x0, y0, wdt, hgt)
@@ -207,16 +227,25 @@ class ListBox(QListWidget):
             label = self.text_widget
             fm = label.fontMetrics()
             wlab = int(fm.size(0, self.element.text).width())
-            if self.element.text_position == "above-center" or self.element.text_position == "above":
+            if (
+                self.element.text_position == "above-center"
+                or self.element.text_position == "above"
+            ):
                 label.setAlignment(QtCore.Qt.AlignCenter)
-                label.setGeometry(x0, int(y0 - 20 * resize_factor), wdt, int(20 * resize_factor))
+                label.setGeometry(
+                    x0, int(y0 - 20 * resize_factor), wdt, int(20 * resize_factor)
+                )
             elif self.element.text_position == "above-left":
                 label.setAlignment(QtCore.Qt.AlignLeft)
-                label.setGeometry(x0, int(y0 - 20 * resize_factor), wlab, int(20 * resize_factor))
+                label.setGeometry(
+                    x0, int(y0 - 20 * resize_factor), wlab, int(20 * resize_factor)
+                )
             else:
                 # Assuming left
                 label.setAlignment(QtCore.Qt.AlignRight)
-                label.setGeometry(int(x0 - wlab - 3 * resize_factor),
-                                  int(y0 + 5 * self.element.gui.resize_factor),
-                                  wlab,
-                                  int(20 * resize_factor))
+                label.setGeometry(
+                    int(x0 - wlab - 3 * resize_factor),
+                    int(y0 + 5 * self.element.gui.resize_factor),
+                    wlab,
+                    int(20 * resize_factor),
+                )

@@ -1,20 +1,49 @@
-from .layer import Layer
+"""Heatmap layer for visualising point density on the map."""
+
+from typing import Any, Union
+
 from geopandas import GeoDataFrame
 
-class HeatmapLayer(Layer):
-    def __init__(self, map, id, map_id, **kwargs):
-        super().__init__(map, id, map_id, **kwargs)
-        pass
+from .layer import Layer
 
-    def set_data(self, data, density_property=""):
+
+class HeatmapLayer(Layer):
+    """Heatmap layer rendering point density as a colour gradient.
+
+    Parameters
+    ----------
+    map : Any
+        The parent map object.
+    id : str
+        Logical layer identifier.
+    map_id : str
+        Fully qualified JS-side layer identifier.
+    **kwargs : Any
+        Passed through to ``Layer.__init__``.
+    """
+
+    def __init__(self, map: Any, id: str, map_id: str, **kwargs: Any) -> None:
+        super().__init__(map, id, map_id, **kwargs)
+
+    def set_data(
+        self, data: Union[GeoDataFrame, Any], density_property: str = ""
+    ) -> None:
+        """Set point data and render the heatmap layer.
+
+        Parameters
+        ----------
+        data : GeoDataFrame
+            Point geometries to visualise as a heatmap.
+        density_property : str, optional
+            Name of the property used to weight heatmap intensity.
+        """
         self.data = data
         self.density_property = density_property
         # Make sure this is not an empty GeoDataFrame
         if isinstance(data, GeoDataFrame):
-            # Data is GeoDataFrame
             if len(data) == 0:
                 self.data = GeoDataFrame()
-        self.visible = True 
+        self.visible = True
         # Add new layer
         self.map.runjs(
             "/js/heatmap_layer.js",
@@ -24,35 +53,13 @@ class HeatmapLayer(Layer):
                 self.data,
                 self.max_zoom,
                 self.density_property,
-                self.side
+                self.side,
             ],
         )
 
-    def redraw(self):
+    def redraw(self) -> None:
+        """Redraw the layer (e.g. after a style change)."""
         if isinstance(self.data, GeoDataFrame):
             self.set_data(self.data)
         if not self.get_visibility():
             self.set_visibility(False)
-
-    # def activate(self):
-    #     self.active = True
-
-    # def deactivate(self):
-    #     self.active = False
-
-    # def clear(self):
-    #     self.active = False
-    #     self.remove()
-
-    # def remove(self):
-    #     self.map.runjs(self.main_js, "removeLayer", arglist=[self.map_id, self.side])
-
-    # def update(self):
-    #     # This layer does not get updated when zooming in or out
-    #     pass
-
-    # def set_visibility(self, true_or_false):
-    #     if true_or_false:
-    #         self.map.runjs("/js/main.js", "showLayer", arglist=[self.map_id])
-    #     else:
-    #         self.map.runjs("/js/main.js", "hideLayer", arglist=[self.map_id])

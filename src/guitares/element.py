@@ -1,95 +1,160 @@
+"""GUI element tree: parsing YAML definitions into widget objects with layout and dependencies."""
+
 import importlib
+from typing import Any, List, Optional, Tuple, Type
 
 from guitares.dependencies import Dependency, DependencyCheck
 
+
 class Position:
-    def __init__(self):
-        self.x      = 0
-        self.y      = 0
-        self.width  = 10
-        self.height = 10
+    """Stores the x, y, width, and height of a GUI element."""
+
+    def __init__(self) -> None:
+        self.x: int = 0
+        self.y: int = 0
+        self.width: int = 10
+        self.height: int = 10
+
 
 class Text:
-    def __init__(self, variable_group):
-        self.variable       = ""
-        self.variable_group = variable_group
+    """Reference to a GUI variable that provides dynamic text content.
+
+    Parameters
+    ----------
+    variable_group : str
+        Default variable group for the text variable.
+    """
+
+    def __init__(self, variable_group: str) -> None:
+        self.variable: str = ""
+        self.variable_group: str = variable_group
+
 
 class ColorMap:
-    def __init__(self, variable_group):
-        self.variable       = ""
-        self.variable_group = variable_group
+    """Reference to a GUI variable that provides a colormap name.
+
+    Parameters
+    ----------
+    variable_group : str
+        Default variable group for the colormap variable.
+    """
+
+    def __init__(self, variable_group: str) -> None:
+        self.variable: str = ""
+        self.variable_group: str = variable_group
+
 
 class OptionValue:
-    def __init__(self, variable_group):
-        self.list           = []
-        self.variable       = ""
-        self.variable_group = variable_group
+    """Stores option values for popupmenu/listbox elements.
+
+    Parameters
+    ----------
+    variable_group : str
+        Default variable group for the option value variable.
+    """
+
+    def __init__(self, variable_group: str) -> None:
+        self.list: list = []
+        self.variable: str = ""
+        self.variable_group: str = variable_group
+
 
 class OptionString:
-    def __init__(self, variable_group):
-        self.list           = []
-        self.variable       = ""
-        self.variable_group = variable_group
+    """Stores option display strings for popupmenu/listbox elements.
+
+    Parameters
+    ----------
+    variable_group : str
+        Default variable group for the option string variable.
+    """
+
+    def __init__(self, variable_group: str) -> None:
+        self.list: list = []
+        self.variable: str = ""
+        self.variable_group: str = variable_group
+
 
 class Tab:
-    def __init__(self, variable_group, module):
-        self.text           = ""
-        self.module         = ""
-        self.variable_group = variable_group
-        self.module         = module
-        self.elements       = []
-        self.gui            = None
+    """Represents a single tab inside a tab panel element.
+
+    Parameters
+    ----------
+    variable_group : str
+        Variable group for elements within this tab.
+    module : Any
+        Python module providing callback functions for this tab.
+    """
+
+    def __init__(self, variable_group: str, module: Any) -> None:
+        self.text: str = ""
+        self.module: Any = module
+        self.variable_group: str = variable_group
+        self.elements: list = []
+        self.gui: Any = None
+
 
 class Element:
-    def __init__(self, dct, parent, window):
-        self.style = None
-        self.widget = None
-        self.parent = parent
-        self.position = Position()
-        self.tabs = []
-        self.dependencies = []
-        self.elements = []
-        self.visible = True
-        self.enable = True
-        self.id = ""
-        self.variable = None
-        self.variable_group = parent.variable_group
-        self.module = parent.module
-        self.method = ""
-        self.callback = None
-        self.text = ""
-        self.text_position = "left"
-        self.tooltip = ""
-        self.type = str
-        self.gui    = window.gui
+    """A single GUI element parsed from a YAML configuration dictionary.
+
+    Parameters
+    ----------
+    dct : dict
+        Dictionary describing the element (from YAML config).
+    parent : Any
+        Parent element or tab that contains this element.
+    window : Any
+        The Window object this element belongs to.
+    """
+
+    def __init__(self, dct: dict, parent: Any, window: Any) -> None:
+        self.style: Optional[str] = None
+        self.widget: Any = None
+        self.parent: Any = parent
+        self.position: Position = Position()
+        self.tabs: List[Tab] = []
+        self.dependencies: List[Dependency] = []
+        self.elements: list = []
+        self.visible: bool = True
+        self.enable: bool = True
+        self.id: str = ""
+        self.variable: Optional[str] = None
+        self.variable_group: str = parent.variable_group
+        self.module: Any = parent.module
+        self.method: Any = ""
+        self.callback: Any = None
+        self.text: Any = ""
+        self.text_position: str = "left"
+        self.tooltip: Any = ""
+        self.type: Type = str
+        self.gui: Any = window.gui
         self.getvar = window.gui.getvar
         self.setvar = window.gui.setvar
-        self.window = window
-        self.select = "item"
-        self.option_value = OptionValue(self.variable_group)
-        self.option_string = OptionString(self.variable_group)
-        self.title = "Select File"
-        self.filter = "All Files (*.*)"
-        self.url = ""
-        self.icon = ""
-        self.collapse = False
-        self.collapsed = False
-        self.fraction_collapsed = 1.0
-        self.fraction_expanded = 0.5
-        self.multiselection = False
-        self.sortable = True
-        self.selection_type = "single"
-        self.colormap = None
-        self.ready = False
-        self.full_path = False
-        self.allow_directory_change = True
+        self.window: Any = window
+        self.select: str = "item"
+        self.option_value: OptionValue = OptionValue(self.variable_group)
+        self.option_string: OptionString = OptionString(self.variable_group)
+        self.title: str = "Select File"
+        self.filter: Any = "All Files (*.*)"
+        self.url: Any = ""
+        self.icon: str = ""
+        self.collapse: bool = False
+        self.collapsed: bool = False
+        self.fraction_collapsed: float = 1.0
+        self.fraction_expanded: float = 0.5
+        self.multiselection: bool = False
+        self.sortable: bool = True
+        self.selection_type: str = "single"
+        self.colormap: Any = None
+        self.ready: bool = False
+        self.full_path: bool = False
+        self.allow_directory_change: bool = True
 
         # Spinbox
-        self.minimum = 0
-        self.maximum = 100
-        self.step = None  # None means auto (1 for int, 0.1 for float)
-        self.decimals = 2
-        self.suffix = ""
+        self.minimum: int = 0
+        self.maximum: int = 100
+        self.step: Optional[float] = None  # None means auto (1 for int, 0.1 for float)
+        self.decimals: int = 2
+        self.suffix: str = ""
 
         # Map
         if self.gui.map_engine == "mapbox":
@@ -100,9 +165,9 @@ class Element:
             # This should not happen
             self.map_style = "osm"
 
-        self.map_center = [0, 0]
-        self.map_zoom = 0
-        self.map_projection = "mercator"
+        self.map_center: List[float] = [0, 0]
+        self.map_zoom: int = 0
+        self.map_projection: str = "mercator"
 
         # Now update element attributes based on dict
 
@@ -129,15 +194,15 @@ class Element:
             if isinstance(dct["module"], str):
                 try:
                     self.module = importlib.import_module(dct["module"])
-                except:
-                    print("Error! Could not import module " + dct["module"])
+                except Exception:
+                    print(f"Error! Could not import module {dct['module']}")
 
         if "method" in dct:
             self.method = dct["method"]
 
-        if hasattr(self.method, '__call__'):
-             # Callback function is already defined as method
-             self.callback = self.method
+        if hasattr(self.method, "__call__"):
+            # Callback function is already defined as method
+            self.callback = self.method
         else:
             if self.module and self.method:
                 try:
@@ -152,19 +217,25 @@ class Element:
                             if hasattr(module, method):
                                 self.callback = getattr(module, method)
                             else:
-                                raise Exception("Error! Could not find method " + self.method + " in module " + self.module.__name__)
+                                raise Exception(
+                                    f"Error! Could not find method {self.method} in module {self.module.__name__}"
+                                )
                         else:
                             if hasattr(module, method):
                                 class_ = getattr(module, method)
                                 # Initialize the class object
                                 module = class_()
                             else:
-                                raise Exception("Error! Could not find method " + self.method + " in module " + self.module.__name__)
+                                raise Exception(
+                                    f"Error! Could not find method {self.method} in module {self.module.__name__}"
+                                )
                 except Exception as e:
                     print(e)
         if self.variable_group in self.gui.variables:
             if self.variable in self.gui.variables[self.variable_group]:
-                self.type = type(self.gui.variables[self.variable_group][self.variable]["value"])
+                self.type = type(
+                    self.gui.variables[self.variable_group][self.variable]["value"]
+                )
 
         # "title" for backward compatibility
         if "title" in dct:
@@ -204,7 +275,7 @@ class Element:
         if "tooltipstring" in dct:
             dct["tooltip"] = dct["tooltipstring"]
 
-        if "tooltip" in dct:    
+        if "tooltip" in dct:
             if isinstance(dct["tooltip"], dict):
                 self.tooltip = Text(self.variable_group)
                 if "variable" in dct["tooltip"]:
@@ -219,12 +290,14 @@ class Element:
             # Either 'index' or 'item'
             self.select = dct["select"]
 
-        if "option_value" in dct:    
+        if "option_value" in dct:
             if isinstance(dct["option_value"], dict):
                 if "variable" in dct["option_value"]:
                     self.option_value.variable = dct["option_value"]["variable"]
                 if "variable_group" in dct["option_value"]:
-                    self.option_value.variable_group = dct["option_value"]["variable_group"]
+                    self.option_value.variable_group = dct["option_value"][
+                        "variable_group"
+                    ]
             else:
                 # It's a list
                 self.option_value.list = dct["option_value"]
@@ -235,14 +308,16 @@ class Element:
                         if item == "true":
                             self.option_value.list[idx] = True
                         elif item == "false":
-                            self.option_value.list[idx] = False   
+                            self.option_value.list[idx] = False
 
-        if "option_string" in dct:    
+        if "option_string" in dct:
             if isinstance(dct["option_string"], dict):
                 if "variable" in dct["option_string"]:
                     self.option_string.variable = dct["option_string"]["variable"]
                 if "variable_group" in dct["option_string"]:
-                    self.option_string.variable_group = dct["option_string"]["variable_group"]
+                    self.option_string.variable_group = dct["option_string"][
+                        "variable_group"
+                    ]
             else:
                 # It's a list
                 self.option_string.list = dct["option_string"]
@@ -355,16 +430,14 @@ class Element:
                 self.dependencies.append(dependency)
 
         if self.style == "tabpanel":
-
             self.tabs = []
 
             # Loop through tabs
             for itab, tab_dct in enumerate(dct["tab"]):
-
                 tab = Tab(self.variable_group, self.module)
                 tab.gui = self.gui
-                
-                if "string" in tab_dct: # Backward compatibility
+
+                if "string" in tab_dct:  # Backward compatibility
                     tab.text = tab_dct["string"]
                 if "text" in tab_dct:
                     tab.text = tab_dct["text"]
@@ -375,7 +448,9 @@ class Element:
                         if tab_dct["module"]:
                             tab.module = importlib.import_module(tab_dct["module"])
                     except Exception as e:
-                        print("Error! Module " + tab_dct["module"] + " could not be imported!")
+                        print(
+                            f"Error! Module {tab_dct['module']} could not be imported!"
+                        )
                         print(e)
 
                 tab.dependencies = []
@@ -402,9 +477,8 @@ class Element:
 
                 self.tabs.append(tab)
 
-
-    def add(self):
-        
+    def add(self) -> None:
+        """Instantiate and attach the framework-specific widget for this element."""
         if self.style == "tabpanel":
             mod = importlib.import_module(f"guitares.{self.gui.framework}.tabpanel")
             self.widget = mod.TabPanel(self)
@@ -452,7 +526,9 @@ class Element:
             self.widget = mod.CheckBox(self)
 
         elif self.style == "radiobuttongroup":
-            mod = importlib.import_module(f"guitares.{self.gui.framework}.radiobuttongroup")
+            mod = importlib.import_module(
+                f"guitares.{self.gui.framework}.radiobuttongroup"
+            )
             self.widget = mod.RadioButtonGroup(self)
 
         elif self.style == "slider":
@@ -470,29 +546,36 @@ class Element:
         elif self.style == "pushselectdir":
             mod = importlib.import_module(f"guitares.{self.gui.framework}.pushopendir")
             self.widget = mod.PushOpenDir(self)
-            
+
         elif self.style == "pushsavefile":
             mod = importlib.import_module(f"guitares.{self.gui.framework}.pushsavefile")
             self.widget = mod.PushSaveFile(self)
 
         elif self.style == "map" or self.style == "mapbox" or self.style == "maplibre":
-
             okay = True
             if self.dependencies:
                 for dep in self.dependencies:
                     if dep.action == "visible":
                         if not dep.get():
                             okay = False
-            if okay:                
+            if okay:
                 # Determine which map to use
                 if self.gui.map_engine == "mapbox":
-                    mod = importlib.import_module(f"guitares.{self.gui.framework}.mapbox")
+                    mod = importlib.import_module(
+                        f"guitares.{self.gui.framework}.mapbox"
+                    )
                     self.widget = mod.MapBox(self)
                 elif self.gui.map_engine == "maplibre":
-                    mod = importlib.import_module(f"guitares.{self.gui.framework}.maplibre")
+                    mod = importlib.import_module(
+                        f"guitares.{self.gui.framework}.maplibre"
+                    )
                     self.widget = mod.MapLibre(self)
 
-        elif self.style == "mapbox_compare" or self.style == "maplibre_compare" or self.style == "map_compare":
+        elif (
+            self.style == "mapbox_compare"
+            or self.style == "maplibre_compare"
+            or self.style == "map_compare"
+        ):
             # We don't want to add the mapbox widget if set to invisible, because it takes a long time to load.
             # This means that widgets that are originally set to invisible will not be added to the GUI!
             okay = True
@@ -503,10 +586,14 @@ class Element:
                             okay = False
             if okay:
                 if self.gui.map_engine == "mapbox":
-                    mod = importlib.import_module(f"guitares.{self.gui.framework}.mapbox_compare")
+                    mod = importlib.import_module(
+                        f"guitares.{self.gui.framework}.mapbox_compare"
+                    )
                     self.widget = mod.MapBoxCompare(self)
                 elif self.gui.map_engine == "maplibre":
-                    mod = importlib.import_module(f"guitares.{self.gui.framework}.maplibre_compare")
+                    mod = importlib.import_module(
+                        f"guitares.{self.gui.framework}.maplibre_compare"
+                    )
                     self.widget = mod.MapLibreCompare(self)
 
         elif self.style == "webpage":
@@ -514,24 +601,32 @@ class Element:
             self.widget = mod.WebPage(self)
 
         else:
-            print("Element style " + self.style + " not recognized!")
+            print(f"Element style {self.style} not recognized!")
 
         # And set the visibility
-        if self.style != "radiobuttongroup": # Cannot set radiobutton group to visible
+        if self.style != "radiobuttongroup":  # Cannot set radiobutton group to visible
             if self.widget:
                 self.widget.setVisible(True)
         else:
-            self.widget.set_visible(True)        
+            self.widget.set_visible(True)
 
-    def set_geometry(self):
+    def set_geometry(self) -> None:
+        """Update the widget geometry; silently ignores errors."""
         try:
             self.widget.set_geometry()
-        except:
-            pass    
+        except Exception:
+            pass
 
-    def get_position(self):
+    def get_position(self) -> Tuple[int, int, int, int]:
+        """Calculate absolute pixel position from the element's relative layout spec.
 
-        # Position as defined in the yml file 
+        Returns
+        -------
+        Tuple[int, int, int, int]
+            ``(x0, y0, width, height)`` in pixels, accounting for parent size
+            and the GUI resize factor.
+        """
+        # Position as defined in the yml file
         position = self.position
         resize_factor = self.gui.resize_factor
         parent = self.parent.widget
@@ -546,9 +641,9 @@ class Element:
         wdt = position.width * resize_factor
         hgt = position.height * resize_factor
 
-        if x0>0:
+        if x0 > 0:
             # x0 is absolute
-            if wdt>0:
+            if wdt > 0:
                 # wdt is absolute
                 pass
             else:
@@ -556,7 +651,7 @@ class Element:
                 wdt = pwdt - x0 + wdt
         else:
             # x0 is relative
-            if wdt>0:
+            if wdt > 0:
                 # wdt is absolute
                 x0 = pwdt - wdt + x0
             else:
@@ -564,23 +659,23 @@ class Element:
                 x0 = pwdt + x0
                 wdt = pwdt - x0 + wdt
 
-        if y0>0:
+        if y0 > 0:
             # y0 is absolute
-            if hgt>0:
+            if hgt > 0:
                 # hgt is absolute
                 y0 = phgt - (y0 + hgt)
             else:
                 # hgt is relative
-                y0 = - hgt
+                y0 = -hgt
                 hgt = phgt - position.y * resize_factor + hgt
         else:
             # y0 is relative
-            if hgt>0:
+            if hgt > 0:
                 # hgt is absolute
                 y0 = phgt - hgt
             else:
                 # hgt is relative
-                hgt = - y0 - hgt
+                hgt = -y0 - hgt
                 y0 = phgt - (y0 + hgt)
 
         # Round to integers
@@ -591,7 +686,8 @@ class Element:
 
         return x0, y0, wdt, hgt
 
-    def set_dependencies(self):
+    def set_dependencies(self) -> None:
+        """Evaluate and apply all dependency rules (enable/visible/check) for this element."""
         # TODO: Would be cleaner to add enable and disable methods in the individual elements
         # Check if this element is a tabpanel
         if self.style == "tabpanel":
@@ -610,42 +706,67 @@ class Element:
                             if true_or_false:
                                 self.widget.setTabVisible(itab, True)
                             else:
-                                self.widget.setTabVisible(itab, False)    
+                                self.widget.setTabVisible(itab, False)
 
-        else:            
+        else:
             # "normal" element
             for dependency in self.dependencies:
                 true_or_false = dependency.get()
                 if dependency.action == "visible":
-                    if self.style == "radiobuttongroup": # Cannot set radiobutton group directly
-                        self.widget.set_visible(true_or_false)        
-                    elif self.style == "mapbox" or self.style == "mapbox_compare" or self.style == "maplibre" or self.style == "maplibre_compare" or self.style == "map" or self.style == "map_compare":
+                    if (
+                        self.style == "radiobuttongroup"
+                    ):  # Cannot set radiobutton group directly
+                        self.widget.set_visible(true_or_false)
+                    elif (
+                        self.style == "mapbox"
+                        or self.style == "mapbox_compare"
+                        or self.style == "maplibre"
+                        or self.style == "maplibre_compare"
+                        or self.style == "map"
+                        or self.style == "map_compare"
+                    ):
                         if self.widget.ready:
-                            self.widget.view.setVisible(true_or_false)        
-                    else:    
+                            self.widget.view.setVisible(true_or_false)
+                    else:
                         if self.widget:
                             self.widget.setVisible(true_or_false)
                             if hasattr(self.widget, "text_widget"):
                                 self.widget.text_widget.setVisible(true_or_false)
                 elif dependency.action == "enable":
-                    if self.style == "radiobuttongroup": # Cannot set radiobutton group directly
-                        self.widget.set_enabled(true_or_false)        
-                    else:    
+                    if (
+                        self.style == "radiobuttongroup"
+                    ):  # Cannot set radiobutton group directly
+                        self.widget.set_enabled(true_or_false)
+                    else:
                         if self.widget:
                             self.widget.setEnabled(true_or_false)
                             if hasattr(self.widget, "text_widget"):
                                 self.widget.text_widget.setEnabled(true_or_false)
                 elif dependency.action == "check":
                     self.widget.setChecked(true_or_false)
-            if not self.enable:        
+            if not self.enable:
                 if self.widget:
                     self.widget.setEnabled(False)
                     if hasattr(self.widget, "text_widget"):
                         self.widget.text_widget.setEnabled(False)
 
-    def clear_tab(self, index):
+    def clear_tab(self, index: int) -> None:
+        """Remove all child widgets from the tab at the given index.
+
+        Parameters
+        ----------
+        index : int
+            Tab index to clear.
+        """
         self.widget.clear_tab(index)
 
-    def set_collapsed(self, true_or_false):
+    def set_collapsed(self, true_or_false: bool) -> None:
+        """Set the collapsed state and trigger a resize of child elements.
+
+        Parameters
+        ----------
+        true_or_false : bool
+            Whether the element should be collapsed.
+        """
         self.collapsed = true_or_false
         self.gui.window.resize_elements(self.elements)

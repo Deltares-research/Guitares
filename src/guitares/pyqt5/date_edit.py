@@ -1,12 +1,23 @@
-from PyQt5.QtWidgets import QDateTimeEdit
-from PyQt5.QtWidgets import QLabel
-from PyQt5 import QtCore
-import traceback
+"""PyQt5 date-time editor widget with variable binding."""
+
 import datetime
+import traceback
+from typing import Any, Union
+
+from PyQt5 import QtCore
+from PyQt5.QtWidgets import QDateTimeEdit, QLabel
+
 
 class DateEdit(QDateTimeEdit):
+    """Date-time editor bound to a GUI variable.
 
-    def __init__(self, element):
+    Parameters
+    ----------
+    element : Any
+        The GUI element descriptor with variable binding, text label, and callback.
+    """
+
+    def __init__(self, element: Any) -> None:
         super().__init__(element.parent.widget)
 
         self.element = element
@@ -15,10 +26,12 @@ class DateEdit(QDateTimeEdit):
         self.setDisplayFormat("yyyy-MM-dd hh:mm:ss")
 
         if element.text:
-            if type(element.text) is str:
+            if isinstance(element.text, str):
                 txt = element.text
             else:
-                txt = self.element.getvar(element.text.variable_group, element.text.variable)    
+                txt = self.element.getvar(
+                    element.text.variable_group, element.text.variable
+                )
             label = QLabel(txt, element.parent.widget)
             label.setStyleSheet("background: transparent; border: none")
             if not element.enable:
@@ -27,57 +40,63 @@ class DateEdit(QDateTimeEdit):
             label.setVisible(True)
 
         if self.element.tooltip:
-            if type(self.element.tooltip) is str:
+            if isinstance(self.element.tooltip, str):
                 txt = self.element.tooltip
             else:
-                txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
+                txt = self.element.getvar(
+                    self.element.tooltip.variable_group, self.element.tooltip.variable
+                )
             self.setToolTip(txt)
 
         self.editingFinished.connect(self.callback)
 
         self.set_geometry()
 
-    def set(self):
+    def set(self) -> None:
+        """Update the displayed date-time from the bound variable."""
         group = self.element.variable_group
-        name  = self.element.variable
-        val   = self.element.getvar(group, name)
-        if type(val) is str:
+        name = self.element.variable
+        val = self.element.getvar(group, name)
+        if isinstance(val, str):
             # Value is a string. Need to convert to datetime using Python datetime.
             val = datetime.datetime.strptime(val, "%Y%m%d %H%M%S")
         dtstr = val.strftime("%Y-%m-%d %H:%M:%S")
-        qtDate = QtCore.QDateTime.fromString(dtstr, 'yyyy-MM-dd hh:mm:ss')
+        qtDate = QtCore.QDateTime.fromString(dtstr, "yyyy-MM-dd hh:mm:ss")
         self.setDateTime(qtDate)
 
-        if type(self.element.text) is not str:
-            txt = self.element.getvar(self.element.text.variable_group, self.element.text.variable)
+        if not isinstance(self.element.text, str):
+            txt = self.element.getvar(
+                self.element.text.variable_group, self.element.text.variable
+            )
             self.text_widget.setText(txt)
 
-        if type(self.element.tooltip) is not str:
-            txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
+        if not isinstance(self.element.tooltip, str):
+            txt = self.element.getvar(
+                self.element.tooltip.variable_group, self.element.tooltip.variable
+            )
             self.setToolTip(txt)
 
-
-    def callback(self):
+    def callback(self) -> None:
+        """Handle editing-finished events by updating the bound variable."""
         group = self.element.variable_group
-        name  = self.element.variable
-        newval = self.dateTime().toPyDateTime()
-        if type(self.element.getvar(group, name)) is str:
-            # Expected value is a string. Need to convert to newval to string.
+        name = self.element.variable
+        newval: Union[datetime.datetime, str] = self.dateTime().toPyDateTime()
+        if isinstance(self.element.getvar(group, name), str):
+            # Expected value is a string. Need to convert newval to string.
             newval = newval.strftime("%Y%m%d %H%M%S")
-        # Do some range checking here ...
         # Update value in variable dict
         self.element.setvar(group, name, newval)
         self.okay = True
         try:
             if self.okay and self.isEnabled() and self.element.callback:
-                val   = newval
+                val = newval
                 self.element.callback(val, self)
-                # Update GUI
             self.element.window.update()
-        except:
+        except Exception:
             traceback.print_exc()
 
-    def set_geometry(self):
+    def set_geometry(self) -> None:
+        """Set widget position and size, including the text label."""
         resize_factor = self.element.gui.resize_factor
         x0, y0, wdt, hgt = self.element.get_position()
         self.setGeometry(x0, y0, wdt, hgt)
@@ -85,16 +104,25 @@ class DateEdit(QDateTimeEdit):
             label = self.text_widget
             fm = label.fontMetrics()
             wlab = int(fm.size(0, self.element.text).width())
-            if self.element.text_position == "above-center" or self.element.text_position == "above":
+            if (
+                self.element.text_position == "above-center"
+                or self.element.text_position == "above"
+            ):
                 label.setAlignment(QtCore.Qt.AlignCenter)
-                label.setGeometry(x0, int(y0 - 20 * resize_factor), wdt, int(20 * resize_factor))
+                label.setGeometry(
+                    x0, int(y0 - 20 * resize_factor), wdt, int(20 * resize_factor)
+                )
             elif self.element.text_position == "above-left":
                 label.setAlignment(QtCore.Qt.AlignLeft)
-                label.setGeometry(x0, int(y0 - 20 * resize_factor), wlab, int(20 * resize_factor))
+                label.setGeometry(
+                    x0, int(y0 - 20 * resize_factor), wlab, int(20 * resize_factor)
+                )
             else:
                 # Assuming left
                 label.setAlignment(QtCore.Qt.AlignRight)
-                label.setGeometry(int(x0 - wlab - 3 * resize_factor),
-                                  int(y0 + 5 * self.element.gui.resize_factor),
-                                  wlab,
-                                  int(20 * resize_factor))
+                label.setGeometry(
+                    int(x0 - wlab - 3 * resize_factor),
+                    int(y0 + 5 * self.element.gui.resize_factor),
+                    wlab,
+                    int(20 * resize_factor),
+                )

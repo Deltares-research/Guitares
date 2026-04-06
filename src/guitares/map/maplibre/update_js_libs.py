@@ -26,6 +26,7 @@ CSS_DIR = os.path.join(SCRIPT_DIR, "css")
 JS_DIR = r"c:\work\projects\delftdashboard\dev_claude\maplibre\server\js"
 CSS_DIR = r"c:\work\projects\delftdashboard\dev_claude\maplibre\server\css"
 
+
 def download(url, dest):
     """Download a URL to a local file."""
     print(f"  Downloading {url}")
@@ -90,11 +91,15 @@ def update_mapbox_draw():
     version = get_latest_npm_version("@mapbox/mapbox-gl-draw")
     print(f"Latest version: {version}")
 
-    js_url = f"https://unpkg.com/@mapbox/mapbox-gl-draw@{version}/dist/mapbox-gl-draw.js"
+    js_url = (
+        f"https://unpkg.com/@mapbox/mapbox-gl-draw@{version}/dist/mapbox-gl-draw.js"
+    )
     js_dest = os.path.join(JS_DIR, f"mapbox-gl-draw-v{version}.js")
     download(js_url, js_dest)
 
-    css_url = f"https://unpkg.com/@mapbox/mapbox-gl-draw@{version}/dist/mapbox-gl-draw.css"
+    css_url = (
+        f"https://unpkg.com/@mapbox/mapbox-gl-draw@{version}/dist/mapbox-gl-draw.css"
+    )
     css_dest = os.path.join(CSS_DIR, "mapbox-gl-draw.css")
     download(css_url, css_dest)
 
@@ -172,7 +177,9 @@ def update_html_references(maplibre_version, turf_version, draw_version):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Update JS libraries for Guitares MapLibre server")
+    parser = argparse.ArgumentParser(
+        description="Update JS libraries for Guitares MapLibre server"
+    )
     parser.add_argument(
         "--draw",
         choices=["mapbox", "maplibre", "both"],
@@ -213,7 +220,9 @@ if __name__ == "__main__":
     if draw_ver:
         print(f'  Mapbox:   <script src="/js/mapbox-gl-draw-v{draw_ver}.js"></script>')
     if maplibre_draw_ver:
-        print(f'  MapLibre: <script src="/js/maplibre-gl-draw-v{maplibre_draw_ver}.js"></script>')
+        print(
+            f'  MapLibre: <script src="/js/maplibre-gl-draw-v{maplibre_draw_ver}.js"></script>'
+        )
     print()
     print("NOTE: maplibre-gl-compare.js and mapbox_gl_draw_scale_rotate_mode.js")
     print("are custom source files — NOT updated by this script.")

@@ -8,6 +8,8 @@ Selector mode is auto-detected from the ``select`` callback kwarg.
 Also serves as backend for types ``"choropleth"`` and ``"polygon_selector"``.
 """
 
+from typing import Any, Dict, List, Optional, Union
+
 from geopandas import GeoDataFrame
 
 from .layer import Layer
@@ -16,18 +18,24 @@ from .layer import Layer
 class PolygonLayer(Layer):
     """Polygon layer with optional selection and choropleth support."""
 
-    def __init__(self, map, id, map_id, **kwargs):
+    def __init__(self, map: Any, id: str, map_id: str, **kwargs: Any) -> None:
         super().__init__(map, id, map_id, **kwargs)
         self.selector = "select" in kwargs and kwargs["select"] is not None
-        self.index = []
-        self.color_by_attribute = {}
-        self.legend_items_list = []
+        self.index: List[int] = []
+        self.color_by_attribute: Dict[str, Any] = {}
+        self.legend_items_list: List[Dict[str, Any]] = []
 
-    def _get_map_layer_ids(self):
+    def _get_map_layer_ids(self) -> List[str]:
         """Polygon layer creates .fill and .line sub-layers."""
-        return [self.map_id + ".fill", self.map_id + ".line"]
+        return [f"{self.map_id}.fill", f"{self.map_id}.line"]
 
-    def set_data(self, data, index=None, color_by_attribute=None, legend_items=None):
+    def set_data(
+        self,
+        data: Union[GeoDataFrame, str],
+        index: Optional[Union[int, List[int]]] = None,
+        color_by_attribute: Optional[Dict[str, Any]] = None,
+        legend_items: Optional[List[Dict[str, Any]]] = None,
+    ) -> None:
         """Set GeoJSON data and render the polygon layer.
 
         Parameters
@@ -43,6 +51,7 @@ class PolygonLayer(Layer):
         """
         if not isinstance(data, GeoDataFrame):
             from pyogrio import read_dataframe
+
             data = read_dataframe(data)
 
         if isinstance(data, GeoDataFrame) and len(data) == 0:
@@ -77,7 +86,7 @@ class PolygonLayer(Layer):
 
         self._render(data)
 
-    def _render(self, data):
+    def _render(self, data: GeoDataFrame) -> None:
         """Build pp and options dicts and call polygon_layer.js addLayer."""
         pp = self.get_paint_props()
 
@@ -96,7 +105,12 @@ class PolygonLayer(Layer):
                 options["legendTitle"] = getattr(self, "legend_title", "")
                 options["legendPosition"] = self.legend_position
 
-        elif hasattr(self, "bins") and self.bins and hasattr(self, "colors") and self.colors:
+        elif (
+            hasattr(self, "bins")
+            and self.bins
+            and hasattr(self, "colors")
+            and self.colors
+        ):
             options["bins"] = self.bins
             options["colors"] = self.colors
             options["colorProperty"] = self.color_property
@@ -126,11 +140,12 @@ class PolygonLayer(Layer):
             options["lineWidthHover"] = pp_hover["lineWidth"]
 
         self.map.runjs(
-            "/js/polygon_layer.js", "addLayer",
+            "/js/polygon_layer.js",
+            "addLayer",
             arglist=[self.map_id, data, pp, options],
         )
 
-    def update(self):
+    def update(self) -> None:
         """Update for big-data mode (clip to viewport)."""
         if self.data is None or len(self.data) == 0:
             return
@@ -138,28 +153,29 @@ class PolygonLayer(Layer):
             return
         if self.map.zoom > self.min_zoom:
             coords = self.map.map_extent
-            gdf = self.data.cx[coords[0][0]:coords[1][0], coords[0][1]:coords[1][1]]
+            gdf = self.data.cx[coords[0][0] : coords[1][0], coords[0][1] : coords[1][1]]
             self._render(gdf)
         else:
             self.map.runjs(self.main_js, "hideLegend", arglist=[self.map_id])
 
-    def select_by_index(self, index):
+    def select_by_index(self, index: Union[int, List[int]]) -> None:
         """Select features by index (selector mode).
 
         Parameters
         ----------
-        index : int or list
+        index : int or list of int
             Feature index or list of indices.
         """
         if isinstance(index, int):
             index = [index]
         self.index = index
         self.map.runjs(
-            "/js/polygon_layer.js", "selectByIndex",
+            "/js/polygon_layer.js",
+            "selectByIndex",
             arglist=[self.map_id, index],
         )
 
-    def select_by_property(self, property_name, value):
+    def select_by_property(self, property_name: str, value: Any) -> None:
         """Select features by matching a property value.
 
         Parameters
@@ -177,32 +193,34 @@ class PolygonLayer(Layer):
         if index:
             self.select_by_index(index)
 
-    def set_hover_property(self, hover_property):
+    def set_hover_property(self, hover_property: Optional[str]) -> None:
         """Change the hover property and redraw."""
         self.hover_property = hover_property
         self.set_data(self.data, self.index)
 
-    def activate(self):
+    def activate(self) -> None:
         """Set the layer to active mode."""
         self.active = True
         if self.data is None:
             return
         self.map.runjs(
-            "/js/polygon_layer.js", "activate",
+            "/js/polygon_layer.js",
+            "activate",
             arglist=[self.map_id, self.line_color],
         )
 
-    def deactivate(self):
+    def deactivate(self) -> None:
         """Set the layer to inactive mode."""
         self.active = False
         if self.data is None:
             return
         self.map.runjs(
-            "/js/polygon_layer.js", "deactivate",
+            "/js/polygon_layer.js",
+            "deactivate",
             arglist=[self.map_id, self.line_color_inactive],
         )
 
-    def redraw(self):
+    def redraw(self) -> None:
         """Redraw the layer (e.g. after a style change)."""
         if isinstance(self.data, GeoDataFrame):
             self.set_data(self.data, self.index)

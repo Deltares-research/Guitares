@@ -1,16 +1,19 @@
-import os
 import glob
-from PIL import Image
+import os
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
 import matplotlib
-from matplotlib import cm
-import rasterio
-from matplotlib.colors import LightSource
 import numpy as np
+import rasterio
 import rioxarray
 import xarray as xr
+from matplotlib import cm
+from matplotlib.colors import LightSource
+from PIL import Image
 from pyproj import Transformer
 
 from guitares.colormap import cm2png
+
 from .layer import Layer
 
 
@@ -27,7 +30,7 @@ class RasterImageLayer(Layer):
        view extent.
     """
 
-    def __init__(self, map, id, map_id, **kwargs):
+    def __init__(self, map: Any, id: str, map_id: str, **kwargs: Any) -> None:
         super().__init__(map, id, map_id, **kwargs)
         self.active = False
         self.type = "raster"
@@ -39,33 +42,43 @@ class RasterImageLayer(Layer):
         # Reserve z-order position by creating blank placeholder layers.
         before_ids = self._get_before_ids()
         self.map.runjs(
-            "/js/raster_image_layer.js", "addLayer",
-            id=self.map_id + ".a", side=self.side, beforeIds=before_ids,
+            "/js/raster_image_layer.js",
+            "addLayer",
+            id=self.map_id + ".a",
+            side=self.side,
+            beforeIds=before_ids,
         )
         self.map.runjs(
-            "/js/raster_image_layer.js", "addLayer",
-            id=self.map_id + ".b", side=self.side, beforeIds=before_ids,
+            "/js/raster_image_layer.js",
+            "addLayer",
+            id=self.map_id + ".b",
+            side=self.side,
+            beforeIds=before_ids,
         )
 
-    def _get_map_layer_ids(self):
+    def _get_map_layer_ids(self) -> List[str]:
         """Raster image layer creates .a and .b sub-layers."""
-        return [self.map_id + ".a", self.map_id + ".b"]
+        return [f"{self.map_id}.a", f"{self.map_id}.b"]
 
-    def activate(self):
+    def activate(self) -> None:
+        """Activate the raster image layer."""
         self.active = True
         self.show()
 
-    def deactivate(self):
+    def deactivate(self) -> None:
+        """Deactivate the raster image layer."""
         self.active = False
 
-    def clear(self):
+    def clear(self) -> None:
         self.active = False
         self.map.runjs("/js/main.js", "removeLayer", arglist=[self.map_id])
         self.new = True
         self.data = None
         self.data_has_map_overlay = False
 
-    def set_data(self, data):
+    def set_data(
+        self, data: Union[str, os.PathLike, xr.DataArray, Callable, Any]
+    ) -> None:
         """Set the data source and trigger an initial render.
 
         Parameters
@@ -105,7 +118,7 @@ class RasterImageLayer(Layer):
     # Update — called on every map pan / zoom
     # ------------------------------------------------------------------
 
-    def update(self):
+    def update(self) -> None:
         """Re-render the overlay for the current map extent."""
         if not self.map.map_extent:
             return
@@ -137,7 +150,9 @@ class RasterImageLayer(Layer):
     # Data mode: map_overlay object
     # ------------------------------------------------------------------
 
-    def _update_from_map_overlay(self, lonlim, latlim, width):
+    def _update_from_map_overlay(
+        self, lonlim: List[float], latlim: List[float], width: int
+    ) -> Optional[Tuple[str, float, float, float, float, Any]]:
         """Delegate rendering to the data object's map_overlay method."""
         fname = os.path.join(self.map.server_path, "overlays", self.file_name)
 
@@ -165,7 +180,9 @@ class RasterImageLayer(Layer):
     # Data mode: raster DataArray / file path / callable
     # ------------------------------------------------------------------
 
-    def _update_from_raster(self, lonlim, latlim, height):
+    def _update_from_raster(
+        self, lonlim: List[float], latlim: List[float], height: int
+    ) -> Optional[Tuple[str, float, float, float, float, Any]]:
         """Render a raster DataArray (or file / callable) to a PNG overlay."""
         clip = True
         derefine = True
@@ -204,7 +221,9 @@ class RasterImageLayer(Layer):
 
         return overlay_file, west, east, south, north, legend
 
-    def _load_raster_data(self, latlim, height):
+    def _load_raster_data(
+        self, latlim: List[float], height: int
+    ) -> Tuple[Optional[xr.DataArray], bool]:
         """Load raster data from file path, detecting RGB and overview levels."""
         if not isinstance(self.data, (str, os.PathLike)):
             return None, False
@@ -212,9 +231,7 @@ class RasterImageLayer(Layer):
         if self.data_has_overview_levels:
             max_cell_size = (latlim[1] - latlim[0]) / height * 111000
             with rasterio.open(self.data) as src:
-                overview_level, _ = get_appropriate_overview_level(
-                    src, max_cell_size
-                )
+                overview_level, _ = get_appropriate_overview_level(src, max_cell_size)
                 data = rioxarray.open_rasterio(
                     self.data, masked=False, overview_level=overview_level
                 )
@@ -227,7 +244,9 @@ class RasterImageLayer(Layer):
 
         return data, data_is_rgb
 
-    def _clip_to_view(self, data, lonlim, latlim):
+    def _clip_to_view(
+        self, data: xr.DataArray, lonlim: List[float], latlim: List[float]
+    ) -> xr.DataArray:
         """Clip DataArray to the current map view with a small buffer."""
         dlon = (lonlim[1] - lonlim[0]) / 10
         dlat = (latlim[1] - latlim[0]) / 10
@@ -239,7 +258,9 @@ class RasterImageLayer(Layer):
             crs="EPSG:4326",
         )
 
-    def _derefine(self, data, latlim, height):
+    def _derefine(
+        self, data: xr.DataArray, latlim: List[float], height: int
+    ) -> xr.DataArray:
         """Down-sample data if it's finer than the screen resolution."""
         y = data["y"].values[:]
         dy = abs(y[1] - y[0]) if len(y) > 1 else 1e6
@@ -258,7 +279,9 @@ class RasterImageLayer(Layer):
             data = data.isel(x=slice(0, None, fact), y=slice(0, None, fact))
         return data
 
-    def _build_legend_from_options(self, opts):
+    def _build_legend_from_options(
+        self, opts: Dict[str, Any]
+    ) -> Optional[Union[Dict[str, Any], str]]:
         """Build a legend dict from map_overlay_options.
 
         Supports two legend types based on the options keys:
@@ -287,7 +310,9 @@ class RasterImageLayer(Layer):
 
         return None
 
-    def _render_rgb(self, data):
+    def _render_rgb(
+        self, data: xr.DataArray
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Extract x, y, rgba from an RGB(A) DataArray."""
         x = data["x"].values[:]
         y = data["y"].values[:]
@@ -297,7 +322,9 @@ class RasterImageLayer(Layer):
             rgb = np.vstack((rgb, alpha))
         return x, y, rgb
 
-    def _render_scalar(self, data):
+    def _render_scalar(
+        self, data: xr.DataArray
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, Any]:
         """Render a scalar DataArray to an RGBA array with color mapping.
 
         Returns (x, y, rgb, legend) where legend is either a dict
@@ -319,7 +346,9 @@ class RasterImageLayer(Layer):
         rgb = np.transpose(rgb, (2, 0, 1))
         return x, y, rgb, legend
 
-    def _render_discrete(self, z, shape):
+    def _render_discrete(
+        self, z: np.ndarray, shape: Tuple[int, ...]
+    ) -> Tuple[np.ndarray, Dict[str, Any]]:
         """Map scalar values to discrete RGBA classes."""
         rgba = np.zeros((shape[0], shape[1], 4), dtype=np.float32)
         contour = []
@@ -329,7 +358,9 @@ class RasterImageLayer(Layer):
             color_rgba = cm.colors.to_rgba(color_value["color"])
 
             if "lower_value" in color_value and "upper_value" in color_value:
-                mask = (z >= color_value["lower_value"]) & (z < color_value["upper_value"])
+                mask = (z >= color_value["lower_value"]) & (
+                    z < color_value["upper_value"]
+                )
                 cnt["text"] = color_value.get(
                     "text",
                     f"{color_value['lower_value']} - {color_value['upper_value']}",
@@ -341,9 +372,7 @@ class RasterImageLayer(Layer):
                 )
             elif "upper_value" in color_value:
                 mask = z < color_value["upper_value"]
-                cnt["text"] = color_value.get(
-                    "text", f"< {color_value['upper_value']}"
-                )
+                cnt["text"] = color_value.get("text", f"< {color_value['upper_value']}")
             else:
                 continue
 
@@ -354,7 +383,9 @@ class RasterImageLayer(Layer):
         legend = {"title": self.legend_title, "contour": contour}
         return rgb, legend
 
-    def _render_continuous(self, x, y, z):
+    def _render_continuous(
+        self, x: np.ndarray, y: np.ndarray, z: np.ndarray
+    ) -> Tuple[np.ndarray, str]:
         """Map scalar values to a continuous colormap, optionally with hillshading."""
         # Determine color scale
         if self.color_scale_auto:
@@ -396,9 +427,14 @@ class RasterImageLayer(Layer):
             dx = (x[1] - x[0]) / 2
             dy = -(y[1] - y[0]) / 2
             rgb = ls.shade(
-                z, cmap, vmin=cmin, vmax=cmax,
-                dx=dx * 0.5, dy=dy * 0.5,
-                vert_exag=10.0, blend_mode="soft",
+                z,
+                cmap,
+                vmin=cmin,
+                vmax=cmax,
+                dx=dx * 0.5,
+                dy=dy * 0.5,
+                vert_exag=10.0,
+                blend_mode="soft",
             )
             rgb = rgb * 255
         else:
@@ -411,7 +447,9 @@ class RasterImageLayer(Layer):
     # Image output helpers
     # ------------------------------------------------------------------
 
-    def _reproject_and_save(self, x, y, rgb, data):
+    def _reproject_and_save(
+        self, x: np.ndarray, y: np.ndarray, rgb: np.ndarray, data: xr.DataArray
+    ) -> Tuple[str, float, float, float, float]:
         """Reproject RGBA to EPSG:3857, save PNG, return overlay path and bounds."""
         rgba_da = xr.DataArray(
             rgb,
@@ -456,7 +494,7 @@ class RasterImageLayer(Layer):
 
         return overlay_file, west, east, south, north
 
-    def _create_legend_png(self):
+    def _create_legend_png(self) -> str:
         """Generate a continuous colorbar PNG and return its relative URL."""
         overlays = os.path.join(self.map.server_path, "overlays")
 
@@ -484,15 +522,21 @@ class RasterImageLayer(Layer):
 
         return "./overlays/" + legend_file
 
-    def _send_to_map(self, overlay_file, west, east, south, north, legend):
+    def _send_to_map(
+        self,
+        overlay_file: str,
+        west: float,
+        east: float,
+        south: float,
+        north: float,
+        legend: Any,
+    ) -> None:
         """Send the overlay image to MapLibre, handling dateline splits."""
         before_ids = self._get_before_ids()
 
         if east > 180.0:
             # Dateline crossing — split into two images
-            im = Image.open(
-                os.path.join(self.map.server_path, overlay_file)
-            )
+            im = Image.open(os.path.join(self.map.server_path, overlay_file))
             npixx = im.size[0]
             dlon = east - west
             ipixx = int(npixx * (180.0 - west) / dlon)
@@ -507,35 +551,48 @@ class RasterImageLayer(Layer):
             )
 
             self.map.runjs(
-                self.main_js, "showLayer",
+                self.main_js,
+                "showLayer",
                 arglist=[self.map_id + ".b", self.side],
             )
             self.map.runjs(
-                "/js/raster_image_layer.js", "updateLayer",
-                id=self.map_id + ".a", filename=file_a,
+                "/js/raster_image_layer.js",
+                "updateLayer",
+                id=self.map_id + ".a",
+                filename=file_a,
                 bounds=[[west, 180.0], [south, north]],
-                colorbar=legend, legend_position=self.legend_position,
-                side=self.side, opacity=self.opacity,
+                colorbar=legend,
+                legend_position=self.legend_position,
+                side=self.side,
+                opacity=self.opacity,
                 beforeIds=before_ids,
             )
             self.map.runjs(
-                "/js/raster_image_layer.js", "updateLayer",
-                id=self.map_id + ".b", filename=file_b,
+                "/js/raster_image_layer.js",
+                "updateLayer",
+                id=self.map_id + ".b",
+                filename=file_b,
                 bounds=[[-180.0, east - 360.0], [south, north]],
-                side=self.side, opacity=self.opacity,
+                side=self.side,
+                opacity=self.opacity,
                 beforeIds=before_ids,
             )
         else:
             self.map.runjs(
-                "/js/raster_image_layer.js", "updateLayer",
-                id=self.map_id + ".a", filename=overlay_file,
+                "/js/raster_image_layer.js",
+                "updateLayer",
+                id=self.map_id + ".a",
+                filename=overlay_file,
                 bounds=[[west, east], [south, north]],
-                colorbar=legend, legend_position=self.legend_position,
-                side=self.side, opacity=self.opacity,
+                colorbar=legend,
+                legend_position=self.legend_position,
+                side=self.side,
+                opacity=self.opacity,
                 beforeIds=before_ids,
             )
             self.map.runjs(
-                self.main_js, "hideLayer",
+                self.main_js,
+                "hideLayer",
                 arglist=[self.map_id + ".b", self.side],
             )
 

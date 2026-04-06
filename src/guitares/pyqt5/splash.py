@@ -1,19 +1,27 @@
-from PyQt5.QtWidgets import QSplashScreen
-from PyQt5.QtCore import Qt
-from PyQt5.QtCore import QTimer
+"""PyQt5 splash screen with auto-close timer."""
+
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QApplication
-import os
+from PyQt5.QtWidgets import QSplashScreen
+
 
 class Splash:
+    """Splash screen that displays an image and closes after a timeout.
 
-    def __init__(self, splash_file, seconds=20.0):
-        # Splash screen
+    Parameters
+    ----------
+    splash_file : str
+        Path to the splash screen image file.
+    seconds : float
+        Number of seconds before the splash screen auto-closes.
+    """
+
+    def __init__(self, splash_file: str, seconds: float = 20.0) -> None:
         QSplashScreen(QPixmap(splash_file))
         self.splash = QSplashScreen(QPixmap(splash_file), Qt.WindowStaysOnTopHint)
         self.splash.show()
-        # Close SplashScreen after 20 seconds (20,000 ms)
-        QTimer.singleShot(int(seconds*1000), self.splash.close)
+        QTimer.singleShot(int(seconds * 1000), self.splash.close)
 
-    def close(self):
+    def close(self) -> None:
+        """Close the splash screen immediately."""
         self.splash.close()

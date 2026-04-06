@@ -1,11 +1,22 @@
+"""PyQt5 push button that opens a directory selection dialog."""
+
 import os
-from PyQt5.QtWidgets import QPushButton, QFileDialog
 import traceback
+from typing import Any
+
+from PyQt5.QtWidgets import QFileDialog, QPushButton
 
 
 class PushOpenDir(QPushButton):
+    """Button that opens a directory picker and stores the chosen path.
 
-    def __init__(self, element):
+    Parameters
+    ----------
+    element : Any
+        The GUI element descriptor with variable binding, title, and callback.
+    """
+
+    def __init__(self, element: Any) -> None:
         super().__init__("", element.parent.widget)
 
         self.element = element
@@ -34,7 +45,8 @@ class PushOpenDir(QPushButton):
 
         self.set_geometry()
 
-    def set(self):
+    def set(self) -> None:
+        """Update button text and tooltip from bound variables."""
         if not isinstance(self.element.text, str):
             self.setText(
                 self.element.getvar(
@@ -48,7 +60,8 @@ class PushOpenDir(QPushButton):
                 )
             )
 
-    def callback(self):
+    def callback(self) -> None:
+        """Open a directory dialog and invoke the element callback with the selected path."""
         self.okay = True
         group = self.element.variable_group
         name = self.element.variable
@@ -71,9 +84,10 @@ class PushOpenDir(QPushButton):
             if self.okay and self.element.callback:
                 self.element.callback(dir_name, self)
                 self.element.window.update()
-        except:
+        except Exception:
             traceback.print_exc()
 
-    def set_geometry(self):
+    def set_geometry(self) -> None:
+        """Set widget position and size from the element descriptor."""
         x0, y0, wdt, hgt = self.element.get_position()
         self.setGeometry(x0, y0, wdt, hgt)
