@@ -25,6 +25,9 @@ class ListBox(QListWidget):
         self.element = element
         resize_factor = element.gui.resize_factor
 
+        # Compact item spacing
+        self.setStyleSheet("QListWidget::item { padding: 1px 4px; }")
+
         self.add_items()
 
         # Adjust list value types

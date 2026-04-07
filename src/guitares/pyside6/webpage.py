@@ -38,8 +38,8 @@ class WebEnginePage(QtWebEngineCore.QWebEnginePage):
         sourceID : str
             The source file identifier.
         """
-        if self.print_messages:
-            print("javaScriptConsoleMessage: ", level, message, lineNumber, sourceID)
+        # Suppress JS console messages from documentation panels
+        pass
 
 
 class WebPage(QtWidgets.QWidget):

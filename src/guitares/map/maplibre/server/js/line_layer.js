@@ -46,7 +46,6 @@ export function addLayer(id, data, pp, options) {
   if (map.getSource(id)) map.removeSource(id);
 
   const sourceConfig = { type: 'geojson', data: data };
-  if (selector) sourceConfig.promoteId = 'index';
 
   map.addSource(id, sourceConfig);
 
@@ -61,14 +60,12 @@ export function addLayer(id, data, pp, options) {
   if (selector && pp.lineColorSelected) {
     linePaint['line-color'] = [
       'case',
-      ['boolean', ['feature-state', 'selected'], false], pp.lineColorSelected,
-      ['boolean', ['feature-state', 'hovered'], false], pp.lineColorSelected,
+      ['boolean', ['get', '_selected'], false], pp.lineColorSelected,
       pp.lineColor,
     ];
     linePaint['line-width'] = [
       'case',
-      ['boolean', ['feature-state', 'selected'], false], pp.lineWidthSelected || pp.lineWidth,
-      ['boolean', ['feature-state', 'hovered'], false], pp.lineWidthSelected || pp.lineWidth,
+      ['boolean', ['get', '_selected'], false], pp.lineWidthSelected || pp.lineWidth,
       pp.lineWidth,
     ];
   }
@@ -134,14 +131,12 @@ export function addLayer(id, data, pp, options) {
     }
 
     map.once('idle', () => {
-      deselectAll(id);
       layerAdded(id);
     });
 
-    const index = opts.index || 0;
-    if (index >= 0) {
-      select(id, [index]);
-      selectedIndex = index;
+    if (opts.index !== undefined && opts.index >= 0) {
+      selectedIndex = opts.index;
+      select(id, [selectedIndex]);
     }
   }
 }
@@ -187,8 +182,8 @@ export function setData(id, data) {
  */
 export function setSelectedIndex(id, index) {
   deselectAll(id);
-  select(id, [index]);
   selectedIndex = index;
+  select(id, [index]);
 }
 
 /**
@@ -198,7 +193,20 @@ export function setSelectedIndex(id, index) {
  */
 export function activate(id, pp) {
   if (layers[id]) layers[id].mode = 'active';
-  setPaintProperties(id, pp);
+  if (layers[id]?.selectionOption && pp.lineColorSelected) {
+    map.setPaintProperty(id + '.line', 'line-color', [
+      'case',
+      ['boolean', ['get', '_selected'], false], pp.lineColorSelected,
+      pp.lineColor,
+    ]);
+    map.setPaintProperty(id + '.line', 'line-width', [
+      'case',
+      ['boolean', ['get', '_selected'], false], pp.lineWidthSelected || pp.lineWidth,
+      pp.lineWidth,
+    ]);
+  } else {
+    setPaintProperties(id, pp);
+  }
 }
 
 /**
@@ -263,9 +271,10 @@ function mouseLeave() {
 function clickSingle(e) {
   if (!e.features || e.features.length === 0) return;
   const layerId = e.features[0].source;
-  if (selectedIndex !== null) deselect(layerId, [selectedIndex]);
-  selectedIndex = e.features[0].id;
-  select(layerId, [selectedIndex]);
+  const clickedIndex = e.features[0].properties.index;
+  deselectAll(layerId);
+  selectedIndex = clickedIndex;
+  select(layerId, [clickedIndex]);
   featureClicked(layerId, e.features[0]);
 }
 
@@ -290,21 +299,31 @@ function clickMultiple(e) {
 // ── Selector: selection helpers ──────────────────────────────────────
 
 function select(layerId, indices) {
+  const features = layers[layerId]?.data?.features;
+  if (!features) return;
   for (const idx of indices) {
-    map.setFeatureState({ source: layerId, id: idx }, { selected: true });
+    const f = features.find(f => f.properties.index === idx);
+    if (f) f.properties._selected = true;
   }
+  const src = map.getSource(layerId);
+  if (src && layers[layerId]?.data) src.setData(layers[layerId].data);
 }
 
 function deselect(layerId, indices) {
+  const features = layers[layerId]?.data?.features;
+  if (!features) return;
   for (const idx of indices) {
-    map.setFeatureState({ source: layerId, id: idx }, { selected: false });
+    const f = features.find(f => f.properties.index === idx);
+    if (f) f.properties._selected = false;
   }
+  const src = map.getSource(layerId);
+  if (src && layers[layerId]?.data) src.setData(layers[layerId].data);
 }
 
 function deselectAll(layerId) {
   const features = layers[layerId]?.data?.features;
   if (!features) return;
   for (let i = 0; i < features.length; i++) {
-    map.setFeatureState({ source: layerId, id: i }, { selected: false });
+    features[i].properties._selected = false;
   }
 }

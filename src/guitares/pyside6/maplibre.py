@@ -49,6 +49,9 @@ class WebEnginePage(QtWebEngineCore.QWebEnginePage):
             The source file identifier.
         """
         if self.print_messages:
+            # Suppress noisy DOMException errors from MapLibre internals
+            if "DOMException" in message:
+                return
             print(f"[JS] {message} (line {lineNumber}, source: {sourceID})")
             sys.stdout.flush()  # Ensures it appears even if buffering is active
 

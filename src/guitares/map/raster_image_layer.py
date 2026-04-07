@@ -104,7 +104,10 @@ class RasterImageLayer(Layer):
             self.data_has_map_overlay = True
 
         elif callable(data):
+            # Callable data source — don't update immediately; the next
+            # moveend event will trigger update() with correct dimensions.
             self.get_data = data
+            return
 
         else:
             raise ValueError(
@@ -128,6 +131,10 @@ class RasterImageLayer(Layer):
         latlim = [coords[0][1], coords[1][1]]
         width = self.map.view.geometry().width()
         height = self.map.view.geometry().height()
+
+        # Skip if window hasn't been sized yet (e.g. during maximize)
+        if width <= 0 or height <= 0:
+            return
 
         if self.data_has_map_overlay:
             result = self._update_from_map_overlay(lonlim, latlim, width)
@@ -294,6 +301,14 @@ class RasterImageLayer(Layer):
 
         Returns None if the options don't contain legend info.
         """
+        if opts.get("legend") is False:
+            # Explicitly disabled
+            if "cmin" in opts and "cmax" in opts and "cmap" in opts:
+                self._cmin = opts["cmin"]
+                self._cmax = opts["cmax"]
+                self._cmap = cm.get_cmap(opts["cmap"])
+            return None
+
         if "labels" in opts and "colors" in opts:
             contour = []
             for val, color in opts["colors"].items():

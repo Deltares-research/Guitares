@@ -901,6 +901,19 @@ function setLayerProps(layerId, key, val) {
   if (index >= 0) { layerList[index][key] = val; }
 }
 
+/**
+ * Update a paint property on a draw layer.
+ * @param {string} layerId - The layer ID.
+ * @param {string} key - The paint property key (e.g. "rotate").
+ * @param {*} value - The new value.
+ */
+export function setPaintProperty(layerId, key, value) {
+  var props = getLayerProps(layerId);
+  if (props) {
+    props.paintProps[key] = value;
+  }
+}
+
 // ══════════════════════════════════════════════════════════════════════
 //  UTILITIES
 // ══════════════════════════════════════════════════════════════════════

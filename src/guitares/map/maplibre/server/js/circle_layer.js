@@ -50,7 +50,6 @@ export function addLayer(id, data, pp, options) {
   if (legend) legend.remove();
 
   const sourceConfig = { type: 'geojson', data: data };
-  if (selector) sourceConfig.promoteId = 'index';
 
   map.addSource(id, sourceConfig);
 
@@ -66,21 +65,18 @@ export function addLayer(id, data, pp, options) {
     paint = {
       'circle-stroke-color': [
         'case',
-        ['boolean', ['feature-state', 'selected'], false], pp.lineColorSelected || pp.lineColor,
-        ['boolean', ['feature-state', 'hovered'], false], pp.lineColorSelected || pp.lineColor,
+        ['boolean', ['get', '_selected'], false], pp.lineColorSelected || pp.lineColor,
         pp.lineColor,
       ],
       'circle-color': [
         'case',
-        ['boolean', ['feature-state', 'selected'], false], pp.fillColorSelected || pp.fillColor,
-        ['boolean', ['feature-state', 'hovered'], false], pp.fillColorSelected || pp.fillColor,
+        ['boolean', ['get', '_selected'], false], pp.fillColorSelected || pp.fillColor,
         pp.fillColor,
       ],
       'circle-stroke-width': pp.lineWidth,
       'circle-radius': [
         'case',
-        ['boolean', ['feature-state', 'selected'], false], pp.circleRadiusSelected || pp.circleRadius,
-        ['boolean', ['feature-state', 'hovered'], false], pp.circleRadiusSelected || pp.circleRadius,
+        ['boolean', ['get', '_selected'], false], pp.circleRadiusSelected || pp.circleRadius,
         pp.circleRadius,
       ],
       'circle-opacity': pp.fillOpacity,
@@ -178,14 +174,13 @@ export function addLayer(id, data, pp, options) {
     }
 
     map.once('idle', () => {
-      deselectAll(id);
       layerAdded(id);
     });
 
-    const index = opts.index || 0;
-    if (index >= 0) {
-      select(id, [index]);
-      selectedIndex = index;
+    // Select initial index if provided
+    if (opts.index !== undefined && opts.index >= 0) {
+      selectedIndex = opts.index;
+      select(id, [selectedIndex]);
     }
   }
 }
@@ -226,8 +221,8 @@ export function setData(id, data) {
  */
 export function selectByIndex(id, index) {
   deselectAll(id);
-  select(id, [index]);
   selectedIndex = index;
+  select(id, [index]);
 }
 
 /**
@@ -237,7 +232,31 @@ export function selectByIndex(id, index) {
  */
 export function activate(id, pp) {
   if (layers[id]) layers[id].mode = 'active';
-  setPaintProperties(id, pp);
+  if (layers[id]?.selectionOption) {
+    // Selector mode: restore feature-state expressions with active colors
+    map.setPaintProperty(id, 'circle-stroke-color', [
+      'case',
+      ['boolean', ['get', '_selected'], false], pp.lineColorSelected || pp.lineColor,
+      ['boolean', ['feature-state', 'hovered'], false], pp.lineColorSelected || pp.lineColor,
+      pp.lineColor,
+    ]);
+    map.setPaintProperty(id, 'circle-color', [
+      'case',
+      ['boolean', ['get', '_selected'], false], pp.fillColorSelected || pp.fillColor,
+      ['boolean', ['feature-state', 'hovered'], false], pp.fillColorSelected || pp.fillColor,
+      pp.fillColor,
+    ]);
+    map.setPaintProperty(id, 'circle-radius', [
+      'case',
+      ['boolean', ['get', '_selected'], false], pp.circleRadiusSelected || pp.circleRadius,
+      ['boolean', ['feature-state', 'hovered'], false], pp.circleRadiusSelected || pp.circleRadius,
+      pp.circleRadius,
+    ]);
+    map.setPaintProperty(id, 'circle-stroke-width', pp.lineWidth);
+    map.setPaintProperty(id, 'circle-opacity', pp.fillOpacity);
+  } else {
+    setPaintProperties(id, pp);
+  }
 }
 
 /**
@@ -247,7 +266,17 @@ export function activate(id, pp) {
  */
 export function deactivate(id, pp) {
   if (layers[id]) layers[id].mode = 'inactive';
-  setPaintProperties(id, pp);
+  if (layers[id]?.selectionOption) {
+    // Selector mode: keep feature-state expressions but use inactive colors
+    // (selected state still works but shows inactive-selected colors)
+    map.setPaintProperty(id, 'circle-stroke-color', pp.lineColor);
+    map.setPaintProperty(id, 'circle-color', pp.fillColor);
+    map.setPaintProperty(id, 'circle-radius', pp.circleRadius);
+    map.setPaintProperty(id, 'circle-stroke-width', pp.lineWidth);
+    map.setPaintProperty(id, 'circle-opacity', pp.fillOpacity);
+  } else {
+    setPaintProperties(id, pp);
+  }
 }
 
 /**
@@ -307,9 +336,10 @@ function mouseLeave() {
 function clickSingle(e) {
   if (!e.features || e.features.length === 0) return;
   const layerId = e.features[0].source;
-  if (selectedIndex !== null) deselect(layerId, [selectedIndex]);
-  selectedIndex = e.features[0].id;
-  select(layerId, [selectedIndex]);
+  const clickedIndex = e.features[0].properties.index;
+  deselectAll(layerId);
+  selectedIndex = clickedIndex;
+  select(layerId, [clickedIndex]);
   featureClicked(layerId, e.features[0]);
 }
 
@@ -334,21 +364,32 @@ function clickMultiple(e) {
 // ── Selector: selection helpers ──────────────────────────────────────
 
 function select(layerId, indices) {
+  const features = layers[layerId]?.data?.features;
+  if (!features) return;
   for (const idx of indices) {
-    map.setFeatureState({ source: layerId, id: idx }, { selected: true });
+    const f = features.find(f => f.properties.index === idx);
+    if (f) f.properties._selected = true;
   }
+  // Update the source to trigger re-render
+  const src = map.getSource(layerId);
+  if (src && layers[layerId]?.data) src.setData(layers[layerId].data);
 }
 
 function deselect(layerId, indices) {
+  const features = layers[layerId]?.data?.features;
+  if (!features) return;
   for (const idx of indices) {
-    map.setFeatureState({ source: layerId, id: idx }, { selected: false });
+    const f = features.find(f => f.properties.index === idx);
+    if (f) f.properties._selected = false;
   }
+  const src = map.getSource(layerId);
+  if (src && layers[layerId]?.data) src.setData(layers[layerId].data);
 }
 
 function deselectAll(layerId) {
   const features = layers[layerId]?.data?.features;
   if (!features) return;
   for (let i = 0; i < features.length; i++) {
-    map.setFeatureState({ source: layerId, id: i }, { selected: false });
+    features[i].properties._selected = false;
   }
 }

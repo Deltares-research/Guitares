@@ -70,6 +70,9 @@ class CircleLayer(Layer):
             self.index = index
 
         if self.selector:
+            # Drop any pre-existing 'index' column to avoid conflicts with promoteId
+            if "index" in data.columns:
+                data = data.drop(columns=["index"])
             data["index"] = range(len(data))
 
         pp = self.get_paint_props()
@@ -164,6 +167,9 @@ class CircleLayer(Layer):
             "activate" if self.selector else "setPaintProperties",
             arglist=[self.map_id, pp],
         )
+        # Re-select the current index so the active point is highlighted
+        if self.selector and self.index is not None:
+            self.select_by_index(self.index)
         if self.big_data:
             self.update()
 

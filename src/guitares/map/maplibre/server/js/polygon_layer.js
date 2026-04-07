@@ -65,7 +65,7 @@ export function addLayer(id, data, pp, options) {
   mp.addSource(id, {
     type: 'geojson',
     data: data,
-    promoteId: selector ? 'index' : (opts.hoverProperty || 'index'),
+    promoteId: opts.hoverProperty || 'index',
     generateId: !selector,
   });
 
@@ -102,14 +102,12 @@ export function addLayer(id, data, pp, options) {
       paint: {
         'fill-color': [
           'case',
-          ['boolean', ['feature-state', 'selected'], false], opts.fillColorSelected || fillColor,
-          ['boolean', ['feature-state', 'hovered'], false], opts.fillColorHover || fillColor,
+          ['boolean', ['get', '_selected'], false], opts.fillColorSelected || fillColor,
           fillColor,
         ],
         'fill-opacity': [
           'case',
-          ['boolean', ['feature-state', 'selected'], false], opts.fillOpacitySelected || fillOpacity,
-          ['boolean', ['feature-state', 'hovered'], false], opts.fillOpacityHover || fillOpacity,
+          ['boolean', ['get', '_selected'], false], opts.fillOpacitySelected || fillOpacity,
           fillOpacity,
         ],
         'fill-outline-color': 'transparent',
@@ -138,18 +136,17 @@ export function addLayer(id, data, pp, options) {
   if (selector) {
     linePaint['line-color'] = [
       'case',
-      ['boolean', ['feature-state', 'selected'], false], opts.lineColorSelected || lineColor,
+      ['boolean', ['get', '_selected'], false], opts.lineColorSelected || lineColor,
       lineColor,
     ];
     linePaint['line-opacity'] = [
       'case',
-      ['boolean', ['feature-state', 'selected'], false], opts.lineOpacitySelected || lineOpacity,
+      ['boolean', ['get', '_selected'], false], opts.lineOpacitySelected || lineOpacity,
       lineOpacity,
     ];
     linePaint['line-width'] = [
       'case',
-      ['boolean', ['feature-state', 'selected'], false], opts.lineWidthSelected || lineWidth,
-      ['boolean', ['feature-state', 'hovered'], false], opts.lineWidthHover || lineWidth,
+      ['boolean', ['get', '_selected'], false], opts.lineWidthSelected || lineWidth,
       lineWidth,
     ];
   }
@@ -208,7 +205,6 @@ export function addLayer(id, data, pp, options) {
     }
 
     mp.once('idle', () => {
-      deselectAll(id);
       layerAdded(id);
     });
 
@@ -311,49 +307,58 @@ function mouseLeave() {
 function clickSingle(e) {
   if (!e.features || e.features.length === 0) return;
   const layerId = e.features[0].source;
-  if (selectedIndex !== null) deselect(layerId, [selectedIndex]);
-  selectedIndex = e.features[0].id;
-  select(layerId, [selectedIndex]);
+  const clickedIndex = e.features[0].properties.index;
+  deselectAll(layerId);
+  selectedIndex = clickedIndex;
+  select(layerId, [clickedIndex]);
   featureClicked(layerId, e.features[0]);
 }
 
 function clickMultiple(e) {
   if (!e.features || e.features.length === 0) return;
   const layerId = e.features[0].source;
-  const index = e.features[0].id;
-  const state = map.getFeatureState({ source: layerId, id: index });
-  if (state.selected) {
-    deselect(layerId, [index]);
-  } else {
-    select(layerId, [index]);
+  const clickedIndex = e.features[0].properties.index;
+  const features = layers[layerId]?.data?.features;
+  if (!features) return;
+  const f = features.find(f => f.properties.index === clickedIndex);
+  if (f) {
+    f.properties._selected = !f.properties._selected;
   }
-  selectedFeatures = [];
-  for (let i = 0; i < layers[layerId].data.features.length; i++) {
-    const fs = map.getFeatureState({ source: layerId, id: i });
-    if (fs.selected) selectedFeatures.push(layers[layerId].data.features[i]);
-  }
+  const src = map.getSource(layerId);
+  if (src && layers[layerId]?.data) src.setData(layers[layerId].data);
+  selectedFeatures = features.filter(f => f.properties._selected);
   featureClicked(layerId, selectedFeatures);
 }
 
 // ── Selector: selection helpers ──────────────────────────────────────
 
 function select(layerId, indices) {
+  const features = layers[layerId]?.data?.features;
+  if (!features) return;
   for (const idx of indices) {
-    map.setFeatureState({ source: layerId, id: idx }, { selected: true });
+    const f = features.find(f => f.properties.index === idx);
+    if (f) f.properties._selected = true;
   }
+  const src = map.getSource(layerId);
+  if (src && layers[layerId]?.data) src.setData(layers[layerId].data);
 }
 
 function deselect(layerId, indices) {
+  const features = layers[layerId]?.data?.features;
+  if (!features) return;
   for (const idx of indices) {
-    map.setFeatureState({ source: layerId, id: idx }, { selected: false });
+    const f = features.find(f => f.properties.index === idx);
+    if (f) f.properties._selected = false;
   }
+  const src = map.getSource(layerId);
+  if (src && layers[layerId]?.data) src.setData(layers[layerId].data);
 }
 
 function deselectAll(layerId) {
   const features = layers[layerId]?.data?.features;
   if (!features) return;
   for (let i = 0; i < features.length; i++) {
-    map.setFeatureState({ source: layerId, id: i }, { selected: false });
+    features[i].properties._selected = false;
   }
 }
 

@@ -240,8 +240,14 @@ export function addMap() {
     map.addControl(draw, 'top-left');
     // Load icons
     iconUrls.forEach(async (iconUrl) => {
-      var image = await map.loadImage(iconUrl);
-      map.addImage(iconUrl, image.data);
+      try {
+        const image = await map.loadImage(iconUrl);
+        if (!map.hasImage(iconUrl)) {
+          map.addImage(iconUrl, image.data);
+        }
+      } catch (e) {
+        // Silently ignore icon loading errors (e.g. DOMException from duplicate adds)
+      }
     });
     mapLoaded();
   });
@@ -539,6 +545,31 @@ function onPointRightClicked(e) {
   map.getCanvas().style.cursor = '';
   window.currentCursor = '';
   map.off('click', onPointClicked);
+}
+
+/**
+ * Show a popup with an iframe at the given coordinates.
+ * @param {object} options
+ * @param {number} options.lon - Longitude.
+ * @param {number} options.lat - Latitude.
+ * @param {string} options.url - URL to load in the iframe.
+ * @param {number} [options.width=520] - Popup width in pixels.
+ * @param {number} [options.height=320] - Popup height in pixels.
+ */
+export function showPopup({lon, lat, url, width = 520, height = 320} = {}) {
+  // Remove existing popup if any
+  if (window._iframePopup) {
+    window._iframePopup.remove();
+  }
+  const html = `<iframe src="${url}" style="width:${width}px;height:${height}px;border:none;"></iframe>`;
+  window._iframePopup = new maplibregl.Popup({
+    closeOnClick: true,
+    closeButton: true,
+    maxWidth: `${width + 40}px`,
+  })
+    .setLngLat([lon, lat])
+    .setHTML(html)
+    .addTo(map);
 }
 
 function onMouseMoved(e) {

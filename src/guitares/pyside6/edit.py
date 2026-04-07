@@ -98,10 +98,13 @@ class Edit(QLineEdit):
 
         # Do some range checking here ...
 
+        # Store old value before updating
+        group = self.element.variable_group
+        name = self.element.variable
+        oldval = self.element.getvar(group, name)
+
         # Update value in variable dict
         if self.okay:
-            group = self.element.variable_group
-            name = self.element.variable
             self.element.setvar(group, name, newval)
             self.setStyleSheet("")
         else:
@@ -113,14 +116,25 @@ class Edit(QLineEdit):
 
         try:
             if self.okay and self.isEnabled() and self.element.callback:
-                group = self.element.variable_group
-                name = self.element.variable
-                val = newval
-                self.element.callback(val, self)
-                # Update GUI
+                self.element.callback(newval, self)
             self.element.window.update()
-        except Exception:
+        except Exception as e:
             traceback.print_exc()
+            # Revert the GUI variable to the old value
+            self.element.setvar(group, name, oldval)
+            # Show validation errors in a warning dialog
+            error_msg = str(e)
+            if hasattr(e, "errors"):
+                msgs = []
+                for err in e.errors():
+                    loc = " → ".join(str(part) for part in err.get("loc", []))
+                    msgs.append(f"{loc}: {err.get('msg', '')}")
+                error_msg = "\n".join(msgs)
+            try:
+                self.element.window.dialog_warning(error_msg)
+            except Exception:
+                pass
+            self.element.window.update()
 
     def set_geometry(self) -> None:
         """Position and size the editor and its label."""

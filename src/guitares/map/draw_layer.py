@@ -104,6 +104,23 @@ class DrawLayer(Layer):
             arglist=[self.map_id, "active", self.paint_props, self.shape],
         )
 
+    def set_paint_property(self, key: str, value: Any) -> None:
+        """Update a paint property on this draw layer.
+
+        Parameters
+        ----------
+        key : str
+            Property name (e.g. ``"rotate"``).
+        value : Any
+            New value.
+        """
+        self.paint_props[key] = value
+        self.map.runjs(
+            "/js/draw_layer.js",
+            "setPaintProperty",
+            arglist=[self.map_id, key, value],
+        )
+
     def set_mode(self, mode: str) -> None:
         """Set mode of layer. Can be active, inactive or invisible."""
         self.mode = mode
@@ -391,9 +408,18 @@ class DrawLayer(Layer):
         self.set_gdf(feature_collection, index)
 
         if self.shape == "rectangle":
-            # Need to set rectangle geometry
+            # Compute x0, y0, dx, dy from the map CRS geometry
             geom = self.gdf.loc[index, "geometry"]
-            x0, y0, dx, dy, rotation = get_rectangle_geometry(geom)
+            x0, y0, dx, dy, _ = get_rectangle_geometry(geom)
+
+            # Compute rotation using geodetic bearing of the first edge
+            # in EPSG:4326. This avoids meridian convergence issues that
+            # arise when computing atan2 on projected coordinates.
+            geom_4326 = gpd.GeoDataFrame.from_features(
+                feature_collection, crs=4326
+            ).iloc[index].geometry
+            rotation = _geodetic_edge_bearing(geom_4326)
+
             self.gdf.loc[index, "x0"] = x0
             self.gdf.loc[index, "y0"] = y0
             self.gdf.loc[index, "dx"] = dx
@@ -535,6 +561,47 @@ class DrawLayer(Layer):
             self.set_visibility(False)
 
 
+def _geodetic_edge_bearing(geom: Any) -> float:
+    """Compute the rotation of a rectangle from its first edge in EPSG:4326.
+
+    Uses ``atan2`` on the coordinate differences with a cos(lat)
+    correction for longitude, giving the great-circle initial bearing.
+    This matches what the user sees on a Web Mercator map: a horizontal
+    edge at constant latitude gives exactly 0 rotation.
+
+    Parameters
+    ----------
+    geom : shapely.geometry.Polygon
+        Rectangle polygon in EPSG:4326.
+
+    Returns
+    -------
+    float
+        Rotation in radians (CCW from east). Zero means the first edge
+        points east.
+    """
+    xx, yy = geom.exterior.coords.xy
+    # Use lower-left (vertex 0) to upper-left (vertex 3) edge.
+    # For an unrotated rectangle this edge is due north (dlon=0),
+    # so atan2 gives exactly pi/2 with no cos(lat) correction needed.
+    lon0, lat0 = float(xx[0]), float(yy[0])
+    lon3, lat3 = float(xx[3]), float(yy[3])
+
+    mid_lat = math.radians((lat0 + lat3) / 2)
+    dx = (lon3 - lon0) * math.cos(mid_lat)
+    dy = lat3 - lat0
+
+    # atan2(dy, dx) gives angle from east; subtract pi/2 to get
+    # rotation relative to north-pointing edge
+    rotation = math.atan2(dy, dx) - math.pi / 2
+
+    # Snap small angles to zero
+    if abs(rotation) < 1e-6:
+        rotation = 0.0
+
+    return rotation
+
+
 def get_rectangle_geometry(geom: Any) -> Tuple[float, float, float, float, float]:
     """Extract origin, dimensions, and rotation from a rectangle polygon.
 
@@ -553,8 +620,8 @@ def get_rectangle_geometry(geom: Any) -> Tuple[float, float, float, float, float
     y0 = float(yy[0])
     dx = math.sqrt(float(xx[1] - xx[0]) ** 2 + float(yy[1] - yy[0]) ** 2)
     dy = math.sqrt(float(xx[2] - xx[1]) ** 2 + float(yy[2] - yy[1]) ** 2)
-    rotation = float((math.atan2(yy[1] - yy[0], xx[1] - xx[0])))
-    if abs(rotation * 180 / math.pi) < 1.0:
+    rotation = float(math.atan2(yy[1] - yy[0], xx[1] - xx[0]))
+    if abs(rotation * 180 / math.pi) < 0.1:
         rotation = 0.0
     return x0, y0, dx, dy, rotation
 
