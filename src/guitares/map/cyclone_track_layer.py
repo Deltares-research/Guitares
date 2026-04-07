@@ -126,19 +126,11 @@ class CycloneTrackLayer(Layer):
 
         # First add the line layer
         line_id = f"{self.map_id}.track_line"
+        pp = self.get_paint_props()
         self.map.runjs(
             "/js/line_layer.js",
             "addLayer",
-            arglist=[
-                line_id,
-                track_gdf,
-                self.line_color,
-                self.line_width,
-                self.line_opacity,
-                self.fill_color,
-                self.fill_opacity,
-                0,
-            ],
+            arglist=[line_id, track_gdf, pp, {}],
         )
 
         if self.show_icons:

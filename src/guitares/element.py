@@ -143,6 +143,7 @@ class Element:
         self.fraction_expanded: float = 0.5
         self.multiselection: bool = False
         self.sortable: bool = True
+        self.editable: bool = False
         self.selection_type: str = "single"
         self.colormap: Any = None
         self.ready: bool = False
@@ -390,6 +391,9 @@ class Element:
         if "sortable" in dct:
             self.sortable = dct["sortable"]
 
+        if "editable" in dct:
+            self.editable = dct["editable"]
+
         if "map_style" in dct:
             self.map_style = dct["map_style"]
 
@@ -520,6 +524,10 @@ class Element:
         elif self.style == "tableview":
             mod = importlib.import_module(f"guitares.{self.gui.framework}.tableview")
             self.widget = mod.TableView(self)
+
+        elif self.style == "table":
+            mod = importlib.import_module(f"guitares.{self.gui.framework}.table")
+            self.widget = mod.Table(self)
 
         elif self.style == "checkbox":
             mod = importlib.import_module(f"guitares.{self.gui.framework}.checkbox")

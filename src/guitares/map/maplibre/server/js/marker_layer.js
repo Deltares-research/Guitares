@@ -37,11 +37,10 @@ export function addLayer(id, data) {
     data: data
   });
 
-  var prop0 = map.getSource(id)._data.features[0].properties;
-  var iconSize = prop0.icon_size;
-  if (!iconSize) { iconSize = 1.0; }
-  var iconColor = prop0.icon_color;
-  if (!iconColor) { iconColor = 'red'; }
+  var features = (data && data.features) ? data.features : [];
+  var prop0 = features.length > 0 ? features[0].properties : {};
+  var iconSize = (prop0 && prop0.icon_size) ? prop0.icon_size : 1.0;
+  var iconColor = (prop0 && prop0.icon_color) ? prop0.icon_color : 'red';
 
   map.addLayer({
     id: id,

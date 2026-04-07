@@ -13,6 +13,8 @@
  */
 
 import { DrawRectangle } from '/js/mapbox-gl-draw-rectangle-mode.js';
+import { DrawFixedDistance } from '/js/draw_fixed_distance_mode.js';
+import { DrawSpline } from '/js/draw_spline_mode.js';
 import { drawStyles } from '/js/draw_styles.js';
 import { SRMode, SRCenter } from '/js/mapbox_gl_draw_scale_rotate_mode.js';
 
@@ -49,6 +51,8 @@ let selectedFeatureId;
 
 modes = MapboxDraw.modes;
 modes.draw_rectangle = DrawRectangle;
+modes.draw_fixed_distance = DrawFixedDistance;
+modes.draw_spline = DrawSpline;
 modes.scale_rotate_mode = SRMode;
 
 draw = new MapboxDraw({
@@ -239,6 +243,44 @@ export function drawPolyline(id) {
   setLayerMode(id, 'active');
   draw.changeMode('draw_line_string');
   // Hide endpoints while drawing
+  if (hasEndpoints(id)) _hideEndpoints(id);
+  map.off('draw.create', createListener);
+  createListener = polylineCreated;
+  map.on('draw.create', createListener);
+}
+
+/**
+ * Start drawing a polyline with fixed-distance segments.
+ * @param {string} id - Target draw layer ID.
+ * @param {number} distance - Segment length in kilometres.
+ */
+export function drawPolylineFixedDistance(id, distance) {
+  map.getCanvas().style.cursor = "crosshair";
+  setDrawEvents();
+  activeLayerId = id;
+  setLayerMode(id, 'active');
+  draw.changeMode('draw_fixed_distance', { distance: distance });
+  if (hasEndpoints(id)) _hideEndpoints(id);
+  map.off('draw.create', createListener);
+  createListener = polylineCreated;
+  map.on('draw.create', createListener);
+}
+
+/**
+ * Start drawing a smooth spline polyline.
+ * @param {string} id - Target draw layer ID.
+ * @param {number} [resolution] - Number of output points (default 10000).
+ * @param {number} [sharpness] - Spline sharpness 0–1 (default 0.85).
+ */
+export function drawSpline(id, resolution, sharpness) {
+  map.getCanvas().style.cursor = "crosshair";
+  setDrawEvents();
+  activeLayerId = id;
+  setLayerMode(id, 'active');
+  draw.changeMode('draw_spline', {
+    resolution: resolution || 10000,
+    sharpness: sharpness || 0.85,
+  });
   if (hasEndpoints(id)) _hideEndpoints(id);
   map.off('draw.create', createListener);
   createListener = polylineCreated;

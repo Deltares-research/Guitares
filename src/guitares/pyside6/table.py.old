@@ -1,14 +1,13 @@
-"""PySide6 table view widget with row/column selection and sorting support."""
+"""PySide6 table view widget (legacy version using pyqtProperty) for Guitares."""
 
 import copy
 import traceback
 from enum import Enum
-from typing import Any, List, Optional
+from typing import Any, List
 
 import pandas as pd
 from PySide6 import QtCore
-from PySide6.QtCore import QItemSelection, QItemSelectionModel, Qt
-from PySide6.QtWidgets import QAbstractItemView, QLabel, QTableView
+from PySide6.QtWidgets import QLabel, QTableView
 
 
 class DataFrameModel(QtCore.QAbstractTableModel):
@@ -43,10 +42,9 @@ class DataFrameModel(QtCore.QAbstractTableModel):
         """
         return self._dataframe
 
-    # dataFrame = QtCore.pyqtProperty(pd.DataFrame, fget=dataFrame, fset=setDataFrame)
-    dataFrame = QtCore.Property(pd.DataFrame, fget=dataFrame, fset=setDataFrame)
+    dataFrame = QtCore.pyqtProperty(pd.DataFrame, fget=dataFrame, fset=setDataFrame)
 
-    @QtCore.Slot(int, QtCore.Qt.Orientation, result=str)
+    @QtCore.pyqtSlot(int, QtCore.Qt.Orientation, result=str)
     def headerData(
         self,
         section: int,
@@ -67,14 +65,14 @@ class DataFrameModel(QtCore.QAbstractTableModel):
         Returns
         -------
         Any
-            The header string or None.
+            The header string or QVariant.
         """
         if role == QtCore.Qt.DisplayRole:
             if orientation == QtCore.Qt.Horizontal:
                 return self._dataframe.columns[section]
             else:
                 return str(self._dataframe.index[section])
-        # return QtCore.QVariant()
+        return QtCore.QVariant()
 
     def rowCount(self, parent: Any = QtCore.QModelIndex()) -> int:
         """Return the number of rows.
@@ -137,14 +135,11 @@ class DataFrameModel(QtCore.QAbstractTableModel):
         val = self._dataframe.iloc[row][col]
         if role == QtCore.Qt.DisplayRole:
             return str(val)
-        elif role == QtCore.Qt.TextAlignmentRole:
-            if dt in ("float64", "int64") or dt == float or dt == int:
-                return int(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
-            return int(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
         elif role == DataFrameModel.ValueRole:
             return val
-        elif role == DataFrameModel.DtypeRole:
+        if role == DataFrameModel.DtypeRole:
             return dt
+        return QtCore.QVariant()
 
     def roleNames(self) -> dict:
         """Return the mapping of roles to role names.
@@ -183,14 +178,14 @@ class DataFrameModel(QtCore.QAbstractTableModel):
 class SelectionTable(Enum):
     """Table selection mode enumeration."""
 
-    none = 0
-    single = 1
-    multiple = 2
-    extended = 3
+    NoSelection = 0
+    SingleSelection = 1
+    MultiSelection = 2
+    ExtendedSelection = 3
 
 
 class TableView(QTableView):
-    """Table view with row or column selection, sorting, and DataFrame backing.
+    """Table view widget linked to a pandas DataFrame via Guitares variables.
 
     Parameters
     ----------
@@ -211,64 +206,34 @@ class TableView(QTableView):
         # Connect callback when event happens
         self.clicked.connect(self.callback)
 
-        # Row or column selection
-        selection_direction = QTableView.SelectRows
-        if hasattr(self.element, "selection_direction"):
-            if element.selection_direction == "column":
-                selection_direction = QTableView.SelectColumns
-                if self.element.sortable:
-                    raise ValueError("Column selection cannot be sortable")
-        self.setSelectionBehavior(selection_direction)
-
-        # Ensure horizontal scrollbar appears when table is wider than widget
-        self.horizontalHeader().setStretchLastSection(False)
-
-        # Sorting
-        if self.element.sortable and selection_direction == QTableView.SelectRows:
-            self.setSortingEnabled(True)
+        # If the header is clicked, the table is sorted and header_clicker is called
+        if self.element.sortable:
             self.horizontalHeader().sectionClicked.connect(self.header_clicked)
+            self.setSortingEnabled(True)
             self.horizontalHeader().setSortIndicatorShown(True)
-        elif selection_direction == QTableView.SelectColumns:
-            self.horizontalHeader().sectionClicked.connect(self.callback)
-        else:
-            self.setSortingEnabled(False)
 
         self.set_geometry()
 
-        # Set selection mode
-        selection_mode: Optional[QAbstractItemView.SelectionMode] = None
-        self.multi_selection: bool = False
-        if hasattr(self.element, "selection_type"):
-            if self.element.selection_type == "none":
-                selection_mode = QAbstractItemView.SelectionMode.NoSelection
-            elif self.element.selection_type == "single":
-                selection_mode = QAbstractItemView.SelectionMode.SingleSelection
-            elif self.element.selection_type == "multiple":
-                selection_mode = QAbstractItemView.SelectionMode.MultiSelection
-                self.multi_selection = True
-            elif self.element.selection_type == "extended":
-                selection_mode = QAbstractItemView.SelectionMode.ExtendedSelection
-                self.multi_selection = True
+        # This allows for whole row selection and not individual cells
+        self.setSelectionBehavior(QTableView.SelectRows)
 
-        if selection_mode:
-            self.setSelectionMode(selection_mode)
+        # Set selection mode
+        selection_type = None
+        if hasattr(self.element, "selection_type"):
+            selection_type = getattr(SelectionTable, element.selection_type, None)
+        self.multi_selection = False
+        if selection_type:
+            self.setSelectionMode(selection_type.value)
+            if (
+                selection_type == SelectionTable.MultiSelection
+                or selection_type == SelectionTable.ExtendedSelection
+            ):
+                self.multi_selection = True
 
         self.execute_callback: bool = True
 
         self.sort_order: int = 0
         self.sort_column: int = 0
-
-    def resize_columns(self, df: pd.DataFrame) -> None:
-        """Resize columns based on the max character width in each column.
-
-        Parameters
-        ----------
-        df : pd.DataFrame
-            The DataFrame to measure.
-        """
-        for i, col in enumerate(df.columns):
-            max_char = max(max([len(str(x)) for x in df[col].values]), len(col))
-            self.element.widget.setColumnWidth(i, max_char * 10)
 
     def set(self) -> None:
         """Update the table contents and selection from the linked variables."""
@@ -278,26 +243,18 @@ class TableView(QTableView):
         )
         if df is not None:
             self.df = df  # Original unsorted dataframe
-            df_sorted = copy.copy(df.reset_index(drop=True))  # Sorted dataframe
-        else:
-            df_sorted = df
+            df_sorted = copy.copy(df.reset_index())  # Sorted dataframe
+            df_sorted = df_sorted.drop("index", axis=1)
+
         # Update items
         self.clearSpans()
         model = DataFrameModel(df_sorted)
         self.setModel(model)
-        # resizeColumnsToContents can be slow for large tables
-        if df_sorted.shape[0] * df_sorted.shape[1] > 1000:
-            self.resize_columns(df_sorted)
-        else:
-            self.resizeColumnsToContents()
+        self.resizeColumnsToContents()
         self.verticalHeader().setVisible(False)
 
         if self.element.sortable:
-            if self.sort_order == 0:
-                sort_order = Qt.AscendingOrder
-            else:
-                sort_order = Qt.DescendingOrder
-            self.sortByColumn(self.sort_column, sort_order)
+            self.sortByColumn(self.sort_column, self.sort_order)
 
         # In case no selection is used skip
         if not self.element.variable:
@@ -305,29 +262,15 @@ class TableView(QTableView):
 
         # Find indices in sorted dataframe
         indices = self.find_sorted_indices()
-        if self.selectionBehavior() == QTableView.SelectRows:
-            self.select_rows(indices)
-        elif self.selectionBehavior() == QTableView.SelectColumns:
-            self.select_cols(indices)
-        else:
-            raise ValueError("Selection behavior not recognized")
+        self.select_rows(indices)
         self.execute_callback = True
 
-
     def callback(self) -> None:
-        """Handle selection and fire the element callback."""
+        """Handle row click and fire the element callback."""
         # Find selected indices in the original dataframe
         if not self.element.variable:
             return
-        if self.selectionBehavior() == QTableView.SelectRows:
-            indices = self.find_original_indices()
-        elif self.selectionBehavior() == QTableView.SelectColumns:
-            # Column selection cannot be sorted
-            indices = [
-                index.column() for index in self.selectionModel().selectedColumns()
-            ]
-        else:
-            raise ValueError("Selection behavior not recognized")
+        indices = self.find_original_indices()
         # Set the new value
         name = self.element.variable
         group = self.element.variable_group
@@ -357,7 +300,7 @@ class TableView(QTableView):
         self.select_rows(indices)
 
     def select_rows(self, indices: List[int]) -> None:
-        """Select rows in the table by index using QItemSelection.
+        """Select rows in the table by index.
 
         Parameters
         ----------
@@ -365,33 +308,8 @@ class TableView(QTableView):
             The row indices to select.
         """
         self.selectionModel().clearSelection()
-        model = self.model()  # get data model for indexes.
-        selection = QItemSelection()
         for i in indices:
-            # Get the model index for selection.
-            model_index = model.index(i, 0)
-            # Select single row.
-            selection.select(model_index, model_index)
-        mode = QItemSelectionModel.Select | QtCore.QItemSelectionModel.Rows
-        # Apply the selection, using the row-wise mode.
-        self.selectionModel().select(selection, mode)
-
-    def select_cols(self, indices: List[int]) -> None:
-        """Select columns in the table by index using QItemSelection.
-
-        Parameters
-        ----------
-        indices : List[int]
-            The column indices to select.
-        """
-        self.selectionModel().clearSelection()
-        model = self.model()  # get data model for indexes.
-        selection = QItemSelection()
-        for i in indices:
-            model_index = model.index(0, i)
-            selection.select(model_index, model_index)
-        mode = QItemSelectionModel.Select | QtCore.QItemSelectionModel.Columns
-        self.selectionModel().select(selection, mode)
+            self.selectRow(i)
 
     def find_original_indices(self) -> List[int]:
         """Map selected rows in the sorted view back to the original DataFrame.
@@ -406,10 +324,7 @@ class TableView(QTableView):
         df = self.model()._dataframe
         for index in indices:
             row = df.iloc[index]
-            # Find the index of the row in df0 that matches row
-            index0 = df0.index[
-                df0.apply(lambda r: r.equals(row.drop("index")), axis=1)
-            ].tolist()[0]
+            index0 = df0.index[df0.apply(lambda r: r.equals(row), axis=1)].tolist()[0]
             indices[indices.index(index)] = index0
         return indices
 
@@ -425,11 +340,10 @@ class TableView(QTableView):
             self.element.variable_group, self.element.variable
         )
         df0 = self.df
-        # Drop the index column
-        df = self.model()._dataframe.drop("index", axis=1)
+        df = self.model()._dataframe
         indices = []
         for index in indices0:
-            row = df0.loc[index]
+            row = df0.iloc[index]
             index0 = df.index[df.apply(lambda r: r.equals(row), axis=1)].tolist()[0]
             indices.append(index0)
         return indices

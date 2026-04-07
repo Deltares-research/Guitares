@@ -232,12 +232,39 @@ class DrawLayer(Layer):
         gdf["rotation"] = rotation
         self.add_feature(gdf)
 
-    def draw(self) -> None:
-        """Activate drawing mode."""
+    def draw(
+        self,
+        fixed_distance: Optional[float] = None,
+        spline: bool = False,
+    ) -> None:
+        """Activate drawing mode.
+
+        Parameters
+        ----------
+        fixed_distance : float, optional
+            If provided, draw polyline segments of exactly this length
+            in kilometres. Only applicable to polyline shape.
+        spline : bool, optional
+            If True, draw a smooth Bézier spline through control points.
+            Only applicable to polyline shape.
+        """
         if self.shape == "polygon":
             self.map.runjs("/js/draw_layer.js", "drawPolygon", arglist=[self.map_id])
         elif self.shape == "polyline":
-            self.map.runjs("/js/draw_layer.js", "drawPolyline", arglist=[self.map_id])
+            if fixed_distance is not None:
+                self.map.runjs(
+                    "/js/draw_layer.js",
+                    "drawPolylineFixedDistance",
+                    arglist=[self.map_id, fixed_distance],
+                )
+            elif spline:
+                self.map.runjs(
+                    "/js/draw_layer.js",
+                    "drawSpline",
+                    arglist=[self.map_id],
+                )
+            else:
+                self.map.runjs("/js/draw_layer.js", "drawPolyline", arglist=[self.map_id])
         elif self.shape == "rectangle":
             self.map.runjs("/js/draw_layer.js", "drawRectangle", arglist=[self.map_id])
 
