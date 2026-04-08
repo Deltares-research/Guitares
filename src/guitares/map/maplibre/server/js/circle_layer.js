@@ -49,7 +49,7 @@ export function addLayer(id, data, pp, options) {
   const legend = document.getElementById('legend' + id);
   if (legend) legend.remove();
 
-  const sourceConfig = { type: 'geojson', data: data };
+  const sourceConfig = { type: 'geojson', data: data, promoteId: 'index' };
 
   map.addSource(id, sourceConfig);
 
@@ -65,18 +65,24 @@ export function addLayer(id, data, pp, options) {
     paint = {
       'circle-stroke-color': [
         'case',
+        ['boolean', ['feature-state', 'selected'], false], pp.lineColorSelected || pp.lineColor,
         ['boolean', ['get', '_selected'], false], pp.lineColorSelected || pp.lineColor,
+        ['boolean', ['feature-state', 'hovered'], false], pp.lineColorSelected || pp.lineColor,
         pp.lineColor,
       ],
       'circle-color': [
         'case',
+        ['boolean', ['feature-state', 'selected'], false], pp.fillColorSelected || pp.fillColor,
         ['boolean', ['get', '_selected'], false], pp.fillColorSelected || pp.fillColor,
+        ['boolean', ['feature-state', 'hovered'], false], pp.fillColorSelected || pp.fillColor,
         pp.fillColor,
       ],
       'circle-stroke-width': pp.lineWidth,
       'circle-radius': [
         'case',
+        ['boolean', ['feature-state', 'selected'], false], pp.circleRadiusSelected || pp.circleRadius,
         ['boolean', ['get', '_selected'], false], pp.circleRadiusSelected || pp.circleRadius,
+        ['boolean', ['feature-state', 'hovered'], false], pp.circleRadiusSelected || pp.circleRadius,
         pp.circleRadius,
       ],
       'circle-opacity': pp.fillOpacity,
@@ -340,7 +346,8 @@ function clickSingle(e) {
   deselectAll(layerId);
   selectedIndex = clickedIndex;
   select(layerId, [clickedIndex]);
-  featureClicked(layerId, e.features[0]);
+  const feature = e.features[0];
+  setTimeout(() => featureClicked(layerId, feature), 0);
 }
 
 function clickMultiple(e) {
@@ -367,29 +374,29 @@ function select(layerId, indices) {
   const features = layers[layerId]?.data?.features;
   if (!features) return;
   for (const idx of indices) {
+    map.setFeatureState({ source: layerId, id: idx }, { selected: true });
     const f = features.find(f => f.properties.index === idx);
     if (f) f.properties._selected = true;
   }
-  // Update the source to trigger re-render
-  const src = map.getSource(layerId);
-  if (src && layers[layerId]?.data) src.setData(layers[layerId].data);
 }
 
 function deselect(layerId, indices) {
   const features = layers[layerId]?.data?.features;
   if (!features) return;
   for (const idx of indices) {
+    map.setFeatureState({ source: layerId, id: idx }, { selected: false });
     const f = features.find(f => f.properties.index === idx);
     if (f) f.properties._selected = false;
   }
-  const src = map.getSource(layerId);
-  if (src && layers[layerId]?.data) src.setData(layers[layerId].data);
 }
 
 function deselectAll(layerId) {
   const features = layers[layerId]?.data?.features;
   if (!features) return;
   for (let i = 0; i < features.length; i++) {
-    features[i].properties._selected = false;
+    if (features[i].properties._selected) {
+      map.setFeatureState({ source: layerId, id: features[i].properties.index }, { selected: false });
+      features[i].properties._selected = false;
+    }
   }
 }

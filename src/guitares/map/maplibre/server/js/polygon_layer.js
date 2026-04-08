@@ -65,8 +65,7 @@ export function addLayer(id, data, pp, options) {
   mp.addSource(id, {
     type: 'geojson',
     data: data,
-    promoteId: opts.hoverProperty || 'index',
-    generateId: !selector,
+    promoteId: 'index',
   });
 
   const beforeId = findBeforeId(mp, opts.beforeIds) || 'dummy_layer_1';
@@ -102,12 +101,16 @@ export function addLayer(id, data, pp, options) {
       paint: {
         'fill-color': [
           'case',
+          ['boolean', ['feature-state', 'selected'], false], opts.fillColorSelected || fillColor,
           ['boolean', ['get', '_selected'], false], opts.fillColorSelected || fillColor,
+          ['boolean', ['feature-state', 'hovered'], false], opts.fillColorHover || fillColor,
           fillColor,
         ],
         'fill-opacity': [
           'case',
+          ['boolean', ['feature-state', 'selected'], false], opts.fillOpacitySelected || fillOpacity,
           ['boolean', ['get', '_selected'], false], opts.fillOpacitySelected || fillOpacity,
+          ['boolean', ['feature-state', 'hovered'], false], opts.fillOpacityHover || fillOpacity,
           fillOpacity,
         ],
         'fill-outline-color': 'transparent',
@@ -136,17 +139,21 @@ export function addLayer(id, data, pp, options) {
   if (selector) {
     linePaint['line-color'] = [
       'case',
+      ['boolean', ['feature-state', 'selected'], false], opts.lineColorSelected || lineColor,
       ['boolean', ['get', '_selected'], false], opts.lineColorSelected || lineColor,
       lineColor,
     ];
     linePaint['line-opacity'] = [
       'case',
+      ['boolean', ['feature-state', 'selected'], false], opts.lineOpacitySelected || lineOpacity,
       ['boolean', ['get', '_selected'], false], opts.lineOpacitySelected || lineOpacity,
       lineOpacity,
     ];
     linePaint['line-width'] = [
       'case',
+      ['boolean', ['feature-state', 'selected'], false], opts.lineWidthSelected || lineWidth,
       ['boolean', ['get', '_selected'], false], opts.lineWidthSelected || lineWidth,
+      ['boolean', ['feature-state', 'hovered'], false], opts.lineWidthHover || lineWidth,
       lineWidth,
     ];
   }
@@ -311,7 +318,9 @@ function clickSingle(e) {
   deselectAll(layerId);
   selectedIndex = clickedIndex;
   select(layerId, [clickedIndex]);
-  featureClicked(layerId, e.features[0]);
+  // Defer Python callback so the render frame completes first (instant visual feedback)
+  const feature = e.features[0];
+  setTimeout(() => featureClicked(layerId, feature), 0);
 }
 
 function clickMultiple(e) {
@@ -336,29 +345,32 @@ function select(layerId, indices) {
   const features = layers[layerId]?.data?.features;
   if (!features) return;
   for (const idx of indices) {
+    // Instant visual via feature-state
+    map.setFeatureState({ source: layerId, id: idx }, { selected: true });
+    // Keep data property in sync for activate/deactivate
     const f = features.find(f => f.properties.index === idx);
     if (f) f.properties._selected = true;
   }
-  const src = map.getSource(layerId);
-  if (src && layers[layerId]?.data) src.setData(layers[layerId].data);
 }
 
 function deselect(layerId, indices) {
   const features = layers[layerId]?.data?.features;
   if (!features) return;
   for (const idx of indices) {
+    map.setFeatureState({ source: layerId, id: idx }, { selected: false });
     const f = features.find(f => f.properties.index === idx);
     if (f) f.properties._selected = false;
   }
-  const src = map.getSource(layerId);
-  if (src && layers[layerId]?.data) src.setData(layers[layerId].data);
 }
 
 function deselectAll(layerId) {
   const features = layers[layerId]?.data?.features;
   if (!features) return;
   for (let i = 0; i < features.length; i++) {
-    features[i].properties._selected = false;
+    if (features[i].properties._selected) {
+      map.setFeatureState({ source: layerId, id: features[i].properties.index }, { selected: false });
+      features[i].properties._selected = false;
+    }
   }
 }
 

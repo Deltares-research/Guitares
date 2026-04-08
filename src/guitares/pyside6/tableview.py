@@ -278,7 +278,7 @@ class TableView(QTableView):
         )
         if df is not None:
             self.df = df  # Original unsorted dataframe
-            df_sorted = copy.copy(df.reset_index(drop=True))  # Sorted dataframe
+            df_sorted = copy.copy(df.reset_index())  # Sorted dataframe (includes 'index' column for mapping)
         else:
             df_sorted = df
         # Update items
@@ -291,6 +291,11 @@ class TableView(QTableView):
         else:
             self.resizeColumnsToContents()
         self.verticalHeader().setVisible(False)
+
+        # Hide the 'index' column (used internally for mapping sorted → original rows)
+        if "index" in df_sorted.columns:
+            idx_col = list(df_sorted.columns).index("index")
+            self.setColumnHidden(idx_col, True)
 
         if self.element.sortable:
             if self.sort_order == 0:

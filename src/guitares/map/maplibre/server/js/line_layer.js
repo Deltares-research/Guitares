@@ -45,7 +45,7 @@ export function addLayer(id, data, pp, options) {
   if (map.getLayer(circleId)) map.removeLayer(circleId);
   if (map.getSource(id)) map.removeSource(id);
 
-  const sourceConfig = { type: 'geojson', data: data };
+  const sourceConfig = { type: 'geojson', data: data, promoteId: 'index' };
 
   map.addSource(id, sourceConfig);
 
@@ -60,11 +60,13 @@ export function addLayer(id, data, pp, options) {
   if (selector && pp.lineColorSelected) {
     linePaint['line-color'] = [
       'case',
+      ['boolean', ['feature-state', 'selected'], false], pp.lineColorSelected,
       ['boolean', ['get', '_selected'], false], pp.lineColorSelected,
       pp.lineColor,
     ];
     linePaint['line-width'] = [
       'case',
+      ['boolean', ['feature-state', 'selected'], false], pp.lineWidthSelected || pp.lineWidth,
       ['boolean', ['get', '_selected'], false], pp.lineWidthSelected || pp.lineWidth,
       pp.lineWidth,
     ];
@@ -275,7 +277,8 @@ function clickSingle(e) {
   deselectAll(layerId);
   selectedIndex = clickedIndex;
   select(layerId, [clickedIndex]);
-  featureClicked(layerId, e.features[0]);
+  const feature = e.features[0];
+  setTimeout(() => featureClicked(layerId, feature), 0);
 }
 
 function clickMultiple(e) {
@@ -302,28 +305,29 @@ function select(layerId, indices) {
   const features = layers[layerId]?.data?.features;
   if (!features) return;
   for (const idx of indices) {
+    map.setFeatureState({ source: layerId, id: idx }, { selected: true });
     const f = features.find(f => f.properties.index === idx);
     if (f) f.properties._selected = true;
   }
-  const src = map.getSource(layerId);
-  if (src && layers[layerId]?.data) src.setData(layers[layerId].data);
 }
 
 function deselect(layerId, indices) {
   const features = layers[layerId]?.data?.features;
   if (!features) return;
   for (const idx of indices) {
+    map.setFeatureState({ source: layerId, id: idx }, { selected: false });
     const f = features.find(f => f.properties.index === idx);
     if (f) f.properties._selected = false;
   }
-  const src = map.getSource(layerId);
-  if (src && layers[layerId]?.data) src.setData(layers[layerId].data);
 }
 
 function deselectAll(layerId) {
   const features = layers[layerId]?.data?.features;
   if (!features) return;
   for (let i = 0; i < features.length; i++) {
-    features[i].properties._selected = false;
+    if (features[i].properties._selected) {
+      map.setFeatureState({ source: layerId, id: features[i].properties.index }, { selected: false });
+      features[i].properties._selected = false;
+    }
   }
 }
