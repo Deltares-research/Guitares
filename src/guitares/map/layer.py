@@ -360,15 +360,7 @@ class Layer:
 
                 self.layer[layer_id] = DrawLayer(self.map, layer_id, map_id, **kwargs)
 
-            # elif type == "image":
-            #    from .image_layer import ImageLayer
-            #    self.layer[layer_id] = ImageLayer(self.map, layer_id, map_id, **kwargs)
-
-            # elif type == "raster":
-            #    from .raster_layer import RasterLayer
-            #    self.layer[layer_id] = RasterLayer(self.map, layer_id, map_id, **kwargs)
-
-            elif type == "raster_image":
+            elif type == "raster_image" or type == "raster" or type == "image": # keep raster and image for backward compatibility
                 from .raster_image_layer import RasterImageLayer
 
                 self.layer[layer_id] = RasterImageLayer(

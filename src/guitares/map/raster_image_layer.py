@@ -77,7 +77,7 @@ class RasterImageLayer(Layer):
         self.data_has_map_overlay = False
 
     def set_data(
-        self, data: Union[str, os.PathLike, xr.DataArray, Callable, Any]
+        self, data: Union[str, os.PathLike, xr.DataArray, Callable, Any], **kwargs
     ) -> None:
         """Set the data source and trigger an initial render.
 
@@ -149,6 +149,10 @@ class RasterImageLayer(Layer):
         # Generate continuous colorbar PNG if needed
         if isinstance(legend, str) and legend == "__plot_png__":
             legend = self._create_legend_png()
+
+        # Build legend from color_values if set on the layer
+        if legend is None and self.color_values is not None:
+            legend = self._build_legend_from_color_values()
 
         # Handle dateline crossing and send to map
         self._send_to_map(overlay_file, west, east, south, north, legend)
@@ -285,6 +289,40 @@ class RasterImageLayer(Layer):
                 fact = 64
             data = data.isel(x=slice(0, None, fact), y=slice(0, None, fact))
         return data
+
+    def _build_legend_from_color_values(self) -> Dict[str, Any]:
+        """Build a discrete legend dict from the layer's color_values.
+
+        Supports color_values entries with either:
+        - ``color`` (hex string) and ``text`` (label)
+        - ``rgb`` (tuple) and ``string`` (label)
+
+        Returns
+        -------
+        dict
+            Legend dict with ``title`` and ``contour`` list.
+        """
+        contour = []
+        for cv in self.color_values:
+            if "color" in cv:
+                color = cv["color"]
+            elif "rgb" in cv:
+                r, g, b = cv["rgb"]
+                color = f"#{int(r):02x}{int(g):02x}{int(b):02x}"
+            elif "hex" in cv:
+                color = cv["hex"]
+            else:
+                continue
+            text = cv.get("text") or cv.get("string", "")
+            if not text:
+                if "lower_value" in cv and "upper_value" in cv:
+                    text = f"{cv['lower_value']} - {cv['upper_value']}"
+                elif "lower_value" in cv:
+                    text = f">= {cv['lower_value']}"
+                elif "upper_value" in cv:
+                    text = f"< {cv['upper_value']}"
+            contour.append({"color": color, "text": text})
+        return {"title": self.legend_title, "contour": contour}
 
     def _build_legend_from_options(
         self, opts: Dict[str, Any]

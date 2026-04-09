@@ -25,11 +25,6 @@ class MaplibreExample:
                        server_path=self.server_path,                # path to the server
                        stylesheet="Combinear.qss")
         
-        # Get map styles and copy to gui variables
-        self.gui.setvar("example", "map_style_names", self.gui.map_styles)
-        self.gui.setvar("example", "map_style_styles", self.gui.map_styles)
-        self.gui.setvar("example", "map_style", self.gui.map_styles[0])
-
     def initialize(self):
 
         # Add a container layer

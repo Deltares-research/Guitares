@@ -15,9 +15,10 @@ export class BackgroundLayerSelector {
    * @param {Array<{id: string, name: string}>} layers - Available basemap layers.
    * @param {string} defaultStyle - ID of the initially selected style.
    */
-  constructor(layers, defaultStyle) {
+  constructor(layers, defaultStyle, onSelect) {
     this.layers = layers;
     this._selectedId = defaultStyle;
+    this._onSelect = onSelect || null;
     this._container = document.createElement("div");
     this._container.className = "maplibregl-ctrl";
 
@@ -73,7 +74,11 @@ export class BackgroundLayerSelector {
         card.classList.add("selected");
         this._selectedId = layer.id;
         panel.style.display = "none";
-        setMapStyle(layer.id);
+        if (this._onSelect) {
+          this._onSelect(layer.id);
+        } else {
+          setMapStyle(layer.id);
+        }
       });
 
       panel.appendChild(card);
@@ -113,10 +118,10 @@ export class BackgroundLayerSelector {
  *
  * @param {string} styleID - Key into the global `mapStyles` dictionary.
  */
-export function setMapStyle(styleID) {
-  console.log("Setting style to: " + styleID);
+export function setMapStyle(styleID, targetMap) {
+  const mp = targetMap || map;
 
-  const currentStyle = map.getStyle();
+  const currentStyle = mp.getStyle();
   const newStyle = Object.assign({}, mapStyles[styleID]);
 
   // Ensure any sources from the current style are copied across
@@ -135,5 +140,5 @@ export function setMapStyle(styleID) {
 
   newStyle.layers = [...newStyle.layers, ...appLayers];
 
-  map.setStyle(newStyle);
+  mp.setStyle(newStyle);
 }

@@ -1,60 +1,177 @@
-console.log("Adding Maplibre Compare Map ...")
+/**
+ * compare.js - Split-screen map comparison module.
+ *
+ * Sets up the QWebChannel bridge to Python, initializes two MapLibre GL maps
+ * with a compare slider, and exposes exported functions for map control
+ * (pan, zoom, layers, etc.) on both map panes.
+ */
 
+import { BackgroundLayerSelector, setMapStyle } from "./basemap_control.js";
+
+// ---------------------------------------------------------------------------
+// Module-level state
+// ---------------------------------------------------------------------------
+
+let mapReady;
+let mapMoved;
+let mouseMoved;
+let getMapExtent;
+let getMapCenter;
 export let pong;
+export let mapLibreImported;
 export let jsonString;
-export let mapReady;
-export let mapMoved;
+export let pointClicked;
+export let layerStyleSet;
+export let marker;
 export let activeSide = 'a';
 
-// Web Channel
-new QWebChannel(qt.webChannelTransport, function (channel) {
-  window.MapLibreCompare = channel.objects.MapLibreCompare;
-  if (typeof MapLibreCompare != 'undefined') {
-    pong     = function() { MapLibreCompare.pong("pong")};
-    mapReady = function() { MapLibreCompare.mapReady(jsonString)};
-    mapMoved = function() { MapLibreCompare.mapMoved(jsonString)};
-  }
-});
+let webChannelReady = false;
+let firstPong = true;
 
-export function ping(ping_string) {
-  pong();
+// ---------------------------------------------------------------------------
+// QWebChannel initialization
+// ---------------------------------------------------------------------------
+
+/**
+ * Wait until the QWebChannel global is available (injected by Qt).
+ * @param {number} timeout - Maximum wait time in milliseconds.
+ * @returns {Promise} Resolves with QWebChannel once available.
+ */
+function waitForQWebChannel(timeout = 10000) {
+  return new Promise((resolve, reject) => {
+    const start = performance.now();
+    (function check() {
+      if (typeof QWebChannel !== 'undefined') {
+        resolve(QWebChannel);
+      } else if (performance.now() - start > timeout) {
+        reject(new Error("QWebChannel not available within timeout"));
+      } else {
+        setTimeout(check, 100);
+      }
+    })();
+  });
 }
 
+waitForQWebChannel()
+  .then(() => {
+    // Web Channel
+    try {
+      new QWebChannel(qt.webChannelTransport, function (channel) {
+        window.MapLibreCompare = channel.objects.MapLibreCompare;
+        if (typeof MapLibreCompare != 'undefined') {
+          pong              = function() { MapLibreCompare.pong("pong")};
+          mapReady          = function() { MapLibreCompare.mapReady(jsonString)};
+          mapMoved          = function() { MapLibreCompare.mapMoved(jsonString)};
+          mouseMoved        = function(coords) { MapLibreCompare.mouseMoved(JSON.stringify(coords))};
+          getMapExtent      = function() { MapLibreCompare.getMapExtent(jsonString)};
+          getMapCenter      = function() { MapLibreCompare.getMapCenter(jsonString)};
+          featureClicked    = function(featureId, featureProps) { MapLibreCompare.featureClicked(featureId, JSON.stringify(featureProps))};
+          featureDrawn      = function(featureCollection, featureId, layerId) { MapLibreCompare.featureDrawn(featureCollection, featureId, layerId)};
+          featureModified   = function(featureCollection, featureId, layerId) { MapLibreCompare.featureModified(featureCollection, featureId, layerId)};
+          featureSelected   = function(featureCollection, featureId, layerId) { MapLibreCompare.featureSelected(featureCollection, featureId, layerId)};
+          featureAdded      = function(featureCollection, featureId, layerId) { MapLibreCompare.featureAdded(featureCollection, featureId, layerId)};
+          featureDeselected = function(layerId) { MapLibreCompare.featureDeselected(layerId)};
+          pointClicked      = function(coords) { MapLibreCompare.pointClicked(JSON.stringify(coords))};
+          layerStyleSet     = function() { MapLibreCompare.layerStyleSet('')};
+          layerAdded        = function(layerId) { MapLibreCompare.layerAdded(layerId)};
+          webChannelReady   = true;
+        }
+      });
+    } catch (error) {
+      console.error('WebChannel not found:', error);
+    }
+  })
+  .catch((err) => {
+    console.error("Error loading QWebChannel:", err);
+  });
+
+// ---------------------------------------------------------------------------
+// Exported functions
+// ---------------------------------------------------------------------------
+
+/**
+ * Respond to a ping from Python. Sends a single pong on the first
+ * successful ping after the web channel is ready.
+ * @param {string} ping_string - The ping payload from Python.
+ */
+export function ping(ping_string) {
+  if (webChannelReady && firstPong) {
+    firstPong = false;
+    pong();
+  }
+}
+
+/**
+ * Create the two MapLibre GL map instances with a compare slider,
+ * add controls (navigation, scale, ruler, background-layer selector),
+ * and wire up event handlers.
+ */
 export function addMap() {
-
-  var default_style = 'osm';
-
-  console.log("default_compare_style: " + default_compare_style);
-  console.log("mapStyles keys: " + Object.keys(window.mapStyles));
-  console.log("style object: " + JSON.stringify(window.mapStyles[default_compare_style]).substring(0, 200));
-
-  console.log("Adding Maplibre Compare Map A ...")
   mapA = new maplibregl.Map({
     container: 'compare1',
     style: window.mapStyles[default_compare_style],
     center: default_compare_center,
     zoom: default_compare_zoom,
+    canvasContextAttributes: { alpha: true },
   });
 
-  mapA.on('error', (e) => { console.log('Map A error: ' + e.error.message); });
+  mapA.scrollZoom.setWheelZoomRate(1 / 200);
 
-  console.log("Adding Maplibre Compare Map B ...")
+  mapA.on('error', (e) => {
+    if (e.error && e.error.message && !e.error.message.includes('could not be decoded')) {
+      console.log('Map A error: ' + e.error.message);
+    }
+  });
+
   mapB = new maplibregl.Map({
     container: 'compare2',
     style: window.mapStyles[default_compare_style],
     center: default_compare_center,
     zoom: default_compare_zoom,
+    canvasContextAttributes: { alpha: true },
   });
 
-  mapB.on('error', (e) => { console.log('Map B error: ' + e.error.message); });
+  mapB.scrollZoom.setWheelZoomRate(1 / 200);
 
-  // A selector or reference to HTML element
+  mapB.on('error', (e) => {
+    if (e.error && e.error.message && !e.error.message.includes('could not be decoded')) {
+      console.log('Map B error: ' + e.error.message);
+    }
+  });
+
+  // Set global 'map' alias for basemap_control.js compatibility
+  window.map = mapA;
+
+  // Navigation control on mapA
+  const nav = new maplibregl.NavigationControl({
+    visualizePitch: true
+  });
+  mapA.addControl(nav, 'top-left');
+
+  // Background layer selector
+  var backgroundLayers = [];
+  for (var key in window.mapStyles) {
+    backgroundLayers.push({"id": key, "name": window.mapStyles[key].name});
+  }
+  mapA.addControl(new BackgroundLayerSelector(backgroundLayers, default_compare_style, (styleID) => {
+    setMapStyle(styleID, mapA);
+    setMapStyle(styleID, mapB);
+  }), 'top-left');
+
+  // Scale
+  mapA.addControl(new maplibregl.ScaleControl({maxWidth: 80}), 'bottom-left');
+
+  // Draggable marker
+  marker = new maplibregl.Marker({draggable: true});
+
+  window.currentCursor = '';
+
+  // Compare slider
   const container = '#comparison-container';
-
-  console.log("Adding Maplibre Compare ...")
   var mapContainer = new maplibregl.Compare(mapA, mapB, container, {
   });
 
+  // Track which side the user is interacting with
   mapA.on('wheel', () => {
     activeSide = 'a';
   });
@@ -67,71 +184,437 @@ export function addMap() {
   mapB.on('dragstart', () => {
     activeSide = 'b';
   });
+
   mapA.on('moveend', () => {
     onMoveEndA();
   });
   mapB.on('moveend', () => {
     onMoveEndB();
   });
-  
+
+  mapA.on('mousemove', (e) => {
+    onMouseMoved(e);
+  });
+
   mapA.on('load', () => {
-    console.log('Mapbox A loaded !');
-      // Add dummy layer
-      addDummyLayer(mapA, 'dummy_layer_0');
-      addDummyLayer(mapA, 'dummy_layer_1');
-      mapLoadedA();
+    addDummyLayer(mapA, 'dummy_layer_0');
+    addDummyLayer(mapA, 'dummy_layer_1');
+    // Load icons
+    if (typeof compareIconUrls !== 'undefined') {
+      compareIconUrls.forEach(async (iconUrl) => {
+        try {
+          const image = await mapA.loadImage(iconUrl);
+          if (!mapA.hasImage(iconUrl)) {
+            mapA.addImage(iconUrl, image.data);
+          }
+        } catch (e) {
+          // Silently ignore icon loading errors (e.g. DOMException from duplicate adds)
+        }
+      });
+    }
+    mapLoadedA();
   });
 
   mapB.on('load', () => {
-    console.log('Mapbox B loaded !');
-    // Add dummy layer
     addDummyLayer(mapB, 'dummy_layer_0');
     addDummyLayer(mapB, 'dummy_layer_1');
+    // Load icons
+    if (typeof compareIconUrls !== 'undefined') {
+      compareIconUrls.forEach(async (iconUrl) => {
+        try {
+          const image = await mapB.loadImage(iconUrl);
+          if (!mapB.hasImage(iconUrl)) {
+            mapB.addImage(iconUrl, image.data);
+          }
+        } catch (e) {
+          // Silently ignore icon loading errors (e.g. DOMException from duplicate adds)
+        }
+      });
+    }
     mapLoadedB();
   });
 
-};
+  mapA.on('style.load', () => {
+    // Reserved for future use (buildings, terrain source, etc.)
+  });
 
-  
-// var id = 'dummy_layer';
-// mapA.addSource(id, {
-//   'type': 'geojson'
-// });
-// mapA.addLayer({
-//   'id': 'dummy_layer',
-//   'type': 'line',
-//   'source': id,
-//   'layout': {},
-//   'paint': {
-//     'line-color': '#000',
-//     'line-width': 1
-//   }
-// });
-// mapB.addSource(id, {
-//   'type': 'geojson'
-// });
-// mapB.addLayer({
-//   'id': 'dummy_layer',
-//   'type': 'line',
-//   'source': id,
-//   'layout': {},
-//   'paint': {
-//     'line-color': '#000',
-//     'line-width': 1
-//   }
-// });
+  mapB.on('style.load', () => {
+    // Reserved for future use (buildings, terrain source, etc.)
+  });
+}
 
-//mapA = mapA;
-//mapB = mapB;
+/**
+ * Remove a map layer and all its sub-layers (line, fill, circle, a, b),
+ * associated sources, and legend elements.
+ * @param {string} id   - Base layer identifier.
+ * @param {string} side - Side indicator ("a" or "b").
+ */
+export function removeLayer(id, side) {
+  var mp = getMap(side);
+  var suffixes = ['', '.line', '.fill', '.circle', '.a', '.b'];
+  for (var i = 0; i < suffixes.length; i++) {
+    var layerId = id + suffixes[i];
+    if (typeof mp.getLayer(layerId) !== 'undefined') {
+      mp.removeLayer(layerId);
+    }
+  }
+  // Remove sources
+  var sourceSuffixes = ['', '.a', '.b'];
+  for (var i = 0; i < sourceSuffixes.length; i++) {
+    var sourceId = id + sourceSuffixes[i];
+    if (typeof mp.getSource(sourceId) !== 'undefined') {
+      mp.removeSource(sourceId);
+    }
+  }
+  // Remove legend
+  var legend = document.getElementById("legend" + id);
+  if (legend) {
+    legend.remove();
+  }
+}
 
+/**
+ * Reset the mouse cursor to default and deactivate click/ruler listeners.
+ */
+export function setMouseDefault() {
+  mapA.getCanvas().style.cursor = '';
+  window.currentCursor = '';
+  mapA.off('click', onPointClicked);
+  deactivateRuler();
+}
 
-//function carryOn() {
+/**
+ * Show a layer and all its sub-layers on the map, including its legend.
+ * @param {string} id   - Base layer identifier.
+ * @param {string} side - Side indicator ("a" or "b").
+ */
+export function showLayer(id, side) {
+  var mp = getMap(side);
+  var suffixes = ['', '.line', '.fill', '.circle', '.a', '.b'];
+  for (var i = 0; i < suffixes.length; i++) {
+    var map_id = id + suffixes[i];
+    if (mp.getLayer(map_id)) {
+      mp.setLayoutProperty(map_id, 'visibility', 'visible');
+    }
+  }
+  showLegend(id);
+  showLegend(id + '.a');
+}
 
+/**
+ * Hide a layer and all its sub-layers on the map, including its legend.
+ * @param {string} id   - Base layer identifier.
+ * @param {string} side - Side indicator ("a" or "b").
+ */
+export function hideLayer(id, side) {
+  var mp = getMap(side);
+  var suffixes = ['', '.line', '.fill', '.circle', '.a', '.b'];
+  for (var i = 0; i < suffixes.length; i++) {
+    var map_id = id + suffixes[i];
+    if (mp.getLayer(map_id)) {
+      mp.setLayoutProperty(map_id, 'visibility', 'none');
+    }
+  }
+  hideLegend(id);
+  hideLegend(id + '.a');
+}
 
+/**
+ * Show the legend element associated with a layer.
+ * @param {string} id - Layer identifier.
+ */
+export function showLegend(id) {
+  var legend = document.getElementById("legend" + id);
+  if (legend) {
+    legend.style.visibility = 'visible';
+  }
+}
 
+/**
+ * Hide the legend element associated with a layer.
+ * @param {string} id - Layer identifier.
+ */
+export function hideLegend(id) {
+  var legend = document.getElementById("legend" + id);
+  if (legend) {
+    legend.style.visibility = 'hidden';
+  }
+}
 
+/**
+ * Close any open MapLibre popup on the map.
+ */
+export function closePopup() {
+  var popup = document.getElementsByClassName('maplibre-popup');
+  if (popup[0]) {
+    popup[0].remove();
+  }
+}
+
+/**
+ * Retrieve the current map extent (bounding box) and send it to Python
+ * via the getMapExtent bridge callback.
+ */
+export function getExtent() {
+  var extent = mapA.getBounds();
+  var sw = extent.getSouthWest();
+  var ne = extent.getNorthEast();
+  var bottomLeft = [sw["lng"], sw["lat"]];
+  var topRight   = [ne["lng"], ne["lat"]];
+  jsonString = JSON.stringify([bottomLeft, topRight]);
+  getMapExtent();
+}
+
+/**
+ * Retrieve the current map center and zoom level and send it to Python
+ * via the getMapCenter bridge callback.
+ */
+export function getCenter() {
+  var center = mapA.getCenter();
+  var zoom = mapA.getZoom();
+  jsonString = JSON.stringify([center["lng"], center["lat"], zoom]);
+  getMapCenter();
+}
+
+/**
+ * Enter "click point" mode: change the cursor to a crosshair and wait
+ * for a single left-click (or right-click to cancel).
+ */
+export function clickPoint() {
+  mapA.getCanvas().style.cursor = 'crosshair';
+  window.currentCursor = 'crosshair';
+  mapA.once('click', onPointClicked);
+  mapA.once('contextmenu', onPointRightClicked);
+}
+
+/**
+ * Set the map center to the given coordinates.
+ * @param {number} lon - Longitude.
+ * @param {number} lat - Latitude.
+ */
+export function setCenter(lon, lat) {
+  mapA.setCenter([lon, lat]);
+}
+
+/**
+ * Set the map zoom level.
+ * @param {number} zoom - Zoom level.
+ */
+export function setZoom(zoom) {
+  mapA.setZoom(zoom);
+}
+
+/**
+ * Fit the map view to the bounding box defined by two corner coordinates.
+ * @param {number} lon1 - Southwest longitude.
+ * @param {number} lat1 - Southwest latitude.
+ * @param {number} lon2 - Northeast longitude.
+ * @param {number} lat2 - Northeast latitude.
+ */
+export function fitBounds(lon1, lat1, lon2, lat2) {
+  mapA.fitBounds([[lon1, lat1], [lon2, lat2]]);
+}
+
+/**
+ * Instantly move the map to a given position and zoom (no animation).
+ * @param {number} lon  - Longitude.
+ * @param {number} lat  - Latitude.
+ * @param {number} zoom - Zoom level.
+ */
+export function jumpTo(lon, lat, zoom) {
+  mapA.jumpTo({center: [lon, lat], zoom: zoom});
+}
+
+/**
+ * Animate the map to a given position and zoom.
+ * @param {number} lon  - Longitude.
+ * @param {number} lat  - Latitude.
+ * @param {number} zoom - Zoom level.
+ */
+export function flyTo(lon, lat, zoom) {
+  mapA.flyTo({center: [lon, lat], zoom: zoom});
+}
+
+/**
+ * Set the map projection (e.g. 'mercator' or 'globe'). When set to
+ * 'globe', atmospheric fog and stars are enabled.
+ * @param {string} projection - Projection name.
+ */
+export function setProjection(projection) {
+  var mapDiv = document.getElementById('compare1');
+  if (projection == 'globe') {
+    mapDiv.style.background = '#000';
+    var style = mapA.getStyle();
+    style.projection = { type: 'globe' };
+    style.sky = {
+      'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 1, 5, 1, 7, 0],
+    };
+    mapA.setStyle(style);
+  } else {
+    mapDiv.style.background = '';
+    var style = mapA.getStyle();
+    delete style.projection;
+    delete style.sky;
+    mapA.setStyle(style);
+  }
+}
+
+/**
+ * Switch the base map style. Called from Python.
+ * @param {string} styleID - Identifier of the target style.
+ */
+export function setLayerStyle(styleID) {
+  setMapStyle(styleID, mapA);
+  setMapStyle(styleID, mapB);
+  layerStyleSet();
+}
+
+/**
+ * Enable or disable 3-D terrain rendering.
+ * @param {boolean} trueOrFalse  - Whether to enable terrain.
+ * @param {number}  exaggeration - Vertical exaggeration factor.
+ */
+export function setTerrain(trueOrFalse, exaggeration) {
+  if (trueOrFalse) {
+    mapA.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': exaggeration });
+  } else {
+    mapA.setTerrain();
+  }
+}
+
+/**
+ * Set the compare slider position.
+ * @param {number} npix - Position in pixels.
+ */
+export function setSlider(npix) {
+  map.setSlider(npix);
+}
+
+/**
+ * Show a popup with an iframe at the given coordinates.
+ * @param {object} options
+ * @param {number} options.lon - Longitude.
+ * @param {number} options.lat - Latitude.
+ * @param {string} options.url - URL to load in the iframe.
+ * @param {number} [options.width=520] - Popup width in pixels.
+ * @param {number} [options.height=320] - Popup height in pixels.
+ */
+export function showPopup({lon, lat, url, width = 520, height = 320} = {}) {
+  // Remove existing popup if any
+  if (window._iframePopup) {
+    window._iframePopup.remove();
+  }
+  const html = `<iframe src="${url}" style="width:${width}px;height:${height}px;border:none;"></iframe>`;
+  window._iframePopup = new maplibregl.Popup({
+    closeOnClick: true,
+    closeButton: true,
+    maxWidth: `${width + 40}px`,
+  })
+    .setLngLat([lon, lat])
+    .setHTML(html)
+    .addTo(mapA);
+}
+
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Return the map object for the given side.
+ * @param {string} side - "a" or "b".
+ * @returns {object} The corresponding map instance.
+ */
+function getMap(side) {
+  if (side == "a") { return mapA }
+  else { return mapB }
+}
+
+/**
+ * Called once mapA has finished loading. Sends the initial map extent
+ * back to Python via the mapReady bridge callback.
+ */
+function mapLoadedA(evt) {
+  var extent = mapA.getBounds();
+  var sw = extent.getSouthWest();
+  var ne = extent.getNorthEast();
+  var bottomLeft = [sw["lng"], sw["lat"]];
+  var topRight   = [ne["lng"], ne["lat"]];
+  jsonString = JSON.stringify([bottomLeft, topRight, "a"]);
+  mapReady();
+}
+
+/**
+ * Called once mapB has finished loading. Sends the initial map extent
+ * back to Python via the mapReady bridge callback.
+ */
+function mapLoadedB(evt) {
+  var extent = mapB.getBounds();
+  var sw = extent.getSouthWest();
+  var ne = extent.getNorthEast();
+  var bottomLeft = [sw["lng"], sw["lat"]];
+  var topRight   = [ne["lng"], ne["lat"]];
+  jsonString = JSON.stringify([bottomLeft, topRight, "b"]);
+  mapReady();
+}
+
+/**
+ * Called when mapA movement ends. Sends the new extent, center and zoom
+ * back to Python via the mapMoved bridge callback.
+ */
+function onMoveEndA(evt) {
+  if (activeSide == 'b') {return;}
+  var extent = mapA.getBounds();
+  var sw = extent.getSouthWest();
+  var ne = extent.getNorthEast();
+  var bottomLeft = [sw["lng"], sw["lat"]];
+  var topRight   = [ne["lng"], ne["lat"]];
+  var center = mapA.getCenter();
+  var zoom = mapA.getZoom();
+  jsonString = JSON.stringify([bottomLeft, topRight, center["lng"], center["lat"], zoom]);
+  mapMoved();
+}
+
+/**
+ * Called when mapB movement ends. Sends the new extent, center and zoom
+ * back to Python via the mapMoved bridge callback.
+ */
+function onMoveEndB(evt) {
+  if (activeSide == 'a') {return;}
+  var extent = mapB.getBounds();
+  var sw = extent.getSouthWest();
+  var ne = extent.getNorthEast();
+  var bottomLeft = [sw["lng"], sw["lat"]];
+  var topRight   = [ne["lng"], ne["lat"]];
+  var center = mapB.getCenter();
+  var zoom = mapB.getZoom();
+  jsonString = JSON.stringify([bottomLeft, topRight, center["lng"], center["lat"], zoom]);
+  mapMoved();
+}
+
+function onPointClicked(e) {
+  mapA.getCanvas().style.cursor = '';
+  window.currentCursor = '';
+  pointClicked(e.lngLat);
+}
+
+function onPointRightClicked(e) {
+  mapA.getCanvas().style.cursor = '';
+  window.currentCursor = '';
+  mapA.off('click', onPointClicked);
+}
+
+function onMouseMoved(e) {
+  mouseMoved(e.lngLat);
+}
+
+/**
+ * Add an invisible placeholder layer used for z-ordering.
+ * Background layers go before dummy_layer_0, data layers between
+ * dummy_layer_0 and dummy_layer_1, draw layers after dummy_layer_1.
+ * @param {object} mp - Map instance.
+ * @param {string} id - Dummy layer identifier.
+ */
 function addDummyLayer(mp, id) {
-  // Add a dummy layer (other layer will be added BEFORE this dummy layer)
   mp.addSource(id, {
     'type': 'geojson',
     'data': {
@@ -150,540 +633,3 @@ function addDummyLayer(mp, id) {
     }
   });
 }
-
-function mapLoadedA(evt) {
-  // Get the map extents and tell Python Mapbox object that we're ready
-  var extent = mapA.getBounds();
-  var sw = extent.getSouthWest();
-  var ne = extent.getNorthEast();
-  var bottomLeft = [sw["lng"], sw["lat"]];
-  var topRight   = [ne["lng"], ne["lat"]];
-  jsonString = JSON.stringify([bottomLeft, topRight, "a"]);
-  mapReady();
-}
-
-function mapLoadedB(evt) {
-  // Get the map extents and tell Python Mapbox object that we're ready
-  var extent = mapB.getBounds();
-  var sw = extent.getSouthWest();
-  var ne = extent.getNorthEast();
-  var bottomLeft = [sw["lng"], sw["lat"]];
-  var topRight   = [ne["lng"], ne["lat"]];
-  jsonString = JSON.stringify([bottomLeft, topRight, "b"]);
-  mapReady();
-}
-  
-function onMoveEndA(evt) {
-  // Called after moving map ended
-  // Get new map extents
-  if (activeSide == 'b') {return;}
-  var extent = mapA.getBounds();
-  var sw = extent.getSouthWest();
-  var ne = extent.getNorthEast();
-  var bottomLeft = [sw["lng"], sw["lat"]];
-  var topRight   = [ne["lng"], ne["lat"]];
-  var center = mapA.getCenter();
-  var zoom = mapA.getZoom();
-  jsonString = JSON.stringify([bottomLeft, topRight, center["lng"], center["lat"], zoom]);
-  mapMoved();
-}
-
-function onMoveEndB(evt) {
-  // Called after moving map ended
-  // Get new map extents
-  if (activeSide == 'a') {return;}
-  var extent = mapB.getBounds();
-  var sw = extent.getSouthWest();
-  var ne = extent.getNorthEast();
-  var bottomLeft = [sw["lng"], sw["lat"]];
-  var topRight   = [ne["lng"], ne["lat"]];
-  var center = mapB.getCenter();
-  var zoom = mapB.getZoom();
-  jsonString = JSON.stringify([bottomLeft, topRight, center["lng"], center["lat"], zoom]);
-  mapMoved();
-}
-
-export function jumpTo(lon, lat, zoom) {
-	// Called after moving map ended
-	// Get new map extents
-	mapA.jumpTo({center: [lon, lat], zoom: zoom});
-}
-
-export function flyTo(lon, lat, zoom) {
-	// Called after moving map ended
-	// Get new map extents
-	mapA.flyTo({center: [lon, lat], zoom: zoom});
-}
-
-export function setSlider(npix) {
-	map.setSlider(npix);
-}
-
-export function removeLayer(id, side) {
-  var mp = getMap(side);  
-  // Remove the layer, source and legend etc.
-  // Remove layer
-  var mapLayer = mp.getLayer(id);
-  if(typeof mapLayer !== 'undefined') {
-    // Remove map layer
-    mp.removeLayer(id);
-  }
-  // Remove line layer
-  var mapLayer = mp.getLayer(id + '.line');
-  if(typeof mapLayer !== 'undefined') {
-    // Remove map layer
-    mp.removeLayer(id + '.line');
-  }
-  // Remove fill layer
-  var mapLayer = mp.getLayer(id + '.fill');
-  if(typeof mapLayer !== 'undefined') {
-    // Remove map layer
-    mp.removeLayer(id + '.fill');
-  }
-  // Remove circle layer
-  var mapLayer = mp.getLayer(id + '.circle');
-  if(typeof mapLayer !== 'undefined') {
-    // Remove map layer
-    mp.removeLayer(id + '.circle');
-  }
-  // Remove source
-  var mapSource = mp.getSource(id);
-  if(typeof mapSource !== 'undefined') {
-    mp.removeSource(id);
-  }
-  // Remove legend
-  var legend = document.getElementById("legend" + id);
-  if (legend) {
-    legend.remove();
-  }
-}
-
-export function showLayer(id, side) {
-	// Show layer
-  var mp = getMap(side);  
-	if (mp.getLayer(id)) {
-    mp.setLayoutProperty(id, 'visibility', 'visible');
-  }
-	if (mp.getLayer(id + '.line')) {
-    mp.setLayoutProperty(id + '.line', 'visibility', 'visible');
-  }
-	if (mp.getLayer(id + '.fill')) {
-    mp.setLayoutProperty(id + '.fill', 'visibility', 'visible');
-  }
-	if (mp.getLayer(id + '.circle')) {
-    mp.setLayoutProperty(id + '.circle', 'visibility', 'visible');
-  }
-  showLegend(id);
-}
-
-export function hideLayer(id, side) {
-	// Hide layer
-  var mp = getMap(side);  
-	if (mp.getLayer(id)) {
-  	mp.setLayoutProperty(id, 'visibility', 'none');
-  }
-	if (mp.getLayer(id + '.line')) {
-    mp.setLayoutProperty(id + '.line', 'visibility', 'none');
-  }
-	if (mp.getLayer(id + '.fill')) {
-    mp.setLayoutProperty(id + '.fill', 'visibility', 'none');
-  }
-	if (mp.getLayer(id + '.circle')) {
-    mp.setLayoutProperty(id + '.circle', 'visibility', 'none');
-  }
-  hideLegend(id);
-}
-
-export function showLegend(id) {
-	// Show legend
-  var legend = document.getElementById("legend" + id);
-  if (legend) {
-    legend.style.visibility = 'visible';
-  }
-}
-
-export function hideLegend(id) {
-	// Hide layer
-  var legend = document.getElementById("legend" + id);
-  if (legend) {
-    legend.style.visibility = 'hidden';
-  }
-}
-
-
-function getMap(side) {
-  if (side == "a") { return mapA }
-  else { return mapB }
-}
-
-// export let maplibregl = mpbox.import_mapbox_gl()
-
-// import { draw, setDrawEvents } from '/js/draw.js';
-
-// let mapReady;
-// let mapMoved;
-// let getMapExtent;
-// export let featureDrawn;
-// export let featureSelected;
-// export let featureDeselected;
-// export let featureModified;
-// export let featureAdded;
-// export let jsonString;
-// export let featureClicked;
-// export let pointClicked;
-// export let layerStyleSet;
-// export let layers;
-
-
-
-// console.log('Adding MapBox map ...')
-
-// maplibregl.accessToken = mapbox_token;
-
-// export const map = new maplibregl.Map({
-//   container: 'map', // container ID
-//   style: 'mapbox://styles/mapbox/streets-v11', // style URL
-// //  style: 'mapbox://styles/mapbox/light-v11', // style URL
-//   center: [0.0, 0.0], // starting position [lng, lat]
-//   zoom: 2, // starting zoom
-// //  projection: 'globe' // display the map as a 3D globe
-//   projection: 'mercator' // display the map as a 3D globe
-// });
-
-// map.scrollZoom.setWheelZoomRate(1 / 200);
-
-// const nav = new maplibregl.NavigationControl({
-//   visualizePitch: true
-// });
-// map.addControl(nav, 'top-left');
-
-// const scale = new maplibregl.ScaleControl({
-//   maxWidth: 80
-// });
-// map.addControl(scale, 'bottom-left');
-
-// export const marker = new maplibregl.Marker({draggable: true});
-
-// // Web Channel
-// new QWebChannel(qt.webChannelTransport, function (channel) {
-//   window.MapBox = channel.objects.MapBox;
-//   if (typeof MapBox != 'undefined') {
-//     mapReady          = function() { MapBox.mapReady(jsonString)};
-//     mapMoved          = function() { MapBox.mapMoved(jsonString)};
-//     getMapExtent      = function() { MapBox.getMapExtent(jsonString)};
-//     featureClicked    = function(featureId, featureProps) { MapBox.featureClicked(featureId, JSON.stringify(featureProps))};
-//     featureDrawn      = function(featureCollection, featureId, layerId) { MapBox.featureDrawn(featureCollection, featureId, layerId)};
-//     featureModified   = function(featureCollection, featureId, layerId) { MapBox.featureModified(featureCollection, featureId, layerId)};
-//     featureSelected   = function(featureCollection, featureId, layerId) { MapBox.featureSelected(featureCollection, featureId, layerId)};
-//     featureAdded      = function(featureCollection, featureId, layerId) { MapBox.featureAdded(featureCollection, featureId, layerId)};
-//     featureDeselected = function(layerId) { MapBox.featureDeselected(layerId)};
-//     pointClicked      = function(coords) { MapBox.pointClicked(JSON.stringify(coords))};
-//     layerStyleSet     = function() { MapBox.layerStyleSet('')};
-//   }
-// });
-
-// layers = new Object();
-
-// map.on('load', () => {
-//   console.log('Mapbox loaded !');
-//   // Add dummy layer
-//   addDummyLayer();
-//   map.addControl(draw, 'top-left');
-//   mapLoaded();
-// });
-
-// map.on('style.load', () => {
-//   map.setFog({}); // Set the default atmosphere style
-//   // Add terrain
-//   map.addSource('mapbox-dem', {
-//     'type': 'raster-dem',
-//     'url': 'mapbox://mapbox.mapbox-terrain-dem-v1',
-//     'tileSize': 512,
-//     'maxzoom': 14
-//   });
-
-//   const layers = map.getStyle().layers;
-//   const labelLayerId = layers.find(
-//       (layer) => layer.type === 'symbol' && layer.layout['text-field']
-//   ).id;
-
-//   // The 'building' layer in the Mapbox Streets
-//   // vector tileset contains building height data
-//   // from OpenStreetMap.
-//   console.log('Adding 3d buildings')
-//   map.addLayer(
-//       {
-//           'id': 'add-3d-buildings',
-//           'source': 'composite',
-//           'source-layer': 'building',
-//           'filter': ['==', 'extrude', 'true'],
-//           'type': 'fill-extrusion',
-//           'minzoom': 15,
-//           'paint': {
-//               'fill-extrusion-color': '#aaa',
-
-//               // Use an 'interpolate' expression to
-//               // add a smooth transition effect to
-//               // the buildings as the user zooms in.
-//               'fill-extrusion-height': [
-//                   'interpolate',
-//                   ['linear'],
-//                   ['zoom'],
-//                   15,
-//                   0,
-//                   15.05,
-//                   ['get', 'height']
-//               ],
-//               'fill-extrusion-base': [
-//                   'interpolate',
-//                   ['linear'],
-//                   ['zoom'],
-//                   15,
-//                   0,
-//                   15.05,
-//                   ['get', 'min_height']
-//               ],
-//               'fill-extrusion-opacity': 0.6
-//           }
-//       },
-//       labelLayerId
-//   );
-
-// });
-
-// map.on('moveend', () => {
-//     onMoveEnd();
-// });
-
-
-// function mapLoaded(evt) {
-//   // Get the map extents and tell Python Mapbox object that we're ready
-//   var extent = map.getBounds();
-//   var sw = extent.getSouthWest();
-//   var ne = extent.getNorthEast();
-//   var bottomLeft = [sw["lng"], sw["lat"]];
-//   var topRight   = [ne["lng"], ne["lat"]];
-//   jsonString = JSON.stringify([bottomLeft, topRight]);
-//   mapReady();
-// }
-
-
-// function onMoveEnd(evt) {
-// 	// Called after moving map ended
-// 	// Get new map extents
-//     var extent = map.getBounds();
-//     var sw = extent.getSouthWest();
-//     var ne = extent.getNorthEast();
-//     var bottomLeft = [sw["lng"], sw["lat"]];
-//     var topRight   = [ne["lng"], ne["lat"]];
-//     jsonString = JSON.stringify([bottomLeft, topRight]);
-//     mapMoved();
-// }
-
-
-
-// export function removeLayer(id) {
-
-//   // Remove layer
-//   var mapLayer = map.getLayer(id);
-//   if(typeof mapLayer !== 'undefined') {
-//     // Remove map layer
-//     console.log('removing ' + id)
-//     map.removeLayer(id);
-//   }
-
-//   var mapLayer = map.getLayer(id + '.line');
-//   if(typeof mapLayer !== 'undefined') {
-//     // Remove map layer
-//     console.log('removing ' + id + '.line')
-//     map.removeLayer(id + '.line');
-//     console.log('done removing ' + id + '.line')
-//   }
-
-//   var mapLayer = map.getLayer(id + '.fill');
-//   if(typeof mapLayer !== 'undefined') {
-//     // Remove map layer
-//     console.log('removing ' + id + '.fill')
-//     map.removeLayer(id + '.line');
-//     console.log('done removing ' + id + '.fill')
-//   }
-
-//   var mapLayer = map.getLayer(id + '.circle');
-//   if(typeof mapLayer !== 'undefined') {
-//     // Remove map layer
-//     console.log('removing ' + id + '.circle')
-//     map.removeLayer(id + '.circle');
-//   }
-
-//   // Remove source
-//   var mapSource = map.getSource(id);
-//   if(typeof mapSource !== 'undefined') {
-//     console.log('removing source ' + id)
-//     map.removeSource(id);
-//   }
-
-//   var legend = document.getElementById("legend" + id);
-//   if (legend) {
-//     legend.remove();
-//   }
-
-//   map.off('moveend', () => {
-//     const vis = map.getLayoutProperty(lineId, 'visibility');
-//     if (vis == "visible") {
-//       updateFeatureState(id);
-//     }
-//   });
-
-// }
-
-// export function showLayer(id) {
-// 	// Show layer
-// 	if (map.getLayer(id)) {
-//     map.setLayoutProperty(id, 'visibility', 'visible');
-//     var legend = document.getElementById("legend" + id);
-//     if (legend) {
-//       legend.style.visibility = 'visible';
-//     }  
-//   }
-// }
-
-// export function hideLayer(id) {
-// 	// Hide layer
-// 	if (map.getLayer(id)) {
-//   	map.setLayoutProperty(id, 'visibility', 'none');
-//     var legend = document.getElementById("legend" + id);
-//     if (legend) {
-//       legend.style.visibility = 'hidden';
-//     }  
-//   }
-// }
-
-// export function getExtent() {
-// 	// Called after moving map ended
-// 	// Get new map extents
-//     var extent = map.getBounds();
-//     var sw = extent.getSouthWest();
-//     var ne = extent.getNorthEast();
-//     var bottomLeft = [sw["lng"], sw["lat"]];
-//     var topRight   = [ne["lng"], ne["lat"]];
-//     jsonString = JSON.stringify([bottomLeft, topRight]);
-//     getMapExtent();
-// }
-
-// export function clickPoint() {
-//   map.getCanvas().style.cursor = 'crosshair'
-//   map.once('click', function(e) {
-//     var coordinates = e.lngLat;
-//     onPointClicked(coordinates);
-//   });
-// }
-
-// function onPointClicked(coordinates) {
-//   map.getCanvas().style.cursor = '';
-//   pointClicked(coordinates);
-// }
-
-// export function setCenter(lon, lat) {
-// 	// Called after moving map ended
-// 	// Get new map extents
-// 	map.setCenter([lon, lat]);
-// }
-
-// export function setZoom(zoom) {
-// 	// Called after moving map ended
-// 	// Get new map extents
-// 	map.setZoom(zoom);
-// }
-
-// export function fitBounds(lon1, lat1, lon2, lat2) {
-//   // Fit bounds of map using southwest and northeast corner coordinates
-// 	map.fitBounds([[lon1, lat1], [lon2, lat2]])
-// }
-
-// export function jumpTo(lon, lat, zoom) {
-// 	// Called after moving map ended
-// 	// Get new map extents
-// 	map.jumpTo({center: [lon, lat], zoom: zoom});
-// }
-
-// export function flyTo(lon, lat, zoom) {
-// 	// Called after moving map ended
-// 	// Get new map extents
-// 	map.flyTo({center: [lon, lat], zoom: zoom});
-// }
-
-// export function setProjection(projection) {
-// 	// Called after moving map ended
-// 	// Get new map extents
-// 	map.setProjection(projection);
-// }
-
-// export function setLayerStyle(style) {
-//   map.setStyle('mapbox://styles/mapbox/' + style);
-//   map.once('idle', () => { addDummyLayer(); layerStyleSet(); });
-//   var legends = document.getElementsByClassName("overlay_legend")
-//   if (legends) {
-//     for (const legend of legends) {
-//       legend.remove();
-//     }
-//   }
-// }
-
-// export function setTerrain(trueOrFalse, exaggeration) {
-//   if (trueOrFalse) {
-//     map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': exaggeration });
-//   } else {
-//     map.setTerrain();
-//   }
-// }
-
-// function addDummyLayer() {
-//   // Add a dummy layer (other layer will be added BEFORE this dummy layer)
-//   var id = 'dummy_layer';
-//   map.addSource(id, {
-//     'type': 'geojson'
-//   });
-//   map.addLayer({
-//     'id': 'dummy_layer',
-//     'type': 'line',
-//     'source': id,
-//     'layout': {},
-//     'paint': {
-//       'line-color': '#000',
-//       'line-width': 1
-//     }
-//   });
-// }
-
-// export function compare() {
-
-//   console.log("Comparing ...")
-
-//   var main_map = document.getElementById("map");
-//   main_map.style.display = 'none';
-
-//   const mapA = new maplibregl.Map({
-//     container: 'compare1',
-//     // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
-//     style: 'mapbox://styles/mapbox/light-v11',
-//     center: [0, 0],
-//     zoom: 0
-//   });
-     
-//   const mapB = new maplibregl.Map({
-//     container: 'compare2',
-//     style: 'mapbox://styles/mapbox/dark-v11',
-//     center: [0, 0],
-//     zoom: 0
-//   });
-     
-//   // A selector or reference to HTML element
-//   const container = '#comparison-container';
-     
-//   const map = new maplibregl.Compare(mapA, mapB, container, {
-//   // Set this to enable comparing two maps by mouse movement:
-//   // mousemove: true
-//   });
-
-
-// }

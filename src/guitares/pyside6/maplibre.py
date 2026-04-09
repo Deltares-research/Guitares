@@ -167,6 +167,15 @@ class MapLibre(QtCore.QObject):
             f.write(f"window.default_zoom = {element.map_zoom};\n")
             f.write(f"window.default_projection = '{element.map_projection}';\n")
             f.write(f"window.iconUrls = {icon_list_string};\n")
+
+            # Map control visibility flags
+            f.write(f"window.showRuler = {'true' if getattr(element, 'ruler', True) else 'false'};\n")
+            f.write(f"window.showTerrain3d = {'true' if getattr(element, 'terrain3d', True) else 'false'};\n")
+            f.write(f"window.showGlobe = {'true' if getattr(element, 'globe', True) else 'false'};\n")
+            f.write(f"window.showStyleSelector = {'true' if getattr(element, 'style_selector', True) else 'false'};\n")
+            f.write(f"window.showGeocoder = {'true' if getattr(element, 'geocoder', True) else 'false'};\n")
+            f.write(f"window.showZoomControl = {'true' if getattr(element, 'zoom_control', True) else 'false'};\n")
+
             if offline:
                 f.write("window.offline = true;\n")
             else:

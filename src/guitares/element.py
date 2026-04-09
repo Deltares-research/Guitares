@@ -169,6 +169,12 @@ class Element:
         self.map_center: List[float] = [0, 0]
         self.map_zoom: int = 0
         self.map_projection: str = "mercator"
+        self.ruler: bool = True
+        self.terrain3d: bool = True
+        self.globe: bool = True
+        self.style_selector: bool = True
+        self.geocoder: bool = True
+        self.zoom_control: bool = True
 
         # Now update element attributes based on dict
 
@@ -411,6 +417,19 @@ class Element:
 
         if "terrain_sources" in dct:
             self.terrain_sources = dct["terrain_sources"]
+
+        if "ruler" in dct:
+            self.ruler = dct["ruler"]
+        if "terrain3d" in dct:
+            self.terrain3d = dct["terrain3d"]
+        if "globe" in dct:
+            self.globe = dct["globe"]
+        if "style_selector" in dct:
+            self.style_selector = dct["style_selector"]
+        if "geocoder" in dct:
+            self.geocoder = dct["geocoder"]
+        if "zoom_control" in dct:
+            self.zoom_control = dct["zoom_control"]    
 
         if "dependency" in dct:
             for dep in dct["dependency"]:

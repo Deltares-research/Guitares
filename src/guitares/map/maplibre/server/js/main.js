@@ -159,73 +159,58 @@ export function addMap() {
 
   map.scrollZoom.setWheelZoomRate(1 / 200);
 
-  // Navigation
-  const nav = new maplibregl.NavigationControl({
-    visualizePitch: true
-  });
-  map.addControl(nav, 'top-left');
+  // Navigation (zoom/pitch controls)
+  if (window.showZoomControl !== false) {
+    const nav = new maplibregl.NavigationControl({
+      visualizePitch: true
+    });
+    map.addControl(nav, 'top-left');
+  }
 
-  // Ruler (distance measurement) — right below zoom/north controls
-  window.rulerControl = new RulerControl();
-  map.addControl(window.rulerControl, 'top-left');
+  // Ruler (distance measurement)
+  if (window.showRuler !== false) {
+    window.rulerControl = new RulerControl();
+    map.addControl(window.rulerControl, 'top-left');
+  }
 
   // 3D Terrain toggle
-  window.terrainControl = new TerrainControl();
-  map.addControl(window.terrainControl, 'top-left');
+  if (window.showTerrain3d !== false) {
+    window.terrainControl = new TerrainControl();
+    map.addControl(window.terrainControl, 'top-left');
+  }
 
-  // Globe — use built-in control but intercept projection changes
-  var globeControl = new maplibregl.GlobeControl();
-  map.addControl(globeControl, 'top-left');
-  // Intercept clicks on the globe control button to apply sky/background
-  var globeObserver = new MutationObserver(() => {
-    var proj = map.getProjection();
-    var projType = (typeof proj === 'object') ? proj.type : proj;
-    var mapDiv = document.getElementById('map');
-    if (projType === 'globe' || projType === 'vertical-perspective') {
-      mapDiv.style.background = '#000';
-      var style = map.getStyle();
-      if (!style.sky) {
-        style.sky = {
-          'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 1, 5, 1, 7, 0],
-        };
-        map.setStyle(style);
+  // Globe
+  if (window.showGlobe !== false) {
+    var globeControl = new maplibregl.GlobeControl();
+    map.addControl(globeControl, 'top-left');
+    setTimeout(() => {
+      var globeBtns = map.getContainer().querySelectorAll('.maplibregl-ctrl-globe');
+      if (globeBtns.length > 0) {
+        globeBtns[0].addEventListener('click', () => {
+          setTimeout(() => {
+            var proj = map.getProjection();
+            var projType = (typeof proj === 'object') ? proj.type : proj;
+            setProjection(projType);
+          }, 100);
+        });
       }
-    } else {
-      mapDiv.style.background = '';
-      var style = map.getStyle();
-      if (style.sky) {
-        delete style.sky;
-        delete style.light;
-        map.setStyle(style);
-      }
-    }
-  });
-  // Watch for class changes on the globe control button (active state toggle)
-  setTimeout(() => {
-    var globeBtns = map.getContainer().querySelectorAll('.maplibregl-ctrl-globe');
-    if (globeBtns.length > 0) {
-      globeBtns[0].addEventListener('click', () => {
-        setTimeout(() => {
-          var proj = map.getProjection();
-          var projType = (typeof proj === 'object') ? proj.type : proj;
-          setProjection(projType);
-        }, 100);
-      });
-    }
-  }, 500);
+    }, 500);
+  }
 
   // Background layer selector
-  var backgroundLayers = [];
-  for (var key in window.mapStyles) {
-    backgroundLayers.push({"id": key, "name": window.mapStyles[key].name});
+  if (window.showStyleSelector !== false) {
+    var backgroundLayers = [];
+    for (var key in window.mapStyles) {
+      backgroundLayers.push({"id": key, "name": window.mapStyles[key].name});
+    }
+    map.addControl(new BackgroundLayerSelector(backgroundLayers, default_style), 'top-left');
   }
-  map.addControl(new BackgroundLayerSelector(backgroundLayers, default_style), 'top-left');
 
   // Scale
   map.addControl(new maplibregl.ScaleControl({maxWidth: 80}), 'bottom-left');
 
   // Geocoder
-  if (!offline) {
+  if (!offline && window.showGeocoder !== false) {
     map.addControl(new MaplibreGeocoder(geocoderApi, {maplibregl}), 'top-right');
   }
 

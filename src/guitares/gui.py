@@ -5,6 +5,9 @@ import importlib
 import os
 import shutil
 import sys
+
+# Suppress noisy QWebChannel "no notify signal" warnings for inherited QWidget properties
+os.environ["QT_LOGGING_RULES"] = "qt.webchannel.warning=false;qt.webengine.qwebchannel=false"
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
