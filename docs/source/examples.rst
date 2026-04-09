@@ -23,6 +23,8 @@ See :doc:`simple_example` for a full walkthrough.
 
 **Location:** ``examples/hello/``
 
+.. figure:: ./img/examples/hello/screenshot.png
+
 .. code-block:: bash
 
    cd examples/hello && python hello.py
@@ -40,6 +42,8 @@ variables and writes a result.
 The calculator window contains two numeric input fields, a dropdown for the operator
 (+, −, ×, ÷), and a disabled edit box that shows the result.
 
+.. figure:: ./img/examples/calculator/screenshot.png
+
 .. literalinclude:: ../../examples/calculator/calculator.yml
    :language: yaml
 
@@ -51,6 +55,8 @@ Checkbox
 A minimal example showing **checkbox** usage and how a boolean variable controls a text label.
 
 **Location:** ``examples/checkbox/``
+
+.. figure:: ./img/examples/checkbox/screenshot.png
 
 ----
 
@@ -66,6 +72,8 @@ Demonstrates all four combinations of listbox configuration:
 
 **Location:** ``examples/listboxes/``
 
+.. figure:: ./img/examples/listboxes/screenshot.png
+
 .. literalinclude:: ../../examples/listboxes/listboxes.yml
    :language: yaml
 
@@ -78,6 +86,8 @@ Demonstrates all dropdown configurations: item vs index selection, static vs dyn
 
 **Location:** ``examples/popupmenus/``
 
+.. figure:: ./img/examples/popupmenus/screenshot.png
+
 ----
 
 Radio buttons
@@ -86,6 +96,8 @@ Radio buttons
 Demonstrates the **radio button group** widget.
 
 **Location:** ``examples/radiobutton/``
+
+.. figure:: ./img/examples/radiobutton/screenshot.png
 
 ----
 
@@ -97,6 +109,8 @@ Shows how to populate the table from a variable and react to row selection.
 
 **Location:** ``examples/table/``
 
+.. figure:: ./img/examples/table/screenshot.png
+
 ----
 
 Menu
@@ -105,6 +119,8 @@ Menu
 Demonstrates how to add a **drop-down menu bar** with nested menus.
 
 **Location:** ``examples/menu_example/``
+
+.. figure:: ./img/examples/menu_example/screenshot.png
 
 ----
 
@@ -118,6 +134,8 @@ Demonstrates both styles of **modal popup dialog**:
 
 **Location:** ``examples/popup_window/``
 
+.. figure:: ./img/examples/popup_window/screenshot.png
+
 ----
 
 Frame collapse
@@ -129,6 +147,8 @@ The example shows a map on the left and a web view on the right.
 
 **Location:** ``examples/frame_collapse/``
 
+.. figure:: ./img/examples/frame_collapse/screenshot.png
+
 ----
 
 News Website Comparison
@@ -138,6 +158,8 @@ Two **web view** elements side by side, each loading a different news website.
 A minimal example with no callbacks or variables — just YAML config.
 
 **Location:** ``examples/webpage/``
+
+.. figure:: ./img/examples/webpage/screenshot.png
 
 .. literalinclude:: ../../examples/webpage/webpage.yml
    :language: yaml
@@ -151,20 +173,20 @@ Demonstrates the **MapLibre GL** map widget with a list box to change the basema
 
 **Location:** ``examples/maplibre/``
 
+.. figure:: ./img/examples/maplibre/screenshot.png
+
 .. code-block:: bash
 
    cd examples/maplibre && python maplibre_example.py
 
 ----
 
-Mapbox map (drawing and markers)
----------------------------------
+Visual Delta
+------------
 
-Demonstrates the **Mapbox GL** map widget with two tabs:
+A more complex example demonstrating a **map widget** with **menus**, **dropdowns**,
+**sliders**, and **buttons** for exploring climate impact scenarios.
 
-* **Drawing tab** — draw and delete polygons and polylines on the map
-* **Markers tab** — add icon markers at clicked locations
+**Location:** ``examples/visualdelta/``
 
-Requires a Mapbox token in ``mapbox_token.txt``.
-
-**Location:** ``examples/mapbox/``
+.. figure:: ./img/examples/visualdelta/screenshot.png

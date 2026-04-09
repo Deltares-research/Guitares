@@ -58,7 +58,7 @@ class GUI:
     def __init__(
         self,
         module: Any,
-        framework: str = "pyqt5",
+        framework: str = "pyside6",
         splash_file: Optional[str] = None,
         stylesheet: Optional[str] = None,
         config_path: Optional[str] = None,
@@ -70,7 +70,7 @@ class GUI:
         js_messages: bool = True,
         copy_map_server_folder: bool = True,
         icon_path: Optional[str] = None,
-        map_engine: str = "mapbox",
+        map_engine: str = "maplibre",
         mapbox_token_file: str = "mapbox_token.txt",
     ) -> None:
         self.module: Any = module

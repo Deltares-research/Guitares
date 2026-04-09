@@ -21,7 +21,7 @@ class VisualDelta:
         self.server_path = server_path
 
         self.gui = GUI(self,
-                       framework="pyqt5",
+                       framework="pyside6",
                        splash_file="visualdelta.jpg",
                        config_file="visualdelta.yml",
                        stylesheet="Combinear.qss",

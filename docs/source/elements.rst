@@ -637,12 +637,15 @@ A date and time picker widget.
 
 ----
 
-Table view
-----------
+Table view (read-only)
+---------------------
 
 ``style: tableview``
 
-A read-only (or sortable) table populated from a ``pandas.DataFrame`` stored in a variable.
+A read-only table populated from a ``pandas.DataFrame`` stored in a variable.
+Supports row or column selection, sorting by column header click, and single
+or multi-selection. The table cannot be edited by the user — use ``style: table``
+for an editable table.
 
 .. list-table::
    :widths: 30 10 15 45
@@ -705,6 +708,78 @@ Example:
      option_value: {variable: scenarios_df}
      selection_type: single
      method: select_scenario
+
+----
+
+Table (editable)
+----------------
+
+``style: table``
+
+An editable table backed by a ``pandas.DataFrame``. Users can double-click
+(or press a key) to edit cell values in place. The edited value is parsed back
+to the column's original dtype (int, float, or str). Invalid input is
+automatically reverted.
+
+.. figure:: ./img/examples/table/screenshot.png
+
+.. list-table::
+   :widths: 30 10 15 45
+   :header-rows: 1
+
+   * - Key
+     - Type
+     - Default
+     - Description
+   * - **position**
+     - dict
+     -
+     - Element placement
+   * - **option_value**
+     - dict
+     -
+     - ``{variable, variable_group}`` pointing to the DataFrame variable
+   * - variable_group
+     - str
+     - inherited
+     - Variable group
+   * - editable
+     - bool
+     - ``false``
+     - When ``true``, cells can be edited by double-clicking. When ``false`` the table
+       behaves as read-only with row selection.
+   * - sortable
+     - bool
+     - ``false``
+     - Whether clicking a column header sorts the table
+   * - method
+     - str
+     -
+     - Callback fired after a cell is edited (or a row is selected when not editable)
+   * - text
+     - str / dict
+     - ``""``
+     - Label displayed below the table
+
+Example:
+
+.. code-block:: yaml
+
+   - style: table
+     position: {x: 10, y: 10, width: -10, height: 150}
+     text: Parameters
+     option_value: {variable: dataframe}
+     editable: true
+     method: on_cell_edit
+
+Python setup:
+
+.. code-block:: python
+
+   import pandas as pd
+
+   df = pd.DataFrame({"name": ["a1", "a2"], "value": [1.0, 2.0]})
+   app.gui.setvar("mygroup", "dataframe", df)
 
 ----
 

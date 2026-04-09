@@ -106,7 +106,7 @@ class Table(QTableWidget):
                 dtype = df.iloc[:, col].dtype
                 if dtype in (np.float64, np.int64, float, int):
                     item.setTextAlignment(
-                        int(Qt.AlignRight | Qt.AlignVCenter)
+                        Qt.AlignRight | Qt.AlignVCenter
                     )
 
                 # Non-editable mode: make cells read-only

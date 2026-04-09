@@ -25,9 +25,10 @@ class PopupMenu(QComboBox):
             group = element.option_string.variable_group
             name = element.option_string.variable
             v = element.getvar(group, name)
-            for txt in v:
-                self.addItem(txt)
-        else:
+            if v is not None:
+                for txt in v:
+                    self.addItem(txt)
+        elif element.option_string.list:
             for txt in element.option_string.list:
                 self.addItem(txt)
 

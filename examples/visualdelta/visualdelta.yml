@@ -37,7 +37,7 @@ menu:
       - text: "About Deltares"
         method: about_deltares
 element:
-  - style: mapbox
+  - style: map
     id: main_map
     position:
       x: 20

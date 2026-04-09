@@ -13,7 +13,7 @@ class Calculator:
     def __init__(self):
 
         self.gui = GUI(self,
-                       framework="pyqt5",
+                       framework="pyside6",
                        splash_file="calculator.jpg",
                        stylesheet="Combinear.qss",
                        config_file="calculator.yml")

@@ -64,7 +64,7 @@ class ListBox(QListWidget):
             self.setToolTip(txt)
 
         if self.element.multiselection:
-            self.setSelectionMode(3)
+            self.setSelectionMode(self.SelectionMode.ExtendedSelection)
 
         # First call back to change the variable
         self.itemSelectionChanged.connect(self.callback)
