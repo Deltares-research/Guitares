@@ -457,7 +457,7 @@ def dialog(
         dlg = AutoCloseDialog(window, text, timeout=timeout)
         dlg.exec()
     elif type == "fade_label":
-        dlg = FadeLabel(window, text).show()
+        dlg = FadeLabel(window, text, timeout=timeout).show()
     elif type == "critical":
         ret = QMessageBox.critical(window, title, text, QMessageBox.Ok, QMessageBox.Ok)
         return ret

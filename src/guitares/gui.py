@@ -220,6 +220,14 @@ class GUI:
         self.window.build()
         self.window.resize()
 
+        # Install edit mode (only when debugger is attached)
+        from guitares.edit_mode import EditMode, is_debug
+
+        self.edit_mode = EditMode(self)
+        if is_debug() and self.framework == "pyside6":
+            self.edit_mode.install(self.window.window_widget)
+            print("Edit Mode  |  Ctrl+E toggle  |  Ctrl+A add  |  Ctrl+Z undo  |  Ctrl+S save")
+
         # Call on_build method after building window
         if hasattr(self.module, "on_build"):
             self.module.on_build()
@@ -341,8 +349,10 @@ class GUI:
             self.popup_data[id] = copy.copy(data)
         else:
             self.popup_data[id] = None
+        saved_resize_factor = self.resize_factor
         self.popup_window[id] = Window(config, self, type="popup")
         p = self.popup_window[id].build()
+        self.resize_factor = saved_resize_factor
         okay = False
         if p.result() == 1:
             okay = True
@@ -406,22 +416,29 @@ class GUI:
         List[dict]
             List of element dictionaries.
         """
-        suffix = Path(path).joinpath(file_name).suffix
+        full_path = os.path.join(path, file_name)
+        suffix = Path(full_path).suffix
         if suffix == ".yml":
-            d = yaml2dict(os.path.join(path, file_name))
+            d = yaml2dict(full_path)
         elif suffix == ".toml":
-            d = toml.load(os.path.join(path, file_name))
+            d = toml.load(full_path)
         element = d["element"]
-        for el in d["element"]:
+        # Tag each element with its source YAML file
+        for el in element:
+            el["_source_yml"] = full_path
             if el["style"] == "tabpanel":
                 # Loop through tabs
                 for tab in el["tab"]:
                     if "element" in tab:
                         if isinstance(tab["element"], str):
-                            # Must be a file
+                            # Must be a file — recurse
                             tab["element"] = self.read_gui_elements(
                                 path, tab["element"]
                             )
+                        else:
+                            # Inline elements — tag them
+                            for sub_el in tab["element"]:
+                                sub_el["_source_yml"] = full_path
                     else:
                         tab["element"] = []
         return element

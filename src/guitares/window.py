@@ -117,7 +117,8 @@ class Window:
             config_dict["element"].append(ok)
 
         self.add_elements_to_tree(config_dict["element"], self, self)
-        self.add_menu_to_tree(self.menus, config_dict["menu"], self)
+        if "menu" in config_dict:
+            self.add_menu_to_tree(self.menus, config_dict["menu"], self)
 
         self.statusbar_fields: list = []  # temporary list
         if "statusbar" in config_dict:

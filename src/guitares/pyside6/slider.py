@@ -99,7 +99,7 @@ class Slider(QSlider):
         for ii, label in enumerate(self.tick_widget):
             fm = label.fontMetrics()
             hlab = fm.height()
-            wlab = fm.width(label.text(), label.fontInfo().pointSize())
+            wlab = fm.horizontalAdvance(label.text())
             label.setAlignment(Qt.AlignHCenter)
             label.setAlignment(Qt.AlignTop)
             label.setGeometry(ticks[ii], y0 + hgt, wlab, hlab)

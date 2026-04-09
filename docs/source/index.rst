@@ -48,6 +48,8 @@ Contents
    menu
    map
    popup_window
+   dialogs
+   edit_mode
    stylesheets
    guiobject
    examples

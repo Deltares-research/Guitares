@@ -431,6 +431,9 @@ class Element:
         if "zoom_control" in dct:
             self.zoom_control = dct["zoom_control"]    
 
+        # Track source YAML file for edit mode
+        self._source_yml: Optional[str] = dct.get("_source_yml")
+
         if "dependency" in dct:
             for dep in dct["dependency"]:
                 dependency = Dependency()
