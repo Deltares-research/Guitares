@@ -61,7 +61,7 @@ class DeckGeoJSONLayer(Layer):
                  legend_title="",
                  crs=None):
 
-        # Remove existing layer        
+        # Remove existing layer
         self.mapbox.runjs("./js/main.js", "removeLayer", arglist=[self.map_id])
 
         # Assuming data is GeoDataFrame

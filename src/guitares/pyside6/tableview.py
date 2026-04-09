@@ -138,7 +138,7 @@ class DataFrameModel(QtCore.QAbstractTableModel):
         if role == QtCore.Qt.DisplayRole:
             return str(val)
         elif role == QtCore.Qt.TextAlignmentRole:
-            if dt in ("float64", "int64") or dt == float or dt == int:
+            if dt in ("float64", "int64") or dt is float or dt is int:
                 return int(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
             return int(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
         elif role == DataFrameModel.ValueRole:
@@ -278,7 +278,9 @@ class TableView(QTableView):
         )
         if df is not None:
             self.df = df  # Original unsorted dataframe
-            df_sorted = copy.copy(df.reset_index())  # Sorted dataframe (includes 'index' column for mapping)
+            df_sorted = copy.copy(
+                df.reset_index()
+            )  # Sorted dataframe (includes 'index' column for mapping)
         else:
             df_sorted = df
         # Update items
@@ -317,7 +319,6 @@ class TableView(QTableView):
         else:
             raise ValueError("Selection behavior not recognized")
         self.execute_callback = True
-
 
     def callback(self) -> None:
         """Handle selection and fire the element callback."""

@@ -12,7 +12,7 @@ export function addLayer(id,
                          lineStyle,
                          lineOpacity,
                          fillColor,
-                         fillOpacity,                         
+                         fillOpacity,
                          circleRadius,
                          lineColorActive,
                          fillColorActive,
@@ -33,14 +33,14 @@ export function addLayer(id,
     closeButton: false,
     closeOnClick: false
   });
-  
+
   hover_property = hovprop
 
   var selectedFeatures = []
 
   layers[id] = {}
-  layers[id].data = data; 
-  layers[id].mode = "active"; 
+  layers[id].data = data;
+  layers[id].mode = "active";
 
   // Select first index
   selectByIndex(id, index);
@@ -56,7 +56,7 @@ export function addLayer(id,
     'id': id,
     'type': 'circle',
     'source': id,
-    'paint': {      
+    'paint': {
       'circle-stroke-color': ['case',
                                ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
                                lineColorActive,
@@ -85,7 +85,7 @@ export function addLayer(id,
     map.on('click', id, clickSingle);
   } else {
     map.on('click', id, clickMultiple);
-  }  
+  }
   map.once('idle', () => {
     updateFeatureState(id);
     // Call layerAdded in main.js
@@ -96,10 +96,10 @@ export function addLayer(id,
 
 
 function mouseEnter(e) {
-  if (map.getFeatureState({ source: e.features[0].source, id: e.features[0].id }).active) { 
+  if (map.getFeatureState({ source: e.features[0].source, id: e.features[0].id }).active) {
     // Change the cursor style as a UI indicator
     map.getCanvas().style.cursor = 'pointer';
-    if (e.features[0].properties.hasOwnProperty('hover_popup_width')) {  
+    if (e.features[0].properties.hasOwnProperty('hover_popup_width')) {
       popup.setMaxWidth(e.features[0].properties.hover_popup_width);
     }
     // Copy coordinates array.
@@ -115,21 +115,21 @@ function mouseEnter(e) {
     var text = e.features[0].properties[hover_property];
     var lngLat = e.features[0].geometry.coordinates;
     popup.setLngLat(lngLat).setText(text).addTo(map);
-    // Unset old hovered feature 
+    // Unset old hovered feature
     if (hoveredId !== null) {
       map.setFeatureState(
         { source: e.features[0].source, id: e.features[0].id },
         { hover: false }
       );
-    }  
-    // Set hovered feature 
+    }
+    // Set hovered feature
     map.setFeatureState(
       { source: e.features[0].source, id: e.features[0].id },
       { hover: true }
     );
     hoveredId = e.features[0].id;
     activeLayerId = e.features[0].source;
-  } 
+  }
 }
 
 function mouseLeave(e) {
@@ -201,7 +201,7 @@ function updateFeatureState(layerId) {
     var active = false;
   }
   const features = map.querySourceFeatures(layerId, {sourceLayer: layerId});
-  for (let i = 0; i < features.length; i++) {    
+  for (let i = 0; i < features.length; i++) {
     const index = features[i].id;
     if (layers[layerId].data.features[index].selected) {
       map.setFeatureState(
@@ -214,7 +214,7 @@ function updateFeatureState(layerId) {
         { selected: false, active: active }
       );
     }
-  }  
+  }
 }
 
 
@@ -229,7 +229,7 @@ export function activate(id,
   circleRadius,
   lineColorSelected,
   fillColorSelected,
-  circleRadiusSelected) {  
+  circleRadiusSelected) {
 
   layers[id].mode = "active"
 
@@ -262,7 +262,7 @@ export function deactivate(id,
   circleRadius,
   lineColorSelected,
   fillColorSelected,
-  circleRadiusSelected) {  
+  circleRadiusSelected) {
   layers[id].mode = "inactive"
   if (map.getLayer(id)) {
     map.setPaintProperty(id, 'circle-stroke-color', ['case',
@@ -300,5 +300,5 @@ export function remove(id) {
     map.off('click', id, clickSingle);
   } else {
     map.off('click', id, clickMultiple);
-  }  
+  }
 }

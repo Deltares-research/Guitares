@@ -46,7 +46,7 @@ export function addLayer(id,
     'id': id,
     'type': 'line',
     'source': id,
-    'paint': {      
+    'paint': {
       'line-color': ['case',
                              ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
                              lineColorSelected,
@@ -71,7 +71,7 @@ export function addLayer(id,
 
   map.on('mouseenter', id, (e) => {
 
-    if (map.getFeatureState({ source: id, id: e.features[0].id }).active) { 
+    if (map.getFeatureState({ source: id, id: e.features[0].id }).active) {
 
       // Change the cursor style as a UI indicator.
       map.getCanvas().style.cursor = 'pointer';
@@ -79,7 +79,7 @@ export function addLayer(id,
       var description   = e.features[0].properties[hoverParam];
 
 
-      if (e.features[0].properties.hasOwnProperty('hover_popup_width')) {  
+      if (e.features[0].properties.hasOwnProperty('hover_popup_width')) {
 	    	popup.setMaxWidth(e.features[0].properties.hover_popup_width);
       }
 
@@ -96,7 +96,7 @@ export function addLayer(id,
       // based on the feature found.
       popup.setLngLat(coordinates).setHTML(description).addTo(map);
 
-    } 
+    }
   });
 
   map.on('mouseleave', id, () => {
@@ -109,12 +109,12 @@ export function addLayer(id,
   map.on('mousemove', id, (e) => {
 
     if (e.features.length > 0) {
-      if (map.getFeatureState({ source: id, id: e.features[0].id }).active) { 
+      if (map.getFeatureState({ source: id, id: e.features[0].id }).active) {
         if (hoveredId !== null) {
           map.setFeatureState(
             { source: id, id: hoveredId },
             { hover: false }
-          ); 
+          );
         }
         hoveredId = e.features[0].id;
         map.setFeatureState(
@@ -139,7 +139,7 @@ export function addLayer(id,
 
   if (selectionOption == "single") {
     map.on('click', id, (e) => {
-      if (map.getFeatureState({ source: id, id: e.features[0].id }).active) { 
+      if (map.getFeatureState({ source: id, id: e.features[0].id }).active) {
         setSelectedIndex(id, e.features[0].id);
         featureClicked(id, e.features[0]);
       }
@@ -203,12 +203,12 @@ export function activate(id,
       { active: true }
     );
   }
-  if (map.getLayer(id)) {  
+  if (map.getLayer(id)) {
     map.setPaintProperty(id, 'line-color', ['case',
       ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
       lineColorSelected,
-      lineColor]);                          
-  }                           
+      lineColor]);
+  }
 }
 
 export function deactivate(id,
@@ -223,8 +223,8 @@ export function deactivate(id,
       { source: id, id: i },
       { active: false }
     );
-  }  
-  if (map.getLayer(id)) {  
-    map.setPaintProperty(id, 'line-color', lineColor);                          
+  }
+  if (map.getLayer(id)) {
+    map.setPaintProperty(id, 'line-color', lineColor);
   }
 }

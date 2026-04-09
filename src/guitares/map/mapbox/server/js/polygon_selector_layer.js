@@ -13,7 +13,7 @@ export function addLayer(id,
   paintProperties,
   selectionOption) {
 
-  hover_property = hovprop  
+  hover_property = hovprop
 
   let hoveredId = null
   let fillId = id + ".fill"
@@ -36,11 +36,11 @@ export function addLayer(id,
     closeButton: false,
     closeOnClick: false
   });
-  
+
   // Define the layer
   layers[id] = {};
-  layers[id].data = data; 
-  layers[id].mode = "active"; 
+  layers[id].data = data;
+  layers[id].mode = "active";
 
   // Add source
   // The feature id is promoted to the index property
@@ -62,18 +62,18 @@ export function addLayer(id,
         ['boolean', ['feature-state', 'selected'], false], paintProperties.lineColorSelected,
 //        ['boolean', ['feature-state', 'hovered'], false], paintProperties.lineColorHover,
         paintProperties.lineColor
-      ], 
+      ],
       'line-opacity': [
         'case',
         ['boolean', ['feature-state', 'selected'], false], paintProperties.lineOpacitySelected,
         paintProperties.lineOpacity
-      ], 
+      ],
       'line-width': [
         'case',
         ['boolean', ['feature-state', 'selected'], false], paintProperties.lineWidthSelected,
         ['boolean', ['feature-state', 'hovered'], false], paintProperties.lineWidthHover,
         paintProperties.lineWidth
-      ], 
+      ],
     },
     'layout': {
       // Make the layer visible by default.
@@ -92,13 +92,13 @@ export function addLayer(id,
         ['boolean', ['feature-state', 'selected'], false], paintProperties.fillColorSelected,
         ['boolean', ['feature-state', 'hovered'], false], paintProperties.fillColorHover,
         paintProperties.fillColor
-      ], 
+      ],
       'fill-opacity': [
         'case',
         ['boolean', ['feature-state', 'selected'], false], paintProperties.fillOpacitySelected,
         ['boolean', ['feature-state', 'hovered'], false], paintProperties.fillOpacityHover,
         paintProperties.fillOpacity
-      ], 
+      ],
       'fill-outline-color': 'transparent'
     },
     'layout': {
@@ -124,7 +124,7 @@ export function addLayer(id,
   } else {
     map.off('click', fillId, clickMultiple);
     map.on('click', fillId, clickMultiple);
-  }  
+  }
 
   map.once('idle', () => {
     deselectAll(id);
@@ -132,7 +132,7 @@ export function addLayer(id,
     layerAdded(id);
   });
 
-  // If there are any selected features, select them 
+  // If there are any selected features, select them
   if (index.length > 0) {
     select(id, index);
   }
@@ -142,27 +142,27 @@ export function addLayer(id,
 function mouseEnter(e) {
     // Change the cursor style as a UI indicator.
     map.getCanvas().style.cursor = 'pointer';
-    if (e.features[0].properties.hasOwnProperty('hover_popup_width')) {  
+    if (e.features[0].properties.hasOwnProperty('hover_popup_width')) {
       popup.setMaxWidth(e.features[0].properties.hover_popup_width);
     }
     var text = e.features[0].properties[hover_property];
     var lngLat = e.lngLat;
     popup.setLngLat(lngLat).setText(text).addTo(map);
-    // Unset old hovered feature 
+    // Unset old hovered feature
     if (hoveredId !== null) {
       map.setFeatureState(
         { source: e.features[0].source, id: hoveredId },
         { hovered: false }
       );
-    }  
-    // Set hovered feature 
+    }
+    // Set hovered feature
     map.setFeatureState(
       { source: e.features[0].source, id: e.features[0].id },
       { hovered: true }
     );
     hoveredId = e.features[0].id;
     activeLayerId = e.features[0].source;
-  } 
+  }
 
 function mouseLeave(e) {
   map.getCanvas().style.cursor = currentCursor;
@@ -188,7 +188,7 @@ function clickSingle(e) {
   // First deselect previous feature
   if (selectedIndex !== null) {
     deselect(layerId, [selectedIndex]);
-  }  
+  }
 
   // Then select the clicked feature
   selectedIndex = e.features[0].id;
@@ -223,7 +223,7 @@ function clickMultiple(e) {
     if (featureState.selected) {
       selectedFeatures.push(layers[layerId].data.features[i]);
     }
-  }  
+  }
   // And call main.js
   featureClicked(layerId, selectedFeatures);
 }

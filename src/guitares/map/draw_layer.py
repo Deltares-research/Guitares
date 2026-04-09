@@ -281,7 +281,9 @@ class DrawLayer(Layer):
                     arglist=[self.map_id],
                 )
             else:
-                self.map.runjs("/js/draw_layer.js", "drawPolyline", arglist=[self.map_id])
+                self.map.runjs(
+                    "/js/draw_layer.js", "drawPolyline", arglist=[self.map_id]
+                )
         elif self.shape == "rectangle":
             self.map.runjs("/js/draw_layer.js", "drawRectangle", arglist=[self.map_id])
 
@@ -415,9 +417,11 @@ class DrawLayer(Layer):
             # Compute rotation using geodetic bearing of the first edge
             # in EPSG:4326. This avoids meridian convergence issues that
             # arise when computing atan2 on projected coordinates.
-            geom_4326 = gpd.GeoDataFrame.from_features(
-                feature_collection, crs=4326
-            ).iloc[index].geometry
+            geom_4326 = (
+                gpd.GeoDataFrame.from_features(feature_collection, crs=4326)
+                .iloc[index]
+                .geometry
+            )
             rotation = _geodetic_edge_bearing(geom_4326)
 
             self.gdf.loc[index, "x0"] = x0

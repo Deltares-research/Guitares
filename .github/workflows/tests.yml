@@ -1,0 +1,58 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }} with Python ${{ matrix.python-version }}
+    runs-on: "${{ matrix.os }}"
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - python-version: "3.12"
+            os: ubuntu-latest
+            coverage: true
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup MiniConda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: guitares
+          auto-update-conda: true
+          channels: conda-forge
+
+      - name: Create environment
+        shell: bash -el {0}
+        run: |
+          conda create -n guitares python=${{ matrix.python-version }} -y
+
+      - name: Install test dependencies
+        run: |
+          conda run -n guitares pip install -e ".[tests]"
+
+      - name: Test with pytest
+        run: |
+          conda run -n guitares pytest tests
+
+      - name: Upload coverage report
+        if: matrix.coverage == true
+        uses: actions/upload-artifact@v4
+        with:
+          if-no-files-found: error
+          name: coverage-report
+          path: coverage.xml

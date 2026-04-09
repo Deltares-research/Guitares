@@ -7,7 +7,9 @@ import shutil
 import sys
 
 # Suppress noisy QWebChannel "no notify signal" warnings for inherited QWidget properties
-os.environ["QT_LOGGING_RULES"] = "qt.webchannel.warning=false;qt.webengine.qwebchannel=false"
+os.environ["QT_LOGGING_RULES"] = (
+    "qt.webchannel.warning=false;qt.webengine.qwebchannel=false"
+)
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -226,7 +228,9 @@ class GUI:
         self.edit_mode = EditMode(self)
         if is_debug() and self.framework == "pyside6":
             self.edit_mode.install(self.window.window_widget)
-            print("Edit Mode  |  Ctrl+E toggle  |  Ctrl+A add  |  Ctrl+Z undo  |  Ctrl+S save")
+            print(
+                "Edit Mode  |  Ctrl+E toggle  |  Ctrl+A add  |  Ctrl+Z undo  |  Ctrl+S save"
+            )
 
         # Call on_build method after building window
         if hasattr(self.module, "on_build"):

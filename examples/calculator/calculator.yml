@@ -49,7 +49,7 @@ element:
         y: 10
         width: 80
         height: 20
-      text: "="  
+      text: "="
       variable: answer
       enable: False
       tooltip: This should be your answer. Is it correct?

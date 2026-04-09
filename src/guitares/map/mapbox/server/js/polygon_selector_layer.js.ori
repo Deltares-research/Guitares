@@ -38,11 +38,11 @@ export function addLayer(id,
     closeButton: false,
     closeOnClick: false
   });
-  
+
   // Define the layer
   layers[id] = {}
-  layers[id].data = data; 
-  layers[id].mode = "active"; 
+  layers[id].data = data;
+  layers[id].mode = "active";
 
   // Add source
   map.addSource(id, {
@@ -100,7 +100,7 @@ export function addLayer(id,
       selectByIndex(id, index);
       for (let i = 0; i < layers[id].data.features.length; i++) {
         if (i == index) {
-          featureClicked(id, layers[id].data.features[i]) 
+          featureClicked(id, layers[id].data.features[i])
         }
       }
     }
@@ -111,7 +111,7 @@ export function addLayer(id,
       selectByIndex(id, index);
       featureClicked(id, selectedFeatures)
     }
-  }  
+  }
   map.once('idle', () => {
     updateFeatureState(id);
     // Call layerAdded in main.js
@@ -121,30 +121,30 @@ export function addLayer(id,
 };
 
 function mouseEnter(e) {
-  if (map.getFeatureState({ source: e.features[0].source, id: e.features[0].id }).active) { 
+  if (map.getFeatureState({ source: e.features[0].source, id: e.features[0].id }).active) {
     // Change the cursor style as a UI indicator.
     map.getCanvas().style.cursor = 'pointer';
-    if (e.features[0].properties.hasOwnProperty('hover_popup_width')) {  
+    if (e.features[0].properties.hasOwnProperty('hover_popup_width')) {
       popup.setMaxWidth(e.features[0].properties.hover_popup_width);
     }
     var text = e.features[0].properties[hover_property];
     var lngLat = e.lngLat;
     popup.setLngLat(lngLat).setText(text).addTo(map);
-    // Unset old hovered feature 
+    // Unset old hovered feature
     if (hoveredId !== null) {
       map.setFeatureState(
         { source: e.features[0].source, id: hoveredId },
         { hover: false }
       );
-    }  
-    // Set hovered feature 
+    }
+    // Set hovered feature
     map.setFeatureState(
       { source: e.features[0].source, id: e.features[0].id },
       { hover: true }
     );
     hoveredId = e.features[0].id;
     activeLayerId = e.features[0].source;
-  } 
+  }
 }
 
 function mouseLeave(e) {
@@ -248,7 +248,7 @@ function updateFeatureState(layerId) {
         { selected: false, active: active }
       );
     }
-  }  
+  }
 }
 
 // Set colors to active and update feature state
@@ -280,7 +280,7 @@ export function deactivate(id,
   fillColor,
   fillOpacity,
   lineColorActive,
-  fillColorActive) {  
+  fillColorActive) {
   layers[id].mode = "inactive"
   if (map.getLayer(id)) {
     map.setPaintProperty(id, 'circle-stroke-color', ['case',

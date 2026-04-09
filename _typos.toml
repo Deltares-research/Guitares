@@ -1,0 +1,16 @@
+[default.extend-words]
+# Project name - not a typo
+guitares = "guitares"
+Guitares = "Guitares"
+
+[files]
+extend-exclude = [
+    "*.js",
+    "*.js.*",
+    "*.css",
+    "*.qss",
+    "*.min.js",
+    "stylesheets/",
+    "**/server/",
+    "**/icons_rc.py",
+]

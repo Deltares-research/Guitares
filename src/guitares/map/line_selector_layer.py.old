@@ -69,7 +69,7 @@ class LineSelectorLayer(Layer):
                                                                                self.line_width_selected,
                                                                                self.line_style_selected,
                                                                                self.line_opacity_selected])
-  
+
     def deactivate(self):
         # The line_selector_layer has no setPaintProperties yet.
         return

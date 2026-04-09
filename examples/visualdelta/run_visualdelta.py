@@ -3,13 +3,12 @@ Example visualdelta
 """
 
 import sys
-from PyQt5.QtWidgets import QApplication
-from PyQt5 import QtCore
 
+from PyQt5 import QtCore
+from PyQt5.QtWidgets import QApplication
 from visualdelta import visualdelta
 
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     app = QApplication(sys.argv)
 

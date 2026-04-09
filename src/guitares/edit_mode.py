@@ -11,11 +11,9 @@ import sys
 from typing import Any, Dict, List, Optional, Tuple
 
 import yaml
-
 from PySide6 import QtCore, QtGui
-from PySide6.QtCore import Qt, QPoint, QRect
+from PySide6.QtCore import QPoint, QRect, Qt
 from PySide6.QtWidgets import QApplication, QWidget
-
 
 SNAP = 5  # Grid snap in pixels
 
@@ -143,7 +141,9 @@ class DragOverlay(QWidget):
             self.move(int(new_x), int(new_y))
             parent_h = self.parent().height() if self.parent() else 0
             self.element.position.x = round(new_x / rf / SNAP) * SNAP
-            self.element.position.y = round((parent_h - new_y - self.height()) / rf / SNAP) * SNAP
+            self.element.position.y = (
+                round((parent_h - new_y - self.height()) / rf / SNAP) * SNAP
+            )
             self.element.set_geometry()
 
         elif self._resizing:
@@ -160,7 +160,9 @@ class DragOverlay(QWidget):
                 new_left = int(round((geo.left() + dx) / snap_pixels) * snap_pixels)
                 geo.setLeft(new_left)
             if "b" in c:
-                geo.setBottom(int(round((geo.bottom() + dy) / snap_pixels) * snap_pixels))
+                geo.setBottom(
+                    int(round((geo.bottom() + dy) / snap_pixels) * snap_pixels)
+                )
             if "t" in c:
                 new_top = int(round((geo.top() + dy) / snap_pixels) * snap_pixels)
                 geo.setTop(new_top)
@@ -175,7 +177,9 @@ class DragOverlay(QWidget):
 
             parent_h = self.parent().height() if self.parent() else 0
             self.element.position.x = round(geo.x() / rf / SNAP) * SNAP
-            self.element.position.y = round((parent_h - geo.y() - geo.height()) / rf / SNAP) * SNAP
+            self.element.position.y = (
+                round((parent_h - geo.y() - geo.height()) / rf / SNAP) * SNAP
+            )
             self.element.position.width = round(geo.width() / rf / SNAP) * SNAP
             self.element.position.height = round(geo.height() / rf / SNAP) * SNAP
             self.element.set_geometry()
@@ -242,19 +246,13 @@ class EditMode:
         )
         self._shortcut_toggle.activated.connect(self.toggle)
 
-        self._shortcut_save = QtGui.QShortcut(
-            QtGui.QKeySequence("Ctrl+S"), main_window
-        )
+        self._shortcut_save = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+S"), main_window)
         self._shortcut_save.activated.connect(self.save)
 
-        self._shortcut_undo = QtGui.QShortcut(
-            QtGui.QKeySequence("Ctrl+Z"), main_window
-        )
+        self._shortcut_undo = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+Z"), main_window)
         self._shortcut_undo.activated.connect(self.undo)
 
-        self._shortcut_add = QtGui.QShortcut(
-            QtGui.QKeySequence("Ctrl+A"), main_window
-        )
+        self._shortcut_add = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+A"), main_window)
         self._shortcut_add.activated.connect(self.add_element)
         self._main_window = main_window
 
@@ -270,7 +268,9 @@ class EditMode:
         if self.active:
             return
         self.active = True
-        print("=== EDIT MODE ON (Ctrl+E exit, Ctrl+S save, Ctrl+Z undo, Ctrl+A add) ===")
+        print(
+            "=== EDIT MODE ON (Ctrl+E exit, Ctrl+S save, Ctrl+Z undo, Ctrl+A add) ==="
+        )
         self.gui.window.dialog_fade_label(
             "Edit Mode  |  Ctrl+E toggle  |  Ctrl+A add  |  Ctrl+Z undo  |  Ctrl+S save",
             timeout=5000,
@@ -308,8 +308,10 @@ class EditMode:
         for overlay in self.overlays:
             el = overlay.element
             self._saved_positions[id(el)] = (
-                el.position.x, el.position.y,
-                el.position.width, el.position.height,
+                el.position.x,
+                el.position.y,
+                el.position.width,
+                el.position.height,
             )
         print(f"  Snapshot: {len(self._saved_positions)} widget positions saved")
 
@@ -347,7 +349,9 @@ class EditMode:
             if source:
                 by_file.setdefault(source, []).append(overlay)
             else:
-                print(f"  Warning: no source YAML for {overlay.element.style} — skipping")
+                print(
+                    f"  Warning: no source YAML for {overlay.element.style} — skipping"
+                )
 
         for yml_path, overlays in by_file.items():
             try:
@@ -372,9 +376,17 @@ class EditMode:
                 continue
 
             # Skip certain widget types that are hard to drag
-            skip_styles = {"tabpanel", "panel", "map", "mapbox", "mapbox_compare",
-                           "maplibre", "maplibre_compare", "webpage",
-                           "radiobuttongroup"}
+            skip_styles = {
+                "tabpanel",
+                "panel",
+                "map",
+                "mapbox",
+                "mapbox_compare",
+                "maplibre",
+                "maplibre_compare",
+                "webpage",
+                "radiobuttongroup",
+            }
             if element.style in skip_styles:
                 pass  # Don't create overlay for containers, but recurse into children
             else:
@@ -398,7 +410,6 @@ class EditMode:
             if hasattr(element, "elements") and element.elements:
                 self._create_overlays(element.elements)
 
-
     def add_element(self) -> None:
         """Prompt for element properties, then let user click to place it."""
         if not self.active:
@@ -410,8 +421,13 @@ class EditMode:
 
         # Available styles for new elements
         style_options = [
-            "edit", "text", "pushbutton", "checkbox",
-            "popupmenu", "slider", "spinbox",
+            "edit",
+            "text",
+            "pushbutton",
+            "checkbox",
+            "popupmenu",
+            "slider",
+            "spinbox",
         ]
         text_pos_options = ["left", "above", "above-left", "above-center", "right"]
 
@@ -438,33 +454,98 @@ class EditMode:
             },
             "menu": [],
             "element": [
-                {"style": "popupmenu", "variable": "style",
-                 "text": "Style", "text_position": "above-left",
-                 "select": "item",
-                 "option_string": style_options,
-                 "option_value": style_options,
-                 "position": {"x": 15, "y": win_height - 55, "width": 140, "height": 20}},
-                {"style": "edit", "variable": "text", "text": "Text",
-                 "text_position": "above-left",
-                 "position": {"x": 15, "y": win_height - 110, "width": fw, "height": 20}},
-                {"style": "popupmenu", "variable": "text_position",
-                 "text": "Text Position", "text_position": "above-left",
-                 "select": "item",
-                 "option_string": text_pos_options,
-                 "option_value": text_pos_options,
-                 "position": {"x": 15, "y": win_height - 165, "width": 140, "height": 20}},
-                {"style": "edit", "variable": "tooltip", "text": "Tooltip",
-                 "text_position": "above-left",
-                 "position": {"x": 15, "y": win_height - 220, "width": fw, "height": 20}},
-                {"style": "edit", "variable": "variable", "text": "Variable",
-                 "text_position": "above-left",
-                 "position": {"x": 15, "y": win_height - 275, "width": 200, "height": 20}},
-                {"style": "edit", "variable": "width", "text": "Width", "type": "int",
-                 "text_position": "above-center",
-                 "position": {"x": 230, "y": win_height - 275, "width": 50, "height": 20}},
-                {"style": "edit", "variable": "height", "text": "Height", "type": "int",
-                 "text_position": "above-center",
-                 "position": {"x": 285, "y": win_height - 275, "width": 50, "height": 20}},
+                {
+                    "style": "popupmenu",
+                    "variable": "style",
+                    "text": "Style",
+                    "text_position": "above-left",
+                    "select": "item",
+                    "option_string": style_options,
+                    "option_value": style_options,
+                    "position": {
+                        "x": 15,
+                        "y": win_height - 55,
+                        "width": 140,
+                        "height": 20,
+                    },
+                },
+                {
+                    "style": "edit",
+                    "variable": "text",
+                    "text": "Text",
+                    "text_position": "above-left",
+                    "position": {
+                        "x": 15,
+                        "y": win_height - 110,
+                        "width": fw,
+                        "height": 20,
+                    },
+                },
+                {
+                    "style": "popupmenu",
+                    "variable": "text_position",
+                    "text": "Text Position",
+                    "text_position": "above-left",
+                    "select": "item",
+                    "option_string": text_pos_options,
+                    "option_value": text_pos_options,
+                    "position": {
+                        "x": 15,
+                        "y": win_height - 165,
+                        "width": 140,
+                        "height": 20,
+                    },
+                },
+                {
+                    "style": "edit",
+                    "variable": "tooltip",
+                    "text": "Tooltip",
+                    "text_position": "above-left",
+                    "position": {
+                        "x": 15,
+                        "y": win_height - 220,
+                        "width": fw,
+                        "height": 20,
+                    },
+                },
+                {
+                    "style": "edit",
+                    "variable": "variable",
+                    "text": "Variable",
+                    "text_position": "above-left",
+                    "position": {
+                        "x": 15,
+                        "y": win_height - 275,
+                        "width": 200,
+                        "height": 20,
+                    },
+                },
+                {
+                    "style": "edit",
+                    "variable": "width",
+                    "text": "Width",
+                    "type": "int",
+                    "text_position": "above-center",
+                    "position": {
+                        "x": 230,
+                        "y": win_height - 275,
+                        "width": 50,
+                        "height": 20,
+                    },
+                },
+                {
+                    "style": "edit",
+                    "variable": "height",
+                    "text": "Height",
+                    "type": "int",
+                    "text_position": "above-center",
+                    "position": {
+                        "x": 285,
+                        "y": win_height - 275,
+                        "width": 50,
+                        "height": 20,
+                    },
+                },
             ],
         }
 
@@ -557,14 +638,18 @@ class _ClickPlacementFilter(QtCore.QObject):
         cfg = self.element_config
         snap = SNAP
         yaml_x = round((local_pos.x() / rf) / snap) * snap
-        yaml_y = round(((parent_h - local_pos.y() - cfg["height"] * rf) / rf) / snap) * snap
+        yaml_y = (
+            round(((parent_h - local_pos.y() - cfg["height"] * rf) / rf) / snap) * snap
+        )
 
         # Build the element dict
         el_dct = {
             "style": cfg["style"],
             "position": {
-                "x": yaml_x, "y": yaml_y,
-                "width": cfg["width"], "height": cfg["height"],
+                "x": yaml_x,
+                "y": yaml_y,
+                "width": cfg["width"],
+                "height": cfg["height"],
             },
             "variable": cfg["variable"],
             "text": cfg["text"],
@@ -579,9 +664,13 @@ class _ClickPlacementFilter(QtCore.QObject):
         if gui.getvar(var_group, var_name) is None:
             # Create a default value based on style
             defaults = {
-                "edit": "", "text": "", "pushbutton": "",
-                "checkbox": False, "popupmenu": 0,
-                "slider": 0, "spinbox": 0,
+                "edit": "",
+                "text": "",
+                "pushbutton": "",
+                "checkbox": False,
+                "popupmenu": 0,
+                "slider": 0,
+                "spinbox": 0,
             }
             gui.setvar(var_group, var_name, defaults.get(cfg["style"], ""))
 
@@ -590,6 +679,7 @@ class _ClickPlacementFilter(QtCore.QObject):
 
         # Create the Element object
         from guitares.element import Element
+
         element = Element(el_dct, parent, window)
         element._source_yml = source_yml
         element._is_new = True
@@ -612,17 +702,17 @@ class _ClickPlacementFilter(QtCore.QObject):
             self.edit_mode.overlays.append(overlay)
             # Snapshot its position for undo
             self.edit_mode._saved_positions[id(element)] = (
-                element.position.x, element.position.y,
-                element.position.width, element.position.height,
+                element.position.x,
+                element.position.y,
+                element.position.width,
+                element.position.height,
             )
 
         style = cfg["style"]
         print(f"Added {style} at ({yaml_x}, {yaml_y}) in {var_group}")
 
 
-def _find_guitares_parent(
-    window: Any, global_pos: QPoint
-) -> Tuple[Any, list]:
+def _find_guitares_parent(window: Any, global_pos: QPoint) -> Tuple[Any, list]:
     """Find the deepest guitares container (Tab, panel, or Window) at a position.
 
     Returns (parent_object, parent_object.elements) or (None, []).
@@ -721,8 +811,15 @@ def _open_property_editor(overlay: DragOverlay) -> None:
     gui.setvar(group, "text_position_options", text_pos_options)
 
     # Check if text_position dropdown is needed
-    styles_with_text_position = {"edit", "popupmenu", "listbox",
-                                 "slider", "spinbox", "tableview", "table"}
+    styles_with_text_position = {
+        "edit",
+        "popupmenu",
+        "listbox",
+        "slider",
+        "spinbox",
+        "tableview",
+        "table",
+    }
     show_text_pos = el.style in styles_with_text_position
 
     # Build popup config dict
@@ -734,52 +831,120 @@ def _open_property_editor(overlay: DragOverlay) -> None:
 
     elements = [
         # Header info
-        {"style": "text", "text": f"Style: {el.style}",
-         "position": {"x": 15, "y": win_height - 30, "width": field_width, "height": 20}},
-        {"style": "text", "text": f"Source: {source_yml}",
-         "position": {"x": 15, "y": win_height - 50, "width": field_width, "height": 20}},
+        {
+            "style": "text",
+            "text": f"Style: {el.style}",
+            "position": {
+                "x": 15,
+                "y": win_height - 30,
+                "width": field_width,
+                "height": 20,
+            },
+        },
+        {
+            "style": "text",
+            "text": f"Source: {source_yml}",
+            "position": {
+                "x": 15,
+                "y": win_height - 50,
+                "width": field_width,
+                "height": 20,
+            },
+        },
         # Position row
-        {"style": "edit", "variable": "pos_x", "text": "X", "type": "int",
-         "text_position": "above-center",
-         "position": {"x": 15, "y": win_height - 100, "width": 65, "height": 20}},
-        {"style": "edit", "variable": "pos_y", "text": "Y", "type": "int",
-         "text_position": "above-center",
-         "position": {"x": 95, "y": win_height - 100, "width": 65, "height": 20}},
-        {"style": "edit", "variable": "width", "text": "Width", "type": "int",
-         "text_position": "above-center",
-         "position": {"x": 175, "y": win_height - 100, "width": 65, "height": 20}},
-        {"style": "edit", "variable": "height", "text": "Height", "type": "int",
-         "text_position": "above-center",
-         "position": {"x": 255, "y": win_height - 100, "width": 65, "height": 20}},
+        {
+            "style": "edit",
+            "variable": "pos_x",
+            "text": "X",
+            "type": "int",
+            "text_position": "above-center",
+            "position": {"x": 15, "y": win_height - 100, "width": 65, "height": 20},
+        },
+        {
+            "style": "edit",
+            "variable": "pos_y",
+            "text": "Y",
+            "type": "int",
+            "text_position": "above-center",
+            "position": {"x": 95, "y": win_height - 100, "width": 65, "height": 20},
+        },
+        {
+            "style": "edit",
+            "variable": "width",
+            "text": "Width",
+            "type": "int",
+            "text_position": "above-center",
+            "position": {"x": 175, "y": win_height - 100, "width": 65, "height": 20},
+        },
+        {
+            "style": "edit",
+            "variable": "height",
+            "text": "Height",
+            "type": "int",
+            "text_position": "above-center",
+            "position": {"x": 255, "y": win_height - 100, "width": 65, "height": 20},
+        },
         # Text
-        {"style": "edit", "variable": "text", "text": "Text",
-         "text_position": "above-left",
-         "position": {"x": 15, "y": win_height - 155, "width": field_width, "height": 20}},
+        {
+            "style": "edit",
+            "variable": "text",
+            "text": "Text",
+            "text_position": "above-left",
+            "position": {
+                "x": 15,
+                "y": win_height - 155,
+                "width": field_width,
+                "height": 20,
+            },
+        },
     ]
 
     # Text position dropdown (conditional)
     if show_text_pos:
         elements.append(
-            {"style": "popupmenu", "variable": "text_position",
-             "text": "Text Position", "text_position": "above-left",
-             "select": "item",
-             "option_string": text_pos_options,
-             "option_value": text_pos_options,
-             "position": {"x": 15, "y": win_height - 210, "width": 140, "height": 20}},
+            {
+                "style": "popupmenu",
+                "variable": "text_position",
+                "text": "Text Position",
+                "text_position": "above-left",
+                "select": "item",
+                "option_string": text_pos_options,
+                "option_value": text_pos_options,
+                "position": {
+                    "x": 15,
+                    "y": win_height - 210,
+                    "width": 140,
+                    "height": 20,
+                },
+            },
         )
         tooltip_y = win_height - 265
     else:
         tooltip_y = win_height - 210
 
-    elements.extend([
-        # Tooltip
-        {"style": "edit", "variable": "tooltip", "text": "Tooltip",
-         "text_position": "above-left",
-         "position": {"x": 15, "y": tooltip_y, "width": field_width, "height": 20}},
-        # Variable info (read-only)
-        {"style": "text", "text": var_label,
-         "position": {"x": 15, "y": 55, "width": field_width, "height": 20}},
-    ])
+    elements.extend(
+        [
+            # Tooltip
+            {
+                "style": "edit",
+                "variable": "tooltip",
+                "text": "Tooltip",
+                "text_position": "above-left",
+                "position": {
+                    "x": 15,
+                    "y": tooltip_y,
+                    "width": field_width,
+                    "height": 20,
+                },
+            },
+            # Variable info (read-only)
+            {
+                "style": "text",
+                "text": var_label,
+                "position": {"x": 15, "y": 55, "width": field_width, "height": 20},
+            },
+        ]
+    )
 
     config = {
         "window": {
@@ -803,8 +968,12 @@ def _open_property_editor(overlay: DragOverlay) -> None:
         new_w = int(gui.getvar(group, "width"))
         new_h = int(gui.getvar(group, "height"))
 
-        if (new_x != el.position.x or new_y != el.position.y
-                or new_w != el.position.width or new_h != el.position.height):
+        if (
+            new_x != el.position.x
+            or new_y != el.position.y
+            or new_w != el.position.width
+            or new_h != el.position.height
+        ):
             el.position.x = new_x
             el.position.y = new_y
             el.position.width = new_w
@@ -869,8 +1038,10 @@ def _update_yaml_positions(yml_path: str, overlays: List[DragOverlay]) -> None:
             el_dct: Dict[str, Any] = {
                 "style": el.style,
                 "position": {
-                    "x": el.position.x, "y": el.position.y,
-                    "width": el.position.width, "height": el.position.height,
+                    "x": el.position.x,
+                    "y": el.position.y,
+                    "width": el.position.width,
+                    "height": el.position.height,
                 },
             }
             if el.variable:
@@ -888,7 +1059,9 @@ def _update_yaml_positions(yml_path: str, overlays: List[DragOverlay]) -> None:
             _update_element_in_data(data["element"], el, overlay._original_text)
 
     with open(yml_path, "w") as f:
-        yaml.dump(data, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+        yaml.dump(
+            data, f, default_flow_style=False, sort_keys=False, allow_unicode=True
+        )
 
 
 def _update_element_in_data(
@@ -906,8 +1079,14 @@ def _update_element_in_data(
             var_match = el_dict.get("variable") == target_element.variable
         elif "text" in el_dict:
             # Use original text for matching (text may have been changed)
-            match_text = original_text if original_text is not None else (
-                target_element.text if isinstance(target_element.text, str) else None
+            match_text = (
+                original_text
+                if original_text is not None
+                else (
+                    target_element.text
+                    if isinstance(target_element.text, str)
+                    else None
+                )
             )
             if match_text is not None:
                 var_match = el_dict.get("text") == match_text
@@ -930,7 +1109,9 @@ def _update_element_in_data(
         if el_dict.get("style") == "tabpanel" and "tab" in el_dict:
             for tab in el_dict["tab"]:
                 if "element" in tab and isinstance(tab["element"], list):
-                    if _update_element_in_data(tab["element"], target_element, original_text):
+                    if _update_element_in_data(
+                        tab["element"], target_element, original_text
+                    ):
                         return True
 
     return False

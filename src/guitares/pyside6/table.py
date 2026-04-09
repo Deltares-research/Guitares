@@ -13,7 +13,6 @@ import pandas as pd
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QAbstractItemView,
-    QHeaderView,
     QLabel,
     QTableWidget,
     QTableWidgetItem,
@@ -105,9 +104,7 @@ class Table(QTableWidget):
                 # Right-align numeric values
                 dtype = df.iloc[:, col].dtype
                 if dtype in (np.float64, np.int64, float, int):
-                    item.setTextAlignment(
-                        Qt.AlignRight | Qt.AlignVCenter
-                    )
+                    item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
 
                 # Non-editable mode: make cells read-only
                 if not self.element.editable:

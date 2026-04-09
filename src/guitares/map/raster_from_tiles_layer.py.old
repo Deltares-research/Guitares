@@ -56,7 +56,7 @@ class RasterFromTilesLayer(Layer):
                                               color_range=[self.color_scale_cmin, self.color_scale_cmax],
                                               color_scale_auto=self.color_scale_auto,
                                               color_scale_symmetric=self.color_scale_symmetric,
-                                              color_scale_symmetric_side=self.color_scale_symmetric_side,                                       
+                                              color_scale_symmetric_side=self.color_scale_symmetric_side,
                                               quiet=False,
                                               file_name=overlay_file)
 
@@ -66,7 +66,7 @@ class RasterFromTilesLayer(Layer):
                                         self.topobathy_path,
                                         npixels=[wdt, hgt],
                                         lon_range=xl,
-                                        lat_range=yl,  
+                                        lat_range=yl,
                                         option="deterministic",
                                         color_values=self.color_values,
                                         caxis=None,
@@ -97,7 +97,7 @@ class RasterFromTilesLayer(Layer):
                 except:
                     pass
 
-            # add random integer string to legend file to force reload                
+            # add random integer string to legend file to force reload
             # create string with random integer between 1 and 1,000,000
             rstring = str(np.random.randint(1, 1000000))
             legend_file = self.map_id + ".legend." + rstring + ".png"

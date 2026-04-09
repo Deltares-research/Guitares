@@ -165,7 +165,9 @@ class MapLibreCompare(QtCore.QObject):
                 f"window.default_compare_center = [{element.map_center[0]},{element.map_center[1]}]\n"
             )
             f.write(f"window.default_compare_zoom = {element.map_zoom};\n")
-            f.write(f"window.default_compare_projection = '{element.map_projection}';\n")
+            f.write(
+                f"window.default_compare_projection = '{element.map_projection}';\n"
+            )
             f.write(f"window.compareIconUrls = {icon_list_string};\n")
             if offline:
                 f.write("window.compare_offline = true;\n")

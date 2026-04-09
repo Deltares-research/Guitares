@@ -143,6 +143,6 @@ element:
         y: 70
         width: 50
         height: 15
-      text: "Median SLR [m]:"  
+      text: "Median SLR [m]:"
       variable: slr_string
       enable: False

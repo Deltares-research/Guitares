@@ -4,13 +4,13 @@ Any the the user interacts with the GUI, it calls methods defined in this module
 
 The method typically get two input arguments:
  args[0] is the new value of a widget edited/selected by the user.
- args[1] is the object of the widget that was edited/clicked/selected by the user.   
+ args[1] is the object of the widget that was edited/clicked/selected by the user.
 """
 
 from calc import calc
 
-def calculate(*args):
 
+def calculate(*args):
     # Get inputs from gui variable dict
     a = calc.gui.getvar("calculator", "a")
     b = calc.gui.getvar("calculator", "b")

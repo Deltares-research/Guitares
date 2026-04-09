@@ -1,7 +1,6 @@
 """Tests for all guitares widget types (PySide6 framework)."""
 
 import pandas as pd
-import pytest
 
 
 class TestEditBox:
@@ -166,7 +165,13 @@ element:
     def test_dynamic_list(self, make_gui):
         gui = make_gui(
             self.CONFIG_DYNAMIC,
-            {"grp": {"choice": "b", "options_text": ["A", "B", "C"], "options_val": ["a", "b", "c"]}},
+            {
+                "grp": {
+                    "choice": "b",
+                    "options_text": ["A", "B", "C"],
+                    "options_val": ["a", "b", "c"],
+                }
+            },
         )
         assert gui.getvar("grp", "choice") == "b"
 
@@ -212,14 +217,26 @@ element:
     def test_single_selection(self, make_gui):
         gui = make_gui(
             self.CONFIG_SINGLE,
-            {"grp": {"selected": "a", "items_text": ["A", "B", "C"], "items_val": ["a", "b", "c"]}},
+            {
+                "grp": {
+                    "selected": "a",
+                    "items_text": ["A", "B", "C"],
+                    "items_val": ["a", "b", "c"],
+                }
+            },
         )
         assert gui.getvar("grp", "selected") == "a"
 
     def test_multi_selection(self, make_gui):
         gui = make_gui(
             self.CONFIG_MULTI,
-            {"grp": {"selected": ["a", "b"], "items_text": ["A", "B", "C"], "items_val": ["a", "b", "c"]}},
+            {
+                "grp": {
+                    "selected": ["a", "b"],
+                    "items_text": ["A", "B", "C"],
+                    "items_val": ["a", "b", "c"],
+                }
+            },
         )
         assert gui.getvar("grp", "selected") == ["a", "b"]
 
@@ -323,6 +340,7 @@ element:
 
     def test_creates_widget(self, make_gui):
         from datetime import datetime
+
         gui = make_gui(self.CONFIG, {"grp": {"dt": datetime(2024, 1, 15, 12, 0)}})
         assert gui.getvar("grp", "dt") == datetime(2024, 1, 15, 12, 0)
 
@@ -480,7 +498,14 @@ element:
     def test_all_widgets_build(self, make_gui):
         gui = make_gui(
             self.CONFIG,
-            {"form": {"name": "test", "color": "green", "active": True, "status": "Ready"}},
+            {
+                "form": {
+                    "name": "test",
+                    "color": "green",
+                    "active": True,
+                    "status": "Ready",
+                }
+            },
         )
         assert gui.getvar("form", "name") == "test"
         assert gui.getvar("form", "color") == "green"

@@ -14,7 +14,7 @@ class ImageLayer(Layer):
         self.colorbar = None
         self.xlim = None
         self.ylim = None
-        
+
     def activate(self):
         self.active = True
         self.show()
@@ -36,8 +36,8 @@ class ImageLayer(Layer):
         if not (xlim == self.xlim and ylim == self.ylim):
             self.update() # Update the layer if the extent has changed
         super().show()  # Call the parent class method
-    
-    def make_overlay(self):    
+
+    def make_overlay(self):
         fname = os.path.join(self.map.server_path, "overlays", self.file_name)
         coords = self.map.map_extent
         xlim = [coords[0][0], coords[1][0]]
@@ -80,14 +80,14 @@ class ImageLayer(Layer):
             self.colorbar = self.make_colorbar()
         else:
             self.colorbar = ""
-        
+
         bounds = [[xlim[0], xlim[1]], [ylim[0], ylim[1]]]
         overlay_file = f"./overlays/{self.file_name}"
         self.map.runjs("/js/image_layer.js", "addLayer", arglist=[overlay_file, self.map_id, bounds, self.colorbar, self.side])
         self.map.runjs("/js/image_layer.js", "setOpacity", arglist=[self.map_id, self.opacity, self.side])
         if self.side != "b":
             self.map.runjs("/js/image_layer.js", "setLegendPosition", arglist=[self.map_id, self.legend_position, self.side])
-    
+
     def make_colorbar(self,):
         if self.color_values:
             clrbar = ColorBar(color_values=self.color_values, legend_title=self.legend_title)
@@ -102,7 +102,7 @@ class ImageLayer(Layer):
                 except:
                     pass
 
-            # add random integer string to legend file to force reload                
+            # add random integer string to legend file to force reload
             # create string with random integer between 1 and 1,000,000
             rstring = str(np.random.randint(1, 1000000))
             legend_file = self.map_id + ".legend." + rstring + ".png"
@@ -122,4 +122,3 @@ class ImageLayer(Layer):
 
             clrbar_dict = "./overlays/" + legend_file
         return clrbar_dict
-

@@ -29,10 +29,10 @@ export function addLayer(
 
   map.addSource(id, {
     type: 'geojson',
-    data: data, 
+    data: data,
     promoteId: hover_property
   });
- 
+
   map.addLayer({
     'id': fillId,
     'type': 'fill',
@@ -79,8 +79,8 @@ export function addLayer(
       if (e.features[0].properties[hover_property]) {
         // Display a popup with the name of area
         popup.setLngLat(e.lngLat)
-        .setText(hover_property + ": " 
-        + numberWithCommas(e.features[0].properties[hover_property]) 
+        .setText(hover_property + ": "
+        + numberWithCommas(e.features[0].properties[hover_property])
         )
         .addTo(map);
       }
@@ -95,7 +95,7 @@ export function addLayer(
   // previously hovered feature.
   map.on('mouseleave', fillId, () => {
     popup.remove();
-  });  
+  });
 
 };
 

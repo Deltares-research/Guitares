@@ -58,7 +58,7 @@ function selectionChanged(e) {
     }
     if (featureProps.shape == "rectangle") {
       rectangleSelectionChanged(e);
-    }    
+    }
   } else {
     featureDeselected(activeLayerId);
   }
@@ -135,7 +135,7 @@ function polygonUpdated(e) {
   var feature=e.features[0];
   var featureId = feature["id"];
   var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
-  setGeometryInFeatureList(featureId, feature.geometry); 
+  setGeometryInFeatureList(featureId, feature.geometry);
   updateInactiveLayerGeometry(activeLayerId);
   featureModified(JSON.stringify(featureCollection), featureId, activeLayerId);
 }
@@ -179,7 +179,7 @@ function polylineUpdated(e) {
   var feature=e.features[0];
   var featureId = feature["id"];
   var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
-  setGeometryInFeatureList(featureId, feature.geometry); 
+  setGeometryInFeatureList(featureId, feature.geometry);
   updateInactiveLayerGeometry(activeLayerId);
   featureModified(JSON.stringify(featureCollection), featureId, activeLayerId);
 }
@@ -223,7 +223,7 @@ function rectangleUpdated(e) {
   var feature=e.features[0];
   var featureId = feature["id"];
   var featureCollection = getFeatureCollectionInActiveLayer(activeLayerId);
-  setGeometryInFeatureList(featureId, feature.geometry); 
+  setGeometryInFeatureList(featureId, feature.geometry);
   updateInactiveLayerGeometry(activeLayerId);
   featureModified(JSON.stringify(featureCollection), featureId, activeLayerId);
 }
@@ -251,12 +251,12 @@ export function addFeature(featureCollection, layerId) {
     console.log("No draw layer found with ID " + layerId)
     return
   }
-  // Make random featureId 
+  // Make random featureId
   var featureId = makeid(15);
   // Plot feature and add to feature list
   plotFeature(featureId, geometry, layerProps.paintProps);
   addToFeatureList(featureId, layerId, layerProps.shape, geometry);
-  // Update geometry of inactive layer 
+  // Update geometry of inactive layer
   updateInactiveLayerGeometry(layerId);
   // Set the layer mode
   setLayerMode(layerId, layerProps.mode);
@@ -389,10 +389,10 @@ export function addLayer(layerId, mode, paintProps, shape) {
   }
   addToLayerList(layerId, mode, paintProps, shape);
 
-  // Add inactive layer 
+  // Add inactive layer
   map.addSource(layerId, {
     'type': 'geojson'
-  });  
+  });
   if (shape == 'polyline' || shape == "polygon" || shape == "rectangle") {
     map.addLayer({
       'id': layerId + ".line",
@@ -438,7 +438,7 @@ export function deleteLayer(layerId) {
   }
   if (map.getLayer(layerId + ".fill")) {
     map.removeLayer(layerId + ".fill");
-  }  
+  }
 //  map.removeLayer(layerId + ".line");
 //  map.removeLayer(layerId + ".fill");
   map.removeSource(layerId);
@@ -469,22 +469,22 @@ export function setLayerMode(layerId, mode) {
       if (featureList[i].layerId == layerId) {
         draw.delete(featureList[i].featureId);
       }
-    }  
+    }
   }
   setLayerProps(layerId, "mode", mode);
-  // Set visibility for inactive layer 
+  // Set visibility for inactive layer
   if (mode == "inactive") {
     map.setLayoutProperty(layerId + ".line", 'visibility', 'visible');
     var fillLayer = map.getLayer(layerId + '.fill');
-    if(typeof fillLayer !== 'undefined') {  
+    if(typeof fillLayer !== 'undefined') {
       map.setLayoutProperty(layerId + ".fill", 'visibility', 'visible');
-    }  
+    }
   } else {
     map.setLayoutProperty(layerId + ".line", 'visibility', 'none');
     var fillLayer = map.getLayer(layerId + '.fill');
-    if(typeof fillLayer !== 'undefined') {  
+    if(typeof fillLayer !== 'undefined') {
       map.setLayoutProperty(layerId + ".fill", 'visibility', 'none');
-    }  
+    }
   }
 }
 

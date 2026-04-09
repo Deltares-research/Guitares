@@ -174,10 +174,10 @@ def start_server(
         The background thread running the server.
     """
     if node:
-        thr = threading.Thread(
+        the = threading.Thread(
             target=run_node_server, args=(server_path, port), daemon=True
         )
-        thr.start()
+        the.start()
         while True:
             try:
                 urllib.request.urlcleanup()
@@ -189,10 +189,10 @@ def start_server(
             except Exception:
                 print("Waiting for server ...")
                 time.sleep(1)
-        return thr
+        return the
     else:
-        thr = ServerThread(server_path, port)
-        thr.start()
+        the = ServerThread(server_path, port)
+        the.start()
         while True:
             try:
                 urllib.request.urlcleanup()
@@ -204,4 +204,4 @@ def start_server(
             except Exception:
                 print("Waiting for server ...")
                 time.sleep(1)
-        return thr
+        return the

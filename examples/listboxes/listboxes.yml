@@ -62,4 +62,4 @@ element:
   select: index
   method: select_d
   option_string:
-    variable: text_d    
+    variable: text_d

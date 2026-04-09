@@ -54,7 +54,7 @@ class RasterLayer(Layer):
                  decimals=None,
                  crs=None,
                  colormap=None):
-        
+
         self.data = {}
         self.data["x"] = x
         self.data["y"] = y
@@ -154,8 +154,8 @@ class RasterLayer(Layer):
                     cmax = np.nanmax(z)
                 if cmax < cmin + 0.01:
                     cmin = -0.01
-                    cmax = 0.01    
-            else:    
+                    cmax = 0.01
+            else:
                 cmin = self.color_scale_cmin
                 cmax = self.color_scale_cmax
 
@@ -226,7 +226,7 @@ class RasterLayer(Layer):
                 if west > 0.0:
                     west = -180.0
                 if east < 0.0:
-                    east = 180.0    
+                    east = 180.0
 
             if west > east:
                 west -= 360.0
@@ -241,7 +241,7 @@ class RasterLayer(Layer):
                 except:
                     pass
 
-            # add random integer string to legend file to force reload                
+            # add random integer string to legend file to force reload
             # create string with random integer between 1 and 1,000,000
             rstring = str(np.random.randint(1, 1000000))
             legend_file = self.map_id + ".legend." + rstring + ".png"
@@ -309,7 +309,7 @@ class RasterLayer(Layer):
 
             # Now we need to update the layers with the new bounds and opacity
             self.map.runjs("/js/image_layer.js", "updateLayer", arglist=[overlay_file_a,
-                                                                         self.map_id + ".a",                                                                        
+                                                                         self.map_id + ".a",
                                                                          bounds_a,
                                                                          clrmap_string])
             self.map.runjs("/js/image_layer.js",
@@ -317,7 +317,7 @@ class RasterLayer(Layer):
                            arglist=[self.map_id + ".a", self.opacity, self.side])
 
             self.map.runjs("/js/image_layer.js", "updateLayer", arglist=[overlay_file_b,
-                                                                         self.map_id + ".b",                                                                        
+                                                                         self.map_id + ".b",
                                                                          bounds_b,
                                                                          ""])
             self.map.runjs("/js/image_layer.js",
@@ -327,7 +327,7 @@ class RasterLayer(Layer):
         else:
             # Just update the layer with the new bounds and opacity
             self.map.runjs("/js/image_layer.js", "updateLayer", arglist=[overlay_file,
-                                                                         self.map_id + ".a",                                                                         
+                                                                         self.map_id + ".a",
                                                                          bounds,
                                                                          clrmap_string])
             self.map.runjs("/js/image_layer.js",
@@ -355,4 +355,3 @@ class RasterLayer(Layer):
                           colormap=self.data["colormap"])
         if not self.get_visibility():
             self.set_visibility(False)
-        

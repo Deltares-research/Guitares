@@ -45,7 +45,7 @@ class MapBox(QtWidgets.QWidget):
         icon_list_string = ""
         for icon_file in icon_files:
             icon_list_string = icon_list_string + "'/icons/" + icon_file + "',"
-        icon_list_string = "[" + icon_list_string + "]"    
+        icon_list_string = "[" + icon_list_string + "]"
 
         file_name = os.path.join(self.gui.server_path, "js", "mapbox_defaults.js")
 
@@ -56,7 +56,7 @@ class MapBox(QtWidgets.QWidget):
         # Check if element.map_style starts with "mapbox://styles/"
         if not element.map_style.startswith("mapbox://styles/"):
             # If not, add it
-            element.map_style = "mapbox://styles/mapbox/" + element.map_style     
+            element.map_style = "mapbox://styles/mapbox/" + element.map_style
 
         with open(file_name, "w") as f:
             f.write("var default_style = '" + element.map_style + "';\n")
@@ -108,11 +108,11 @@ class MapBox(QtWidgets.QWidget):
     def load_finished(self, message):
         # self.load_finished = True
         # Sending a ping to javascript
-        self.timer_ping = QtCore.QTimer()        
+        self.timer_ping = QtCore.QTimer()
         self.timer_ping.timeout.connect(self.ping)
         self.timer_ping.start(1000)
         # Start a ping received timer
-        self.timer_pong = QtCore.QTimer()        
+        self.timer_pong = QtCore.QTimer()
         self.timer_pong.timeout.connect(self.pong_received)
         self.timer_pong.start(1500)
 
@@ -128,7 +128,7 @@ class MapBox(QtWidgets.QWidget):
             self.runjs("/js/main.js", "importMapbox", arglist=[])
         else:
             # Reload
-            self.view.load(QtCore.QUrl(self.url))    
+            self.view.load(QtCore.QUrl(self.url))
 
     def set(self):
         pass
@@ -348,7 +348,7 @@ class MapBox(QtWidgets.QWidget):
                             arg = arg.drop([columnName], axis=1)
                     string = string + arg.to_json()
             elif arg is None:
-                string = string + "null"        
+                string = string + "null"
             else:
                 string = string + "'" + arg + "'"
             if iarg < len(arglist) - 1:

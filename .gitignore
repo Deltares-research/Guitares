@@ -7,6 +7,7 @@ deltares_guitares.egg-info
 /examples/visualdelta/server/overlay.png
 /examples/mapbox/server
 /dist
+coverage.xml
 /examples/floodadapt/server
 /examples/floodadapt/mapbox_token.txt
 /docs/_build

@@ -21,11 +21,11 @@ class Frame(QGroupBox):
 
         self.element = element
 
-        collapsable = False
+        collapsible = False
 
         if element.collapse:
             # Parent
-            collapsable = True
+            collapsible = True
             # Add pushbutton to collapse
             self.pushbutton = QPushButton("", self)
             self.pushbutton.clicked.connect(self.collapse_callback)
@@ -36,9 +36,9 @@ class Frame(QGroupBox):
 
         if hasattr(element.parent, "style"):
             if element.parent.style == "panel" and element.parent.collapse:
-                collapsable = True
+                collapsible = True
 
-        if collapsable:
+        if collapsible:
             pass
         else:
             pass

@@ -68,7 +68,7 @@ class CircleSelectorLayer(Layer):
                                                                                         self.line_color_selected,
                                                                                         self.fill_color_selected,
                                                                                         self.circle_radius_selected])
-  
+
     def deactivate(self):
         if self.data is None:
             return

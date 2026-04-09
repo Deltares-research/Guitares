@@ -21,20 +21,20 @@ class Frame(QFrame):
 
         self.element = element
 
-        collapsable = False
+        collapsible = False
 
         if element.collapse:
             # Parent
-            collapsable = True
+            collapsible = True
             # Add pushbutton to collapse
             self.pushbutton = QPushButton("", self)
             self.pushbutton.clicked.connect(self.collapse_callback)
 
         if hasattr(element.parent, "style"):
             if element.parent.style == "panel" and element.parent.collapse:
-                collapsable = True
+                collapsible = True
 
-        if collapsable:
+        if collapsible:
             self.setLineWidth(0)
         else:
             # Regular
@@ -88,8 +88,8 @@ class Frame(QFrame):
             y0p = int(0.5 * hgt - 0.5 * hgtp)
             self.pushbutton.setGeometry(x0p, y0p, wdtp, hgtp)
 
-        # Check if these are collapsable panels
-        collapsable = False
+        # Check if these are collapsible panels
+        collapsible = False
         if hasattr(self.element.parent, "style"):
             if self.element.parent.style == "panel" and self.element.parent.collapse:
                 pwdt = self.element.parent.widget.geometry().width() - button_size

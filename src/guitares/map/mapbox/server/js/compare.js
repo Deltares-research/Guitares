@@ -22,7 +22,7 @@ mapA = new mapboxgl.Map({
   zoom: default_compare_zoom, // starting zoom
   projection: default_compare_projection // display the map as a 3D globe
 });
-   
+
 mapB = new mapboxgl.Map({
     container: 'compare2',
     style: default_compare_style, // style URL
@@ -158,7 +158,7 @@ function mapLoadedB(evt) {
   jsonString = JSON.stringify([bottomLeft, topRight, "b"]);
   mapReady();
 }
-  
+
 function onMoveEndA(evt) {
   // Called after moving map ended
   // Get new map extents
@@ -206,7 +206,7 @@ export function setSlider(npix) {
 }
 
 export function removeLayer(id, side) {
-  var mp = getMap(side);  
+  var mp = getMap(side);
   // Remove the layer, source and legend etc.
   // Remove layer
   var mapLayer = mp.getLayer(id);
@@ -246,7 +246,7 @@ export function removeLayer(id, side) {
 
 export function showLayer(id, side) {
 	// Show layer
-  var mp = getMap(side);  
+  var mp = getMap(side);
 	if (mp.getLayer(id)) {
     mp.setLayoutProperty(id, 'visibility', 'visible');
   }
@@ -264,7 +264,7 @@ export function showLayer(id, side) {
 
 export function hideLayer(id, side) {
 	// Hide layer
-  var mp = getMap(side);  
+  var mp = getMap(side);
 	if (mp.getLayer(id)) {
   	mp.setLayoutProperty(id, 'visibility', 'none');
   }
@@ -529,7 +529,7 @@ function getMap(side) {
 //     var legend = document.getElementById("legend" + id);
 //     if (legend) {
 //       legend.style.visibility = 'visible';
-//     }  
+//     }
 //   }
 // }
 
@@ -540,7 +540,7 @@ function getMap(side) {
 //     var legend = document.getElementById("legend" + id);
 //     if (legend) {
 //       legend.style.visibility = 'hidden';
-//     }  
+//     }
 //   }
 // }
 
@@ -655,17 +655,17 @@ function getMap(side) {
 //     center: [0, 0],
 //     zoom: 0
 //   });
-     
+
 //   const mapB = new mapboxgl.Map({
 //     container: 'compare2',
 //     style: 'mapbox://styles/mapbox/dark-v11',
 //     center: [0, 0],
 //     zoom: 0
 //   });
-     
+
 //   // A selector or reference to HTML element
 //   const container = '#comparison-container';
-     
+
 //   const map = new mapboxgl.Compare(mapA, mapB, container, {
 //   // Set this to enable comparing two maps by mouse movement:
 //   // mousemove: true

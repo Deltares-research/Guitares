@@ -1076,4 +1076,3 @@ export function setPaintProperty(layerId, key, value) {
 export function setMouseDefault() {
   draw.changeMode('simple_select', { featureIds: [] });
 }
-

@@ -10,7 +10,7 @@ class PolygonSelectorLayer(Layer):
                  data,
                  index=None
                  ):
-       
+
         # Make sure this is not an empty GeoDataFrame
         if isinstance(data, GeoDataFrame):
             # Data is GeoDataFrame
@@ -21,9 +21,9 @@ class PolygonSelectorLayer(Layer):
         indices = []
         indices.extend(range(len(data)))
         data["index"] = indices
-        
-        self.data = data 
-        
+
+        self.data = data
+
         if isinstance(index, int):
             # Turn index to list to make sure that the feature is selected
             self.index = [index]
@@ -48,7 +48,7 @@ class PolygonSelectorLayer(Layer):
         self.map.runjs("/js/polygon_selector_layer.js", "setSelectedIndex", arglist=[self.map_id, index])
 
     # Probably should not have a separate function for this
-    # Can also done with layer.hover_property = "name" and then layer.redraw() 
+    # Can also done with layer.hover_property = "name" and then layer.redraw()
     def set_hover_property(self, hover_property):
         data = self.data
         index = self.index
@@ -75,7 +75,7 @@ class PolygonSelectorLayer(Layer):
             if index:
                 self.select_by_index(index)
             else:
-                print(f"No feature found with {property_name} = {value}")    
+                print(f"No feature found with {property_name} = {value}")
 
     def activate(self):
         self.active = True
@@ -86,7 +86,7 @@ class PolygonSelectorLayer(Layer):
                                                                                          self.fill_color,
                                                                                          self.line_color_selected,
                                                                                          self.fill_color_selected])
-  
+
     def deactivate(self):
         self.active = False
         if self.data is None:

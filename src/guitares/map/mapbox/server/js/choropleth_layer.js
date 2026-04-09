@@ -1,7 +1,7 @@
 export function addLayer(
-  id, 
-  data, 
-  min_zoom, 
+  id,
+  data,
+  min_zoom,
   hover_property, // do more than one
   color_property,
   lineColor,
@@ -39,10 +39,10 @@ export function addLayer(
 
   mp.addSource(id, {
     type: 'geojson',
-    data: data, 
+    data: data,
     promoteId: hover_property
   });
- 
+
   let fillColor = ['step', ['get', color_property]];
 
   // Add colors and bins to fill-color array
@@ -121,8 +121,8 @@ export function addLayer(
       if (e.features[0].properties[hover_property]) {
         // Display a popup with the name of area
         popup.setLngLat(e.lngLat)
-        .setText(hover_property + ": " 
-        + numberWithCommas(e.features[0].properties[hover_property]) 
+        .setText(hover_property + ": "
+        + numberWithCommas(e.features[0].properties[hover_property])
         + " " + unit)
         .addTo(mp);
       }
@@ -137,7 +137,7 @@ export function addLayer(
   // previously hovered feature.
   mp.on('mouseleave', fillId, () => {
     popup.remove();
-  });  
+  });
 
 };
 
@@ -163,7 +163,7 @@ function getMap(side) {
 
 // export function activate(id,
 //                          lineColor,
-//                          fillColor,                   
+//                          fillColor,
 //                          lineColorActive,
 //                          fillColorActive) {
 
@@ -174,16 +174,16 @@ function getMap(side) {
 //       { active: true }
 //     );
 //   }
-//   if (map.getLayer(id)) {  
+//   if (map.getLayer(id)) {
 //     map.setPaintProperty(id, 'circle-stroke-color', ['case',
 //       ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
 //       lineColorActive,
-//       lineColor]);                          
+//       lineColor]);
 //     map.setPaintProperty(id, 'circle-color', ['case',
 //       ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
 //       fillColorActive,
-//       fillColor]);                          
-//   }                           
+//       fillColor]);
+//   }
 // }
 
 // export function deactivate(id,
@@ -192,7 +192,7 @@ function getMap(side) {
 //   lineStyle,
 //   lineOpacity,
 //   fillColor,
-//   fillOpacity,                         
+//   fillOpacity,
 //   lineColorActive,
 //   fillColorActive) {
 
@@ -202,19 +202,19 @@ function getMap(side) {
 //       { source: id, id: i },
 //       { active: false }
 //     );
-//   }  
-//   if (map.getLayer(id)) {  
+//   }
+//   if (map.getLayer(id)) {
 //     map.setPaintProperty(id, 'circle-stroke-color', ['case',
 //       ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
 //       lineColorActive,
-//       lineColor]);                          
+//       lineColor]);
 //     map.setPaintProperty(id, 'circle-color', ['case',
 //       ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
 //       fillColorActive,
-//       fillColor]);                          
+//       fillColor]);
 //     map.setPaintProperty(id, 'circle-radius', ['case',
 //       ['any', ['boolean', ['feature-state', 'selected'], false], ['boolean', ['feature-state', 'hover'], false]],
 //       circleRadiusActive,
-//       circleRadius]);                          
+//       circleRadius]);
 //   }
 // }

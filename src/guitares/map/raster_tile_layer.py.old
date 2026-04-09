@@ -17,8 +17,8 @@ class RasterTileLayer(Layer):
             url = data
         else:
             url = data + "/{z}/{x}/{y}.png"
-        # url = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"    
-        # Add new layer        
+        # url = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+        # Add new layer
         self.map.runjs("/js/raster_tile_layer.js", "addLayer", arglist=[self.map_id,
                                                                     url])
     def redraw(self):
@@ -36,7 +36,7 @@ class RasterTileLayer(Layer):
         #                                                                        self.fill_color,
         #                                                                        self.fill_opacity,
         #                                                                        self.circle_radius])
-  
+
     def deactivate(self):
         pass
         # self.map.runjs("/js/line_layer.js", "setPaintProperties", arglist=[self.map_id,
@@ -54,4 +54,3 @@ class RasterTileLayer(Layer):
     #     else:
     #         self.map.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".line"])
     #         self.map.runjs("/js/main.js", "hideLayer", arglist=[self.map_id + ".circle"])
-
