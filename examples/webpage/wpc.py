@@ -9,11 +9,12 @@ Created on Tue Jul  5 13:40:07 2022
 
 from guitares.gui import GUI
 
+
 class WebPageComparison:
     def __init__(self):
-        self.gui = GUI(self,
-                       framework="pyqt5",
-                       config_file="webpage.yml",
-                       js_messages=False)
+        self.gui = GUI(
+            self, framework="pyside6", config_file="webpage.yml", js_messages=False
+        )
+
 
 wpc = WebPageComparison()

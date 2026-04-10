@@ -1,35 +1,57 @@
+"""Menu bar items: parsing YAML menu definitions into framework-specific menu actions."""
+
 import importlib
+from typing import Any, List, Optional
 
 from guitares.dependencies import Dependency, DependencyCheck
 
+
 class Text:
-    def __init__(self, variable_group):
-        self.variable       = ""
-        self.variable_group = variable_group
+    """Reference to a GUI variable that provides dynamic menu text.
+
+    Parameters
+    ----------
+    variable_group : str
+        Default variable group for the text variable.
+    """
+
+    def __init__(self, variable_group: str) -> None:
+        self.variable: str = ""
+        self.variable_group: str = variable_group
+
 
 class Menu:
-    def __init__(self, dct, parent):
-        self.style = None
-        self.menus = []
-        self.dependencies = []
-        self.parent = parent
-        self.text = ""
-        self.option = None
-        self.checkable = False
-        self.separator = False
-        self.dependencies = []
-        self.visible = True
-        self.enable = True
-        self.id = ""
-        self.variable_group = parent.variable_group
-        self.variable = None
-        self.module = parent.module
-        self.method = ""
-        self.callback = None
-        self.gui = parent.gui
+    """A single menu or submenu item parsed from a YAML configuration dictionary.
+
+    Parameters
+    ----------
+    dct : dict
+        Dictionary describing the menu item (from YAML config).
+    parent : Any
+        Parent menu or window that contains this item.
+    """
+
+    def __init__(self, dct: dict, parent: Any) -> None:
+        self.style: Optional[str] = None
+        self.menus: List["Menu"] = []
+        self.dependencies: List[Dependency] = []
+        self.parent: Any = parent
+        self.text: Any = ""
+        self.option: Optional[str] = None
+        self.checkable: bool = False
+        self.separator: bool = False
+        self.visible: bool = True
+        self.enable: bool = True
+        self.id: str = ""
+        self.variable_group: str = parent.variable_group
+        self.variable: Optional[str] = None
+        self.module: Any = parent.module
+        self.method: Any = ""
+        self.callback: Any = None
+        self.gui: Any = parent.gui
         self.getvar = parent.gui.getvar
         self.setvar = parent.gui.setvar
-        self.icon = ""
+        self.icon: str = ""
 
         # Now update element attributes based on dict
 
@@ -46,25 +68,25 @@ class Menu:
         if "separator" in dct:
             self.separator = dct["separator"]
         if "module" in dct:
-            if type(dct["module"]) == str:
+            if isinstance(dct["module"], str):
                 try:
                     self.module = importlib.import_module(dct["module"])
-                except:
-                    print("Error! Could not import module " + dct["module"])
+                except Exception:
+                    print(f"Error! Could not import module {dct['module']}")
         if "method" in dct:
             self.method = dct["method"]
             # Check if self.method is a string or a method
-            if type(self.method) is str:
+            if isinstance(self.method, str):
                 if self.module:
                     if hasattr(self.module, self.method):
                         self.callback = getattr(self.module, self.method)
                     else:
-                        print("Error! Could not find method " + self.method)
+                        print(f"Error! Could not find method {self.method}")
             else:
                 # It's already a method
                 self.callback = self.method
         if "text" in dct:
-            if type(dct["text"]) == dict:
+            if isinstance(dct["text"], dict):
                 self.text = Text(self.variable_group)
                 if "variable" in dct:
                     self.text.variable(dct["variable"])
@@ -94,8 +116,14 @@ class Menu:
                     dependency.checks.append(check)
                 self.dependencies.append(dependency)
 
+    def add(self, has_children: bool = False) -> None:
+        """Create the framework-specific menu widget (submenu or action).
 
-    def add(self, has_children=False):
+        Parameters
+        ----------
+        has_children : bool, optional
+            If ``True``, create a submenu instead of a leaf action.
+        """
         mod = importlib.import_module(f"guitares.{self.gui.framework}.menu")
         if self.menus or has_children:
             # Submenu
@@ -104,7 +132,8 @@ class Menu:
             # End node
             mod.Action(self)
 
-    def set_dependencies(self):
+    def set_dependencies(self) -> None:
+        """Evaluate and apply dependency rules (enable/check) for this menu item."""
         for dependency in self.dependencies:
             okay = dependency.get()
             if dependency.action == "enable":

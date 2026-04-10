@@ -1,11 +1,10 @@
 from guitares.gui import GUI
 
+
 class Application:
     def __init__(self):
-
         # Initialize GUI
-        self.gui = GUI(self,
-                       config_file="listboxes.yml")
+        self.gui = GUI(self, config_file="listboxes.yml")
 
         # Define GUI variables
         self.gui.setvar("listboxes", "value_a", ["a1", "a2", "a3"])
@@ -19,5 +18,6 @@ class Application:
         self.gui.setvar("listboxes", "b", ["b1"])
         self.gui.setvar("listboxes", "c", 0)
         self.gui.setvar("listboxes", "d", [0, 1])
+
 
 app = Application()

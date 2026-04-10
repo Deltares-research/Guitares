@@ -1,5 +1,6 @@
 from app import app
 
+
 def collapse(*args):
     element = app.gui.window.find_element_by_id("dual")
     if element.collapsed:

@@ -1,25 +1,42 @@
-from PyQt5.QtWidgets import (
-    QMessageBox,
-    QDialogButtonBox,
-    QVBoxLayout,
-    QLabel,
-    QDialog,
-    QProgressDialog,
-    QFileDialog,
-    QLineEdit,
-    QApplication
-)
-from PyQt5 import QtCore
-import time
+"""PyQt5 dialog widgets for messages, progress bars, file selection, and string input."""
+
 import os
+import time
+from typing import Any, Optional
+
+from PyQt5 import QtCore
+from PyQt5.QtWidgets import (
+    QApplication,
+    QDialog,
+    QDialogButtonBox,
+    QFileDialog,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QProgressDialog,
+    QVBoxLayout,
+)
+
 
 class CustomDialog(QDialog):
-    def __init__(self, text, title, button_text):
+    """Dialog with custom button labels.
+
+    Parameters
+    ----------
+    text : str
+        The message to display.
+    title : str
+        The dialog window title.
+    button_text : list[str]
+        Labels for the dialog buttons.
+    """
+
+    def __init__(self, text: str, title: str, button_text: list[str]) -> None:
         super().__init__()
         self.setWindowTitle(title)
         self.buttonBox = QDialogButtonBox()
         for txt in button_text:
-            self.buttonBox.addButton("  " + txt + "  ", QDialogButtonBox.AcceptRole)
+            self.buttonBox.addButton(f"  {txt}  ", QDialogButtonBox.AcceptRole)
         self.buttonBox.clicked.connect(self.clicked)
         self.buttonBox.accepted.connect(self.accept)
         self.layout = QVBoxLayout()
@@ -28,16 +45,36 @@ class CustomDialog(QDialog):
         self.layout.addWidget(self.buttonBox)
         self.setLayout(self.layout)
 
-    def clicked(self, *args):
+    def clicked(self, *args: Any) -> None:
+        """Record which button was clicked.
+
+        Parameters
+        ----------
+        *args : Any
+            The clicked button widget.
+        """
         self.answer = args[0].text().strip()
 
+
 class StringDialog(QDialog):
-    def __init__(self, text, title, string):
+    """Dialog that prompts the user for a string value.
+
+    Parameters
+    ----------
+    text : str
+        The prompt message.
+    title : str
+        The dialog window title.
+    string : str
+        The initial string value.
+    """
+
+    def __init__(self, text: str, title: str, string: str) -> None:
         super().__init__()
         self.setWindowTitle(title)
         self.buttonBox = QDialogButtonBox()
-        self.buttonBox.addButton("  " + "OK" + "  ", QDialogButtonBox.AcceptRole)
-        self.buttonBox.addButton("  " + "Cancel" + "  ", QDialogButtonBox.AcceptRole)
+        self.buttonBox.addButton("  OK  ", QDialogButtonBox.AcceptRole)
+        self.buttonBox.addButton("  Cancel  ", QDialogButtonBox.AcceptRole)
         self.buttonBox.clicked.connect(self.clicked)
         self.buttonBox.accepted.connect(self.accept)
         self.layout = QVBoxLayout()
@@ -48,19 +85,39 @@ class StringDialog(QDialog):
         self.layout.addWidget(self.buttonBox)
         self.setLayout(self.layout)
 
-    def clicked(self, *args):
+    def clicked(self, *args: Any) -> None:
+        """Record the user's response.
+
+        Parameters
+        ----------
+        *args : Any
+            The clicked button widget.
+        """
         answer = args[0].text().strip()
         if answer == "OK":
             self.answer = (self.edit.text(), True)
         else:
             self.answer = ("", False)
 
+
 class ProgressDialog(QProgressDialog):
-    def __init__(self, window, text, title, nmax):
+    """Progress dialog with elapsed and estimated remaining time display.
+
+    Parameters
+    ----------
+    window : Any
+        The parent window widget.
+    text : str
+        The progress label text.
+    title : str
+        The dialog window title.
+    nmax : int
+        The maximum progress value.
+    """
+
+    def __init__(self, window: Any, text: str, title: str, nmax: int) -> None:
         super().__init__(text, "Abort", 0, nmax, window)
         self.setWindowModality(QtCore.Qt.WindowModal)
-        # self.setMinimum(1)
-        # self.setMaximum(nmax)
         self.setMinimum(0)
         self.setMaximum(100)
         self.setWindowTitle(title)
@@ -74,18 +131,23 @@ class ProgressDialog(QProgressDialog):
         self.setValue(0)
         self.show()
 
-    def set_value(self, i):
+    def set_value(self, i: int) -> None:
+        """Update the progress value and time labels.
+
+        Parameters
+        ----------
+        i : int
+            The current progress value.
+        """
         self.setValue(i)
         t = time.time()
         dt = t - self.t0
         if dt > 60.0:
             tmin = int(dt / 60)
             tsec = dt - tmin * 60.0
-            new_string = (
-                "Time elapsed : " + str(int(tmin)) + "m " + str(int(tsec)) + "s"
-            )
+            new_string = f"Time elapsed : {int(tmin)}m {int(tsec)}s"
         else:
-            new_string = "Time elapsed : " + str(int(dt)) + "s"
+            new_string = f"Time elapsed : {int(dt)}s"
 
         self.time_elapsed.setText(new_string)
         frac = max(i, 1) / self.nmax
@@ -94,33 +156,71 @@ class ProgressDialog(QProgressDialog):
         if trem > 60.0:
             tmin = int(trem / 60)
             tsec = trem - tmin * 60.0
-            new_string = (
-                "Est. time remaining : " + str(int(tmin)) + "m " + str(int(tsec)) + "s"
-            )
+            new_string = f"Est. time remaining : {int(tmin)}m {int(tsec)}s"
         else:
-            new_string = "Est. time remaining : " + str(int(trem)) + "s"
+            new_string = f"Est. time remaining : {int(trem)}s"
         self.time_remaining.setText(new_string)
         self.show()
         QApplication.processEvents()
 
-    def set_text(self, text):
+    def set_text(self, text: str) -> None:
+        """Update the progress label text.
+
+        Parameters
+        ----------
+        text : str
+            The new label text.
+        """
         self.setLabelText(text)
 
-    def set_minimum(self, nmin):
+    def set_minimum(self, nmin: int) -> None:
+        """Set the minimum (and maximum) progress value.
+
+        Parameters
+        ----------
+        nmin : int
+            The minimum value.
+        """
         self.nmax = nmin
         self.setMaximum(nmin)
 
-    def set_maximum(self, nmax):
+    def set_maximum(self, nmax: int) -> None:
+        """Set the maximum progress value.
+
+        Parameters
+        ----------
+        nmax : int
+            The maximum value.
+        """
         self.nmax = nmax
         self.setMaximum(nmax)
 
-    def was_canceled(self):
+    def was_canceled(self) -> bool:
+        """Check whether the user pressed the cancel button.
+
+        Returns
+        -------
+        bool
+            True if the dialog was canceled.
+        """
         QApplication.processEvents()
         return self.wasCanceled()
 
 
 class WaitDialog(QProgressDialog):
-    def __init__(self, window, text, title):
+    """Non-interactive wait dialog without a visible progress bar or button.
+
+    Parameters
+    ----------
+    window : Any
+        The parent window widget.
+    text : str
+        The wait message text.
+    title : str
+        The dialog window title.
+    """
+
+    def __init__(self, window: Any, text: str, title: str) -> None:
         super().__init__(text, "Abort", 0, 100, window)
         self.setWindowModality(QtCore.Qt.WindowModal)
         self.setMinimumDuration(1)
@@ -130,37 +230,67 @@ class WaitDialog(QProgressDialog):
         self.children()[3].setVisible(False)  # Make push button invisible
         self.show()
 
-    def set_value(self, i):
+    def set_value(self, i: int) -> None:
+        """Update the internal progress value.
+
+        Parameters
+        ----------
+        i : int
+            The progress value.
+        """
         self.setValue(i)
 
-# class StringDialog(QProgressDialog):
-#     def __init__(self, window, text, title):
-#         super().__init__(text, "Abort", 0, 100, window)
-#         self.setWindowModality(QtCore.Qt.WindowModal)
-#         self.setMinimumDuration(1)
-#         self.setMaximum(100)
-#         self.setWindowTitle(title)
-#         self.children()[1].setVisible(False)  # Make progress bar invisible
-#         self.children()[3].setVisible(False)  # Make push button invisible
-#         self.show()
-
-#     def set_value(self, i):
-#         self.setValue(i)
 
 def dialog(
-    window,
-    text,
-    title=" ",
-    type="warning",
-    button_text=None,
-    nmax=100,
-    cancel=None,
-    filter=None,
-    selected_filter=None,
-    path=None,
-    file_name=None,
-    string=""
-):
+    window: Any,
+    text: str,
+    title: str = " ",
+    type: str = "warning",
+    button_text: Optional[list[str]] = None,
+    nmax: int = 100,
+    cancel: Optional[Any] = None,
+    filter: Optional[str] = None,
+    selected_filter: Optional[str] = None,
+    path: Optional[str] = None,
+    file_name: Optional[str] = None,
+    string: str = "",
+) -> Any:
+    """Show a dialog of the specified type.
+
+    Parameters
+    ----------
+    window : Any
+        The parent window widget.
+    text : str
+        The dialog message or prompt text.
+    title : str
+        The dialog window title.
+    type : str
+        Dialog type: "warning", "info", "critical", "question", "question_yes_no",
+        "custom", "progress", "wait", "open_file", "open_files", "save_file",
+        "select_path", or "string".
+    button_text : list[str], optional
+        Button labels for "custom" type dialogs.
+    nmax : int
+        Maximum value for "progress" type dialogs.
+    cancel : Any, optional
+        Unused, reserved for future use.
+    filter : str, optional
+        File filter string for file dialogs.
+    selected_filter : str, optional
+        Initially selected filter for file dialogs.
+    path : str, optional
+        Initial directory path for file dialogs.
+    file_name : str, optional
+        Initial file name for file dialogs.
+    string : str
+        Initial string value for "string" type dialogs.
+
+    Returns
+    -------
+    Any
+        The dialog result; type depends on the dialog type.
+    """
     if type == "warning":
         ret = QMessageBox.warning(window, title, text, QMessageBox.Ok, QMessageBox.Ok)
         return ret
@@ -213,7 +343,9 @@ def dialog(
             path = os.getcwd()
         if file_name:
             path = os.path.join(path, file_name)
-        fname = QFileDialog.getOpenFileNames(window, text, path, filter, selected_filter)
+        fname = QFileDialog.getOpenFileNames(
+            window, text, path, filter, selected_filter
+        )
         return fname
     elif type == "save_file":
         if path is None:

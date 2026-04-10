@@ -11,7 +11,7 @@ element:
     y: 40
     width: 200
     height: 20
-  text: Enter your name  
+  text: Enter your name
   variable: name
   method: enter_name
 - style: text
@@ -21,4 +21,3 @@ element:
     width: 200
     height: 20
   variable: response
-  

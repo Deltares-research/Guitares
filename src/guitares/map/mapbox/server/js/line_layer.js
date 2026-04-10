@@ -1,9 +1,9 @@
-export function addLayer(id, data,   
-  lineColor, 
-  lineWidth, 
-  lineOpacity, 
-  fillColor, 
-  fillOpacity, 
+export function addLayer(id, data,
+  lineColor,
+  lineWidth,
+  lineOpacity,
+  fillColor,
+  fillOpacity,
   circleRadius){
 
   let lineId = id + ".line"
@@ -20,7 +20,7 @@ export function addLayer(id, data,
   if(typeof mapSource !== 'undefined') {
     map.removeSource(id);
   }
-  
+
   map.addSource(id, {
     type: 'geojson',
     data: data
@@ -37,7 +37,7 @@ export function addLayer(id, data,
       'line-opacity': lineOpacity,
      }
   });
-  
+
   if (circleRadius>0) {
     map.addLayer({
       'id': circleId,
@@ -65,19 +65,19 @@ export function setPaintProperties(id,
   lineWidth,
   lineOpacity,
   fillColor,
-  fillOpacity,                         
+  fillOpacity,
   circleRadius) {
 
-  if (map.getLayer(id)) {  
+  if (map.getLayer(id)) {
     map.setPaintProperty(id + ".circle", 'circle-stroke-color', lineColor);
     map.setPaintProperty(id + ".circle", 'circle-stroke-width', lineWidth);
     map.setPaintProperty(id + ".circle", 'circle-stroke-opacity', lineOpacity);
-    map.setPaintProperty(id + ".circle", 'circle-color', fillColor);   
-    map.setPaintProperty(id + ".circle", 'circle-opacity', fillOpacity);                
-    map.setPaintProperty(id + ".circle", 'circle-radius', circleRadius);  
+    map.setPaintProperty(id + ".circle", 'circle-color', fillColor);
+    map.setPaintProperty(id + ".circle", 'circle-opacity', fillOpacity);
+    map.setPaintProperty(id + ".circle", 'circle-radius', circleRadius);
 
     map.setPaintProperty(id + ".line", 'line-color', lineColor);
-    map.setPaintProperty(id + ".line", 'line-width', lineWidth);               
- 
+    map.setPaintProperty(id + ".line", 'line-width', lineWidth);
+
   }
 }

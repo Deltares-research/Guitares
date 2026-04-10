@@ -19,7 +19,7 @@ export function addLayer(id, url, side) {
     'source': id,
     'type': 'raster'
   }, 'dummy_layer');
-  mp.setLayoutProperty(id, 'visibility', 'visible');    
+  mp.setLayoutProperty(id, 'visibility', 'visible');
   mp.setPaintProperty(id, 'raster-opacity', 0.5);
 //   if (colorbar) {
 //     // If colorbar is a string, then it is a URL and we add it as an image
@@ -55,13 +55,13 @@ function setLegend(mp, id, colorbar) {
     // Legend does not exist yet, so create it
     var legend     = document.createElement("div");
     legend.id        = "legend" + id;
-    legend.className = "legend_bottom_left";  
-//    legend.className = "overlay_legend";  
+    legend.className = "legend_bottom_left";
+//    legend.className = "overlay_legend";
     if (typeof colorbar === 'string' || colorbar instanceof String) {
       var legendImage = document.createElement('img');
       legendImage.id = "legend_image_" + id;
       legend.appendChild(legendImage);
-    }  
+    }
     document.body.appendChild(legend);
   }
 
@@ -103,12 +103,12 @@ function setLegend(mp, id, colorbar) {
 
     // Now check for layer visibility and update legend accordingly
     if (mp.getLayoutProperty(id, 'visibility') == 'visible') {
-      legend.style.visibility = 'visible'; 
+      legend.style.visibility = 'visible';
     } else {
       legend.style.visibility = 'hidden';
     }
 
-  } 
+  }
 }
 
 export function setLegendPosition(id, position, side) {
@@ -124,7 +124,7 @@ export function setLegendPosition(id, position, side) {
     } else if (position == "top-right") {
       legend.className = "legend_top_right";
     }
-  } 
+  }
 }
 
 export function setOpacity(id, opacity, side) {

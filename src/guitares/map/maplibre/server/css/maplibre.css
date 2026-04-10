@@ -13,7 +13,7 @@
   white-space: nowrap; /* prevent line breaks unless necessary */
 }
 
-/* Color box inside legend */
+/* Color swatch inside legend (default: square) */
 .legend i {
   width: 14px;
   height: 14px;
@@ -23,9 +23,22 @@
   border: 1px solid;
 }
 
+/* Circle-shaped legend swatch */
+.legend i.circle {
+  border-radius: 50%;
+}
+
+/* Colorbar image inside legend — scale down for crispness */
+.legend img {
+  max-height: 200px;
+  width: auto;
+  display: block;
+}
+
 /* Label text */
 .legend span {
   vertical-align: middle;
+  font-size: 12px;
 }
 
 /* Positioning: all four corners, width grows naturally */
@@ -41,6 +54,14 @@
   right: 0;
   margin-bottom: 50px;
   margin-right: 10px;
+}
+
+/* Second legend to the left of bottom-right */
+.legend.bottom-right-2 {
+  bottom: 0px;
+  right: 0;
+  margin-bottom: 50px;
+  margin-right: 120px;
 }
 
 .legend.top-left {
@@ -83,4 +104,23 @@
   left: 50%;
   transform: translateX(-50%);
   margin-bottom: 10px;
+}
+
+/* Ruler popup */
+.ruler-popup .maplibregl-popup-content {
+  background: rgba(40, 40, 40, 0.85);
+  color: #fff;
+  border-radius: 4px;
+  padding: 0;
+  pointer-events: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+.ruler-popup .maplibregl-popup-tip {
+  display: none;
+}
+
+/* Control button active state (ruler, terrain, globe) */
+.maplibregl-ctrl button.active {
+  background-color: #d0e4f7;
+  color: #1a73e8;
 }

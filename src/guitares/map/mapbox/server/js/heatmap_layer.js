@@ -1,6 +1,6 @@
-export function addLayer(id, data, max_zoom, density_property, side) { 
+export function addLayer(id, data, max_zoom, density_property, side) {
 
-  // Get the map object for the given side 
+  // Get the map object for the given side
   var mp = getMap(side);
 
   // Always remove old layers first to avoid errors
@@ -11,13 +11,13 @@ export function addLayer(id, data, max_zoom, density_property, side) {
     mp.removeSource(id);
   }
 
-  // Add the source 
+  // Add the source
   mp.addSource(id, {
     type: 'geojson',
-    data: data, 
+    data: data,
   });
 
-  // Add the layer 
+  // Add the layer
   mp.addLayer({
     id: id,
     type: 'heatmap',

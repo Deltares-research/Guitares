@@ -1,19 +1,55 @@
-from .layer import Layer
+"""Legacy choropleth layer for polygon fill colouring with binned values.
+
+This layer is maintained for backward compatibility. New code should prefer
+``PolygonLayer`` which supports the same choropleth features via
+``color_by_attribute`` and ``bins``/``colors`` options.
+"""
+
+from typing import Any, Dict, List, Optional, Union
+
 from geopandas import GeoDataFrame
 from pyogrio import read_dataframe
 
+from .layer import Layer
+
 
 class ChoroplethLayer(Layer):
-    def __init__(self, map, id, map_id, **kwargs):
+    """Choropleth polygon layer with binned colour fills and legends.
+
+    Parameters
+    ----------
+    map : Any
+        The parent map object.
+    id : str
+        Logical layer identifier.
+    map_id : str
+        Fully qualified JS-side layer identifier.
+    **kwargs : Any
+        Passed through to ``Layer.__init__``.
+    """
+
+    def __init__(self, map: Any, id: str, map_id: str, **kwargs: Any) -> None:
         super().__init__(map, id, map_id, **kwargs)
-        pass
 
     def set_data(
-        self, data, color_by_attribute: dict = None, legend_items: list = None, 
-    ):
+        self,
+        data: Union[GeoDataFrame, str],
+        color_by_attribute: Optional[Dict[str, Any]] = None,
+        legend_items: Optional[List[Dict[str, Any]]] = None,
+    ) -> None:
+        """Set polygon data and render the choropleth layer.
+
+        Parameters
+        ----------
+        data : GeoDataFrame or str
+            Polygon geometries, or a file path to read via pyogrio.
+        color_by_attribute : dict, optional
+            Custom MapLibre paint expression for data-driven fill colours.
+        legend_items : list of dict, optional
+            Pre-built legend items ``[{style, label}]``.
+        """
         # Make sure this is not an empty GeoDataFrame
         if isinstance(data, GeoDataFrame):
-            # Data is GeoDataFrame
             if len(data) == 0:
                 data = GeoDataFrame()
             if data.crs != 4326:
@@ -23,14 +59,13 @@ class ChoroplethLayer(Layer):
             data = read_dataframe(data)
 
         self.data = data
-        # self.visible = True
 
         if not self.big_data:
             if color_by_attribute is None:
                 # Add new layer
                 self.map.runjs(
-                    "/js/choropleth_layer.js",
-                    "addLayer",
+                    "/js/polygon_layer.js",
+                    "addLayerBins",
                     arglist=[
                         self.map_id,
                         self.data,
@@ -55,8 +90,8 @@ class ChoroplethLayer(Layer):
             ):
                 # Color by attribute
                 self.map.runjs(
-                    "/js/polygon_layer_custom.js",
-                    "addLayer",
+                    "/js/polygon_layer.js",
+                    "addLayerCustom",
                     arglist=[
                         self.map_id,
                         self.data,
@@ -68,12 +103,11 @@ class ChoroplethLayer(Layer):
                         self.legend_title,
                     ],
                 )
-            elif isinstance(color_by_attribute, dict
-            ):
+            elif isinstance(color_by_attribute, dict):
                 # Color by attribute
                 self.map.runjs(
-                    "/js/polygon_layer_additional_attr.js",
-                    "addLayer",
+                    "/js/polygon_layer.js",
+                    "addLayerCustomNoLegend",
                     arglist=[
                         self.map_id,
                         self.data,
@@ -88,11 +122,11 @@ class ChoroplethLayer(Layer):
         else:
             self.update()
 
-    def update(self):
+    def update(self) -> None:
+        """Update for big-data mode (clip to viewport)."""
         if self.data is None:
             return
         if len(self.data) == 0:
-            # Empty GeoDataFrame
             return
         # Only need to update this layer if it use big data and is visible
         if self.big_data and self.get_visibility():
@@ -105,10 +139,9 @@ class ChoroplethLayer(Layer):
                 yl1 = coords[1][1]
                 # Limits WGS 84
                 gdf = self.data.cx[xl0:xl1, yl0:yl1]
-                # Remove existing layer
                 # Add new layer
                 self.map.runjs(
-                    "/js/choropleth_layer.js",
+                    "/js/polygon_layer.js",
                     "addLayer",
                     arglist=[
                         self.map_id,
@@ -134,10 +167,11 @@ class ChoroplethLayer(Layer):
                 # Choropleths are automatically invisible, but legend is not
                 self.map.runjs(self.main_js, "hideLegend", arglist=[self.map_id])
 
-    def activate(self):
+    def activate(self) -> None:
+        """Set the layer to active mode."""
         self.active = True
         self.map.runjs(
-            "/js/choropleth_layer.js",
+            "/js/polygon_layer.js",
             "activate",
             arglist=[
                 self.map_id,
@@ -148,10 +182,11 @@ class ChoroplethLayer(Layer):
             ],
         )
 
-    def deactivate(self):
+    def deactivate(self) -> None:
+        """Set the layer to inactive mode."""
         self.active = False
         self.map.runjs(
-            "/js/choropleth_layer.js",
+            "/js/polygon_layer.js",
             "deactivate",
             arglist=[
                 self.map_id,
@@ -166,7 +201,8 @@ class ChoroplethLayer(Layer):
             ],
         )
 
-    def redraw(self):
+    def redraw(self) -> None:
+        """Redraw the layer (e.g. after a style change)."""
         if isinstance(self.data, GeoDataFrame):
             self.set_data(self.data)
         if not self.get_visibility():

@@ -1,104 +1,402 @@
-export function addLayer(id, data, hover_property,   min_zoom, 
-  lineColor, 
-  lineWidth, 
-  lineOpacity, 
-  fillColor, 
-  fillOpacity, 
-  circleRadius,
-  unit) {  
+/**
+ * Circle layer with optional selection and hover popups.
+ *
+ * When selector mode is enabled (options.selector=true), the layer
+ * supports hover popups, single/multiple click selection, and
+ * feature state management (hovered, selected).
+ *
+ * Also supports custom paint dicts (options.paintDict) for
+ * data-driven styling (choropleth-style circles).
+ *
+ * @module circle_layer
+ */
 
-  // Always remove old layer and source first to avoid errors
-  if (map.getLayer(id)) {
-    map.removeLayer(id);
+import { findBeforeId } from './utils.js';
+
+// ── Module state (for selector mode) ─────────────────────────────────
+
+let hoverProperty = null;
+let hoveredId = null;
+let activeLayerId = null;
+let selectedIndex = null;
+let popup = null;
+let selectedFeatures = [];
+
+// ── Main entry point ─────────────────────────────────────────────────
+
+/**
+ * Add a circle layer to the map.
+ *
+ * @param {string} id - Layer/source identifier.
+ * @param {Object} data - GeoJSON FeatureCollection.
+ * @param {Object} pp - Paint properties dict:
+ *   lineColor, lineWidth, lineOpacity, fillColor, fillOpacity, circleRadius.
+ *   For selector mode also: lineColorSelected, fillColorSelected, circleRadiusSelected.
+ * @param {Object} [options] - Additional options:
+ *   selector (bool), index (int), hoverProperty (string), unit (string),
+ *   selectionOption ("single"|"multiple"), minZoom (number),
+ *   paintDict (object - custom MapLibre paint), legendItems (array),
+ *   legendTitle (string), legendPosition (string).
+ */
+export function addLayer(id, data, pp, options) {
+  const opts = options || {};
+  const selector = opts.selector || false;
+  const minZoom = opts.minZoom || 0;
+
+  // Clean up
+  if (map.getLayer(id)) map.removeLayer(id);
+  if (map.getSource(id)) map.removeSource(id);
+  const legend = document.getElementById('legend' + id);
+  if (legend) legend.remove();
+
+  const sourceConfig = { type: 'geojson', data: data, promoteId: 'index' };
+
+  map.addSource(id, sourceConfig);
+
+  // ── Circle layer paint ─────────────────────────────────────────
+
+  let paint;
+
+  if (opts.paintDict) {
+    // Custom paint dict (for data-driven coloring)
+    paint = opts.paintDict;
+  } else if (selector) {
+    // Selector mode: feature-state-driven styling
+    paint = {
+      'circle-stroke-color': [
+        'case',
+        ['boolean', ['feature-state', 'selected'], false], pp.lineColorSelected || pp.lineColor,
+        ['boolean', ['get', '_selected'], false], pp.lineColorSelected || pp.lineColor,
+        ['boolean', ['feature-state', 'hovered'], false], pp.lineColorSelected || pp.lineColor,
+        pp.lineColor,
+      ],
+      'circle-color': [
+        'case',
+        ['boolean', ['feature-state', 'selected'], false], pp.fillColorSelected || pp.fillColor,
+        ['boolean', ['get', '_selected'], false], pp.fillColorSelected || pp.fillColor,
+        ['boolean', ['feature-state', 'hovered'], false], pp.fillColorSelected || pp.fillColor,
+        pp.fillColor,
+      ],
+      'circle-stroke-width': pp.lineWidth,
+      'circle-radius': [
+        'case',
+        ['boolean', ['feature-state', 'selected'], false], pp.circleRadiusSelected || pp.circleRadius,
+        ['boolean', ['get', '_selected'], false], pp.circleRadiusSelected || pp.circleRadius,
+        ['boolean', ['feature-state', 'hovered'], false], pp.circleRadiusSelected || pp.circleRadius,
+        pp.circleRadius,
+      ],
+      'circle-opacity': pp.fillOpacity,
+    };
+  } else {
+    // Simple static paint
+    paint = {
+      'circle-color': pp.fillColor,
+      'circle-stroke-width': pp.lineWidth,
+      'circle-stroke-color': pp.lineColor,
+      'circle-stroke-opacity': pp.lineOpacity,
+      'circle-radius': pp.circleRadius,
+      'circle-opacity': pp.fillOpacity,
+    };
   }
 
-  if (map.getSource(id)) {
-    map.removeSource(id);
-  }
-  
-  map.addSource(id, {
-    type: 'geojson',
-    data: data
-  });
-
-  // Add a symbol layer
   map.addLayer({
-    'id': id,
-    'type': 'circle',
-    'source': id,
-    'minzoom': min_zoom,
-    'paint': {
-      'circle-color': fillColor,
-      'circle-stroke-width': lineWidth,
-      'circle-stroke-color': lineColor,
-      'circle-stroke-opacity': lineOpacity,
-      'circle-radius': circleRadius,
-      'circle-opacity': fillOpacity
-    }
-  });
+    id: id,
+    type: 'circle',
+    source: id,
+    minzoom: minZoom,
+    layout: { visibility: 'visible' },
+    paint: paint,
+  }, findBeforeId(map, opts.beforeIds) || 'dummy_layer_1');
 
-  map.setLayoutProperty(id, 'visibility', 'visible');
+  // ── Hover popup (non-selector simple mode) ─────────────────────
 
-  if (hover_property !== "") {
-
-    // Create a popup, but don't add it to the map yet.
-    const popup = new maplibregl.Popup({
+  if (!selector && opts.hoverProperty) {
+    const hoverPopup = new maplibregl.Popup({
       closeButton: false,
-      closeOnClick: false
-      });
+      closeOnClick: false,
+    });
+    const unit = opts.unit || '';
 
-    if (hover_property) {
+    map.on('mouseenter', id, function(e) {
+      map.getCanvas().style.cursor = 'pointer';
+      const val = e.features[0].properties[opts.hoverProperty];
+      let text = opts.hoverProperty + ': ' + val;
+      if (unit) text += ' ' + unit;
+      hoverPopup.setLngLat(e.lngLat).setText(text).addTo(map);
+    });
 
-      map.on('mouseenter', id, (e) => {
+    map.on('mouseleave', id, function() {
+      map.getCanvas().style.cursor = window.currentCursor || '';
+      hoverPopup.remove();
+    });
+  }
 
-        // Change the cursor style as a UI indicator.
-        map.getCanvas().style.cursor = 'pointer';
-     
-        // Copy coordinates array.
-        const coordinates = e.features[0].geometry.coordinates.slice();
-     
-        // Ensure that if the map is zoomed out such that multiple
-        // copies of the feature are visible, the popup appears
-        // over the copy being pointed to.
-        while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-          coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-        }
-     
-        // Display a popup 
-        popup.setLngLat(e.lngLat)
-          .setText(hover_property + ": " + (e.features[0].properties[hover_property])
-          + " " + unit)
-          .addTo(map);
-      });
-     
-      map.on('mouseleave', id, () => {
-        map.getCanvas().style.cursor = currentCursor;
-        popup.remove();
-      });
+  // ── Legend (optional, for custom paint mode) ───────────────────
+
+  if (opts.legendItems && opts.legendItems.length > 0) {
+    const legendDiv = document.createElement('div');
+    legendDiv.id = 'legend' + id;
+    legendDiv.className = 'legend ' + (opts.legendPosition || 'bottom-right');
+    if (opts.legendTitle) {
+      const t = document.createElement('div');
+      t.innerHTML = '<strong>' + opts.legendTitle + '</strong>';
+      legendDiv.appendChild(t);
     }
-  };
-};
+    for (let i = 0; i < opts.legendItems.length; i++) {
+      const item = document.createElement('div');
+      item.innerHTML =
+        '<i style="' + opts.legendItems[i].style + '; width:18px; height:18px; display:inline-block; margin-right:5px;"></i>' +
+        '<span>' + opts.legendItems[i].label + '</span>';
+      legendDiv.appendChild(item);
+    }
+    document.body.appendChild(legendDiv);
+  }
 
-export function setData(id, data) {
-  var source = map.getSource(id);
-  source.setData(data);
-}
+  // ── Selector mode setup ────────────────────────────────────────
 
-export function setPaintProperties(id,
-  lineColor,
-  lineWidth,
-  lineOpacity,
-  fillColor,
-  fillOpacity,                         
-  circleRadius) {
+  if (selector) {
+    hoverProperty = opts.hoverProperty || null;
+    const selectionOption = opts.selectionOption || 'single';
 
-  if (map.getLayer(id)) {  
-    map.setPaintProperty(id, 'circle-stroke-color', lineColor);
-    map.setPaintProperty(id, 'circle-stroke-width', lineWidth);
-    map.setPaintProperty(id, 'circle-stroke-opacity', lineOpacity);
-    map.setPaintProperty(id, 'circle-color', fillColor);   
-    map.setPaintProperty(id, 'circle-opacity', fillOpacity);                
-    map.setPaintProperty(id, 'circle-radius', circleRadius);  
+    layers[id] = {
+      data: data,
+      mode: 'active',
+      selectionOption: selectionOption,
+    };
+
+    popup = new maplibregl.Popup({
+      offset: 10,
+      closeButton: false,
+      closeOnClick: false,
+    });
+
+    map.on('mouseenter', id, mouseEnter);
+    map.on('mouseleave', id, mouseLeave);
+
+    if (selectionOption === 'single') {
+      map.on('click', id, clickSingle);
+    } else {
+      map.on('click', id, clickMultiple);
+    }
+
+    map.once('idle', () => {
+      layerAdded(id);
+    });
+
+    // Select initial index if provided
+    if (opts.index !== undefined && opts.index >= 0) {
+      selectedIndex = opts.index;
+      select(id, [selectedIndex]);
+    }
   }
 }
 
+// ── Paint property updates ───────────────────────────────────────────
+
+/**
+ * Update paint properties for an existing circle layer.
+ * @param {string} id - Layer identifier.
+ * @param {Object} pp - Paint properties dict.
+ */
+export function setPaintProperties(id, pp) {
+  if (!map.getLayer(id)) return;
+  map.setPaintProperty(id, 'circle-stroke-color', pp.lineColor);
+  map.setPaintProperty(id, 'circle-stroke-width', pp.lineWidth);
+  map.setPaintProperty(id, 'circle-stroke-opacity', pp.lineOpacity);
+  map.setPaintProperty(id, 'circle-color', pp.fillColor);
+  map.setPaintProperty(id, 'circle-opacity', pp.fillOpacity);
+  map.setPaintProperty(id, 'circle-radius', pp.circleRadius);
+}
+
+/**
+ * Update the GeoJSON data for an existing source.
+ * @param {string} id - Layer/source identifier.
+ * @param {Object} data - New GeoJSON data.
+ */
+export function setData(id, data) {
+  const source = map.getSource(id);
+  if (source) source.setData(data);
+}
+
+// ── Selector: selection ──────────────────────────────────────────────
+
+/**
+ * Select a feature by index, deselecting all others.
+ * @param {string} id - Layer identifier.
+ * @param {number} index - Feature index to select.
+ */
+export function selectByIndex(id, index) {
+  deselectAll(id);
+  selectedIndex = index;
+  select(id, [index]);
+}
+
+/**
+ * Set the layer to active mode.
+ * @param {string} id - Layer identifier.
+ * @param {Object} pp - Active paint properties.
+ */
+export function activate(id, pp) {
+  if (layers[id]) layers[id].mode = 'active';
+  if (layers[id]?.selectionOption) {
+    // Selector mode: restore feature-state expressions with active colors
+    map.setPaintProperty(id, 'circle-stroke-color', [
+      'case',
+      ['boolean', ['get', '_selected'], false], pp.lineColorSelected || pp.lineColor,
+      ['boolean', ['feature-state', 'hovered'], false], pp.lineColorSelected || pp.lineColor,
+      pp.lineColor,
+    ]);
+    map.setPaintProperty(id, 'circle-color', [
+      'case',
+      ['boolean', ['get', '_selected'], false], pp.fillColorSelected || pp.fillColor,
+      ['boolean', ['feature-state', 'hovered'], false], pp.fillColorSelected || pp.fillColor,
+      pp.fillColor,
+    ]);
+    map.setPaintProperty(id, 'circle-radius', [
+      'case',
+      ['boolean', ['get', '_selected'], false], pp.circleRadiusSelected || pp.circleRadius,
+      ['boolean', ['feature-state', 'hovered'], false], pp.circleRadiusSelected || pp.circleRadius,
+      pp.circleRadius,
+    ]);
+    map.setPaintProperty(id, 'circle-stroke-width', pp.lineWidth);
+    map.setPaintProperty(id, 'circle-opacity', pp.fillOpacity);
+  } else {
+    setPaintProperties(id, pp);
+  }
+}
+
+/**
+ * Set the layer to inactive mode.
+ * @param {string} id - Layer identifier.
+ * @param {Object} pp - Inactive paint properties.
+ */
+export function deactivate(id, pp) {
+  if (layers[id]) layers[id].mode = 'inactive';
+  if (layers[id]?.selectionOption) {
+    // Selector mode: keep feature-state expressions but use inactive colors
+    // (selected state still works but shows inactive-selected colors)
+    map.setPaintProperty(id, 'circle-stroke-color', pp.lineColor);
+    map.setPaintProperty(id, 'circle-color', pp.fillColor);
+    map.setPaintProperty(id, 'circle-radius', pp.circleRadius);
+    map.setPaintProperty(id, 'circle-stroke-width', pp.lineWidth);
+    map.setPaintProperty(id, 'circle-opacity', pp.fillOpacity);
+  } else {
+    setPaintProperties(id, pp);
+  }
+}
+
+/**
+ * Remove the layer, source, legend, and event listeners.
+ * @param {string} id - Layer identifier.
+ */
+export function remove(id) {
+  const opt = layers[id] ? layers[id].selectionOption : null;
+  if (map.getLayer(id)) map.removeLayer(id);
+  if (map.getSource(id)) map.removeSource(id);
+  const legend = document.getElementById('legend' + id);
+  if (legend) legend.remove();
+  map.off('mouseenter', id, mouseEnter);
+  map.off('mouseleave', id, mouseLeave);
+  if (opt === 'single') {
+    map.off('click', id, clickSingle);
+  } else {
+    map.off('click', id, clickMultiple);
+  }
+}
+
+// ── Selector: hover handlers ─────────────────────────────────────────
+
+function mouseEnter(e) {
+  if (!e.features || e.features.length === 0) return;
+  map.getCanvas().style.cursor = 'pointer';
+  const feature = e.features[0];
+  if (feature.properties.hover_popup_width) {
+    popup.setMaxWidth(feature.properties.hover_popup_width);
+  }
+  if (hoverProperty && feature.properties[hoverProperty]) {
+    const coords = feature.geometry.coordinates.slice();
+    while (Math.abs(e.lngLat.lng - coords[0]) > 180) {
+      coords[0] += e.lngLat.lng > coords[0] ? 360 : -360;
+    }
+    popup.setLngLat(coords).setText(feature.properties[hoverProperty]).addTo(map);
+  }
+  if (hoveredId !== null) {
+    map.setFeatureState({ source: activeLayerId, id: hoveredId }, { hovered: false });
+  }
+  map.setFeatureState({ source: feature.source, id: feature.id }, { hovered: true });
+  hoveredId = feature.id;
+  activeLayerId = feature.source;
+}
+
+function mouseLeave() {
+  map.getCanvas().style.cursor = window.currentCursor || '';
+  if (popup) popup.remove();
+  if (hoveredId !== null) {
+    map.setFeatureState({ source: activeLayerId, id: hoveredId }, { hovered: false });
+  }
+  hoveredId = null;
+}
+
+// ── Selector: click handlers ─────────────────────────────────────────
+
+function clickSingle(e) {
+  if (!e.features || e.features.length === 0) return;
+  const layerId = e.features[0].source;
+  const clickedIndex = e.features[0].properties.index;
+  deselectAll(layerId);
+  selectedIndex = clickedIndex;
+  select(layerId, [clickedIndex]);
+  const feature = e.features[0];
+  setTimeout(() => featureClicked(layerId, feature), 0);
+}
+
+function clickMultiple(e) {
+  if (!e.features || e.features.length === 0) return;
+  const layerId = e.features[0].source;
+  const index = e.features[0].id;
+  const state = map.getFeatureState({ source: layerId, id: index });
+  if (state.selected) {
+    deselect(layerId, [index]);
+  } else {
+    select(layerId, [index]);
+  }
+  selectedFeatures = [];
+  for (let i = 0; i < layers[layerId].data.features.length; i++) {
+    const fs = map.getFeatureState({ source: layerId, id: i });
+    if (fs.selected) selectedFeatures.push(layers[layerId].data.features[i]);
+  }
+  featureClicked(layerId, selectedFeatures);
+}
+
+// ── Selector: selection helpers ──────────────────────────────────────
+
+function select(layerId, indices) {
+  const features = layers[layerId]?.data?.features;
+  if (!features) return;
+  for (const idx of indices) {
+    map.setFeatureState({ source: layerId, id: idx }, { selected: true });
+    const f = features.find(f => f.properties.index === idx);
+    if (f) f.properties._selected = true;
+  }
+}
+
+function deselect(layerId, indices) {
+  const features = layers[layerId]?.data?.features;
+  if (!features) return;
+  for (const idx of indices) {
+    map.setFeatureState({ source: layerId, id: idx }, { selected: false });
+    const f = features.find(f => f.properties.index === idx);
+    if (f) f.properties._selected = false;
+  }
+}
+
+function deselectAll(layerId) {
+  const features = layers[layerId]?.data?.features;
+  if (!features) return;
+  for (let i = 0; i < features.length; i++) {
+    if (features[i].properties._selected) {
+      map.setFeatureState({ source: layerId, id: features[i].properties.index }, { selected: false });
+      features[i].properties._selected = false;
+    }
+  }
+}

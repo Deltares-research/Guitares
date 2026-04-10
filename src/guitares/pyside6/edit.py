@@ -1,18 +1,31 @@
-from PySide6.QtWidgets import QLineEdit
-from PySide6.QtWidgets import QLabel
-from PySide6 import QtCore
+"""PySide6 line-edit widget wrapper for Guitares GUI elements."""
+
 import traceback
+from typing import Any, Optional, Union
+
+from PySide6 import QtCore
+from PySide6.QtWidgets import QLabel, QLineEdit
+
 
 class Edit(QLineEdit):
+    """Single-line text editor that syncs its value with a Guitares variable.
 
-    def __init__(self, element):
+    Supports string, int, and float variable types with validation.
+
+    Parameters
+    ----------
+    element : Any
+        The Guitares element descriptor for this editor.
+    """
+
+    def __init__(self, element: Any) -> None:
         super().__init__("", element.parent.widget)
 
         self.element = element
 
-        self.string = None
+        self.string: Optional[str] = None
 
-        if element.type == float or element.type == int:
+        if element.type is float or element.type is int:
             self.setAlignment(QtCore.Qt.AlignRight)
         if not element.enable:
             self.setEnabled(False)
@@ -23,7 +36,9 @@ class Edit(QLineEdit):
             if isinstance(element.text, str):
                 txt = element.text
             else:
-                txt = self.element.getvar(element.text.variable_group, element.text.variable)    
+                txt = self.element.getvar(
+                    element.text.variable_group, element.text.variable
+                )
             label = QLabel(txt, element.parent.widget)
             label.setStyleSheet("background: transparent; border: none")
             if not element.enable:
@@ -35,51 +50,61 @@ class Edit(QLineEdit):
             if isinstance(self.element.tooltip, str):
                 txt = self.element.tooltip
             else:
-                txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
+                txt = self.element.getvar(
+                    self.element.tooltip.variable_group, self.element.tooltip.variable
+                )
             self.setToolTip(txt)
 
         self.editingFinished.connect(self.callback)
 
         self.set_geometry()
 
-    def set(self):
-        group  = self.element.variable_group
-        name   = self.element.variable
-        val    = self.element.getvar(group, name)
+    def set(self) -> None:
+        """Update the editor text from the linked variable."""
+        group = self.element.variable_group
+        name = self.element.variable
+        val = self.element.getvar(group, name)
         self.string = str(val)
         self.setText(str(val))
         self.setStyleSheet("")
 
         if not isinstance(self.element.text, str):
-            txt = self.element.getvar(self.element.text.variable_group, self.element.text.variable)
+            txt = self.element.getvar(
+                self.element.text.variable_group, self.element.text.variable
+            )
             self.text_widget.setText(txt)
 
         if not isinstance(self.element.tooltip, str):
-            txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
+            txt = self.element.getvar(
+                self.element.tooltip.variable_group, self.element.tooltip.variable
+            )
             self.setToolTip(txt)
 
-    def callback(self):
+    def callback(self) -> None:
+        """Validate and commit the edited value, then fire the element callback."""
         self.okay = True
         newtext = self.text()
-        if self.element.type == int:
+        newval: Union[int, float, str] = newtext
+        if self.element.type is int:
             try:
                 newval = int(newtext)
-            except:
+            except Exception:
                 self.okay = False
-        elif self.element.type == float:
+        elif self.element.type is float:
             try:
                 newval = float(newtext)
-            except:
+            except Exception:
                 self.okay = False
-        else:
-            newval = newtext
 
         # Do some range checking here ...
 
+        # Store old value before updating
+        group = self.element.variable_group
+        name = self.element.variable
+        oldval = self.element.getvar(group, name)
+
         # Update value in variable dict
         if self.okay:
-            group = self.element.variable_group
-            name = self.element.variable
             self.element.setvar(group, name, newval)
             self.setStyleSheet("")
         else:
@@ -87,47 +112,72 @@ class Edit(QLineEdit):
 
         if self.string == newtext:
             # Nothing changed
-            self.okay = False # Not going to run second callback
+            self.okay = False  # Not going to run second callback
 
         try:
             if self.okay and self.isEnabled() and self.element.callback:
-                group = self.element.variable_group
-                name = self.element.variable
-                val   = newval
-                self.element.callback(val, self)
-                # Update GUI
+                self.element.callback(newval, self)
             self.element.window.update()
-        except:
+        except Exception as e:
             traceback.print_exc()
+            # Revert the GUI variable to the old value
+            self.element.setvar(group, name, oldval)
+            # Show validation errors in a warning dialog
+            error_msg = str(e)
+            if hasattr(e, "errors"):
+                msgs = []
+                for err in e.errors():
+                    loc = " → ".join(str(part) for part in err.get("loc", []))
+                    msgs.append(f"{loc}: {err.get('msg', '')}")
+                error_msg = "\n".join(msgs)
+            try:
+                self.element.window.dialog_warning(error_msg)
+            except Exception:
+                pass
+            self.element.window.update()
 
-    def set_geometry(self):
+    def set_geometry(self) -> None:
+        """Position and size the editor and its label."""
         resize_factor = self.element.gui.resize_factor
         x0, y0, wdt, hgt = self.element.get_position()
         self.setGeometry(x0, y0, wdt, hgt)
         if self.element.text:
             if not isinstance(self.element.text, str):
-                txt = self.element.getvar(self.element.text.variable_group, self.element.text.variable)
+                txt = self.element.getvar(
+                    self.element.text.variable_group, self.element.text.variable
+                )
             else:
-                txt = self.element.text    
+                txt = self.element.text
             label = self.text_widget
             fm = label.fontMetrics()
             wlab = int(fm.size(0, txt).width())
-            if self.element.text_position == "above-center" or self.element.text_position == "above":
+            if (
+                self.element.text_position == "above-center"
+                or self.element.text_position == "above"
+            ):
                 label.setAlignment(QtCore.Qt.AlignCenter)
-                label.setGeometry(x0, int(y0 - 20 * resize_factor), wdt, int(20 * resize_factor))
+                label.setGeometry(
+                    x0, int(y0 - 20 * resize_factor), wdt, int(20 * resize_factor)
+                )
             elif self.element.text_position == "above-left":
                 label.setAlignment(QtCore.Qt.AlignLeft)
-                label.setGeometry(x0, int(y0 - 15 * resize_factor), wlab, int(20 * resize_factor))
+                label.setGeometry(
+                    x0, int(y0 - 15 * resize_factor), wlab, int(20 * resize_factor)
+                )
             elif self.element.text_position == "right":
                 label.setAlignment(QtCore.Qt.AlignLeft)
-                label.setGeometry(int(x0 + wdt + 3 * resize_factor),
-                                  int(y0 + 5 * self.element.gui.resize_factor),
-                                  wlab,
-                                  int(20 * resize_factor))
+                label.setGeometry(
+                    int(x0 + wdt + 3 * resize_factor),
+                    int(y0 + 5 * self.element.gui.resize_factor),
+                    wlab,
+                    int(20 * resize_factor),
+                )
             else:
                 # Assuming left
                 label.setAlignment(QtCore.Qt.AlignRight)
-                label.setGeometry(int(x0 - wlab - 3 * resize_factor),
-                                  int(y0 + 5 * self.element.gui.resize_factor),
-                                  wlab,
-                                  int(20 * resize_factor))
+                label.setGeometry(
+                    int(x0 - wlab - 3 * resize_factor),
+                    int(y0 + 5 * self.element.gui.resize_factor),
+                    wlab,
+                    int(20 * resize_factor),
+                )

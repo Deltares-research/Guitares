@@ -1,10 +1,20 @@
+"""PySide6 checkbox widget wrapper for Guitares GUI elements."""
+
+from typing import Any
+
 from PySide6.QtWidgets import QCheckBox
-from PySide6 import QtCore
-import traceback
+
 
 class CheckBox(QCheckBox):
+    """Checkbox widget that syncs its state with a Guitares variable.
 
-    def __init__(self, element):
+    Parameters
+    ----------
+    element : Any
+        The Guitares element descriptor for this checkbox.
+    """
+
+    def __init__(self, element: Any) -> None:
         super().__init__("", element.parent.widget)
 
         self.element = element
@@ -15,14 +25,18 @@ class CheckBox(QCheckBox):
             if isinstance(element.text, str):
                 txt = element.text
             else:
-                txt = self.element.getvar(element.text.variable_group, element.text.variable)    
-            self.setText(txt)    
+                txt = self.element.getvar(
+                    element.text.variable_group, element.text.variable
+                )
+            self.setText(txt)
 
         if self.element.tooltip:
             if isinstance(self.element.tooltip, str):
                 txt = self.element.tooltip
             else:
-                txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
+                txt = self.element.getvar(
+                    self.element.tooltip.variable_group, self.element.tooltip.variable
+                )
             self.setToolTip(txt)
 
         # self.stateChanged.connect(self.callback)
@@ -30,21 +44,37 @@ class CheckBox(QCheckBox):
 
         self.set_geometry()
 
-    def set(self):
-        group  = self.element.variable_group
-        name   = self.element.variable
-        val    = self.element.getvar(group, name)
+    def set(self) -> None:
+        """Update the checkbox state from the linked variable."""
+        group = self.element.variable_group
+        name = self.element.variable
+        val = self.element.getvar(group, name)
         if val is True:
             self.setChecked(True)
         else:
             self.setChecked(False)
-            
-        if not isinstance(self.element.text, str):
-            self.setText(self.element.getvar(self.element.text.variable_group, self.element.text.variable))   
-        if not isinstance(self.element.tooltip, str):
-            self.setToolTip(self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable))
 
-    def callback(self, state):
+        if not isinstance(self.element.text, str):
+            self.setText(
+                self.element.getvar(
+                    self.element.text.variable_group, self.element.text.variable
+                )
+            )
+        if not isinstance(self.element.tooltip, str):
+            self.setToolTip(
+                self.element.getvar(
+                    self.element.tooltip.variable_group, self.element.tooltip.variable
+                )
+            )
+
+    def callback(self, state: bool) -> None:
+        """Handle checkbox click and fire the element callback.
+
+        Parameters
+        ----------
+        state : bool
+            The new checked state.
+        """
         group = self.element.variable_group
         name = self.element.variable
         val = state
@@ -58,12 +88,12 @@ class CheckBox(QCheckBox):
             print("Error in CheckBox callback")
             print(e)
 
-    def set_geometry(self):
-        if self.element.id=="sbg":
+    def set_geometry(self) -> None:
+        """Position and size the checkbox based on the element descriptor."""
+        if self.element.id == "sbg":
             pass
         x0, y0, wdt, hgt = self.element.get_position()
         # Get the width of the text in pixels and add 25 pixels
         txt = self.text()
         wdt = self.fontMetrics().boundingRect(txt).width() + 25
         self.setGeometry(x0, y0, wdt, hgt)
-

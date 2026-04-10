@@ -93,7 +93,7 @@ export function addMap() {
         if (error) throw error;
         map.addImage(iconUrl, image);
       });
-    });  
+    });
     mapLoaded();
   });
 
@@ -115,7 +115,7 @@ export function addMap() {
     if (!labelLayer) {
       console.log('No label layer with id found with text-field property');
     } else {
-      const labelLayerId = labelLayer.id;  
+      const labelLayerId = labelLayer.id;
       // The 'building' layer in the Mapbox Streets
       // vector tileset contains building height data
       // from OpenStreetMap.
@@ -156,7 +156,7 @@ export function addMap() {
     }
 
     // Add additional layers
-  
+
   });
 
   map.on('moveend', () => {

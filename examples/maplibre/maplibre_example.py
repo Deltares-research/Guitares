@@ -7,7 +7,6 @@ Created on Tue Jul  5 13:40:07 2022
 
 from app import app
 
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     # Build the GUI
     app.gui.build()

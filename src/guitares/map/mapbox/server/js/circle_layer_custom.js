@@ -64,7 +64,7 @@ export function addLayer(
           coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
         }
 
-        // Display a popup 
+        // Display a popup
         popup.setLngLat(e.lngLat)
           .setText(hover_property + ": " + (e.features[0].properties[hover_property])
           + " " + unit)

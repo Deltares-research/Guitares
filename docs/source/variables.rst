@@ -2,53 +2,106 @@ Variables
 =========
 
 All required GUI variables should be defined before the GUI is built.
-This should therefore be done somewhere in the __init__() method of the *Application* class (in the **app module**).
-The standard way to set and get variables is with *gui* object's *setvar* and *getvar* methods.
+This is typically done in the ``__init__()`` method of the *Application* class (in **app.py**).
+The standard way to set and get variables is through the ``gui`` object's ``setvar`` and ``getvar`` methods.
 
-GUI variables are stored in a ``dict`` in groups (keys) with unique names.
-For simple applications, using just one group is often sufficient.
-For more complex situations, it is advisable to classify them in more groups.
-This becomes particularly important when you have variables with different roles that share the same name.
-You may for example use the name *x* for the x-coordinate of one map feature, and the same name *x* for the coordinate of another map feature.
-You will now want to define two variable groups (e.g. *feature1* and *feature2*):
+Variable groups
+---------------
 
-.. code-block:: python
+GUI variables are stored in a ``dict`` organized into named **groups**.
+For simple applications, a single group is often sufficient.
+For more complex applications it is useful to organize variables into multiple groups,
+especially when the same variable name is needed for different purposes.
 
-      app.gui.setvar("feature1", "x", 1.0)
-      app.gui.setvar("feature2", "x", 2.0)
-
-Alternatively, you can use:
+For example, if you use the name ``x`` for the x-coordinate of two different map features,
+define separate groups:
 
 .. code-block:: python
 
-      app.gui.variables["feature1"]["x"]["value"] = 1.0
-      app.gui.variables["feature2"]["x"]["value"] = 2.0
+   app.gui.setvar("feature1", "x", 1.0)
+   app.gui.setvar("feature2", "x", 2.0)
 
-When GUI variables are set like this within a callback method, their new values will automatically appear in the GUI.
+Setting variables
+-----------------
 
-Accessing variables
--------------------
-
-You will often want to access the value of a GUI variable in one the callback methods.
-Let's assume that a GUI variable *varname* that sits in the group *vargroup* was changed within an **Edit** box that has the callback method *edit_varname*.
-The standard way to access the value of *varname*  in the callback method is:
+Use ``setvar`` to store a value:
 
 .. code-block:: python
 
-   def edit_varname(*args):
-      value = app.gui.getvar("vargroup", "varname")
+   app.gui.setvar("mygroup", "varname", value)
 
-Alternatively, you can also use:
-
-.. code-block:: python
-
-   def edit_varname(*args):
-      value = app.gui.variables["vargroup"]["varname"]["value"]
-
-The first input argument for a callback method is always the value of the variable of the UI element that executed the callback method.
-Within a callback method, you may therefore also use:
+Alternatively, access the underlying dict directly:
 
 .. code-block:: python
 
-   def edit_varname(*args):
-      value = args[0]
+   app.gui.variables["mygroup"]["varname"]["value"] = value
+
+When a variable is updated inside a callback, the GUI automatically refreshes to display the new value.
+
+Getting variables
+-----------------
+
+Use ``getvar`` to retrieve a value:
+
+.. code-block:: python
+
+   value = app.gui.getvar("mygroup", "varname")
+
+Or access the dict directly:
+
+.. code-block:: python
+
+   value = app.gui.variables["mygroup"]["varname"]["value"]
+
+Variable types
+--------------
+
+The type of a variable is inferred automatically from the value passed to ``setvar``.
+The type determines how the widget displays and validates input:
+
+.. list-table::
+   :widths: 20 80
+   :header-rows: 1
+
+   * - Python type
+     - Widget behavior
+   * - ``str``
+     - Edit box shows text; no numeric validation
+   * - ``int``
+     - Edit box and spinbox enforce integer input and right-align numbers
+   * - ``float``
+     - Edit box and spinbox enforce float input and right-align numbers
+   * - ``bool``
+     - Used by checkboxes and dependencies
+
+Linking variables to elements
+------------------------------
+
+In the YAML configuration, each interactive element is linked to a variable via the ``variable``
+and ``variable_group`` keys:
+
+.. code-block:: yaml
+
+   - style: edit
+     variable: grid_resolution
+     variable_group: model
+     method: update_grid
+
+When the user edits the value, the new value is written to ``gui.variables["model"]["grid_resolution"]["value"]``
+and the callback ``update_grid`` is called.
+
+The ``variable_group`` defaults to the value set in the ``window`` section of the config file,
+so it only needs to be specified when it differs from the window default.
+
+Dynamic labels and tooltips
+---------------------------
+
+Labels (``text``) and tooltips can be either static strings or dynamic — reading from a variable:
+
+.. code-block:: yaml
+
+   text:
+     variable: status_message
+     variable_group: mygroup
+
+When the variable changes, the label updates automatically on the next GUI refresh.

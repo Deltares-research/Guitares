@@ -35,6 +35,13 @@ dependencies = [
 ]
 dynamic = ["version"]
 
+[project.optional-dependencies]
+tests = ["pytest", "pytest-cov"]
+
+[tool.pytest.ini_options]
+addopts = "--cov guitares --cov-report xml"
+testpaths = ["tests"]
+
 [tool.setuptools.dynamic]
 version = { attr = "guitares.__version__" }
 

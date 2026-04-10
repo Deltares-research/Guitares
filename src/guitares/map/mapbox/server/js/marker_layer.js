@@ -8,7 +8,7 @@ export function addLayer(id, data) {
     closeOnClick: false,
     offset: [0, -12]
   });
-  
+
   clickPopup = new mapboxgl.Popup({
     closeButton: true,
     closeOnClick: true,
@@ -27,7 +27,7 @@ export function addLayer(id, data) {
   if(typeof mapSource !== 'undefined') {
     map.removeSource(id);
   }
-  
+
   map.addSource(id, {
     type: 'geojson',
     data: data
@@ -66,10 +66,10 @@ export function addLayer(id, data) {
 function mouseEnter(e) {
   map.getCanvas().style.cursor = 'pointer';
   var coordinates = e.features[0].geometry.coordinates.slice();
-  // If hover_property is defined, 
+  // If hover_property is defined,
   if (e.features[0].properties.hasOwnProperty('hover_html')) {
       var html = e.features[0].properties.hover_html;
-  } else {var html = null;}    
+  } else {var html = null;}
   // Ensure that if the map is zoomed out, the popup does not appear beyond the visible bounds
   while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
       coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
@@ -77,8 +77,8 @@ function mouseEnter(e) {
   // Set the popup content and coordinates
   if (html) {
     hoverPopup.setLngLat(coordinates).setHTML(html).addTo(map);
-  }  
-}  
+  }
+}
 
 function mouseLeave(e) {
   map.getCanvas().style.cursor = currentCursor;
@@ -104,5 +104,5 @@ function onClick(e) {
     if (html) {
       clickPopup.setLngLat(coordinates).setHTML(html).setMaxWidth(maxWidth).addTo(map);
     }
-  }  
+  }
 }

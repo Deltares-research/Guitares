@@ -75,7 +75,7 @@ class MapLibre(QtWidgets.QWidget):
         view.settings().setAttribute(QtWebEngineWidgets.QWebEngineSettings.WebAttribute.WebGLEnabled, True)
         # view.setUrl(QtCore.QUrl("https://get.webgl.org/"))
         # return
-        
+
         view.page().setWebChannel(channel)
 
         channel.registerObject("MapLibre", self)
@@ -96,11 +96,11 @@ class MapLibre(QtWidgets.QWidget):
     def load_finished(self, message):
         # self.load_finished = True
         # Sending a ping to javascript
-        self.timer_ping = QtCore.QTimer()        
+        self.timer_ping = QtCore.QTimer()
         self.timer_ping.timeout.connect(self.ping)
         self.timer_ping.start(1000)
         # Start a ping received timer
-        self.timer_pong = QtCore.QTimer()        
+        self.timer_pong = QtCore.QTimer()
         self.timer_pong.timeout.connect(self.pong_received)
         self.timer_pong.start(1500)
 
@@ -116,7 +116,7 @@ class MapLibre(QtWidgets.QWidget):
             self.runjs("/js/main.js", "importMapLibre", arglist=[])
         else:
             # Reload
-            self.view.load(QtCore.QUrl(self.url))    
+            self.view.load(QtCore.QUrl(self.url))
 
     def set(self):
         pass
@@ -333,7 +333,7 @@ class MapLibre(QtWidgets.QWidget):
                             arg = arg.drop([columnName], axis=1)
                     string = string + arg.to_json()
             elif arg is None:
-                string = string + "null"        
+                string = string + "null"
             else:
                 string = string + "'" + arg + "'"
             if iarg < len(arglist) - 1:

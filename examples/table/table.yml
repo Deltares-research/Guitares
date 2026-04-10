@@ -3,7 +3,7 @@ window:
   width: 200
   height: 200
   module: callbacks
-  variable_group: table  
+  variable_group: table
 element:
 - style: table
   position:
@@ -33,5 +33,3 @@ element:
     width: 50
     height: 20
   method: button
-
-  

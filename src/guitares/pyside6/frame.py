@@ -1,66 +1,72 @@
-from PySide6.QtWidgets import QLabel, QPushButton, QGroupBox
-from PySide6 import QtCore, QtGui
-import traceback
+"""PySide6 frame (group box) widget wrapper with optional collapse support."""
 
-# class Frame(QFrame):
+import traceback
+from typing import Any
+
+from PySide6 import QtCore
+from PySide6.QtWidgets import QGroupBox, QLabel, QPushButton
+
+
 class Frame(QGroupBox):
-    def __init__(self, element):
+    """Group box frame that can optionally collapse/expand its content.
+
+    Parameters
+    ----------
+    element : Any
+        The Guitares element descriptor for this frame.
+    """
+
+    def __init__(self, element: Any) -> None:
         super().__init__(element.parent.widget)
 
         self.element = element
 
-        collapsable = False
+        collapsible = False
 
         if element.collapse:
             # Parent
-            collapsable = True
+            collapsible = True
             # Add pushbutton to collapse
             self.pushbutton = QPushButton("", self)
             self.pushbutton.clicked.connect(self.collapse_callback)
+            if element.collapsed:
+                self.pushbutton.setToolTip("Show information panel")
+            else:
+                self.pushbutton.setToolTip("Hide information panel")
 
         if hasattr(element.parent, "style"):
             if element.parent.style == "panel" and element.parent.collapse:
-                collapsable = True
+                collapsible = True
 
-        if collapsable:
-            # self.setLineWidth(0)
+        if collapsible:
             pass
         else:
-            # Regular
-            # self.setFrameShape(QFrame.StyledPanel)
-            # self.setTitle(element.text)
-            # self.setStyleSheet("background-color: transparent; border: 2px solid white;")
-            # self.setFrameShape(QFrame.Box)
-            # self.setLineWidth(2)
-            # self.setLineWidth(1)
             pass
 
         if element.text:
             self.text_widget = QLabel(element.text, element.parent.widget)
-            # font = QtGui.QFont()
-            # font.setWeight(QtGui.QFont.Weight.Bold)
-            # self.text_widget.setFont(font)
 
         self.set_geometry()
 
-    def set(self):
+    def set(self) -> None:
+        """Update the frame (currently a no-op)."""
         pass
 
-    def showEvent(self, event):
-        # What is this for? It was added by Daley at some point.
-        # Setting the geometry at this point makes frames disappear because the size of the parent is 0,0,-1,-1 for some reason.
-        # Comment out for now
-        # self.set_geometry()
+    def showEvent(self, event: Any) -> None:
+        """Handle show event (currently a no-op).
+
+        Parameters
+        ----------
+        event : Any
+            The Qt show event.
+        """
         pass
 
-    def set_geometry(self):
-
+    def set_geometry(self) -> None:
+        """Position and size the frame, its label, and collapse button."""
         rf = self.element.gui.resize_factor
         button_size = 12
         x0, y0, wdt, hgt = self.element.get_position()
-        # if self.element.text:
-        #     hgt = hgt + 20
-            # self.setStyleSheet("margin-top: 10px;")
         if self.element.collapse:
             wdt = wdt + button_size
         self.setGeometry(x0, y0, wdt, hgt)
@@ -70,7 +76,9 @@ class Frame(QGroupBox):
             fm = self.text_widget.fontMetrics()
             hlab = fm.size(0, self.element.text).height()
             wlab = fm.size(0, self.element.text).width()
-            self.text_widget.setGeometry(int(x0 + 5*rf), int(y0 - 0.6*hlab), wlab, hlab)
+            self.text_widget.setGeometry(
+                int(x0 + 5 * rf), int(y0 - 0.6 * hlab), wlab, hlab
+            )
             self.text_widget.setAlignment(QtCore.Qt.AlignTop)
 
         # Push button
@@ -90,9 +98,11 @@ class Frame(QGroupBox):
                 if self.element.parent.collapsed:
                     arrow_file = "icons8-triangle-arrow-16_white_left.png"
                 else:
-                    arrow_file = "icons8-triangle-arrow-16_white_right.png"                    
+                    arrow_file = "icons8-triangle-arrow-16_white_right.png"
                 self.element.parent.widget.pushbutton.setStyleSheet(
-                    "background-image : url(:/img/" + arrow_file + "); border: none")
+                    f"QPushButton {{ background-image: url(:/img/{arrow_file}); background-color: transparent; border: none; }}"
+                    " QToolTip { color: #fff; background-color: #333; border: 1px solid #555; padding: 4px; }"
+                )
 
                 if self.element == self.element.parent.elements[0]:
                     # First panel
@@ -114,16 +124,19 @@ class Frame(QGroupBox):
                     hgt = phgt
                 self.setGeometry(x0, y0, wdt, hgt)
 
-    def collapse_callback(self):
+    def collapse_callback(self) -> None:
+        """Toggle the collapsed state and fire the element callback."""
         try:
             if self.element.collapsed:
                 self.element.collapsed = False
+                self.pushbutton.setToolTip("Hide information panel")
             else:
                 self.element.collapsed = True
+                self.pushbutton.setToolTip("Show information panel")
             self.element.gui.window.resize_elements(self.element.parent.elements)
             if self.element.callback:
                 self.element.callback(self)
                 # Update GUI
                 self.element.window.update()
-        except:
+        except Exception:
             traceback.print_exc()

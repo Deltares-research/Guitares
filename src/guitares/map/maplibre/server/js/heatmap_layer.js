@@ -1,6 +1,15 @@
-export function addLayer(id, data, max_zoom, density_property, side) { 
+import { getMap } from './utils.js';
 
-  // Get the map object for the given side 
+/**
+ * Add a heatmap layer driven by a density property.
+ * @param {string} id - Unique layer/source identifier
+ * @param {object} data - GeoJSON data for the source
+ * @param {number} max_zoom - Maximum zoom level for the heatmap layer
+ * @param {string} density_property - Feature property name used for heatmap weight
+ * @param {string} side - Panel identifier ("a", "b", or undefined)
+ */
+export function addLayer(id, data, max_zoom, density_property, side) {
+
   var mp = getMap(side);
 
   // Always remove old layers first to avoid errors
@@ -11,20 +20,18 @@ export function addLayer(id, data, max_zoom, density_property, side) {
     mp.removeSource(id);
   }
 
-  // Add the source 
   mp.addSource(id, {
     type: 'geojson',
-    data: data, 
+    data: data,
   });
 
-  // Add the layer 
   mp.addLayer({
     id: id,
     type: 'heatmap',
     source: id,
     maxzoom: max_zoom,
     paint: {
-      // increase weight as diameter breast height increases
+      // Increase weight as the density property increases
       'heatmap-weight': {
         property: density_property,
         type: 'exponential',
@@ -33,22 +40,21 @@ export function addLayer(id, data, max_zoom, density_property, side) {
           [2, 1]
         ]
       },
-      // increase intensity as zoom level increases
+      // Increase intensity as zoom level increases
       'heatmap-intensity': {
         stops: [
           [10, 1],
           [14, 3]
         ]
       },
-      // assign color values be applied to points depending on their density
-      // increase radius as zoom increases
+      // Increase radius as zoom increases
       'heatmap-radius': {
         stops: [
           [10, 2],
           [14, 10]
         ]
       },
-      // decrease opacity to transition into the circle layer
+      // Decrease opacity to transition into the circle layer
       'heatmap-opacity': {
         default: 1,
         stops: [
@@ -57,12 +63,5 @@ export function addLayer(id, data, max_zoom, density_property, side) {
         ]
       }
     }
-  })
-};
-
-function getMap(side) {
-  // Return the map object for the given side
-  if (side == "a") { return mapA }
-  else if (side == "b") { return mapB }
-  else { return map }
+  });
 }

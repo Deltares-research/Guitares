@@ -1,130 +1,144 @@
-// Create a custom control for the background layer selector
+/**
+ * basemap_control.js
+ *
+ * Provides a custom MapLibre GL control that lets the user switch between
+ * background map styles via a thumbnail grid popup.
+ */
+
+/**
+ * Custom MapLibre GL control for selecting the background basemap layer.
+ * Renders a button with a layers icon that toggles a scrollable grid
+ * of style thumbnails.
+ */
 export class BackgroundLayerSelector {
-    constructor(layers, defaultStyle) {
-        this.layers = layers;
-        this._container = document.createElement('div');
-        this._container.className = 'maplibregl-ctrl';
-        
-        // Create the layers icon button
-        const icon = document.createElement('button');
-        icon.className = 'layers-icon';
-        
-        // Create the radio buttons container (hidden initially)
-        const radioContainer = document.createElement('div');
-        radioContainer.className = 'radio-container';
-        this.layers.forEach(layer => {
-            // console.log(layer.id)
-            const label = document.createElement('label');
-            const input = document.createElement('input');
-            input.type = 'radio';
-            input.name = 'background-layer';
-            input.value = layer.id;
-            input.addEventListener('change', () => {
-              // Close the radio container when a layer is selected
-              radioContainer.style.display = 'none';
-              // And change the background layer
-              setMapStyle(layer.id);
-            });
-            label.appendChild(input);
-            label.appendChild(document.createTextNode(layer.name));
-            radioContainer.appendChild(label);
-        });
+  /**
+   * @param {Array<{id: string, name: string}>} layers - Available basemap layers.
+   * @param {string} defaultStyle - ID of the initially selected style.
+   */
+  constructor(layers, defaultStyle, onSelect) {
+    this.layers = layers;
+    this._selectedId = defaultStyle;
+    this._onSelect = onSelect || null;
+    this._container = document.createElement("div");
+    this._container.className = "maplibregl-ctrl";
 
-        // Toggle radio button with default style
-        const defaultInput = radioContainer.querySelector(`input[value="${defaultStyle}"]`);
-        if (defaultInput) {
-            defaultInput.checked = true;
+    // Layers icon button
+    const icon = document.createElement("button");
+    icon.className = "layers-icon";
+    icon.title = "Select map style";
+
+    // Thumbnail grid container (hidden initially)
+    const panel = document.createElement("div");
+    panel.className = "basemap-panel";
+
+    this.layers.forEach((layer) => {
+      const card = document.createElement("div");
+      card.className = "basemap-card";
+      if (layer.id === defaultStyle) card.classList.add("selected");
+
+      // Thumbnail image
+      const thumb = document.createElement("div");
+      thumb.className = "basemap-thumb";
+      // Try to load a thumbnail; fall back to a colored placeholder
+      const img = document.createElement("img");
+      img.src = "/icons/basemaps/" + layer.id + ".png";
+      img.alt = layer.name;
+      img.draggable = false;
+      img.onerror = function () {
+        // No thumbnail available — show a placeholder with initials
+        this.style.display = "none";
+        var placeholder = document.createElement("div");
+        placeholder.className = "basemap-thumb-placeholder";
+        placeholder.textContent = layer.name
+          .split(" ")
+          .map((w) => w[0])
+          .join("")
+          .substring(0, 3);
+        thumb.appendChild(placeholder);
+      };
+      thumb.appendChild(img);
+
+      // Label
+      const label = document.createElement("div");
+      label.className = "basemap-label";
+      label.textContent = layer.name;
+
+      card.appendChild(thumb);
+      card.appendChild(label);
+
+      card.addEventListener("click", () => {
+        // Deselect all
+        panel
+          .querySelectorAll(".basemap-card")
+          .forEach((c) => c.classList.remove("selected"));
+        card.classList.add("selected");
+        this._selectedId = layer.id;
+        panel.style.display = "none";
+        if (this._onSelect) {
+          this._onSelect(layer.id);
+        } else {
+          setMapStyle(layer.id);
         }
+      });
 
-        // Append the icon and the radio container to the control
-        this._container.appendChild(icon);
-        this._container.appendChild(radioContainer);
+      panel.appendChild(card);
+    });
 
-        // Add click event listener to the icon
-        icon.addEventListener('click', () => {
-            radioContainer.style.display = radioContainer.style.display === 'block' ? 'none' : 'block';
-        });
+    this._container.appendChild(icon);
+    this._container.appendChild(panel);
 
-        // // Toggle the visibility of the radio container on hover
-        // icon.addEventListener('mouseenter', () => {
-        //     console.log('mouseenter');
-        //     radioContainer.style.display = 'block';
-        // });
+    // Toggle panel on icon click
+    icon.addEventListener("click", () => {
+      panel.style.display =
+        panel.style.display === "grid" ? "none" : "grid";
+    });
 
-        // icon.addEventListener('mouseleave', () => {
-        //     console.log('mouseleave');
-        //     radioContainer.style.display = 'none';
-        // });
+    // Close panel when clicking outside
+    document.addEventListener("click", (e) => {
+      if (!this._container.contains(e.target)) {
+        panel.style.display = "none";
+      }
+    });
+  }
 
-        // icon.addEventListener('mouseover', () => {
-        //     console.log('mouseover');
-        //     radioContainer.style.display = 'block';  // Show the container on hover
-        // });
+  onAdd(map) {
+    this._map = map;
+    return this._container;
+  }
 
-        // icon.addEventListener('mouseout', () => {
-        //     console.log('mouseout');
-        //     radioContainer.style.display = 'none';  // Hide the container when mouse leaves
-        // });
-
-    }
-
-    onAdd(map) {
-        this._map = map;
-        return this._container;
-    }
-
-    onRemove() {
-        this._container.parentNode.removeChild(this._container);
-        this._map = undefined;
-    }
+  onRemove() {
+    this._container.parentNode.removeChild(this._container);
+    this._map = undefined;
+  }
 }
 
+/**
+ * Switch the map to a different basemap style while preserving all
+ * application layers that sit above the dummy_layer_0 sentinel.
+ *
+ * @param {string} styleID - Key into the global `mapStyles` dictionary.
+ */
+export function setMapStyle(styleID, targetMap) {
+  const mp = targetMap || map;
 
-export function setMapStyle(styleID) {
-
-  console.log('Setting style to: ' + styleID);
-
-  const currentStyle = map.getStyle();
+  const currentStyle = mp.getStyle();
   const newStyle = Object.assign({}, mapStyles[styleID]);
 
-  // ensure any sources from the current style are copied across to the new style
-  newStyle.sources = Object.assign(
-    {},
-    currentStyle.sources,
-    newStyle.sources
-  );
+  // Ensure any sources from the current style are copied across
+  newStyle.sources = Object.assign({}, currentStyle.sources, newStyle.sources);
 
-  // find the index of where to insert our layers to retain in the new style
+  // Find the index of where to insert our layers
   let labelIndex = currentStyle.layers.findIndex((el) => {
-    return el.id == 'dummy_layer_0';
+    return el.id == "dummy_layer_0";
   });
 
-  // default to on top
   if (labelIndex === -1) {
-    // This should never happen !
     labelIndex = newStyle.layers.length;
   }
 
-  // const appLayers = currentStyle.layers.slice(labelIndex, -1);
   const appLayers = currentStyle.layers.slice(labelIndex);
 
-  // console.log('nr appLayers: ' + appLayers.length);
+  newStyle.layers = [...newStyle.layers, ...appLayers];
 
-  // // Loop through app layers and print id
-  // for (var layer in appLayers) {
-  //   console.log("app layer id: " + appLayers[layer].id);
-  // }
-  
-  newStyle.layers = [
-    ...newStyle.layers,
-    ...appLayers,
-  ];
-
-  // // Print layers in new style
-  // for (var layer in newStyle.layers) {
-  //   console.log("new layerId: " + newStyle.layers[layer].id);
-  // }
-
-  map.setStyle(newStyle);
-
+  mp.setStyle(newStyle);
 }

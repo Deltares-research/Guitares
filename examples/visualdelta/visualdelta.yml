@@ -37,7 +37,7 @@ menu:
       - text: "About Deltares"
         method: about_deltares
 element:
-  - style: mapbox
+  - style: map
     id: main_map
     position:
       x: 20
@@ -143,6 +143,6 @@ element:
         y: 70
         width: 50
         height: 15
-      text: "Median SLR [m]:"  
+      text: "Median SLR [m]:"
       variable: slr_string
       enable: False

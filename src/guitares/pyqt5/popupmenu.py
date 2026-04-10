@@ -1,18 +1,31 @@
-from PyQt5.QtWidgets import QComboBox
-from PyQt5.QtWidgets import QLabel
-from PyQt5 import QtCore
+"""PyQt5 combo box (popup menu / dropdown) widget with variable binding."""
+
 import traceback
+from typing import Any
+
+from PyQt5 import QtCore
+from PyQt5.QtWidgets import QComboBox, QLabel
+
 
 class PopupMenu(QComboBox):
-    def __init__(self, element):
+    """Dropdown combo box bound to a GUI variable.
+
+    Parameters
+    ----------
+    element : Any
+        The GUI element descriptor with option strings, option values,
+        variable binding, text label, and callback.
+    """
+
+    def __init__(self, element: Any) -> None:
         super().__init__(element.parent.widget)
 
         self.element = element
 
         if element.option_string.variable:
             group = element.option_string.variable_group
-            name  = element.option_string.variable
-            v     = element.getvar(group, name)
+            name = element.option_string.variable
+            v = element.getvar(group, name)
             for txt in v:
                 self.addItem(txt)
         else:
@@ -23,16 +36,18 @@ class PopupMenu(QComboBox):
         if element.option_value:
             if not type(element.option_value.variable):
                 for i, val in enumerate(element.option_value.list):
-                    if element.type == float:
+                    if element.type is float:
                         element.option_value[i] = float(val)
-                    elif element.type == int:
+                    elif element.type is int:
                         element.option_value[i] = int(val)
 
         if element.text:
             if isinstance(element.text, str):
                 txt = element.text
             else:
-                txt = self.element.getvar(element.text.variable_group, element.text.variable)    
+                txt = self.element.getvar(
+                    element.text.variable_group, element.text.variable
+                )
             label = QLabel(txt, element.parent.widget)
             label.setStyleSheet("background: transparent; border: none")
             self.text_widget = label
@@ -41,7 +56,9 @@ class PopupMenu(QComboBox):
             if isinstance(self.element.tooltip, str):
                 txt = self.element.tooltip
             else:
-                txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
+                txt = self.element.getvar(
+                    self.element.tooltip.variable_group, self.element.tooltip.variable
+                )
             self.setToolTip(txt)
 
         self.currentIndexChanged.connect(self.callback)
@@ -50,13 +67,18 @@ class PopupMenu(QComboBox):
 
         self.execute_callback = True
 
-    def showEvent(self, event):
-        # Call when this widget becomes visible. This was commented out for the frame widget. Doing the same here. Not sure why this was needed.
-        # self.set_geometry()
+    def showEvent(self, event: Any) -> None:
+        """Handle show event (no-op).
+
+        Parameters
+        ----------
+        event : Any
+            The show event.
+        """
         pass
 
-    def set(self):
-
+    def set(self) -> None:
+        """Update the selected item and option list from bound variables."""
         self.execute_callback = False
 
         if self.element.option_string.variable:
@@ -65,11 +87,13 @@ class PopupMenu(QComboBox):
         if self.element.select == "item":
             if self.element.option_value:
                 if self.element.option_value.variable:
-                    name  = self.element.option_value.variable
+                    name = self.element.option_value.variable
                     group = self.element.option_value.variable_group
                     self.element.option_value.list = self.element.getvar(group, name)
 
-            val = self.element.getvar(self.element.variable_group, self.element.variable)
+            val = self.element.getvar(
+                self.element.variable_group, self.element.variable
+            )
             if val:
                 if self.element.option_value:
                     index = self.element.option_value.list.index(val)
@@ -81,39 +105,43 @@ class PopupMenu(QComboBox):
             self.setCurrentIndex(index)
 
         if not isinstance(self.element.text, str):
-            txt = self.element.getvar(self.element.text.variable_group, self.element.text.variable)
+            txt = self.element.getvar(
+                self.element.text.variable_group, self.element.text.variable
+            )
             self.text_widget.setText(txt)
 
         if not isinstance(self.element.tooltip, str):
-            txt = self.element.getvar(self.element.tooltip.variable_group, self.element.tooltip.variable)    
+            txt = self.element.getvar(
+                self.element.tooltip.variable_group, self.element.tooltip.variable
+            )
             self.setToolTip(txt)
 
         self.execute_callback = True
 
-    def callback(self):
-
+    def callback(self) -> None:
+        """Handle index-changed events by updating the bound variable."""
         if not self.execute_callback:
             return
-        
+
         i = self.currentIndex()
         if self.element.select == "item":
             newval = self.element.option_value.list[i]
         else:
             newval = i
 
-        name  = self.element.variable
+        name = self.element.variable
         group = self.element.variable_group
         self.element.setvar(group, name, newval)
 
         try:
             if self.isEnabled() and self.element.callback:
                 self.element.callback(newval, self)
-                # Update GUI
             self.element.window.update()
-        except:
+        except Exception:
             traceback.print_exc()
 
-    def set_geometry(self):
+    def set_geometry(self) -> None:
+        """Set widget position and size, including the text label."""
         resize_factor = self.element.gui.resize_factor
         x0, y0, wdt, hgt = self.element.get_position()
         self.setGeometry(x0, y0, wdt, hgt)
@@ -121,33 +149,45 @@ class PopupMenu(QComboBox):
             label = self.text_widget
             fm = label.fontMetrics()
             wlab = int(fm.size(0, self.element.text).width())
-            if self.element.text_position == "above-center" or self.element.text_position == "above":
+            if (
+                self.element.text_position == "above-center"
+                or self.element.text_position == "above"
+            ):
                 label.setAlignment(QtCore.Qt.AlignCenter)
-                label.setGeometry(x0, int(y0 - 20 * resize_factor), wdt, int(20 * resize_factor))
+                label.setGeometry(
+                    x0, int(y0 - 20 * resize_factor), wdt, int(20 * resize_factor)
+                )
             elif self.element.text_position == "above-left":
                 label.setAlignment(QtCore.Qt.AlignLeft)
-                label.setGeometry(x0, int(y0 - 20 * resize_factor), wlab, int(20 * resize_factor))
+                label.setGeometry(
+                    x0, int(y0 - 20 * resize_factor), wlab, int(20 * resize_factor)
+                )
             elif self.element.text_position == "right":
                 label.setAlignment(QtCore.Qt.AlignLeft)
-                label.setGeometry(int(x0 + wdt + 5 * resize_factor),
-                                  int(y0 + 5 * self.element.gui.resize_factor),
-                                  wlab,
-                                  int(20 * resize_factor))
+                label.setGeometry(
+                    int(x0 + wdt + 5 * resize_factor),
+                    int(y0 + 5 * self.element.gui.resize_factor),
+                    wlab,
+                    int(20 * resize_factor),
+                )
             else:
                 # Assuming left
                 label.setAlignment(QtCore.Qt.AlignRight)
-                label.setGeometry(int(x0 - wlab - 3 * resize_factor),
-                                  int(y0 + 5 * self.element.gui.resize_factor),
-                                  wlab,
-                                  int(20 * resize_factor))
+                label.setGeometry(
+                    int(x0 - wlab - 3 * resize_factor),
+                    int(y0 + 5 * self.element.gui.resize_factor),
+                    wlab,
+                    int(20 * resize_factor),
+                )
 
-    def add_items(self):
+    def add_items(self) -> None:
+        """Repopulate the combo box items from the bound option string variable."""
         # Delete existing items
         self.clear()
         if self.element.option_string.variable:
             group = self.element.option_string.variable_group
-            name  = self.element.option_string.variable
-            v     = self.element.getvar(group, name)
+            name = self.element.option_string.variable
+            v = self.element.getvar(group, name)
             if not v:
                 v = [""]
             for itxt, txt in enumerate(v):

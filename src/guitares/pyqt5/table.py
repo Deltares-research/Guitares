@@ -1,30 +1,53 @@
-from PyQt5.QtWidgets import QTableView
-from PyQt5.QtCore import QSortFilterProxyModel
-from PyQt5.QtWidgets import QLabel
-from PyQt5 import QtCore
-import traceback
+"""PyQt5 table view widget backed by a pandas DataFrame model (legacy version)."""
 
+import copy
+import traceback
 from enum import Enum
+from typing import Any
 
 import pandas as pd
-import copy
+from PyQt5 import QtCore
+from PyQt5.QtWidgets import QLabel, QTableView
+
 
 class DataFrameModel(QtCore.QAbstractTableModel):
-    """Class to create table view from dataframe"""
+    """Qt table model backed by a pandas DataFrame.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The initial DataFrame to display.
+    parent : Any, optional
+        The parent Qt object.
+    """
 
     DtypeRole = QtCore.Qt.UserRole + 1000
     ValueRole = QtCore.Qt.UserRole + 1001
 
-    def __init__(self, df=pd.DataFrame(), parent=None):
+    def __init__(self, df: pd.DataFrame = pd.DataFrame(), parent: Any = None) -> None:
         super(DataFrameModel, self).__init__(parent)
         self._dataframe = df
 
-    def setDataFrame(self, dataframe):
+    def setDataFrame(self, dataframe: pd.DataFrame) -> None:
+        """Replace the internal DataFrame.
+
+        Parameters
+        ----------
+        dataframe : pd.DataFrame
+            The new DataFrame.
+        """
         self.beginResetModel()
         self._dataframe = dataframe.copy()
         self.endResetModel()
 
-    def dataFrame(self):
+    def dataFrame(self) -> pd.DataFrame:
+        """Return the internal DataFrame.
+
+        Returns
+        -------
+        pd.DataFrame
+            The current DataFrame.
+        """
         return self._dataframe
 
     dataFrame = QtCore.pyqtProperty(pd.DataFrame, fget=dataFrame, fset=setDataFrame)
@@ -35,7 +58,23 @@ class DataFrameModel(QtCore.QAbstractTableModel):
         section: int,
         orientation: QtCore.Qt.Orientation,
         role: int = QtCore.Qt.DisplayRole,
-    ):
+    ) -> Any:
+        """Return header data for the given section.
+
+        Parameters
+        ----------
+        section : int
+            The column or row index.
+        orientation : QtCore.Qt.Orientation
+            Horizontal or vertical header.
+        role : int
+            The data role.
+
+        Returns
+        -------
+        Any
+            The header string or QVariant.
+        """
         if role == QtCore.Qt.DisplayRole:
             if orientation == QtCore.Qt.Horizontal:
                 return self._dataframe.columns[section]
@@ -43,17 +82,55 @@ class DataFrameModel(QtCore.QAbstractTableModel):
                 return str(self._dataframe.index[section])
         return QtCore.QVariant()
 
-    def rowCount(self, parent=QtCore.QModelIndex()):
+    def rowCount(self, parent: QtCore.QModelIndex = QtCore.QModelIndex()) -> int:
+        """Return the number of rows.
+
+        Parameters
+        ----------
+        parent : QtCore.QModelIndex
+            The parent index (unused for flat tables).
+
+        Returns
+        -------
+        int
+            The row count.
+        """
         if parent.isValid():
             return 0
         return len(self._dataframe.index)
 
-    def columnCount(self, parent=QtCore.QModelIndex()):
+    def columnCount(self, parent: QtCore.QModelIndex = QtCore.QModelIndex()) -> int:
+        """Return the number of columns.
+
+        Parameters
+        ----------
+        parent : QtCore.QModelIndex
+            The parent index (unused for flat tables).
+
+        Returns
+        -------
+        int
+            The column count.
+        """
         if parent.isValid():
             return 0
         return self._dataframe.columns.size
 
-    def data(self, index, role):
+    def data(self, index: QtCore.QModelIndex, role: int) -> Any:
+        """Return cell data for the given index and role.
+
+        Parameters
+        ----------
+        index : QtCore.QModelIndex
+            The cell index.
+        role : int
+            The data role.
+
+        Returns
+        -------
+        Any
+            The cell value or QVariant.
+        """
         if not index.isValid() or not (
             0 <= index.row() < self.rowCount()
             and 0 <= index.column() < self.columnCount()
@@ -72,15 +149,31 @@ class DataFrameModel(QtCore.QAbstractTableModel):
             return dt
         return QtCore.QVariant()
 
-    def roleNames(self):
-        roles = { 
+    def roleNames(self) -> dict[int, bytes]:
+        """Return the mapping of roles to role names.
+
+        Returns
+        -------
+        dict[int, bytes]
+            Role name mapping.
+        """
+        roles = {
             QtCore.Qt.DisplayRole: b"display",
             DataFrameModel.DtypeRole: b"dtype",
             DataFrameModel.ValueRole: b"value",
         }
         return roles
 
-    def sort(self, column, order):
+    def sort(self, column: int, order: QtCore.Qt.SortOrder) -> None:
+        """Sort the DataFrame by the given column.
+
+        Parameters
+        ----------
+        column : int
+            The column index to sort by.
+        order : QtCore.Qt.SortOrder
+            Ascending or descending sort order.
+        """
         colname = self._dataframe.columns.tolist()[column]
         self.layoutAboutToBeChanged.emit()
         self._dataframe.sort_values(
@@ -91,6 +184,8 @@ class DataFrameModel(QtCore.QAbstractTableModel):
 
 
 class SelectionTable(Enum):
+    """Selection mode enumeration for the table view."""
+
     NoSelection = 0
     SingleSelection = 1
     MultiSelection = 2
@@ -98,9 +193,16 @@ class SelectionTable(Enum):
 
 
 class TableView(QTableView):
-    """Table pyqt Element"""
+    """Table view widget backed by a DataFrame with sortable columns.
 
-    def __init__(self, element):
+    Parameters
+    ----------
+    element : Any
+        The GUI element descriptor with option values, variable binding,
+        text label, sortable flag, selection type, and callback.
+    """
+
+    def __init__(self, element: Any) -> None:
         super().__init__(element.parent.widget)
         self.element = element
 
@@ -113,15 +215,11 @@ class TableView(QTableView):
         # Connect callback when event happens
         self.clicked.connect(self.callback)
 
-        # If the header is clicked, the table is sorted and header_clicker is called
+        # If the header is clicked, the table is sorted and header_clicked is called
         if self.element.sortable:
             self.horizontalHeader().sectionClicked.connect(self.header_clicked)
             self.setSortingEnabled(True)
             self.horizontalHeader().setSortIndicatorShown(True)
-
-#        self.horizontalHeader().setStyleSheet('QHeaderView::down-arrow { subcontrol-position: center right}')
-        # self.selectionModel().selectionChanged.connect(self.callback)
-        # Make sure that the sorting direction is shown
 
         self.set_geometry()
 
@@ -146,13 +244,15 @@ class TableView(QTableView):
         self.sort_order = 0
         self.sort_column = 0
 
-    def set(self):
-
+    def set(self) -> None:
+        """Update the table data and selection from bound variables."""
         # option_value
-        df = self.element.getvar(self.element.option_value.variable_group, self.element.option_value.variable)
+        df = self.element.getvar(
+            self.element.option_value.variable_group, self.element.option_value.variable
+        )
         if df is not None:
-            self.df = df # Original unsorted dataframe
-            df_sorted = copy.copy(df.reset_index()) # Sorted dataframe
+            self.df = df  # Original unsorted dataframe
+            df_sorted = copy.copy(df.reset_index())  # Sorted dataframe
             df_sorted = df_sorted.drop("index", axis=1)
 
         # Update items
@@ -174,26 +274,29 @@ class TableView(QTableView):
         self.select_rows(indices)
         self.execute_callback = True
 
-    def callback(self):
-        # Find selected indices in the original dataframe
+    def callback(self) -> None:
+        """Handle cell click events by updating the bound variable."""
         if not self.element.variable:
             return
         indices = self.find_original_indices()
-        # Set the new value 
         name = self.element.variable
         group = self.element.variable_group
         self.element.setvar(group, name, indices)
         try:
-            # Execute callback
             if self.isEnabled() and self.element.callback:
                 self.element.callback(indices, self)
-            # Update GUI
             self.element.window.update()
-        except:
+        except Exception:
             traceback.print_exc()
 
-    def header_clicked(self, column_index):
-        """Callback when header is clicked to sort"""
+    def header_clicked(self, column_index: int) -> None:
+        """Handle header click to sort and re-select rows.
+
+        Parameters
+        ----------
+        column_index : int
+            The clicked column index.
+        """
         if not self.element.variable:
             return
         self.sort_column = column_index
@@ -201,14 +304,26 @@ class TableView(QTableView):
         indices = self.find_sorted_indices()
         self.select_rows(indices)
 
-    def select_rows(self, indices):
-        # Select rows in table
+    def select_rows(self, indices: list[int]) -> None:
+        """Select the specified rows in the table.
+
+        Parameters
+        ----------
+        indices : list[int]
+            Row indices to select.
+        """
         self.selectionModel().clearSelection()
         for i in indices:
             self.selectRow(i)
 
-    def find_original_indices(self):
-        # Find indices of row in original dataframe df0 that match the row in the sorted dataframe df
+    def find_original_indices(self) -> list[int]:
+        """Map selected rows in the sorted view back to the original DataFrame.
+
+        Returns
+        -------
+        list[int]
+            Row indices in the original DataFrame.
+        """
         indices = [index.row() for index in self.selectionModel().selectedRows()]
         df0 = self.df
         df = self.model()._dataframe
@@ -217,10 +332,18 @@ class TableView(QTableView):
             index0 = df0.index[df0.apply(lambda r: r.equals(row), axis=1)].tolist()[0]
             indices[indices.index(index)] = index0
         return indices
-        
-    def find_sorted_indices(self):
-        # Find indices of row in sorted dataframe df0 that match the row in the original dataframe df
-        indices0 = self.element.getvar(self.element.variable_group, self.element.variable)
+
+    def find_sorted_indices(self) -> list[int]:
+        """Map selected indices from the original DataFrame to the sorted view.
+
+        Returns
+        -------
+        list[int]
+            Row indices in the sorted DataFrame.
+        """
+        indices0 = self.element.getvar(
+            self.element.variable_group, self.element.variable
+        )
         df0 = self.df
         df = self.model()._dataframe
         indices = []
@@ -230,7 +353,8 @@ class TableView(QTableView):
             indices.append(index0)
         return indices
 
-    def set_geometry(self):
+    def set_geometry(self) -> None:
+        """Set widget position and size, including the text label."""
         resize_factor = self.element.gui.resize_factor
         x0, y0, wdt, hgt = self.element.get_position()
         self.setGeometry(x0, y0, wdt, hgt)
