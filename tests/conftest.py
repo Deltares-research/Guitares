@@ -3,9 +3,10 @@
 import os
 
 import pytest
+from PySide6.QtWidgets import QApplication
+
 from guitares.gui import GUI
 from guitares.window import Window
-from PySide6.QtWidgets import QApplication
 
 
 @pytest.fixture(scope="session")

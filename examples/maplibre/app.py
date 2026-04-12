@@ -8,8 +8,9 @@ Created on Tue Jul  5 13:40:07 2022
 import os
 
 import geopandas as gpd
-from guitares.gui import GUI
 from shapely.geometry import Point
+
+from guitares.gui import GUI
 
 
 class MaplibreExample:

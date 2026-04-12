@@ -19,11 +19,3 @@ repos:
     rev: v1.23.6
     hooks:
     -   id: typos
--   repo: local
-    hooks:
-    -   id: pytest
-        name: pytest
-        entry: cmd.exe /c "C:\Users\ormondt\miniforge3\Scripts\conda.exe run -n guitares_dev python -m pytest tests/test_widgets.py -q --no-cov --override-ini=addopts="
-        language: system
-        pass_filenames: false
-        always_run: true
