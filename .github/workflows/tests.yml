@@ -41,11 +41,29 @@ jobs:
         run: |
           conda create -n guitares python=${{ matrix.python-version }} -y
 
+      - name: Install Qt/OpenGL system libraries (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libegl1 libgl1 libglx-mesa0 libxkbcommon0 \
+            libdbus-1-3 libfontconfig1 libxcb-cursor0 \
+            libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
+            libxcb-randr0 libxcb-render-util0 libxcb-shape0 \
+            libxcb-sync1 libxcb-xfixes0 libxcb-xinerama0 \
+            libxcb-xkb1 libxkbcommon-x11-0 xvfb
+
       - name: Install test dependencies
         run: |
           conda run -n guitares pip install -e ".[tests]"
 
+      - name: Test with pytest (Linux — with virtual display)
+        if: runner.os == 'Linux'
+        run: |
+          conda run -n guitares xvfb-run -a pytest tests
+
       - name: Test with pytest
+        if: runner.os != 'Linux'
         run: |
           conda run -n guitares pytest tests
 
