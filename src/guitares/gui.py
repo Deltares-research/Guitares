@@ -427,24 +427,33 @@ class GUI:
         elif suffix == ".toml":
             d = toml.load(full_path)
         element = d["element"]
-        # Tag each element with its source YAML file
-        for el in element:
+
+        def _tag(el: dict) -> None:
+            """Recursively tag this element and its children with the source YAML."""
             el["_source_yml"] = full_path
-            if el["style"] == "tabpanel":
-                # Loop through tabs
-                for tab in el["tab"]:
+            # ``panel`` (and similar containers) holds children under "element".
+            children = el.get("element")
+            if isinstance(children, list):
+                for sub_el in children:
+                    _tag(sub_el)
+            # ``tabpanel`` holds tabs, each of which has its own ``element``.
+            if el.get("style") == "tabpanel":
+                for tab in el.get("tab", []):
                     if "element" in tab:
                         if isinstance(tab["element"], str):
-                            # Must be a file — recurse
+                            # Must be a file — recurse and inherit the
+                            # included file's _source_yml from that call.
                             tab["element"] = self.read_gui_elements(
                                 path, tab["element"]
                             )
                         else:
-                            # Inline elements — tag them
                             for sub_el in tab["element"]:
-                                sub_el["_source_yml"] = full_path
+                                _tag(sub_el)
                     else:
                         tab["element"] = []
+
+        for el in element:
+            _tag(el)
         return element
 
     def string_width(self, string: str) -> int:

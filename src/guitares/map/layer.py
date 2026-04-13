@@ -241,26 +241,34 @@ class Layer:
         This preserves the intended stacking order defined by the Python
         layer tree.
 
+        Layers may also set ``self.before_layer_ids`` (list of MapLibre
+        layer IDs) to force placement under specific external layers
+        (e.g. ``"dummy_layer_0"`` to pin a background raster to the
+        bottom of the stack regardless of sibling order).
+
         Returns
         -------
         list of str
             MapLibre layer IDs that should appear above this layer.
         """
-        if self.parent is None:
-            return []
-        siblings = list(self.parent.layer.values())
-        found_self = False
-        before_ids = []
-        for sibling in siblings:
-            if sibling is self:
-                found_self = True
-                continue
-            if found_self:
-                before_ids.extend(sibling._get_map_layer_ids())
-                # Also recurse into container children
-                if sibling.layer:
-                    for child in sibling.layer.values():
-                        before_ids.extend(child._get_map_layer_ids())
+        before_ids: List[str] = []
+        if self.parent is not None:
+            siblings = list(self.parent.layer.values())
+            found_self = False
+            for sibling in siblings:
+                if sibling is self:
+                    found_self = True
+                    continue
+                if found_self:
+                    before_ids.extend(sibling._get_map_layer_ids())
+                    # Also recurse into container children
+                    if sibling.layer:
+                        for child in sibling.layer.values():
+                            before_ids.extend(child._get_map_layer_ids())
+        # Honour an explicit forced placement target.
+        forced = getattr(self, "before_layer_ids", None)
+        if forced:
+            before_ids.extend(forced)
         return before_ids
 
     def get_paint_props(self, state: str = "active") -> Dict[str, Any]:
