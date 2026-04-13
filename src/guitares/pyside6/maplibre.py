@@ -660,6 +660,36 @@ class MapLibre(QtCore.QObject):
         self.runjs("/js/main.js", "setMouseDefault", arglist=[])
         self.runjs("/js/draw_layer.js", "setMouseDefault", arglist=[])
 
+    def show_popup(
+        self,
+        lon: float,
+        lat: float,
+        url: str,
+        width: int = 520,
+        height: int = 320,
+    ) -> None:
+        """Show an iframe popup at a map location.
+
+        Parameters
+        ----------
+        lon, lat : float
+            Popup anchor in EPSG:4326.
+        url : str
+            URL (or relative path under the map server, e.g.
+            ``"./overlays/foo.html"``) of the page to display.
+        width, height : int
+            Popup size in pixels.
+        """
+        self.runjs(
+            "/js/main.js",
+            "showPopup",
+            lon=lon,
+            lat=lat,
+            url=url,
+            width=width,
+            height=height,
+        )
+
     def close_popup(self) -> None:
         """Close any open popup on the map."""
         self.runjs("/js/main.js", "closePopup")

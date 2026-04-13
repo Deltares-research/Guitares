@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QMessageBox,
+    QProgressBar,
     QProgressDialog,
     QVBoxLayout,
 )
@@ -44,7 +45,10 @@ class CustomDialog(QDialog):
         self.buttonBox.clicked.connect(self.clicked)
         self.buttonBox.accepted.connect(self.accept)
         self.layout = QVBoxLayout()
+        self.layout.setContentsMargins(20, 20, 20, 15)
+        self.layout.setSpacing(15)
         message = QLabel(text)
+        message.setAlignment(Qt.AlignCenter)
         self.layout.addWidget(message)
         self.layout.addWidget(self.buttonBox)
         self.setLayout(self.layout)
@@ -77,7 +81,10 @@ class AutoCloseDialog(QDialog):
         super().__init__(window)
         self.setWindowTitle("Auto Close")
         self.layout = QVBoxLayout(self)
-        self.layout.addWidget(QLabel(text))
+        self.layout.setContentsMargins(20, 20, 20, 15)
+        label = QLabel(text)
+        label.setAlignment(Qt.AlignCenter)
+        self.layout.addWidget(label)
         QtCore.QTimer.singleShot(timeout, self.accept)
 
 
@@ -177,7 +184,10 @@ class StringDialog(QDialog):
         self.buttonBox.clicked.connect(self.clicked)
         self.buttonBox.accepted.connect(self.accept)
         self.layout = QVBoxLayout()
+        self.layout.setContentsMargins(20, 20, 20, 15)
+        self.layout.setSpacing(10)
         message = QLabel(text)
+        message.setAlignment(Qt.AlignCenter)
         self.layout.addWidget(message)
         self.edit = QLineEdit(string)
         self.layout.addWidget(self.edit)
@@ -221,7 +231,10 @@ class PopupmenuDialog(QDialog):
         self.buttonBox.clicked.connect(self.clicked)
         self.buttonBox.accepted.connect(self.accept)
         self.layout = QVBoxLayout()
+        self.layout.setContentsMargins(20, 20, 20, 15)
+        self.layout.setSpacing(10)
         message = QLabel(text)
+        message.setAlignment(Qt.AlignCenter)
         self.layout.addWidget(message)
         # Add a combo box with options
         self.combo = QComboBox()
@@ -371,8 +384,21 @@ class WaitDialog(QProgressDialog):
         self.setMinimumDuration(1)
         self.setMaximum(100)
         self.setWindowTitle(title)
-        self.children()[1].setVisible(False)  # Make progress bar invisible
-        self.children()[3].setVisible(False)  # Make push button invisible
+        # Hide the progress bar and cancel button (unused for an
+        # indeterminate wait).
+        self.setCancelButton(None)
+        bar = QProgressBar()
+        bar.setVisible(False)
+        bar.setFixedHeight(0)
+        self.setBar(bar)
+        label = QLabel(text, self)
+        label.setAlignment(Qt.AlignCenter)
+        label.setWordWrap(True)
+        # Push the text down ~10px so it sits visually in the middle
+        # (QProgressDialog reserves asymmetric space above the label).
+        label.setStyleSheet("padding-top: 10px;")
+        self.setLabel(label)
+        self.setFixedSize(360, 110)
         self.show()
 
     def set_value(self, i: int) -> None:

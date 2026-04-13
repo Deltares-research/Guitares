@@ -378,6 +378,8 @@ function select(layerId, indices) {
     const f = features.find(f => f.properties.index === idx);
     if (f) f.properties._selected = true;
   }
+  const src = map.getSource(layerId);
+  if (src) src.setData(layers[layerId].data);
 }
 
 function deselect(layerId, indices) {
@@ -388,15 +390,23 @@ function deselect(layerId, indices) {
     const f = features.find(f => f.properties.index === idx);
     if (f) f.properties._selected = false;
   }
+  const src = map.getSource(layerId);
+  if (src) src.setData(layers[layerId].data);
 }
 
 function deselectAll(layerId) {
   const features = layers[layerId]?.data?.features;
   if (!features) return;
+  let changed = false;
   for (let i = 0; i < features.length; i++) {
     if (features[i].properties._selected) {
       map.setFeatureState({ source: layerId, id: features[i].properties.index }, { selected: false });
       features[i].properties._selected = false;
+      changed = true;
     }
+  }
+  if (changed) {
+    const src = map.getSource(layerId);
+    if (src) src.setData(layers[layerId].data);
   }
 }
