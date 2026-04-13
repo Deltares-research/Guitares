@@ -155,6 +155,9 @@ export function addMap() {
     zoom: default_zoom,
     TerrainControl: false,
     canvasContextAttributes: { alpha: true },
+    // We add a compact AttributionControl ourselves at 'bottom-left' below
+    // (next to the scale bar), so disable the default bottom-right one.
+    attributionControl: false,
   });
 
   map.scrollZoom.setWheelZoomRate(1 / 200);
@@ -208,6 +211,17 @@ export function addMap() {
 
   // Scale
   map.addControl(new maplibregl.ScaleControl({maxWidth: 80}), 'bottom-left');
+
+  // Attribution — placed in the same lower-left corner as the scale bar
+  // (compact so it doesn't push the legends up). MapLibre keeps the
+  // compact control expanded on wide maps; force it closed on startup so
+  // it shows just the (i) icon until the user clicks it.
+  const attribCtl = new maplibregl.AttributionControl({compact: true});
+  map.addControl(attribCtl, 'bottom-left');
+  map.once('load', () => {
+    const el = map.getContainer().querySelector('.maplibregl-ctrl-attrib');
+    if (el) el.classList.remove('maplibregl-compact-show');
+  });
 
   // Geocoder
   if (!offline && window.showGeocoder !== false) {

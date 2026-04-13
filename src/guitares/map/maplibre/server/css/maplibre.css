@@ -52,7 +52,7 @@
 .legend.bottom-right {
   bottom: 0px;
   right: 0;
-  margin-bottom: 50px;
+  margin-bottom: 10px;
   margin-right: 10px;
 }
 
@@ -60,7 +60,7 @@
 .legend.bottom-right-2 {
   bottom: 0px;
   right: 0;
-  margin-bottom: 50px;
+  margin-bottom: 10px;
   margin-right: 120px;
 }
 
