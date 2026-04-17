@@ -1,5 +1,6 @@
 """HTTP server utilities for serving map tile files to the Qt web view."""
 
+import logging
 import os
 import threading
 import time
@@ -8,6 +9,8 @@ import urllib.request
 from http.server import HTTPServer as BaseHTTPServer
 from http.server import SimpleHTTPRequestHandler
 from typing import Any, Optional, Tuple, Type
+
+logger = logging.getLogger(__name__)
 
 
 # Custom Exception Class
@@ -59,7 +62,7 @@ class ServerThread(threading.Thread):
             Always raised after ``serve_forever`` returns (should not happen
             under normal operation).
         """
-        print(f"Server path : {self.server_path}")
+        logger.info(f"Server path : {self.server_path}")
         httpd = HTTPServer(self.server_path, ("", self.server_port))
         httpd.serve_forever()
         name = threading.current_thread().name
@@ -148,7 +151,7 @@ def run_node_server(server_path: str, server_port: int) -> None:
     server_port : int
         Port number (currently unused by the batch script).
     """
-    print(f"Node server path : {server_path}")
+    logger.info(f"Node server path : {server_path}")
     os.chdir(server_path)
     os.system("run_node_server.bat")
 
@@ -184,10 +187,10 @@ def start_server(
                 url = f"http://localhost:{port}"
                 request = urllib.request.urlopen(url)
                 request.close()
-                print(f"Found server running at port {port} ...")
+                logger.info(f"Found server running at port {port} ...")
                 break
             except Exception:
-                print("Waiting for server ...")
+                logger.info("Waiting for server ...")
                 time.sleep(1)
         return the
     else:
@@ -199,9 +202,9 @@ def start_server(
                 url = f"http://localhost:{port}"
                 request = urllib.request.urlopen(url)
                 request.close()
-                print(f"Found server running at port {port} ...")
+                logger.info(f"Found server running at port {port} ...")
                 break
             except Exception:
-                print("Waiting for server ...")
+                logger.info("Waiting for server ...")
                 time.sleep(1)
         return the

@@ -46,7 +46,7 @@ class CycloneTrackLayer(Layer):
             if len(data) == 0:
                 return
         else:
-            print("Data is not a GeoDataFrame")
+            logger.error("Data is not a GeoDataFrame")
             return
 
         # We need to make a copy, because we will add columns for icon_url and hover_html

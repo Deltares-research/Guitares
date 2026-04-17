@@ -1,8 +1,11 @@
 """PySide6 checkbox widget wrapper for Guitares GUI elements."""
 
+import logging
 from typing import Any
 
 from PySide6.QtWidgets import QCheckBox
+
+logger = logging.getLogger(__name__)
 
 
 class CheckBox(QCheckBox):
@@ -85,8 +88,7 @@ class CheckBox(QCheckBox):
             # Update GUI
             self.element.window.update()
         except Exception as e:
-            print("Error in CheckBox callback")
-            print(e)
+            logger.exception(f"Error in CheckBox callback: {e}")
 
     def set_geometry(self) -> None:
         """Position and size the checkbox based on the element descriptor."""

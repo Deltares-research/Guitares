@@ -10,6 +10,7 @@ import sys
 os.environ["QT_LOGGING_RULES"] = (
     "qt.webchannel.warning=false;qt.webengine.qwebchannel=false"
 )
+import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -18,6 +19,8 @@ import yaml
 
 from guitares.server import start_server
 from guitares.window import Window
+
+logger = logging.getLogger(__name__)
 
 
 class GUI:
@@ -45,8 +48,6 @@ class GUI:
         HTTP server port, by default 3000.
     server_nodejs : bool, optional
         Use a Node.js server instead of the built-in Python server.
-    js_messages : bool, optional
-        Enable JavaScript message passing, by default ``True``.
     copy_map_server_folder : bool, optional
         Copy the map engine server folder to *server_path*, by default ``True``.
     icon_path : str or None, optional
@@ -69,7 +70,6 @@ class GUI:
         server_path: Optional[str] = None,
         server_port: int = 3000,
         server_nodejs: bool = False,
-        js_messages: bool = True,
         copy_map_server_folder: bool = True,
         icon_path: Optional[str] = None,
         map_engine: str = "maplibre",
@@ -90,7 +90,6 @@ class GUI:
         self.server_path: Optional[str] = server_path
         self.server_port: int = server_port
         self.server_nodejs: bool = server_nodejs
-        self.js_messages: bool = js_messages
         self.popup_window: Dict[str, Any] = {}
         self.popup_data: Dict[str, Any] = {}
         self.resize_factor: float = 1.0
@@ -130,7 +129,7 @@ class GUI:
 
         if server_path:
             # Need to run http server (e.g. for MapBox or MapLibre)
-            print("Starting http server ...")
+            logger.info("Starting http server ...")
             # Run http server in separate thread
             # Use daemon=True to make sure the server stops after the application is finished
             if copy_map_server_folder:
@@ -228,7 +227,7 @@ class GUI:
         self.edit_mode = EditMode(self)
         if is_debug() and self.framework == "pyside6":
             self.edit_mode.install(self.window.window_widget)
-            print(
+            logger.info(
                 "Edit Mode  |  Ctrl+E toggle  |  Ctrl+A add  |  Ctrl+Z undo  |  Ctrl+S save"
             )
 
@@ -275,12 +274,12 @@ class GUI:
             # There is no variable for the element
             return None
         if group not in self.variables:
-            print(
+            logger.error(
                 f"Error! Cannot get variable! GUI variable group '{group}' not defined!"
             )
             return None
         elif name not in self.variables[group]:
-            print(
+            logger.error(
                 f"Error! Cannot get variable! GUI variable '{name}' not defined in group '{group}'!"
             )
             return None
@@ -297,12 +296,12 @@ class GUI:
             Variable name to delete.
         """
         if group not in self.variables:
-            print(
+            logger.error(
                 f"Error! Cannot delete variable! GUI variable group '{group}' not defined!"
             )
             return None
         elif name not in self.variables[group]:
-            print(
+            logger.error(
                 f"Error! Cannot delete variable! GUI variable '{name}' not defined in group '{group}'!"
             )
             return None
@@ -317,7 +316,7 @@ class GUI:
             Variable group name to delete.
         """
         if group not in self.variables:
-            print(
+            logger.error(
                 f"Error! Cannot delete group! GUI variable group '{group}' not defined!"
             )
             return

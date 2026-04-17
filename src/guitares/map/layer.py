@@ -4,9 +4,12 @@ Provides the ``Layer`` class that all specialized layer types inherit from,
 along with helper functions for traversing the layer hierarchy.
 """
 
+import logging
 from typing import Any, Dict, List, Optional
 
 import matplotlib.colors as mcolors
+
+logger = logging.getLogger(__name__)
 
 
 class Layer:
@@ -330,7 +333,7 @@ class Layer:
 
         else:
             if self.type != "container":
-                print(f"Error! Can not add layer to layer of type: {self.type}")
+                logger.error(f"Error! Can not add layer to layer of type: {self.type}")
                 return None
 
             if (
@@ -406,7 +409,7 @@ class Layer:
             #    self.layer[layer_id] = RasterTileLayer(self.map, layer_id, map_id, **kwargs)
 
             else:
-                print(f"Error! Layer type {self.type} not recognized!")
+                logger.error(f"Layer type {self.type} not recognized!")
                 return None
 
             self.layer[layer_id].type = type

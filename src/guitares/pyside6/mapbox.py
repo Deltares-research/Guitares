@@ -1,6 +1,7 @@
 """PySide6 Mapbox GL JS map widget with WebChannel bridge for Guitares."""
 
 import json
+import logging
 import os
 from typing import Any, Callable, Dict, List, Optional
 
@@ -11,6 +12,8 @@ from pyproj import CRS, Transformer
 from PySide6 import QtCore, QtWebChannel, QtWebEngineCore, QtWebEngineWidgets, QtWidgets
 
 from guitares.map.layer import Layer, find_layer_by_id, list_layers
+
+logger = logging.getLogger(__name__)
 
 
 def map_styles() -> List[Dict[str, str]]:
@@ -39,15 +42,10 @@ class WebEnginePage(QtWebEngineCore.QWebEnginePage):
     ----------
     view : QtWebEngineWidgets.QWebEngineView
         The parent web view.
-    print_messages : bool
-        Whether to print JS console messages to stdout.
     """
 
-    def __init__(
-        self, view: QtWebEngineWidgets.QWebEngineView, print_messages: bool
-    ) -> None:
+    def __init__(self, view: QtWebEngineWidgets.QWebEngineView) -> None:
         super().__init__(view)
-        self.print_messages = print_messages
 
     def javaScriptConsoleMessage(
         self, level: int, message: str, lineNumber: int, sourceID: str
@@ -65,8 +63,7 @@ class WebEnginePage(QtWebEngineCore.QWebEnginePage):
         sourceID : str
             The source file identifier.
         """
-        if self.print_messages:
-            print("javaScriptConsoleMessage: ", level, message, lineNumber, sourceID)
+        logger.info("javaScriptConsoleMessage: ", level, message, lineNumber, sourceID)
 
 
 class MapBox(QtWidgets.QWidget):
@@ -101,11 +98,11 @@ class MapBox(QtWidgets.QWidget):
         try:
             requests.get("http://www.google.com", timeout=5)
         except requests.ConnectionError:
-            print("No internet connection available.")
+            logger.warning("No internet connection available.")
             map_style = "none"
             offline = True
         else:
-            print("Internet connection available.")
+            logger.info("Internet connection available.")
             map_style = element.map_style
             offline = False
 
@@ -142,7 +139,7 @@ class MapBox(QtWidgets.QWidget):
         )  # this is necessary because otherwise an invisible widget sits over the top left hand side of the screen and block the menu
 
         self.view = QtWebEngineWidgets.QWebEngineView(element.parent.widget)
-        self.view.setPage(WebEnginePage(self.view, self.gui.js_messages))
+        self.view.setPage(WebEnginePage(self.view))
         self.view.page().settings().setAttribute(
             QtWebEngineCore.QWebEngineSettings.WebAttribute.WebGLEnabled, True
         )
@@ -156,7 +153,7 @@ class MapBox(QtWidgets.QWidget):
 
         self.set_geometry()
         self.view.loadFinished.connect(self.load_finished)
-        print(f"Setting url to {self.url}")
+        logger.info(f"Setting url to {self.url}")
         self.view.setUrl(QtCore.QUrl(self.url))
 
     def load_finished(self, message: bool) -> None:
@@ -618,7 +615,7 @@ class MapBox(QtWidgets.QWidget):
             self.layer[layer_id] = Layer(self, layer_id, layer_id)
             self.layer[layer_id].map_id = layer_id
         else:
-            print(f"Layer {layer_id} already exists.")
+            logger.info(f"Layer {layer_id} already exists.")
         return self.layer[layer_id]
 
     def list_layers(self) -> List[Layer]:

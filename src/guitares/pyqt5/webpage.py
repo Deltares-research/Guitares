@@ -1,8 +1,11 @@
 """PyQt5 embedded web page widget using QWebEngineView."""
 
+import logging
 from typing import Any
 
 from PyQt5 import QtCore, QtWebEngineWidgets, QtWidgets
+
+logger = logging.getLogger(__name__)
 
 
 class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
@@ -12,15 +15,10 @@ class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
     ----------
     view : QtWebEngineWidgets.QWebEngineView
         The parent web engine view.
-    print_messages : bool
-        Whether to print JavaScript console messages to stdout.
     """
 
-    def __init__(
-        self, view: QtWebEngineWidgets.QWebEngineView, print_messages: bool
-    ) -> None:
+    def __init__(self, view: QtWebEngineWidgets.QWebEngineView) -> None:
         super().__init__(view)
-        self.print_messages = print_messages
 
     def javaScriptConsoleMessage(
         self, level: int, message: str, lineNumber: int, sourceID: str
@@ -38,8 +36,9 @@ class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
         sourceID : str
             The source file identifier.
         """
-        if self.print_messages:
-            print("javaScriptConsoleMessage: ", level, message, lineNumber, sourceID)
+        logger.info(
+            f"javaScriptConsoleMessage: {level}, {message}, {lineNumber}, {sourceID}"
+        )
 
 
 class WebPage(QtWidgets.QWidget):
@@ -60,7 +59,7 @@ class WebPage(QtWidgets.QWidget):
 
         self.set_geometry()
 
-        page = WebEnginePage(view, element.gui.js_messages)
+        page = WebEnginePage(view)
         view.setPage(page)
 
         if isinstance(self.element.url, str):

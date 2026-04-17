@@ -1,6 +1,7 @@
 """Application window: builds the main or popup window, manages elements, menus, and dialogs."""
 
 import importlib
+import logging
 import os
 import pathlib
 from typing import Any, List, Optional, Tuple
@@ -8,6 +9,8 @@ from typing import Any, List, Optional, Tuple
 from guitares.dialog import window_dialog
 from guitares.element import Element
 from guitares.menu import Menu
+
+logger = logging.getLogger(__name__)
 
 
 class MenuBar:
@@ -338,7 +341,7 @@ class Window:
                         # Set the dependencies
                         element.set_dependencies()
             except Exception as err:
-                print(err)
+                logger.exception(err)
 
     def find_element_by_id(
         self, element_id: str, elements: Optional[List[Element]] = None

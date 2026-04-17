@@ -1,10 +1,13 @@
 """PySide6 list box widget wrapper for Guitares GUI elements."""
 
+import logging
 import traceback
 from typing import Any, List, Union
 
 from PySide6 import QtCore
 from PySide6.QtWidgets import QLabel, QListWidget
+
+logger = logging.getLogger(__name__)
 
 
 class ListBox(QListWidget):
@@ -132,7 +135,7 @@ class ListBox(QListWidget):
                             valstr = str(val)
                         else:
                             valstr = val
-                        print(
+                        logger.error(
                             f"Error in listbox: variable {self.element.variable} ({valstr}) not found in list!"
                         )
                 else:

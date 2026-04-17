@@ -1,8 +1,8 @@
 """PyQt5 MapLibre GL JS map widget with WebChannel communication."""
 
 import json
+import logging
 import os
-import sys
 from typing import Any, Optional
 
 import requests
@@ -13,6 +13,8 @@ from PyQt5 import QtCore, QtWebChannel, QtWebEngineWidgets
 
 from guitares.map.layer import Layer, find_layer_by_id, list_layers
 
+logger = logging.getLogger(__name__)
+
 
 class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
     """Custom web engine page that optionally prints JS console messages.
@@ -21,15 +23,10 @@ class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
     ----------
     view : QtWebEngineWidgets.QWebEngineView
         The parent web engine view.
-    print_messages : bool
-        Whether to print JavaScript console messages to stdout.
     """
 
-    def __init__(
-        self, view: QtWebEngineWidgets.QWebEngineView, print_messages: bool
-    ) -> None:
+    def __init__(self, view: QtWebEngineWidgets.QWebEngineView) -> None:
         super().__init__(view)
-        self.print_messages = print_messages
 
     def javaScriptConsoleMessage(
         self, level: int, message: str, lineNumber: int, sourceID: str
@@ -47,9 +44,7 @@ class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
         sourceID : str
             The source file identifier.
         """
-        if self.print_messages:
-            print(f"[JS] {message} (line {lineNumber}, source: {sourceID})")
-            sys.stdout.flush()
+        logger.info(f"[JS] {message} (line {lineNumber}, source: {sourceID})")
 
     def javaScriptAlert(self, security_origin: Any, msg: str) -> None:
         """Suppress JavaScript alert dialogs.
@@ -133,11 +128,11 @@ class MapLibre(QtCore.QObject):
         try:
             requests.get("http://www.google.com", timeout=5)
         except requests.ConnectionError:
-            print("No internet connection available.")
+            logger.warning("No internet connection available.")
             map_style = "none"
             offline = True
         else:
-            print("Internet connection available.")
+            logger.info("Internet connection available.")
             map_style = element.map_style
             offline = False
 
@@ -189,7 +184,7 @@ class MapLibre(QtCore.QObject):
         self.server_path = self.gui.server_path
 
         self.view = QtWebEngineWidgets.QWebEngineView(element.parent.widget)
-        self.view.setPage(WebEnginePage(self.view, self.gui.js_messages))
+        self.view.setPage(WebEnginePage(self.view))
 
         self.channel = QtWebChannel.QWebChannel()
         self.channel.registerObject("MapLibre", self)
@@ -198,7 +193,7 @@ class MapLibre(QtCore.QObject):
         self.set_geometry()
         self.view.loadFinished.connect(self.load_finished)
 
-        print("Loading map ...")
+        logger.info("Loading map ...")
         self.view.setUrl(QtCore.QUrl(self.url))
 
     def load_finished(self, message: bool) -> None:
@@ -640,7 +635,7 @@ class MapLibre(QtCore.QObject):
             self.layer[layer_id] = Layer(self, layer_id, layer_id)
             self.layer[layer_id].map_id = layer_id
         else:
-            print(f"Layer {layer_id} already exists.")
+            logger.warning(f"Layer {layer_id} already exists.")
         return self.layer[layer_id]
 
     def list_layers(self) -> list[Any]:

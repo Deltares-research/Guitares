@@ -1,10 +1,13 @@
 """PyQt5 list box widget with single and multi-selection support."""
 
+import logging
 import traceback
 from typing import Any
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QLabel, QListWidget
+
+logger = logging.getLogger(__name__)
 
 
 class ListBox(QListWidget):
@@ -123,7 +126,7 @@ class ListBox(QListWidget):
                             valstr = str(val)
                         else:
                             valstr = val
-                        print(
+                        logger.error(
                             f"Error in listbox: variable {self.element.variable} ({valstr}) not found in list!"
                         )
                 else:

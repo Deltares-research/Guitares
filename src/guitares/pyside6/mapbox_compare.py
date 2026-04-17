@@ -1,6 +1,7 @@
 """PySide6 Mapbox GL JS compare (side-by-side) map widget for Guitares."""
 
 import json
+import logging
 import os
 from typing import Any, Callable, Dict, List, Optional
 
@@ -8,6 +9,8 @@ from geopandas import GeoDataFrame
 from PySide6 import QtCore, QtWebChannel, QtWebEngineCore, QtWebEngineWidgets, QtWidgets
 
 from guitares.map.layer import Layer, list_layers
+
+logger = logging.getLogger(__name__)
 
 
 class WebEnginePage(QtWebEngineCore.QWebEnginePage):
@@ -17,15 +20,10 @@ class WebEnginePage(QtWebEngineCore.QWebEnginePage):
     ----------
     view : QtWebEngineWidgets.QWebEngineView
         The parent web view.
-    print_messages : bool
-        Whether to print JS console messages to stdout.
     """
 
-    def __init__(
-        self, view: QtWebEngineWidgets.QWebEngineView, print_messages: bool
-    ) -> None:
+    def __init__(self, view: QtWebEngineWidgets.QWebEngineView) -> None:
         super().__init__(view)
-        self.print_messages = print_messages
 
     def javaScriptConsoleMessage(
         self, level: int, message: str, lineNumber: int, sourceID: str
@@ -43,8 +41,9 @@ class WebEnginePage(QtWebEngineCore.QWebEnginePage):
         sourceID : str
             The source file identifier.
         """
-        if self.print_messages:
-            print("javaScriptConsoleMessage: ", level, message, lineNumber, sourceID)
+        logger.info(
+            f"javaScriptConsoleMessage: {level}, {message}, {lineNumber}, {sourceID}"
+        )
 
 
 class MapBoxCompare(QtWidgets.QWidget):
@@ -112,13 +111,13 @@ class MapBoxCompare(QtWidgets.QWidget):
 
         self.set_geometry()
 
-        page = WebEnginePage(view, self.gui.js_messages)
+        page = WebEnginePage(view)
         view.setPage(page)
         view.page().setWebChannel(channel)
 
         channel.registerObject("MapBoxCompare", self)
 
-        print(f"URL: {url}")
+        logger.info(f"URL: {url}")
 
         view.load(QtCore.QUrl(url))
 
@@ -137,7 +136,7 @@ class MapBoxCompare(QtWidgets.QWidget):
 
     def reload(self) -> None:
         """Reload the compare page and re-register the WebChannel."""
-        print("Reloading ...")
+        logger.info("Reloading ...")
         self.view.page().setWebChannel(self.channel)
         self.channel.registerObject("MapBoxCompare", self)
         self.view.load(QtCore.QUrl(self.url))
@@ -281,7 +280,7 @@ class MapBoxCompare(QtWidgets.QWidget):
             self.layer[layer_id] = Layer(self, layer_id, layer_id)
             self.layer[layer_id].map_id = layer_id
         else:
-            print(f"Layer {layer_id} already exists.")
+            logger.warning(f"Layer {layer_id} already exists.")
         return self.layer[layer_id]
 
     def list_layers(self) -> List[Layer]:

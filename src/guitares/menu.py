@@ -1,9 +1,12 @@
 """Menu bar items: parsing YAML menu definitions into framework-specific menu actions."""
 
 import importlib
+import logging
 from typing import Any, List, Optional
 
 from guitares.dependencies import Dependency, DependencyCheck
+
+logger = logging.getLogger(__name__)
 
 
 class Text:
@@ -71,8 +74,8 @@ class Menu:
             if isinstance(dct["module"], str):
                 try:
                     self.module = importlib.import_module(dct["module"])
-                except Exception:
-                    print(f"Error! Could not import module {dct['module']}")
+                except Exception as e:
+                    logger.error(f"Error! Could not import module {dct['module']}: {e}")
         if "method" in dct:
             self.method = dct["method"]
             # Check if self.method is a string or a method
@@ -81,7 +84,9 @@ class Menu:
                     if hasattr(self.module, self.method):
                         self.callback = getattr(self.module, self.method)
                     else:
-                        print(f"Error! Could not find method {self.method}")
+                        logger.error(
+                            f"Error! Could not find method {self.method} in module {self.module.__name__}"
+                        )
             else:
                 # It's already a method
                 self.callback = self.method

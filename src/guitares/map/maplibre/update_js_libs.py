@@ -14,9 +14,12 @@ maplibre_compare.html to reference the new filenames.
 """
 
 import json
+import logging
 import os
 import re
 import urllib.request
+
+logger = logging.getLogger(__name__)
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -29,11 +32,11 @@ CSS_DIR = r"c:\work\projects\delftdashboard\dev_claude\maplibre\server\css"
 
 def download(url, dest):
     """Download a URL to a local file."""
-    print(f"  Downloading {url}")
-    print(f"  -> {os.path.basename(dest)}")
+    logger.info(f"  Downloading {url}")
+    logger.info(f"  -> {os.path.basename(dest)}")
     urllib.request.urlretrieve(url, dest)
     size_kb = os.path.getsize(dest) / 1024
-    print(f"  ({size_kb:.0f} KB)")
+    logger.info(f"  ({size_kb:.0f} KB)")
 
 
 def get_latest_github_release(owner, repo):
@@ -55,9 +58,9 @@ def get_latest_npm_version(package):
 
 def update_maplibre():
     """Download the latest MapLibre GL JS."""
-    print("\n=== MapLibre GL JS ===")
+    logger.info("\n=== MapLibre GL JS ===")
     version = get_latest_npm_version("maplibre-gl")
-    print(f"Latest version: {version}")
+    logger.info(f"Latest version: {version}")
 
     # JS bundle
     js_url = f"https://unpkg.com/maplibre-gl@{version}/dist/maplibre-gl.js"
@@ -74,9 +77,9 @@ def update_maplibre():
 
 def update_turf():
     """Download the latest Turf.js."""
-    print("\n=== Turf.js ===")
+    logger.info("\n=== Turf.js ===")
     version = get_latest_npm_version("@turf/turf")
-    print(f"Latest version: {version}")
+    logger.info(f"Latest version: {version}")
 
     js_url = f"https://unpkg.com/@turf/turf@{version}/turf.min.js"
     js_dest = os.path.join(JS_DIR, f"turf-v{version.split('.')[0]}.js")
@@ -87,9 +90,9 @@ def update_turf():
 
 def update_mapbox_draw():
     """Download the latest MapBox GL Draw (original Mapbox version)."""
-    print("\n=== MapBox GL Draw (original) ===")
+    logger.info("\n=== MapBox GL Draw (original) ===")
     version = get_latest_npm_version("@mapbox/mapbox-gl-draw")
-    print(f"Latest version: {version}")
+    logger.info(f"Latest version: {version}")
 
     js_url = (
         f"https://unpkg.com/@mapbox/mapbox-gl-draw@{version}/dist/mapbox-gl-draw.js"
@@ -108,9 +111,9 @@ def update_mapbox_draw():
 
 def update_maplibre_draw():
     """Download the latest maplibre-gl-draw (MapLibre-native fork)."""
-    print("\n=== MapLibre GL Draw (MapLibre fork) ===")
+    logger.info("\n=== MapLibre GL Draw (MapLibre fork) ===")
     version = get_latest_npm_version("maplibre-gl-draw")
-    print(f"Latest version: {version}")
+    logger.info(f"Latest version: {version}")
 
     js_url = f"https://unpkg.com/maplibre-gl-draw@{version}/dist/mapbox-gl-draw.js"
     js_dest = os.path.join(JS_DIR, f"maplibre-gl-draw-v{version}.js")
@@ -169,9 +172,9 @@ def update_html_references(maplibre_version, turf_version, draw_version):
         if content != original:
             with open(html_file, "w") as f:
                 f.write(content)
-            print(f"  Updated {os.path.basename(html_file)}")
+            logger.info((f"  Updated {os.path.basename(html_file)}")
         else:
-            print(f"  No changes in {os.path.basename(html_file)}")
+            logger.info((f"  No changes in {os.path.basename(html_file)}")
 
 
 if __name__ == "__main__":
@@ -188,9 +191,9 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    print("Updating JavaScript libraries for Guitares MapLibre server")
-    print(f"JS directory: {JS_DIR}")
-    print(f"CSS directory: {CSS_DIR}")
+    logger.info("Updating JavaScript libraries for Guitares MapLibre server")
+    logger.info(f"JS directory: {JS_DIR}")
+    logger.info(f"CSS directory: {CSS_DIR}")
 
     maplibre_ver = update_maplibre()
     turf_ver = update_turf()
@@ -205,26 +208,26 @@ if __name__ == "__main__":
     # Update HTML refs using whichever draw lib was downloaded
     # Default: use mapbox draw refs (maplibre-gl-draw uses the same filename pattern)
     html_draw_ver = draw_ver or maplibre_draw_ver
-    print("\n=== Updating HTML references ===")
+    logger.info("\n=== Updating HTML references ===")
     update_html_references(maplibre_ver, turf_ver, html_draw_ver)
 
-    print("\n=== Summary ===")
-    print(f"MapLibre GL JS: {maplibre_ver}")
-    print(f"Turf.js: {turf_ver}")
+    logger.info("\n=== Summary ===")
+    logger.info(f"MapLibre GL JS: {maplibre_ver}")
+    logger.info(f"Turf.js: {turf_ver}")
     if draw_ver:
-        print(f"MapBox GL Draw (original): {draw_ver}")
+        logger.info(f"MapBox GL Draw (original): {draw_ver}")
     if maplibre_draw_ver:
-        print(f"MapLibre GL Draw (fork): {maplibre_draw_ver}")
-    print()
-    print("To switch between draw libraries, update the <script> tag in index.html:")
+        logger.info(f"MapLibre GL Draw (fork): {maplibre_draw_ver}")
+    logger.info("")
+    logger.info("To switch between draw libraries, update the <script> tag in index.html:")
     if draw_ver:
-        print(f'  Mapbox:   <script src="/js/mapbox-gl-draw-v{draw_ver}.js"></script>')
+        logger.info(f'  Mapbox:   <script src="/js/mapbox-gl-draw-v{draw_ver}.js"></script>')
     if maplibre_draw_ver:
-        print(
+        logger.info(
             f'  MapLibre: <script src="/js/maplibre-gl-draw-v{maplibre_draw_ver}.js"></script>'
         )
-    print()
-    print("NOTE: maplibre-gl-compare.js and mapbox_gl_draw_scale_rotate_mode.js")
-    print("are custom source files — NOT updated by this script.")
-    print()
-    print("Delete old version files after verifying everything works.")
+    logger.info("")
+    logger.info("NOTE: maplibre-gl-compare.js and mapbox_gl_draw_scale_rotate_mode.js")
+    logger.info("are custom source files — NOT updated by this script.")
+    logger.info("")
+    logger.info("Delete old version files after verifying everything works.")

@@ -1,9 +1,12 @@
 """GUI element tree: parsing YAML definitions into widget objects with layout and dependencies."""
 
 import importlib
+import logging
 from typing import Any, List, Optional, Tuple, Type
 
 from guitares.dependencies import Dependency, DependencyCheck
+
+logger = logging.getLogger(__name__)
 
 
 class Position:
@@ -202,7 +205,7 @@ class Element:
                 try:
                     self.module = importlib.import_module(dct["module"])
                 except Exception:
-                    print(f"Error! Could not import module {dct['module']}")
+                    logger.error(f"Error! Could not import module {dct['module']}")
 
         if "method" in dct:
             self.method = dct["method"]
@@ -237,7 +240,9 @@ class Element:
                                     f"Error! Could not find method {self.method} in module {self.module.__name__}"
                                 )
                 except Exception as e:
-                    print(e)
+                    logger.exception(
+                        f"Error while setting callback for method {self.method} in module {self.module.__name__}: {e}"
+                    )
         if self.variable_group in self.gui.variables:
             if self.variable in self.gui.variables[self.variable_group]:
                 self.type = type(
@@ -474,10 +479,9 @@ class Element:
                         if tab_dct["module"]:
                             tab.module = importlib.import_module(tab_dct["module"])
                     except Exception as e:
-                        print(
-                            f"Error! Module {tab_dct['module']} could not be imported!"
+                        logger.exception(
+                            f"Module {tab_dct['module']} could not be imported! Error: {e}"
                         )
-                        print(e)
 
                 tab.dependencies = []
                 if "dependency" in tab_dct:
@@ -631,7 +635,7 @@ class Element:
             self.widget = mod.WebPage(self)
 
         else:
-            print(f"Element style {self.style} not recognized!")
+            logger.error(f"Element style {self.style} not recognized!")
 
         # And set the visibility
         if self.style != "radiobuttongroup":  # Cannot set radiobutton group to visible

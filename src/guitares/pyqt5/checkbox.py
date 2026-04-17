@@ -1,8 +1,11 @@
 """PyQt5 checkbox widget bound to a GUI variable."""
 
+import logging
 from typing import Any
 
 from PyQt5.QtWidgets import QCheckBox
+
+logger = logging.getLogger(__name__)
 
 
 class CheckBox(QCheckBox):
@@ -84,8 +87,7 @@ class CheckBox(QCheckBox):
             # Update GUI
             self.element.window.update()
         except Exception as e:
-            print("Error in CheckBox callback")
-            print(e)
+            logger.exception(f"Error in CheckBox callback: {e}")
 
     def set_geometry(self) -> None:
         """Set widget position and size, adjusting width to fit text."""
