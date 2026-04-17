@@ -1,8 +1,8 @@
 """PySide6 MapLibre GL JS compare (side-by-side) map widget for Guitares."""
 
 import json
+import logging
 import os
-import sys
 from collections import deque
 from typing import Any, Callable, Deque, Dict, List, Optional
 
@@ -14,6 +14,8 @@ from PySide6 import QtCore, QtWebChannel, QtWebEngineCore, QtWebEngineWidgets
 
 from guitares.map.layer import Layer, find_layer_by_id, list_layers
 
+logger = logging.getLogger(__name__)
+
 
 class WebEnginePage(QtWebEngineCore.QWebEnginePage):
     """Custom web engine page with JS console output and suppressed JS dialogs.
@@ -22,15 +24,10 @@ class WebEnginePage(QtWebEngineCore.QWebEnginePage):
     ----------
     view : QtWebEngineWidgets.QWebEngineView
         The parent web view.
-    print_messages : bool
-        Whether to print JS console messages to stdout.
     """
 
-    def __init__(
-        self, view: QtWebEngineWidgets.QWebEngineView, print_messages: bool
-    ) -> None:
+    def __init__(self, view: QtWebEngineWidgets.QWebEngineView) -> None:
         super().__init__(view)
-        self.print_messages = print_messages
 
     def javaScriptConsoleMessage(
         self, level: int, message: str, lineNumber: int, sourceID: str
@@ -48,12 +45,10 @@ class WebEnginePage(QtWebEngineCore.QWebEnginePage):
         sourceID : str
             The source file identifier.
         """
-        if self.print_messages:
-            # Suppress noisy DOMException errors from MapLibre internals
-            if "DOMException" in message:
-                return
-            print(f"[JS] {message} (line {lineNumber}, source: {sourceID})")
-            sys.stdout.flush()  # Ensures it appears even if buffering is active
+        # Suppress noisy DOMException errors from MapLibre internals
+        if "DOMException" in message:
+            return
+        logger.info(f"[JS] {message} (line {lineNumber}, source: {sourceID})")
 
     def javaScriptAlert(self, security_origin: Any, msg: str) -> None:
         """Suppress JavaScript alert() dialogs.
@@ -139,11 +134,11 @@ class MapLibreCompare(QtCore.QObject):
         try:
             requests.get("http://www.google.com", timeout=5)
         except requests.ConnectionError:
-            print("No internet connection available.")
+            logger.warning("No internet connection available.")
             map_style = "none"
             offline = True
         else:
-            print("Internet connection available.")
+            logger.info("Internet connection available.")
             map_style = element.map_style
             offline = False
 
@@ -208,7 +203,7 @@ class MapLibreCompare(QtCore.QObject):
         self.server_path: str = self.gui.server_path
 
         self.view = QtWebEngineWidgets.QWebEngineView(element.parent.widget)
-        self.view.setPage(WebEnginePage(self.view, self.gui.js_messages))
+        self.view.setPage(WebEnginePage(self.view))
         self.view.page().settings().setAttribute(
             QtWebEngineCore.QWebEngineSettings.WebAttribute.WebGLEnabled, True
         )
@@ -223,7 +218,7 @@ class MapLibreCompare(QtCore.QObject):
         self.set_geometry()
         self.view.loadFinished.connect(self.load_finished)
 
-        print("Loading compare map ...")
+        logger.info("Loading compare map ...")
         self.view.setUrl(QtCore.QUrl(f"{self.url}/maplibre_compare.html"))
 
     def load_finished(self, message: bool) -> None:
@@ -240,7 +235,7 @@ class MapLibreCompare(QtCore.QObject):
 
     def ping(self) -> None:
         """Send a ping to JavaScript to verify the WebChannel is working."""
-        # print("Ping!")
+        # logger.info("Ping!")
         self.runjs("/js/compare.js", "ping", arglist=["ping"])
 
     @QtCore.Slot(str)
@@ -253,7 +248,7 @@ class MapLibreCompare(QtCore.QObject):
             The pong message.
         """
         self.timer_ping.stop()
-        # print("Pong received! Adding map compare ...")
+        # logger.info("Pong received! Adding map compare ...")
         # Add map
         self.runjs("/js/compare.js", "addMap", arglist=[])
 
@@ -690,7 +685,7 @@ class MapLibreCompare(QtCore.QObject):
             self.layer[layer_id] = Layer(self, layer_id, layer_id)
             self.layer[layer_id].map_id = layer_id
         else:
-            print(f"Layer {layer_id} already exists.")
+            logger.warning(f"Layer {layer_id} already exists.")
         return self.layer[layer_id]
 
     def list_layers(self) -> List[Layer]:

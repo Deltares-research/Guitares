@@ -4,6 +4,7 @@ Supports polygon, polyline, and rectangle shapes with per-feature
 selection, modification, and deletion callbacks.
 """
 
+import logging
 import math
 import random
 import string
@@ -18,6 +19,8 @@ from shapely.geometry import Polygon
 from shapely.ops import transform
 
 from .layer import Layer
+
+logger = logging.getLogger(__name__)
 
 
 class DrawLayer(Layer):
@@ -326,7 +329,7 @@ class DrawLayer(Layer):
             if indx:
                 feature_index = indx[0]
         if feature_index is None:
-            print("Could not find feature ...")
+            logger.error("Could not find feature ...")
         return feature_index
 
     def get_feature_id(self, feature_index: int) -> Optional[str]:

@@ -12,15 +12,10 @@ class WebEnginePage(QtWebEngineCore.QWebEnginePage):
     ----------
     view : QtWebEngineWidgets.QWebEngineView
         The parent web view.
-    print_messages : bool
-        Whether to print JavaScript console messages to stdout.
     """
 
-    def __init__(
-        self, view: QtWebEngineWidgets.QWebEngineView, print_messages: bool
-    ) -> None:
+    def __init__(self, view: QtWebEngineWidgets.QWebEngineView) -> None:
         super().__init__(view)
-        self.print_messages = print_messages
 
     def javaScriptConsoleMessage(
         self, level: int, message: str, lineNumber: int, sourceID: str
@@ -60,7 +55,7 @@ class WebPage(QtWidgets.QWidget):
 
         self.set_geometry()
 
-        page = WebEnginePage(view, element.gui.js_messages)
+        page = WebEnginePage(view)
         view.setPage(page)
 
         if isinstance(self.element.url, str):

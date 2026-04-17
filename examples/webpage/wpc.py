@@ -12,9 +12,7 @@ from guitares.gui import GUI
 
 class WebPageComparison:
     def __init__(self):
-        self.gui = GUI(
-            self, framework="pyside6", config_file="webpage.yml", js_messages=False
-        )
+        self.gui = GUI(self, framework="pyside6", config_file="webpage.yml")
 
 
 wpc = WebPageComparison()

@@ -1,6 +1,7 @@
 """PyQt5 Mapbox GL JS map widget with WebChannel communication."""
 
 import json
+import logging
 import os
 from typing import Any, Optional
 
@@ -11,6 +12,8 @@ from PyQt5 import QtCore, QtWebChannel, QtWebEngineWidgets, QtWidgets
 
 from guitares.map.layer import Layer, find_layer_by_id, list_layers
 
+logger = logging.getLogger(__name__)
+
 
 class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
     """Custom web engine page that optionally prints JS console messages.
@@ -19,15 +22,10 @@ class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
     ----------
     view : QtWebEngineWidgets.QWebEngineView
         The parent web engine view.
-    print_messages : bool
-        Whether to print JavaScript console messages to stdout.
     """
 
-    def __init__(
-        self, view: QtWebEngineWidgets.QWebEngineView, print_messages: bool
-    ) -> None:
+    def __init__(self, view: QtWebEngineWidgets.QWebEngineView) -> None:
         super().__init__(view)
-        self.print_messages = print_messages
 
     def javaScriptConsoleMessage(
         self, level: int, message: str, lineNumber: int, sourceID: str
@@ -45,8 +43,9 @@ class WebEnginePage(QtWebEngineWidgets.QWebEnginePage):
         sourceID : str
             The source file identifier.
         """
-        if self.print_messages:
-            print("javaScriptConsoleMessage: ", level, message, lineNumber, sourceID)
+        logger.info(
+            f"javaScriptConsoleMessage: {level} {message} {lineNumber} {sourceID}"
+        )
 
 
 class MapBox(QtWidgets.QWidget):
@@ -102,7 +101,7 @@ class MapBox(QtWidgets.QWidget):
 
         self.set_geometry()
 
-        page = WebEnginePage(view, self.gui.js_messages)
+        page = WebEnginePage(view)
         view.setPage(page)
 
         view.page().setWebChannel(channel)
@@ -554,7 +553,7 @@ class MapBox(QtWidgets.QWidget):
             self.layer[layer_id] = Layer(self, layer_id, layer_id)
             self.layer[layer_id].map_id = layer_id
         else:
-            print(f"Layer {layer_id} already exists.")
+            logger.warning(f"Layer {layer_id} already exists.")
         return self.layer[layer_id]
 
     def list_layers(self) -> list[Any]:

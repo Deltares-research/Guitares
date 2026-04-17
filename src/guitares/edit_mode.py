@@ -7,6 +7,7 @@ Widgets can be dragged to new positions (snapped to a 5px grid).
 Modified positions are written back to the source YAML files.
 """
 
+import logging
 import sys
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -16,6 +17,7 @@ from PySide6.QtCore import QPoint, QRect, Qt
 from PySide6.QtWidgets import QApplication, QWidget
 
 SNAP = 5  # Grid snap in pixels
+logger = logging.getLogger(__name__)
 
 
 def is_debug() -> bool:
@@ -268,7 +270,7 @@ class EditMode:
         if self.active:
             return
         self.active = True
-        print(
+        logger.info(
             "=== EDIT MODE ON (Ctrl+E exit, Ctrl+S save, Ctrl+Z undo, Ctrl+A add) ==="
         )
         self.gui.window.dialog_fade_label(
@@ -300,7 +302,7 @@ class EditMode:
                 overlay._modified = False
                 overlay.update()
                 restored += 1
-        print(f"Undo: restored {restored} widget(s)")
+        logger.info(f"Undo: restored {restored} widget(s)")
 
     def _snapshot_positions(self) -> None:
         """Store current positions and sizes of all overlaid elements."""
@@ -313,19 +315,19 @@ class EditMode:
                 el.position.width,
                 el.position.height,
             )
-        print(f"  Snapshot: {len(self._saved_positions)} widget positions saved")
+        logger.info(f"  Snapshot: {len(self._saved_positions)} widget positions saved")
 
     def deactivate(self) -> None:
         """Exit edit mode — remove all overlays."""
         if not self.active:
             return
         self.active = False
-        print("=== EDIT MODE OFF ===")
+        logger.info("=== EDIT MODE OFF ===")
 
         # Check for unsaved changes
         modified = [o for o in self.overlays if o._modified]
         if modified:
-            print(f"  {len(modified)} widget(s) were moved. Ctrl+S to save.")
+            logger.info(f"  {len(modified)} widget(s) were moved. Ctrl+S to save.")
 
         for overlay in self.overlays:
             overlay.hide()
@@ -339,7 +341,7 @@ class EditMode:
 
         modified = [o for o in self.overlays if o._modified]
         if not modified:
-            print("No changes to save.")
+            logger.info("No changes to save.")
             return
 
         # Group modifications by source YAML file
@@ -349,21 +351,21 @@ class EditMode:
             if source:
                 by_file.setdefault(source, []).append(overlay)
             else:
-                print(
+                logger.info(
                     f"  Warning: no source YAML for {overlay.element.style} — skipping"
                 )
 
         for yml_path, overlays in by_file.items():
             try:
                 _update_yaml_positions(yml_path, overlays)
-                print(f"  Saved {len(overlays)} change(s) to {yml_path}")
+                logger.info(f"  Saved {len(overlays)} change(s) to {yml_path}")
                 for o in overlays:
                     o._modified = False
                     # Update original text so next save matches the new text
                     if isinstance(o.element.text, str):
                         o._original_text = o.element.text
             except Exception as e:
-                print(f"  Error saving {yml_path}: {e}")
+                logger.info(f"  Error saving {yml_path}: {e}")
 
         # Re-snapshot so undo reverts to the last saved state
         self._snapshot_positions()
@@ -413,7 +415,7 @@ class EditMode:
     def add_element(self) -> None:
         """Prompt for element properties, then let user click to place it."""
         if not self.active:
-            print("Enter edit mode first (Ctrl+E).")
+            logger.info("Enter edit mode first (Ctrl+E).")
             return
 
         gui = self.gui
@@ -565,7 +567,7 @@ class EditMode:
         }
 
         # Enter placement mode
-        print("Click in the GUI to place the element (Esc to cancel)...")
+        logger.info("Click in the GUI to place the element (Esc to cancel)...")
         QApplication.setOverrideCursor(Qt.CrossCursor)
 
         # Make overlays transparent to mouse events during placement
@@ -611,7 +613,7 @@ class _ClickPlacementFilter(QtCore.QObject):
         # Restore overlay mouse interaction
         for o in self.edit_mode.overlays:
             o.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
-        print("Add element cancelled.")
+        logger.info("Add element cancelled.")
 
     def _finish(self, global_pos: QPoint) -> None:
         """Place the element at the clicked position."""
@@ -626,7 +628,7 @@ class _ClickPlacementFilter(QtCore.QObject):
         parent, parent_elements = _find_guitares_parent(window, global_pos)
 
         if parent is None:
-            print("Could not determine parent container.")
+            logger.info("Could not determine parent container.")
             self._restore_overlays()
             return
 
@@ -709,7 +711,7 @@ class _ClickPlacementFilter(QtCore.QObject):
             )
 
         style = cfg["style"]
-        print(f"Added {style} at ({yaml_x}, {yaml_y}) in {var_group}")
+        logger.info(f"Added {style} at ({yaml_x}, {yaml_y}) in {var_group}")
 
 
 def _find_guitares_parent(window: Any, global_pos: QPoint) -> Tuple[Any, list]:
