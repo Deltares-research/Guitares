@@ -172,9 +172,9 @@ def update_html_references(maplibre_version, turf_version, draw_version):
         if content != original:
             with open(html_file, "w") as f:
                 f.write(content)
-            logger.info((f"  Updated {os.path.basename(html_file)}")
+            logger.info(f"  Updated {os.path.basename(html_file)}")
         else:
-            logger.info((f"  No changes in {os.path.basename(html_file)}")
+            logger.info(f"  No changes in {os.path.basename(html_file)}")
 
 
 if __name__ == "__main__":
@@ -219,9 +219,13 @@ if __name__ == "__main__":
     if maplibre_draw_ver:
         logger.info(f"MapLibre GL Draw (fork): {maplibre_draw_ver}")
     logger.info("")
-    logger.info("To switch between draw libraries, update the <script> tag in index.html:")
+    logger.info(
+        "To switch between draw libraries, update the <script> tag in index.html:"
+    )
     if draw_ver:
-        logger.info(f'  Mapbox:   <script src="/js/mapbox-gl-draw-v{draw_ver}.js"></script>')
+        logger.info(
+            f'  Mapbox:   <script src="/js/mapbox-gl-draw-v{draw_ver}.js"></script>'
+        )
     if maplibre_draw_ver:
         logger.info(
             f'  MapLibre: <script src="/js/maplibre-gl-draw-v{maplibre_draw_ver}.js"></script>'
