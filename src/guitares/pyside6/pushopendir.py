@@ -72,7 +72,7 @@ class PushOpenDir(QPushButton):
         dir_name = QFileDialog.getExistingDirectory(
             parent=self,
             caption=self.element.title,
-            directory=val,
+            dir=val,
             options=QFileDialog.ShowDirsOnly,
         )
         if dir_name:
