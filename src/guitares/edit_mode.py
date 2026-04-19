@@ -1116,6 +1116,12 @@ def _update_element_in_data(
                     ):
                         return True
 
+        # Recurse into panels (and any other container with nested ``element``)
+        nested = el_dict.get("element")
+        if isinstance(nested, list):
+            if _update_element_in_data(nested, target_element, original_text):
+                return True
+
     return False
 
 
