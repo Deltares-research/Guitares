@@ -103,7 +103,7 @@ class PolygonLayer(Layer):
             if self.legend_items_list:
                 options["legendItems"] = self.legend_items_list
                 options["legendTitle"] = getattr(self, "legend_title", "")
-                options["legendPosition"] = self.legend_position
+                options["legendPosition"] = self.legend_position or "bottom-right"
 
         elif (
             hasattr(self, "bins")
@@ -120,7 +120,7 @@ class PolygonLayer(Layer):
             if hasattr(self, "color_labels") and self.color_labels:
                 options["colorLabels"] = self.color_labels
                 options["legendTitle"] = getattr(self, "legend_title", "")
-                options["legendPosition"] = self.legend_position
+                options["legendPosition"] = self.legend_position or "bottom-right"
 
         # Selector options
         if self.selector:

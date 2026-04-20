@@ -41,6 +41,11 @@
   font-size: 12px;
 }
 
+/* Vertical spacing between legend rows (title + items) */
+.legend > div + div {
+  margin-top: 2px;
+}
+
 /* Positioning: all four corners, width grows naturally */
 .legend.bottom-left {
   bottom: 0px;
@@ -62,6 +67,14 @@
   right: 0;
   margin-bottom: 10px;
   margin-right: 120px;
+}
+
+/* Third legend stacked vertically above the bottom-right colorbar */
+.legend.bottom-right-3 {
+  bottom: 0px;
+  right: 0;
+  margin-bottom: 310px;
+  margin-right: 10px;
 }
 
 .legend.top-left {

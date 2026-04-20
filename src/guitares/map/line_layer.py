@@ -4,7 +4,7 @@ When ``selector=True`` is passed as a keyword argument, the layer supports
 hover popups and click-based feature selection (single or multiple).
 """
 
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from geopandas import GeoDataFrame
 
@@ -26,6 +26,39 @@ class LineLayer(Layer):
         """Line layer creates .line and optionally .circle sub-layers."""
         return [f"{self.map_id}.line", f"{self.map_id}.circle"]
 
+    def _derive_legend_items(self) -> List[Dict[str, str]]:
+        """Build a horizontal-strip swatch for the shared-legend path.
+
+        Returns an empty list when no ``legend_label`` / ``legend_title``
+        is set or when the layer has no data. Line layers have no
+        JS-side solo legend of their own, so this only feeds an
+        ancestor container's shared legend.
+        """
+        label = getattr(self, "legend_label", "") or getattr(self, "legend_title", "")
+        if not label:
+            return []
+        if self.data is None or (hasattr(self.data, "__len__") and len(self.data) == 0):
+            return []
+        from .layer import _css_rgba
+
+        color = _css_rgba(
+            getattr(self, "line_color", "#000"),
+            float(getattr(self, "line_opacity", 1.0) or 1.0),
+        )
+        w = int(getattr(self, "line_width", 2) or 2)
+        top = 9 - max(1, w // 2)
+        bottom = top + max(2, w)
+        return [
+            {
+                "style": (
+                    f"background:linear-gradient(to bottom, transparent {top}px, "
+                    f"{color} {top}px, {color} {bottom}px, transparent {bottom}px); "
+                    "border:none;"
+                ),
+                "label": label,
+            }
+        ]
+
     def set_data(self, data: GeoDataFrame, index: Optional[int] = None) -> None:
         """Set the GeoJSON data and render the line layer.
 
@@ -41,6 +74,9 @@ class LineLayer(Layer):
         if isinstance(data, GeoDataFrame):
             if len(data) == 0:
                 self.map.runjs("/js/main.js", "removeLayer", arglist=[self.map_id])
+                owner = self._get_shared_legend_owner()
+                if owner is not None:
+                    owner._set_shared_legend_items(self, [])
                 return
             data["index"] = range(len(data))
             data_in = data.to_crs(4326)
@@ -72,7 +108,11 @@ class LineLayer(Layer):
             arglist=[self.map_id, data_in, pp, options],
         )
 
-        if not self.active:
+        if self.active:
+            owner = self._get_shared_legend_owner()
+            if owner is not None:
+                owner._set_shared_legend_items(self, self._derive_legend_items())
+        else:
             self.deactivate()
 
     def set_selected_index(self, index: int) -> None:
@@ -91,8 +131,13 @@ class LineLayer(Layer):
         )
 
     def activate(self) -> None:
-        """Set the layer to active paint style."""
+        """Set the layer to active paint style and ensure it is visible."""
         self.active = True
+        # Ensure the layer is visible on the map — the tab pattern used
+        # in DDB (hide on tab leave, activate on tab return) relies on
+        # activate() to also un-hide.
+        if not self.visible:
+            self.show()
         pp = self.get_paint_props("active")
         if self.selector:
             pp["lineColorSelected"] = self.line_color_selected
@@ -102,6 +147,9 @@ class LineLayer(Layer):
             "setPaintProperties",
             arglist=[self.map_id, pp],
         )
+        owner = self._get_shared_legend_owner()
+        if owner is not None:
+            owner._set_shared_legend_items(self, self._derive_legend_items())
 
     def deactivate(self) -> None:
         """Set the layer to inactive paint style."""
@@ -111,6 +159,9 @@ class LineLayer(Layer):
             "setPaintProperties",
             arglist=[self.map_id, self.get_paint_props("inactive")],
         )
+        owner = self._get_shared_legend_owner()
+        if owner is not None:
+            owner._set_shared_legend_items(self, [])
 
     def redraw(self) -> None:
         """Redraw the layer (e.g. after a style change)."""

@@ -26,47 +26,70 @@ class CircleLayer(Layer):
         """Circle layer uses a single MapLibre layer with the base id."""
         return [self.map_id]
 
-    def _apply_legend_options(self, options: Dict[str, Any]) -> None:
-        """Populate ``options`` with legend keys.
+    def _derive_legend_items(self) -> List[Dict[str, str]]:
+        """Auto-build a single-item legend from the layer's paint props.
 
-        Prefers caller-supplied ``self.legend_items``. When those are
-        empty, auto-derives a single swatch from the layer's own paint
-        props so the caller can get a legend with just one kwarg on
-        ``add_layer``:
-
-        * ``legend_label="..."`` — preferred; rendered as the single
-          swatch's label, no title line above it.
-        * ``legend_title="..."`` — back-compat; treated as the label
-          (folded into the single swatch). ``legend_title`` is named
-          for raster / multi-entry layers where it genuinely labels
-          a title line; on a single-entry circle legend it's really
-          a label, so ``legend_label`` is the cleaner spelling.
+        Returns an empty list when neither ``legend_items`` nor
+        ``legend_label`` / ``legend_title`` is set, or when the layer
+        has no data — the swatch should only appear while there are
+        actual features on the map. Fill and border colours are
+        rendered via ``rgba(...)`` so the swatch inherits the layer's
+        on-map opacity.
         """
-        legend_items = self.legend_items
+        if self.legend_items:
+            return list(self.legend_items)
+        label = getattr(self, "legend_label", "") or getattr(self, "legend_title", "")
+        if not label:
+            return []
+        if self.data is None or (hasattr(self.data, "__len__") and len(self.data) == 0):
+            return []
+        from .layer import _css_rgba
+
+        fill_opacity = float(getattr(self, "fill_opacity", 1.0) or 1.0)
+        line_opacity = float(getattr(self, "line_opacity", 1.0) or 1.0)
+        line_color = getattr(self, "line_color", None)
+        line_width = getattr(self, "line_width", 0) or 0
+        fill_css = _css_rgba(self.fill_color, fill_opacity)
+        border_css = (
+            f"{line_width}px solid {_css_rgba(line_color, line_opacity)}"
+            if line_color and line_width
+            else "none"
+        )
+        # Sit the circle swatch inside the default 18x18 slot with a
+        # 3px margin so it reads a bit smaller than rectangular
+        # polygon swatches next to it in the same legend.
+        return [
+            {
+                "style": (
+                    f"background:{fill_css}; border:{border_css}; "
+                    "border-radius:50%; width:12px; height:12px; margin:3px;"
+                ),
+                "label": label,
+            }
+        ]
+
+    def _apply_legend_options(self, options: Dict[str, Any]) -> None:
+        """Populate ``options`` with legend keys (solo-legend path).
+
+        When an ancestor container has a non-None ``legend_position``,
+        the items are instead pushed to that container and no per-layer
+        legend is emitted here.
+        """
+        owner = self._get_shared_legend_owner()
+        if owner is not None:
+            owner._set_shared_legend_items(self, self._derive_legend_items())
+            return
+
+        legend_items = self._derive_legend_items()
         legend_title = getattr(self, "legend_title", "")
-        legend_label = getattr(self, "legend_label", "")
-        if not legend_items and (legend_label or legend_title):
-            line_color = getattr(self, "line_color", None)
-            line_width = getattr(self, "line_width", 0) or 0
-            border = (
-                f"{line_width}px solid {line_color}"
-                if line_color and line_width
-                else "none"
-            )
-            legend_items = [
-                {
-                    "style": (
-                        f"background-color:{self.fill_color}; "
-                        f"border:{border}; border-radius:50%;"
-                    ),
-                    "label": legend_label or legend_title,
-                }
-            ]
+        # When the items were auto-derived from legend_label / legend_title,
+        # the label absorbs the text, so we suppress the title line.
+        if legend_items and not self.legend_items:
             legend_title = ""
         if legend_items:
             options["legendItems"] = legend_items
             options["legendTitle"] = legend_title
-            options["legendPosition"] = self.legend_position
+            options["legendPosition"] = self.legend_position or "bottom-right"
 
     def set_data(
         self,
@@ -96,6 +119,12 @@ class CircleLayer(Layer):
         if isinstance(data, GeoDataFrame) and len(data) == 0:
             if self.selector:
                 self.clear()
+            # Ensure any shared-legend entry this layer previously
+            # contributed is removed — the layer has no features to
+            # represent.
+            owner = self._get_shared_legend_owner()
+            if owner is not None:
+                owner._set_shared_legend_items(self, [])
             return
 
         if data.crs and data.crs != 4326:
@@ -190,6 +219,9 @@ class CircleLayer(Layer):
     def activate(self) -> None:
         """Set the layer to active paint style."""
         self.active = True
+        owner = self._get_shared_legend_owner()
+        if owner is not None:
+            owner._set_shared_legend_items(self, self._derive_legend_items())
         if self.data is None or len(self.data) == 0:
             return
         self.show()
@@ -212,6 +244,9 @@ class CircleLayer(Layer):
     def deactivate(self) -> None:
         """Set the layer to inactive paint style."""
         self.active = False
+        owner = self._get_shared_legend_owner()
+        if owner is not None:
+            owner._set_shared_legend_items(self, [])
         if self.data is None or len(self.data) == 0:
             return
         pp = self.get_paint_props("inactive")

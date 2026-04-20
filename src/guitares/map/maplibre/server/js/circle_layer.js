@@ -144,8 +144,11 @@ export function addLayer(id, data, pp, options) {
     }
     for (let i = 0; i < opts.legendItems.length; i++) {
       const item = document.createElement('div');
+      // Defaults first; the caller-supplied style follows so any
+      // overrides (e.g. ``width:12px``) win on the CSS cascade.
       item.innerHTML =
-        '<i style="' + opts.legendItems[i].style + '; width:18px; height:18px; display:inline-block; margin-right:5px;"></i>' +
+        '<i style="display:inline-block; margin-right:5px; width:18px; height:18px; ' +
+        opts.legendItems[i].style + '"></i>' +
         '<span>' + opts.legendItems[i].label + '</span>';
       legendDiv.appendChild(item);
     }

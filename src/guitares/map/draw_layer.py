@@ -8,7 +8,7 @@ import logging
 import math
 import random
 import string
-from typing import Any, Callable, Dict, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import geopandas as gpd
 import matplotlib.colors as mcolors
@@ -56,8 +56,9 @@ class DrawLayer(Layer):
         endpoint_start_color: str = "blue",
         endpoint_end_color: str = "red",
         endpoint_radius: int = 5,
+        **kwargs: Any,
     ) -> None:
-        super().__init__(map, layer_id, map_id)
+        super().__init__(map, layer_id, map_id, **kwargs)
 
         self.active = False
         self.type = "draw"
@@ -107,6 +108,73 @@ class DrawLayer(Layer):
             arglist=[self.map_id, "active", self.paint_props, self.shape],
         )
 
+    def _derive_legend_items(self) -> List[Dict[str, str]]:
+        """Build a swatch reflecting this draw layer's shape + paint props.
+
+        Returns an empty list when no ``legend_label`` / ``legend_title``
+        is set (layer opts out of the legend by default) or when the
+        layer currently has no features, so the swatch is only shown
+        while there is something on the map to represent. Fills and
+        borders use ``rgba(...)`` so the swatch inherits the layer's
+        on-map opacity values.
+        """
+        label = getattr(self, "legend_label", "") or getattr(self, "legend_title", "")
+        if not label:
+            return []
+        if len(self.gdf) == 0:
+            return []
+        from .layer import _css_rgba
+
+        pp = self.paint_props
+        shape = self.shape
+        if shape == "polygon" or shape == "rectangle":
+            fill = _css_rgba(
+                pp.get("polygon_fill_color", "#888"),
+                pp.get("polygon_fill_opacity", 0.5),
+            )
+            line = _css_rgba(
+                pp.get("polygon_line_color", "#000"),
+                pp.get("polygon_line_opacity", 1.0),
+            )
+            style = (
+                f"background:{fill}; "
+                f"border:{pp.get('polygon_line_width', 2)}px solid {line};"
+            )
+        elif shape == "polyline":
+            # Horizontal strip centred in the swatch box via a
+            # linear-gradient background.
+            color = _css_rgba(
+                pp.get("polyline_line_color", "#000"),
+                pp.get("polyline_line_opacity", 1.0),
+            )
+            w = int(pp.get("polyline_line_width", 2) or 2)
+            top = 9 - max(1, w // 2)
+            bottom = top + max(2, w)
+            style = (
+                f"background:linear-gradient(to bottom, transparent {top}px, "
+                f"{color} {top}px, {color} {bottom}px, transparent {bottom}px); "
+                "border:none;"
+            )
+        elif shape == "circle":
+            fill = _css_rgba(
+                pp.get("circle_fill_color", "#888"),
+                pp.get("circle_fill_opacity", 0.5),
+            )
+            line = _css_rgba(
+                pp.get("circle_line_color", "#000"),
+                pp.get("circle_line_opacity", 1.0),
+            )
+            style = (
+                f"background:{fill}; border:2px solid {line}; "
+                "border-radius:50%; width:12px; height:12px; margin:3px;"
+            )
+        else:
+            style = (
+                f"background:{pp.get('polygon_fill_color', '#888')}; "
+                "border:1px solid #000;"
+            )
+        return [{"style": style, "label": label}]
+
     def set_paint_property(self, key: str, value: Any) -> None:
         """Update a paint property on this draw layer.
 
@@ -145,6 +213,9 @@ class DrawLayer(Layer):
         self.map.runjs(
             "/js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "active"]
         )
+        owner = self._get_shared_legend_owner()
+        if owner is not None:
+            owner._set_shared_legend_items(self, self._derive_legend_items())
 
     def deactivate(self) -> None:
         """Deactivate the draw layer so it can not be edited by the user."""
@@ -152,6 +223,9 @@ class DrawLayer(Layer):
         self.map.runjs(
             "/js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "inactive"]
         )
+        owner = self._get_shared_legend_owner()
+        if owner is not None:
+            owner._set_shared_legend_items(self, [])
 
     def set_visibility(self, true_or_false: bool) -> None:
         """Show or hide the draw layer on the map.
@@ -177,6 +251,30 @@ class DrawLayer(Layer):
             self.map.runjs(
                 "/js/draw_layer.js", "setLayerMode", arglist=[self.map_id, "invisible"]
             )
+
+        # Hide-cascades don't propagate ``self.visible`` to children,
+        # so explicitly register/clear this layer's shared-legend
+        # entry from inside set_visibility itself.
+        owner = self._get_shared_legend_owner()
+        if owner is not None:
+            if true_or_false:
+                owner._set_shared_legend_items(self, self._derive_legend_items())
+            else:
+                owner._set_shared_legend_items(self, [])
+
+    def _sync_shared_legend(self) -> None:
+        """Push the current swatch (or empty) up to the shared-legend owner.
+
+        Called on every feature mutation so the legend follows data
+        existence. :meth:`deactivate` independently clears the swatch,
+        and the owner's rebuild filters by child visibility, so no
+        active-state gate is needed here — draw layers that never get
+        an explicit ``.activate()`` call (e.g. ``self.active`` defaults
+        to ``False`` in the constructor) still register correctly.
+        """
+        owner = self._get_shared_legend_owner()
+        if owner is not None:
+            owner._set_shared_legend_items(self, self._derive_legend_items())
 
     def set_data(self, gdf: gpd.GeoDataFrame) -> None:
         """Clear the draw layer and add data. Data must be a GeoDataFrame."""
@@ -209,6 +307,8 @@ class DrawLayer(Layer):
                 "addFeature",
                 arglist=[gdf2plot, self.map_id, feature_id],
             )
+
+        self._sync_shared_legend()
 
     def add_rectangle(
         self, x0: float, y0: float, lenx: float, leny: float, rotation: float
@@ -320,6 +420,11 @@ class DrawLayer(Layer):
             # self.gdf.at[index, "id"] = gdf.at[index, "id"]
             self.gdf.loc[index, "id"] = feature_id
             self.gdf.loc[index, "geometry"] = gdf.loc[index, "geometry"]
+
+        # Interactive draws / edits land here, so the shared legend
+        # needs to re-sync even when the create/modify callbacks
+        # don't go through ``set_data``.
+        self._sync_shared_legend()
 
     def get_feature_index(self, feature_id: str) -> Optional[int]:
         """Get a feature's index by ID in the GeoDataFrame."""
@@ -522,6 +627,7 @@ class DrawLayer(Layer):
                         self.gdf = gpd.GeoDataFrame()
                     break
             self.map.runjs("/js/draw_layer.js", "deleteFeature", arglist=[feature_id])
+        self._sync_shared_legend()
         return self.gdf
 
     def delete_from_map(self) -> None:
@@ -535,6 +641,7 @@ class DrawLayer(Layer):
         for index, row in self.gdf.iterrows():
             self.map.runjs("/js/draw_layer.js", "deleteFeature", arglist=[row["id"]])
         self.gdf = gpd.GeoDataFrame()
+        self._sync_shared_legend()
 
     def get_gdf(self, id: Optional[str] = None) -> gpd.GeoDataFrame:
         """Return the GeoDataFrame for this layer.

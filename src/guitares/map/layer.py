@@ -5,11 +5,21 @@ along with helper functions for traversing the layer hierarchy.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import matplotlib.colors as mcolors
 
 logger = logging.getLogger(__name__)
+
+
+def _css_rgba(color: Any, alpha: float = 1.0) -> str:
+    """Compose a CSS ``rgba(...)`` string from a named/hex colour and alpha.
+
+    Used by legend-swatch derivation so swatch fills / borders match
+    the layer's on-map opacity.
+    """
+    r, g, b = mcolors.to_rgb(color)
+    return f"rgba({int(r * 255)},{int(g * 255)},{int(b * 255)},{alpha})"
 
 
 class Layer:
@@ -61,7 +71,12 @@ class Layer:
         self.map_overlay_options = {}  # Dict or callable returning dict, passed to map_overlay()
 
         # Legend
-        self.legend_position = "bottom-right"  # Options are "top-left", "top-right", "bottom-left", "bottom-right"
+        # ``legend_position`` doubles as the opt-in for shared legends
+        # on container layers: when a container has a non-None position,
+        # its geometry descendants register their swatches with it
+        # instead of rendering their own legend boxes. Leaf-layer solo
+        # legends default to "bottom-right" via the JS-side fallback.
+        self.legend_position = None
         self.legend_title = (
             ""  # The text that appears at the top of the legend (e.g. Topography)
         )
@@ -71,6 +86,10 @@ class Layer:
         self.legend_units = ""  # The unit string that may appear in the individual tick labels (e.g. "m")
         self.legend_decimals = -1  # -1 means automatic
         self.legend_dict = None  # A dictionary with the legend values and colors
+        # Maps child.id -> (child_layer, items) so the rebuild can
+        # look at the actual layer's visibility regardless of how
+        # deep in the tree the child lives.
+        self._shared_legend_items: Dict[str, "Tuple[Layer, List[Dict[str, str]]]"] = {}
 
         # Raster layers
         self.color_scale_auto = True  # automatically scale from min to max
@@ -326,8 +345,10 @@ class Layer:
         map_id = f"{self.map_id}.{layer_id}"
 
         if type is None:
-            # Add containing layer
-            self.layer[layer_id] = Layer(self.map, layer_id, map_id)
+            # Add containing layer. kwargs are forwarded so callers can
+            # configure container-level attributes like
+            # ``legend_position`` at construction time.
+            self.layer[layer_id] = Layer(self.map, layer_id, map_id, **kwargs)
             self.layer[layer_id].parent = self
             return self.layer[layer_id]
 
@@ -414,6 +435,17 @@ class Layer:
 
             self.layer[layer_id].type = type
             self.layer[layer_id].parent = self
+
+            # Now that ``parent`` is linked, offer this layer a chance
+            # to register swatches with a shared-legend ancestor. Done
+            # here (rather than in ``layer_added``) because some layer
+            # types — notably ``DrawLayer`` — never trigger the JS-side
+            # ``layerAdded`` callback.
+            child = self.layer[layer_id]
+            if hasattr(child, "_derive_legend_items"):
+                owner = child._get_shared_legend_owner()
+                if owner is not None:
+                    owner._set_shared_legend_items(child, child._derive_legend_items())
 
             return self.layer[layer_id]
 
@@ -521,6 +553,86 @@ class Layer:
                 self.map.runjs(
                     self.main_js, "hideLayer", arglist=[self.map_id, self.side]
                 )
+
+        # Visibility changes add or remove this layer from the shared
+        # legend. Doing it here (rather than filtering in the rebuild)
+        # means ``self.visible`` state drift during cascades doesn't
+        # matter — each set_visibility call is authoritative for this
+        # layer's presence in the legend.
+        owner = self._get_shared_legend_owner()
+        if owner is not None and hasattr(self, "_derive_legend_items"):
+            if true_or_false:
+                owner._set_shared_legend_items(self, self._derive_legend_items())
+            else:
+                owner._set_shared_legend_items(self, [])
+
+    # ------------------------------------------------------------------
+    # Shared (container-owned) legend
+    # ------------------------------------------------------------------
+
+    def _get_shared_legend_owner(self) -> Optional["Layer"]:
+        """Return the nearest ancestor container that owns a shared legend.
+
+        A container opts in simply by having a non-None ``legend_position``.
+        Returns ``None`` when no ancestor has one set.
+        """
+        owner = self.parent
+        while owner is not None:
+            if getattr(owner, "legend_position", None) is not None:
+                return owner
+            owner = owner.parent
+        return None
+
+    def _set_shared_legend_items(
+        self, child: "Layer", items: List[Dict[str, str]]
+    ) -> None:
+        """Register (or clear) a child's legend items on this container.
+
+        Called by a descendant layer — typically from its ``set_data``
+        / ``activate`` / feature-mutation paths — whenever its
+        contribution to the shared legend changes. An empty ``items``
+        list removes the child's entry. Triggers an immediate legend
+        rebuild. The child layer reference is stored so that
+        visibility of arbitrarily-nested descendants can be checked on
+        rebuild.
+        """
+        if getattr(self, "legend_position", None) is None:
+            return
+        if items:
+            self._shared_legend_items[child.id] = (child, items)
+        else:
+            self._shared_legend_items.pop(child.id, None)
+        self._rebuild_shared_legend()
+
+    def _rebuild_shared_legend(self) -> None:
+        """Re-render the shared legend from all currently-registered entries.
+
+        The registry itself is the source of truth: children call
+        :meth:`_set_shared_legend_items` with items when visible and
+        with ``[]`` when hidden (from ``set_visibility`` /
+        ``deactivate`` / feature mutations). No secondary visibility
+        filter is applied here.
+        """
+        if getattr(self, "legend_position", None) is None:
+            return
+
+        items: List[Dict[str, str]] = []
+        for _, (_, child_items) in self._shared_legend_items.items():
+            items.extend(child_items)
+
+        if items:
+            self.map.runjs(
+                "/js/main.js",
+                "buildSharedLegend",
+                arglist=[
+                    self.map_id,
+                    getattr(self, "legend_title", "") or "",
+                    self.legend_position,
+                    items,
+                ],
+            )
+        else:
+            self.map.runjs("/js/main.js", "removeSharedLegend", arglist=[self.map_id])
 
     # def set_visibility(self, true_or_false):
     #     # Loop down through the layer hierarchy to show or hide layers

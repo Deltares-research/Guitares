@@ -400,7 +400,8 @@ function buildLegendFromItems(id, title, position, items) {
   if (title) { const t = document.createElement('div'); t.innerHTML = '<strong>' + title + '</strong>'; el.appendChild(t); }
   for (let i = 0; i < items.length; i++) {
     const item = document.createElement('div');
-    item.innerHTML = '<i style="' + items[i].style + '; width:18px; height:18px; display:inline-block; margin-right:5px;"></i><span>' + items[i].label + '</span>';
+    // Defaults first; caller-supplied style wins on the CSS cascade.
+    item.innerHTML = '<i style="display:inline-block; margin-right:5px; width:18px; height:18px; ' + items[i].style + '"></i><span>' + items[i].label + '</span>';
     el.appendChild(item);
   }
   document.body.appendChild(el);

@@ -360,6 +360,52 @@ export function hideLegend(id) {
 }
 
 /**
+ * Build (or rebuild) a shared legend box owned by a container layer.
+ * Items are an array of ``{style, label}`` dicts; style is a CSS snippet
+ * applied to an 18x18 inline swatch. Called from the Python side when
+ * a container with a non-null ``legend_position`` aggregates items
+ * from its visible geometry children.
+ *
+ * @param {string} id - Container layer identifier.
+ * @param {string} title - Optional legend title rendered above items.
+ * @param {string} position - Legend anchor class (e.g. "bottom-right").
+ * @param {Array} items - Array of {style, label} entries.
+ */
+export function buildSharedLegend(id, title, position, items) {
+  var legend = document.getElementById("legend" + id);
+  if (legend) legend.remove();
+  if (!items || items.length === 0) return;
+  var el = document.createElement("div");
+  el.id = "legend" + id;
+  el.className = "legend " + (position || "bottom-right");
+  if (title) {
+    var t = document.createElement("div");
+    t.innerHTML = "<strong>" + title + "</strong>";
+    el.appendChild(t);
+  }
+  for (var i = 0; i < items.length; i++) {
+    var item = document.createElement("div");
+    // Defaults come first so a caller-supplied style (e.g. smaller
+    // ``width``/``height`` for a circle swatch) overrides them.
+    item.innerHTML =
+      '<i style="display:inline-block; margin-right:5px; width:18px; height:18px; ' +
+      items[i].style + '"></i>' +
+      '<span>' + items[i].label + '</span>';
+    el.appendChild(item);
+  }
+  document.body.appendChild(el);
+}
+
+/**
+ * Remove a shared legend box previously built via :func:`buildSharedLegend`.
+ * @param {string} id - Container layer identifier.
+ */
+export function removeSharedLegend(id) {
+  var legend = document.getElementById("legend" + id);
+  if (legend) legend.remove();
+}
+
+/**
  * Close any open MapLibre popup on the map.
  */
 export function closePopup() {
