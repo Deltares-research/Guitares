@@ -26,6 +26,48 @@ class CircleLayer(Layer):
         """Circle layer uses a single MapLibre layer with the base id."""
         return [self.map_id]
 
+    def _apply_legend_options(self, options: Dict[str, Any]) -> None:
+        """Populate ``options`` with legend keys.
+
+        Prefers caller-supplied ``self.legend_items``. When those are
+        empty, auto-derives a single swatch from the layer's own paint
+        props so the caller can get a legend with just one kwarg on
+        ``add_layer``:
+
+        * ``legend_label="..."`` — preferred; rendered as the single
+          swatch's label, no title line above it.
+        * ``legend_title="..."`` — back-compat; treated as the label
+          (folded into the single swatch). ``legend_title`` is named
+          for raster / multi-entry layers where it genuinely labels
+          a title line; on a single-entry circle legend it's really
+          a label, so ``legend_label`` is the cleaner spelling.
+        """
+        legend_items = self.legend_items
+        legend_title = getattr(self, "legend_title", "")
+        legend_label = getattr(self, "legend_label", "")
+        if not legend_items and (legend_label or legend_title):
+            line_color = getattr(self, "line_color", None)
+            line_width = getattr(self, "line_width", 0) or 0
+            border = (
+                f"{line_width}px solid {line_color}"
+                if line_color and line_width
+                else "none"
+            )
+            legend_items = [
+                {
+                    "style": (
+                        f"background-color:{self.fill_color}; "
+                        f"border:{border}; border-radius:50%;"
+                    ),
+                    "label": legend_label or legend_title,
+                }
+            ]
+            legend_title = ""
+        if legend_items:
+            options["legendItems"] = legend_items
+            options["legendTitle"] = legend_title
+            options["legendPosition"] = self.legend_position
+
     def set_data(
         self,
         data: Union[GeoDataFrame, str],
@@ -97,10 +139,7 @@ class CircleLayer(Layer):
 
         if self.color_by_attribute:
             options["paintDict"] = self.color_by_attribute
-        if self.legend_items:
-            options["legendItems"] = self.legend_items
-            options["legendTitle"] = getattr(self, "legend_title", "")
-            options["legendPosition"] = self.legend_position
+        self._apply_legend_options(options)
 
         if not self.big_data:
             self.map.runjs(
@@ -132,10 +171,7 @@ class CircleLayer(Layer):
                 options["unit"] = getattr(self, "unit", "")
             if self.color_by_attribute:
                 options["paintDict"] = self.color_by_attribute
-            if self.legend_items:
-                options["legendItems"] = self.legend_items
-                options["legendTitle"] = getattr(self, "legend_title", "")
-                options["legendPosition"] = self.legend_position
+            self._apply_legend_options(options)
             self.map.runjs(
                 "/js/circle_layer.js",
                 "addLayer",
