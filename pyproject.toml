@@ -30,7 +30,7 @@ dependencies = [
     "pyqt5",
     "pyqtwebengine",
     "pyside6",
-    "cht_tiling",
+    "cht_tiling@ git+https://github.com/deltares-research/cht_tiling.git",
     "pyogrio"
 ]
 dynamic = ["version"]
