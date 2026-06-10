@@ -185,6 +185,24 @@ class RasterImageLayer(Layer):
         overlay_file = f"./overlays/{self.file_name}"
         legend = self._build_legend_from_options(opts)
 
+        # Continuous colorbar fallback: if the overlay object exposes a colormap
+        # and a (cmin, cmax) range but no discrete classes, build a colorbar PNG
+        # legend from those attributes. This is what lets continuous overlays
+        # (e.g. a topography/bathymetry DEM) keep a legend; discrete overlays
+        # set color_values on the layer instead and are skipped here.
+        if (
+            legend is None
+            and self.color_values is None
+            and getattr(self.data, "color_values", None) is None
+            and getattr(self.data, "cmap", None) is not None
+            and getattr(self.data, "cmin", None) is not None
+            and getattr(self.data, "cmax", None) is not None
+        ):
+            self._cmap = cm.get_cmap(self.data.cmap)
+            self._cmin = self.data.cmin
+            self._cmax = self.data.cmax
+            legend = "__plot_png__"
+
         return overlay_file, lonlim[0], lonlim[1], latlim[0], latlim[1], legend
 
     # ------------------------------------------------------------------
