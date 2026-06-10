@@ -170,7 +170,12 @@ export function addLayer(id, data, pp, options) {
     const hoverLayerId = hasFill ? id + '.fill' : id + '.line';
     const hoverPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false });
 
-    mp.on('mouseenter', hoverLayerId, function(e) {
+    // Use 'mousemove' (not 'mouseenter'): all features share one layer, so
+    // 'mouseenter' fires only once on first entry and never again as the
+    // cursor crosses between adjacent polygons. 'mousemove' fires on every
+    // move, so the popup follows the cursor and updates per-feature.
+    mp.on('mousemove', hoverLayerId, function(e) {
+      if (!e.features || e.features.length === 0) return;
       mp.getCanvas().style.cursor = 'pointer';
       const val = e.features[0].properties[opts.hoverProperty];
       let text = opts.hoverProperty + ': ' + numberWithCommas(val);
