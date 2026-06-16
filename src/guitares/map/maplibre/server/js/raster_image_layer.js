@@ -152,6 +152,12 @@ function setLegend(mp, id, colorbar, legend_position) {
     while (brs.length > 0) {
       brs[0].parentNode.removeChild(brs[0]);
     }
+    // Discrete legends wrap each row (and the title) in a <div>; remove those
+    // leftovers too so only the colorbar image remains.
+    const divs = legend.getElementsByTagName('div');
+    while (divs.length > 0) {
+      divs[0].parentNode.removeChild(divs[0]);
+    }
 
   } else {
     // Colorbar is an object with title and contour -- remove the image
@@ -175,23 +181,30 @@ function setLegend(mp, id, colorbar, legend_position) {
     legend.innerHTML = '';
     legend.classList.add("legend");
 
-    const titleSpan = document.createElement('span');
-    titleSpan.classList.add('title');
-    titleSpan.innerHTML = '<b>' + colorbar["title"] + '</b>';
-    legend.appendChild(titleSpan);
-    legend.appendChild(document.createElement("br"));
+    // Markup mirrors buildLegend() in polygon_layer.js so a flood-depth legend
+    // looks identical whether it comes from this raster (flood map) layer or a
+    // choropleth (roads) layer. They share the same title/labels/colors, so an
+    // identical DOM lets the two legends overlap exactly when both are shown.
+    if (colorbar["title"]) {
+      const titleDiv = document.createElement('div');
+      titleDiv.innerHTML = '<strong>' + colorbar["title"] + '</strong>';
+      legend.appendChild(titleDiv);
+    }
 
     for (let i = 0; i < colorbar["contour"].length; i++) {
       const cnt = colorbar["contour"][i];
+      const item = document.createElement('div');
+
       const newI = document.createElement('i');
-      newI.setAttribute('style', 'background:' + cnt["color"]);
+      newI.setAttribute('style', 'background:' + cnt["color"] + '; width:18px; height:18px; display:inline-block; margin-right:5px;');
       if (cnt["shape"] === "circle") newI.classList.add("circle");
-      legend.appendChild(newI);
+      item.appendChild(newI);
 
       const newSpan = document.createElement('span');
       newSpan.innerHTML = cnt["text"];
-      legend.appendChild(newSpan);
-      legend.appendChild(document.createElement("br"));
+      item.appendChild(newSpan);
+
+      legend.appendChild(item);
     }
     document.body.appendChild(legend);
 

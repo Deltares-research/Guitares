@@ -233,7 +233,7 @@ export function addMap() {
 
   window.currentCursor = '';
 
-  map.on('load', () => {
+  map.on('load', async () => {
     addDummyLayer('dummy_layer_0');
     addDummyLayer('dummy_layer_1');
     map.addControl(draw, 'top-left');
@@ -248,6 +248,24 @@ export function addMap() {
         // Silently ignore icon loading errors (e.g. DOMException from duplicate adds)
       }
     });
+    // Pre-warm the per-type layer modules before signalling map-ready. The Python
+    // side serialises layer commands via runjs (import(module).then(m => m.fn()); void 0),
+    // but the queue advances on the synchronous `void 0` return, not when the imported
+    // function actually runs. A first-time import() (e.g. line_layer.js addLayer) then
+    // resolves AFTER an already-cached import() (main.js hideLayer), reordering them and
+    // dropping e.g. a hide() issued right after a set_data() at startup. Warming the cache
+    // here makes every later import() resolve in FIFO enqueue order.
+    try {
+      await Promise.all([
+        import('./line_layer.js'), import('./circle_layer.js'),
+        import('./polygon_layer.js'), import('./marker_layer.js'),
+        import('./image_layer.js'), import('./raster_image_layer.js'),
+        import('./raster_tile_layer.js'), import('./heatmap_layer.js'),
+        import('./draw_layer.js'),
+      ]);
+    } catch (e) {
+      // Ignore — a missing optional module must not block map-ready.
+    }
     mapLoaded();
   });
 
