@@ -16,3 +16,5 @@ build/
 /examples/maplibre/server
 /examples/visualdelta/server
 /examples/frame_collapse/server
+.coverage
+coverage.xml

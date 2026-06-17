@@ -27,11 +27,8 @@ dependencies = [
     "Pillow",
     "matplotlib",
     "pyyaml",
-    "pyqt5",
-    "pyqtwebengine",
     "pyside6",
-    "cht_tiling@ git+https://github.com/deltares-research/cht_tiling.git",
-    "pyogrio"
+    "pyogrio",
 ]
 dynamic = ["version"]
 
