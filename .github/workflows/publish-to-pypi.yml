@@ -18,15 +18,16 @@ name: release
 #  1. In github settings:
 #     - Create an environment called `release`
 #     - Setup the permissions (https://github.com/<ORGANIZATION>/<REPO_NAME>/settings/environments)
-#     - Add the following variables:
-#        - PACKAGE_NAME: the name of your package on pypi
-#        - PYTHON_VERSION: the version of Python you want to use
 
 #  2. On PyPi:
 #      - Create the project and add a trusted publisher (https://pypi.org/manage/project/<PACKAGE_NAME>/settings/publishing/ or https://pypi.org/manage/account/publishing if the project is not on pypi yet)
 #      - Ensure the publisher is configured to use:
 #          - the filename of this workflow yml (in this case: publish-to-pypi.yml)
 
+# 3. In this file:
+#     - Add the following variables to the `env` section:
+#        - PACKAGE_NAME: the name of your package on pypi
+#        - PYTHON_VERSION: the version of Python you want to use
 #     - In the `setup_and_build` job:
 #        - Update the the shell commands to install your package
 
@@ -36,6 +37,11 @@ on:
       - v[0-9]+\.[0-9]+\.[0-9]+
       # https://peps.python.org/pep-0440/
 
+env:
+  PACKAGE_NAME: "guitares"
+  PYTHON_VERSION: "3.13"
+  UV_VERSION: "0.8.22"
+
 jobs:
   details:
     runs-on: ubuntu-latest
@@ -43,7 +49,7 @@ jobs:
       new_version: ${{ steps.release.outputs.new_version }}
       tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
 
       - name: Extract tag and Details
         id: release
@@ -90,31 +96,30 @@ jobs:
     needs: [details, check_pypi]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: conda-incubator/setup-miniconda@v3
+      - uses: actions/checkout@v7
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
         with:
-          auto-update-conda: true
-          activate-environment: publish
+          version: ${{ env.UV_VERSION }}
           python-version: ${{ env.PYTHON_VERSION }}
-          channels: conda-forge
 
-      - name: Install Build tools
+      - name: Install package
         shell: bash -el {0}
         run: |
-          conda install -n publish pip setuptools wheel python-build
-
-      - name: Install dependencies
-        shell: bash -el {0}
-        run: |
-          conda run -n publish pip install .
+          uv sync --locked --all-extras --dev
 
       - name: Build source and wheel distribution
         run: |
-          conda run -n publish python -s -m build
+          uv build
+
+      - name: Validate wheel distribution
+        run: uv run --isolated --no-project --with dist/*.whl python -c "import ${{ env.PACKAGE_NAME }}; print(${{ env.PACKAGE_NAME }}.__version__)"
+
+      - name: Validate source distribution
+        run: uv run --isolated --no-project --with dist/*.tar.gz python -c "import ${{ env.PACKAGE_NAME }}; print(${{ env.PACKAGE_NAME }}.__version__)"
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/
@@ -129,14 +134,20 @@ jobs:
     permissions:
       id-token: write
     steps:
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: dist
           path: dist/
 
-      - name: Publish distribution to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Publish
+        run: uv publish
 
   github_release:
     name: Create GitHub Release
@@ -146,12 +157,12 @@ jobs:
       contents: write
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist/
