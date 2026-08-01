@@ -644,6 +644,23 @@ class Window:
         dlg = window_dialog(self, text, title=title, type="wait")
         return dlg
 
+    @staticmethod
+    def _is_same_directory(a: str, b: str) -> bool:
+        """Return True when two paths refer to the same directory.
+
+        A plain string comparison is not enough on Windows: the current working
+        directory may be an 8.3 short name (e.g. ``C:\\work\\DELFTD~1``) while
+        the file dialog returns the long form, and case differences are not
+        significant. ``realpath`` expands short names and resolves links;
+        ``normcase`` normalises case and separators.
+        """
+        try:
+            return os.path.normcase(os.path.realpath(a)) == os.path.normcase(
+                os.path.realpath(b)
+            )
+        except OSError:
+            return os.path.normcase(a) == os.path.normcase(b)
+
     def dialog_open_file(
         self,
         text: str,
@@ -697,7 +714,7 @@ class Window:
         fltr = results[1]
         pth = pathlib.Path(full_name[0] if multiple else full_name)
         if not allow_directory_change:
-            if str(pth.parent) != path:
+            if not self._is_same_directory(str(pth.parent), path):
                 self.dialog_warning(
                     "Sorry, you cannot select a file from another directory !"
                 )
@@ -756,7 +773,7 @@ class Window:
         fltr = results[1]
         pth = pathlib.Path(full_name)
         if not allow_directory_change:
-            if str(pth.parent) != path:
+            if not self._is_same_directory(str(pth.parent), path):
                 self.dialog_warning(
                     "Sorry, you cannot save this file to another directory !"
                 )
