@@ -820,6 +820,8 @@ function _createEndpointLayers(layerId, paintProps) {
     var legendDiv = document.createElement('div');
     legendDiv.id = 'legend' + layerId;
     legendDiv.className = 'legend bottom-right-2';
+    // Stack above the shared (container) legend at the same anchor
+    legendDiv.dataset.stack = '1';
 
     var items = [
       { color: paintProps.endpoint_start_color, text: labels.start },
@@ -887,6 +889,7 @@ export function deleteLayer(layerId) {
   if (map.getSource(layerId + ".endpts")) map.removeSource(layerId + ".endpts");
   var legend = document.getElementById('legend' + layerId);
   if (legend) legend.remove();
+  import('/js/main.js').then(function (m) { m.restackLegends(); });
 
   map.removeSource(layerId);
   removeFromLayerList(layerId);
@@ -928,13 +931,20 @@ export function setLayerMode(layerId, mode) {
   // Toggle visibility of the static backing layers
   var showEndpoints = hasEndpoints(layerProps);
   if (mode == "inactive") {
+    var pp = layerProps.paintProps;
     map.setLayoutProperty(layerId + ".line", 'visibility', 'visible');
+    map.setPaintProperty(layerId + ".line", 'line-color',
+      pp.polyline_line_color_inactive || pp.polyline_line_color);
     var fillLayer = map.getLayer(layerId + '.fill');
     if (typeof fillLayer !== 'undefined') {
       map.setLayoutProperty(layerId + ".fill", 'visibility', 'visible');
+      map.setPaintProperty(layerId + ".fill", 'fill-color',
+        pp.polygon_fill_color_inactive || pp.polygon_fill_color);
     }
+    // Endpoint markers are an editing aid — hide them (and their
+    // legend) while the layer is not active
     if (showEndpoints) {
-      _showEndpoints(layerId);
+      _hideEndpoints(layerId);
     }
   } else if (mode == "invisible") {
     map.setLayoutProperty(layerId + ".line", 'visibility', 'none');
@@ -969,14 +979,20 @@ function _showEndpoints(layerId) {
   if (map.getLayer(layerId + ".startcircle")) map.setLayoutProperty(layerId + ".startcircle", 'visibility', 'visible');
   if (map.getLayer(layerId + ".endcircle")) map.setLayoutProperty(layerId + ".endcircle", 'visibility', 'visible');
   var legend = document.getElementById('legend' + layerId);
-  if (legend) legend.style.visibility = 'visible';
+  if (legend) {
+    legend.style.visibility = 'visible';
+    import('/js/main.js').then(function (m) { m.restackLegends(); });
+  }
 }
 
 function _hideEndpoints(layerId) {
   if (map.getLayer(layerId + ".startcircle")) map.setLayoutProperty(layerId + ".startcircle", 'visibility', 'none');
   if (map.getLayer(layerId + ".endcircle")) map.setLayoutProperty(layerId + ".endcircle", 'visibility', 'none');
   var legend = document.getElementById('legend' + layerId);
-  if (legend) legend.style.visibility = 'hidden';
+  if (legend) {
+    legend.style.visibility = 'hidden';
+    import('/js/main.js').then(function (m) { m.restackLegends(); });
+  }
 }
 
 function _updateEndpoints(layerId, featureCollection) {

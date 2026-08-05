@@ -52,6 +52,9 @@ class DrawLayer(Layer):
         circle_fill_color: str = "orangered",
         circle_fill_opacity: float = 0.5,
         circle_radius: int = 4,
+        polyline_line_color_inactive: str = "lightgrey",
+        polygon_line_color_inactive: str = "lightgrey",
+        polygon_fill_color_inactive: str = "lightgrey",
         show_endpoints: bool = False,
         endpoint_start_color: str = "blue",
         endpoint_end_color: str = "red",
@@ -91,6 +94,17 @@ class DrawLayer(Layer):
         self.paint_props["circle_fill_color"] = mcolors.to_hex(circle_fill_color)
         self.paint_props["circle_fill_opacity"] = circle_fill_opacity
         self.paint_props["circle_radius"] = circle_radius
+        # Colors used by the static (non-editable) rendering when the
+        # layer is in "inactive" mode
+        self.paint_props["polyline_line_color_inactive"] = mcolors.to_hex(
+            polyline_line_color_inactive
+        )
+        self.paint_props["polygon_line_color_inactive"] = mcolors.to_hex(
+            polygon_line_color_inactive
+        )
+        self.paint_props["polygon_fill_color_inactive"] = mcolors.to_hex(
+            polygon_fill_color_inactive
+        )
         self.paint_props["rotate"] = rotate
         self.paint_props["show_endpoints"] = show_endpoints
         if show_endpoints:

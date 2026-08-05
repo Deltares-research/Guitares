@@ -356,6 +356,26 @@ export function hideLayer(id, side) {
 }
 
 /**
+ * Stack all visible bottom-right-2 legend boxes vertically so they do
+ * not overlap. Boxes without a data-stack attribute (shared/container
+ * legends) sit at the bottom; higher data-stack values (e.g. draw-layer
+ * endpoint legends) are placed above them.
+ */
+export function restackLegends() {
+  var els = Array.prototype.slice.call(
+    document.querySelectorAll('.legend.bottom-right-2')
+  ).filter(function (el) { return el.style.visibility !== 'hidden'; });
+  els.sort(function (a, b) {
+    return parseInt(a.dataset.stack || '0') - parseInt(b.dataset.stack || '0');
+  });
+  var offset = 10;
+  for (var i = 0; i < els.length; i++) {
+    els[i].style.marginBottom = offset + 'px';
+    offset += els[i].offsetHeight + 5;
+  }
+}
+
+/**
  * Show the legend element associated with a layer.
  * @param {string} id - Layer identifier.
  */
@@ -363,6 +383,7 @@ export function showLegend(id) {
   var legend = document.getElementById("legend" + id);
   if (legend) {
     legend.style.visibility = 'visible';
+    restackLegends();
   }
 }
 
@@ -374,6 +395,7 @@ export function hideLegend(id) {
   var legend = document.getElementById("legend" + id);
   if (legend) {
     legend.style.visibility = 'hidden';
+    restackLegends();
   }
 }
 
@@ -392,7 +414,7 @@ export function hideLegend(id) {
 export function buildSharedLegend(id, title, position, items) {
   var legend = document.getElementById("legend" + id);
   if (legend) legend.remove();
-  if (!items || items.length === 0) return;
+  if (!items || items.length === 0) { restackLegends(); return; }
   var el = document.createElement("div");
   el.id = "legend" + id;
   el.className = "legend " + (position || "bottom-right");
@@ -412,6 +434,7 @@ export function buildSharedLegend(id, title, position, items) {
     el.appendChild(item);
   }
   document.body.appendChild(el);
+  restackLegends();
 }
 
 /**
@@ -421,6 +444,7 @@ export function buildSharedLegend(id, title, position, items) {
 export function removeSharedLegend(id) {
   var legend = document.getElementById("legend" + id);
   if (legend) legend.remove();
+  restackLegends();
 }
 
 /**
