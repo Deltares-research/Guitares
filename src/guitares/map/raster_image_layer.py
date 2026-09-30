@@ -185,6 +185,12 @@ class RasterImageLayer(Layer):
         overlay_file = f"./overlays/{self.file_name}"
         legend = self._build_legend_from_options(opts)
 
+        # Overlay objects (e.g. cht_tiling.FloodMap) may build their own legend
+        # while rendering: either a discrete ``{"title", "contour": [...]}``
+        # dict, or a continuous ``{"title", "cmin", "cmax", "cmap"}`` dict.
+        if legend is None and opts.get("legend") is not False:
+            legend = self._build_legend_from_data_attr()
+
         # Continuous colorbar fallback: if the overlay object exposes a colormap
         # and a (cmin, cmax) range but no discrete classes, build a colorbar PNG
         # legend from those attributes. This is what lets continuous overlays
@@ -341,6 +347,53 @@ class RasterImageLayer(Layer):
                     text = f"< {cv['upper_value']}"
             contour.append({"color": color, "text": text})
         return {"title": self.legend_title, "contour": contour}
+
+    def _build_legend_from_data_attr(
+        self,
+    ) -> Optional[Union[Dict[str, Any], str]]:
+        """Build a legend from the ``legend`` attribute of the overlay object.
+
+        Returns a contour dict for discrete legends, ``"__plot_png__"`` for
+        continuous ones (after storing cmap/cmin/cmax on the layer), or None
+        if the overlay object does not provide a usable legend.
+        """
+        data_legend = getattr(self.data, "legend", None)
+        if not isinstance(data_legend, dict):
+            return None
+
+        title = data_legend.get("title") or self.legend_title or ""
+
+        contour = data_legend.get("contour")
+        if contour:
+            items = []
+            for cv in contour:
+                color = cv.get("color") or cv.get("hex")
+                if color is None and "rgb" in cv:
+                    r, g, b = cv["rgb"]
+                    color = f"#{int(r):02x}{int(g):02x}{int(b):02x}"
+                if color is None:
+                    continue
+                text = cv.get("text") or cv.get("string", "")
+                if not text:
+                    if "lower_value" in cv and "upper_value" in cv:
+                        text = f"{cv['lower_value']} - {cv['upper_value']}"
+                    elif "lower_value" in cv:
+                        text = f">= {cv['lower_value']}"
+                    elif "upper_value" in cv:
+                        text = f"< {cv['upper_value']}"
+                items.append({"color": color, "text": text})
+            if items:
+                return {"title": title, "contour": items}
+            return None
+
+        if all(k in data_legend for k in ("cmin", "cmax", "cmap")):
+            cmap = data_legend["cmap"]
+            self._cmap = cm.get_cmap(cmap) if isinstance(cmap, str) else cmap
+            self._cmin = data_legend["cmin"]
+            self._cmax = data_legend["cmax"]
+            return "__plot_png__"
+
+        return None
 
     def _build_legend_from_options(
         self, opts: Dict[str, Any]
