@@ -17,9 +17,15 @@ class Slider(QSlider):
     """
 
     def __init__(self, element: Any) -> None:
-        super().__init__(Qt.Horizontal, parent=element.parent.widget)
+        orientation = (
+            Qt.Vertical
+            if getattr(element, "orientation", "horizontal") == "vertical"
+            else Qt.Horizontal
+        )
+        super().__init__(orientation, parent=element.parent.widget)
 
         self.element = element
+        self.slide_callback = getattr(element, "slide_callback", None)
 
         # ToDO: Make minimum and maximum flexible
         minimum = element.minimum
@@ -36,13 +42,14 @@ class Slider(QSlider):
             label.setStyleSheet("background: transparent; border: none")
             self.text_widget = label
 
-        # set tick labels
+        # set tick labels (horizontal sliders only)
         self.tick_label: List[QLabel] = []
         self.tick_widget: List[QLabel] = []
-        for ii, ticklabel in enumerate([minimum, maximum]):
-            label = QLabel(str(ticklabel), self.parent())
-            label.setStyleSheet("background: transparent; border: none")
-            self.tick_widget.append(label)
+        if orientation == Qt.Horizontal and getattr(element, "tick_labels", True):
+            for ii, ticklabel in enumerate([minimum, maximum]):
+                label = QLabel(str(ticklabel), self.parent())
+                label.setStyleSheet("background: transparent; border: none")
+                self.tick_widget.append(label)
 
         self.valueChanged.connect(self.first_callback)
         self.sliderReleased.connect(self.second_callback)

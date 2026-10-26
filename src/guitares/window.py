@@ -95,7 +95,11 @@ class Window:
             self.maximize = False
         self.elements: List[Element] = []
         self.menus: List[Menu] = []
-        self.toolbar: list = []
+        self.toolbar: Any = None
+        tb = config_dict.get("toolbar")
+        if isinstance(tb, dict):
+            tb = tb.get("item", [])
+        self.toolbar_items: list = list(tb) if tb else []
         self.statusbar: Any = {}
 
         if self.type == "popup":
@@ -204,9 +208,6 @@ class Window:
             menu_bar.widget = window.menuBar()
             self.add_menus(self.menus, menu_bar, self.gui)
 
-            # Add toolbar
-            # TODO
-
             # Central widget
             central_widget = QWidget()
             layout = QVBoxLayout()
@@ -214,6 +215,11 @@ class Window:
             window.setCentralWidget(central_widget)
             self.widget = central_widget
             self.window_widget = window
+
+            # Add toolbar
+            if self.toolbar_items:
+                mod = importlib.import_module(f"guitares.{self.gui.framework}.toolbar")
+                self.toolbar = mod.ToolBar(self, self.toolbar_items)
 
         else:
             # Add pop-up window

@@ -95,7 +95,10 @@ class CheckBox(QCheckBox):
         if self.element.id == "sbg":
             pass
         x0, y0, wdt, hgt = self.element.get_position()
-        # Get the width of the text in pixels and add 25 pixels
+        # Width follows the text: the style's size hint (indicator + spacing + text),
+        # with the font metrics as a lower bound.
         txt = self.text()
-        wdt = self.fontMetrics().boundingRect(txt).width() + 25
+        wdt = max(
+            self.sizeHint().width(), self.fontMetrics().horizontalAdvance(txt) + 30
+        )
         self.setGeometry(x0, y0, wdt, hgt)

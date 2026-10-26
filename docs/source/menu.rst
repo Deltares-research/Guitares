@@ -132,3 +132,63 @@ The callback receives ``True`` or ``False`` as its first argument:
    def toggle_grid(checked, widget):
        app.gui.setvar("myapp", "show_grid", checked)
        # ... update map layer visibility ...
+
+
+Toolbar
+=======
+
+A window can have a toolbar below the menu bar. It is configured with a
+``toolbar`` list (or ``{"item": [...]}``) in the window configuration and is
+available as ``window.toolbar`` after the build.
+
+.. list-table::
+   :widths: 30 10 15 45
+   :header-rows: 1
+
+   * - Key
+     - Type
+     - Default
+     - Description
+   * - **id**
+     - str
+     -
+     - Identifier used by ``set_enabled``/``set_checked``
+   * - icon
+     - str
+     -
+     - Path of the icon image
+   * - text
+     - str
+     - ``""``
+     - Text shown when no icon is given
+   * - tooltip
+     - str
+     - ``""``
+     -
+   * - method
+     - str
+     -
+     - Callback ``(action)`` or, for checkable items, ``(checked, action)``
+   * - checkable
+     - bool
+     - ``false``
+     - Toggle button
+   * - separator
+     - bool
+     - ``false``
+     - Insert a separator after this item
+   * - enable
+     - bool
+     - ``true``
+     -
+
+Example:
+
+.. code-block:: yaml
+
+   toolbar:
+     - {id: openfile, icon: icons/openfile.png, tooltip: Open file, method: open_file}
+     - {id: gridview, icon: icons/gridview.png, tooltip: Show grid view, method: toggle_gridview, checkable: true, separator: true}
+
+``window.toolbar.set_enabled(id, flag)`` and ``window.toolbar.set_checked(id, flag)``
+change the state of an item at run time.

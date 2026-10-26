@@ -152,6 +152,7 @@ class Element:
         self.ready: bool = False
         self.full_path: bool = False
         self.allow_directory_change: bool = True
+        self.orientation: str = "horizontal"
 
         # Spinbox
         self.minimum: int = 0
@@ -350,6 +351,9 @@ class Element:
         if "allow_directory_change" in dct:
             self.allow_directory_change = dct["allow_directory_change"]
 
+        if "orientation" in dct:
+            self.orientation = dct["orientation"]
+
         if "minimum" in dct:
             self.minimum = dct["minimum"]
 
@@ -530,6 +534,14 @@ class Element:
         elif self.style == "edit":
             mod = importlib.import_module(f"guitares.{self.gui.framework}.edit")
             self.widget = mod.Edit(self)
+
+        elif self.style == "textedit":
+            mod = importlib.import_module(f"guitares.{self.gui.framework}.textedit")
+            self.widget = mod.TextEdit(self)
+
+        elif self.style == "pushcolor":
+            mod = importlib.import_module(f"guitares.{self.gui.framework}.pushcolor")
+            self.widget = mod.PushColor(self)
 
         elif self.style == "datetimeedit":
             mod = importlib.import_module(f"guitares.{self.gui.framework}.date_edit")

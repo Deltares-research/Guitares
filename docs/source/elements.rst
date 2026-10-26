@@ -572,6 +572,10 @@ A horizontal slider for selecting a value in a numeric range.
      - str
      -
      - Callback fired continuously while dragging
+   * - orientation
+     - str
+     - ``horizontal``
+     - ``horizontal`` or ``vertical``; tick labels are only drawn horizontally
    * - text
      - str / dict
      - ``""``
@@ -592,6 +596,115 @@ Example:
      maximum: 2100
      slide_method: update_year_label
      method: reload_data
+
+----
+
+Text edit
+---------
+
+``style: textedit``
+
+A multi-line text box (``QPlainTextEdit``). The variable is updated and the
+callback fires when the box loses focus.
+
+.. list-table::
+   :widths: 30 10 15 45
+   :header-rows: 1
+
+   * - Key
+     - Type
+     - Default
+     - Description
+   * - **position**
+     - dict
+     -
+     - Element placement
+   * - **variable**
+     - str
+     -
+     - Variable holding the text
+   * - variable_group
+     - str
+     - inherited
+     - Variable group
+   * - method
+     - str
+     -
+     - Callback ``(value, widget)`` fired on focus out
+   * - text
+     - str / dict
+     - ``""``
+     - Label drawn left of the box
+   * - tooltip
+     - str
+     - ``""``
+     -
+   * - enable
+     - bool
+     - ``true``
+     -
+
+Example:
+
+.. code-block:: yaml
+
+   - style: textedit
+     position: {x: 20, y: 40, width: 300, height: 60}
+     variable: path_text
+     method: parse_path
+
+----
+
+Push colour
+-----------
+
+``style: pushcolor``
+
+A push button showing a colour swatch. Clicking it opens the colour dialog;
+the variable holds the colour as an ``(r, g, b)`` tuple with values in 0..1.
+
+.. list-table::
+   :widths: 30 10 15 45
+   :header-rows: 1
+
+   * - Key
+     - Type
+     - Default
+     - Description
+   * - **position**
+     - dict
+     -
+     - Element placement
+   * - **variable**
+     - str
+     -
+     - Variable holding the ``(r, g, b)`` tuple
+   * - variable_group
+     - str
+     - inherited
+     - Variable group
+   * - method
+     - str
+     -
+     - Callback ``(value, widget)`` fired after a colour is chosen
+   * - text
+     - str / dict
+     - ``""``
+     - Label drawn left of the button
+   * - enable
+     - bool
+     - ``true``
+     -
+
+Example:
+
+.. code-block:: yaml
+
+   - style: pushcolor
+     position: {x: 200, y: 40, width: 25, height: 20}
+     variable: line_colour
+     text: Colour
+     method: redraw
 
 ----
 
