@@ -7,7 +7,6 @@ import numpy as np
 import rasterio
 import rioxarray
 import xarray as xr
-from matplotlib import cm
 from matplotlib.colors import LightSource
 from PIL import Image
 from pyproj import Transformer
@@ -204,7 +203,7 @@ class RasterImageLayer(Layer):
             and getattr(self.data, "cmin", None) is not None
             and getattr(self.data, "cmax", None) is not None
         ):
-            self._cmap = cm.get_cmap(self.data.cmap)
+            self._cmap = matplotlib.colormaps.get_cmap(self.data.cmap)
             self._cmin = self.data.cmin
             self._cmax = self.data.cmax
             legend = "__plot_png__"
@@ -388,7 +387,7 @@ class RasterImageLayer(Layer):
 
         if all(k in data_legend for k in ("cmin", "cmax", "cmap")):
             cmap = data_legend["cmap"]
-            self._cmap = cm.get_cmap(cmap) if isinstance(cmap, str) else cmap
+            self._cmap = matplotlib.colormaps.get_cmap(cmap)
             self._cmin = data_legend["cmin"]
             self._cmax = data_legend["cmax"]
             return "__plot_png__"
@@ -415,7 +414,7 @@ class RasterImageLayer(Layer):
             if "cmin" in opts and "cmax" in opts and "cmap" in opts:
                 self._cmin = opts["cmin"]
                 self._cmax = opts["cmax"]
-                self._cmap = cm.get_cmap(opts["cmap"])
+                self._cmap = matplotlib.colormaps.get_cmap(opts["cmap"])
             return None
 
         if "labels" in opts and "colors" in opts:
@@ -429,7 +428,7 @@ class RasterImageLayer(Layer):
         if "cmin" in opts and "cmax" in opts and "cmap" in opts:
             self._cmin = opts["cmin"]
             self._cmax = opts["cmax"]
-            self._cmap = cm.get_cmap(opts["cmap"])
+            self._cmap = matplotlib.colormaps.get_cmap(opts["cmap"])
             return "__plot_png__"
 
         return None
@@ -479,7 +478,7 @@ class RasterImageLayer(Layer):
 
         for color_value in self.color_values:
             cnt = {"color": color_value["color"]}
-            color_rgba = cm.colors.to_rgba(color_value["color"])
+            color_rgba = matplotlib.colors.to_rgba(color_value["color"])
 
             if "lower_value" in color_value and "upper_value" in color_value:
                 mask = (z >= color_value["lower_value"]) & (
@@ -536,7 +535,7 @@ class RasterImageLayer(Layer):
             cmin = self.color_scale_cmin
             cmax = self.color_scale_cmax
 
-        cmap = cm.get_cmap(self.color_map)
+        cmap = matplotlib.colormaps.get_cmap(self.color_map)
 
         # Store for use by other layers (e.g. model bathymetry overlay)
         self.current_cmin = cmin

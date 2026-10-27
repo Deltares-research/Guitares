@@ -9,6 +9,7 @@ from geopandas import GeoDataFrame
 from PySide6 import QtCore, QtWebChannel, QtWebEngineCore, QtWebEngineWidgets, QtWidgets
 
 from guitares.map.layer import Layer, list_layers
+from guitares.pyside6.webchannel import inject_qwebchannel_js
 
 logger = logging.getLogger(__name__)
 
@@ -114,6 +115,7 @@ class MapBoxCompare(QtWidgets.QWidget):
         page = WebEnginePage(view)
         view.setPage(page)
         view.page().setWebChannel(channel)
+        inject_qwebchannel_js(view.page())
 
         channel.registerObject("MapBoxCompare", self)
 

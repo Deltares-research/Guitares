@@ -13,6 +13,7 @@ from pyproj import CRS, Transformer
 from PySide6 import QtCore, QtWebChannel, QtWebEngineCore, QtWebEngineWidgets
 
 from guitares.map.layer import Layer, find_layer_by_id, list_layers
+from guitares.pyside6.webchannel import inject_qwebchannel_js
 
 logger = logging.getLogger(__name__)
 
@@ -225,6 +226,7 @@ class MapLibre(QtCore.QObject):
         self.channel = QtWebChannel.QWebChannel()
         self.channel.registerObject("MapLibre", self)
         self.view.page().setWebChannel(self.channel)
+        inject_qwebchannel_js(self.view.page())
 
         self.set_geometry()
         self.view.loadFinished.connect(self.load_finished)
