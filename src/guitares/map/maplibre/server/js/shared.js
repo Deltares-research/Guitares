@@ -23,6 +23,12 @@ window.layerAdded = null;
 /** @type {Object} Registry of active map layers, keyed by layer id. */
 window.layers = {};
 
+/** @type {Object} Map layer ids that show a hover popup (see utils.isTopmost). */
+window.hoverLayers = {};
+
+/** @type {Object} Map layer ids with click selection (see utils.isTopmost). */
+window.clickLayers = {};
+
 /** @type {string|null} The currently active cursor style (e.g. 'crosshair'). */
 window.currentCursor = null;
 

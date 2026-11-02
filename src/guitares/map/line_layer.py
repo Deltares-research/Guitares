@@ -21,6 +21,8 @@ class LineLayer(Layer):
         # Selector mode is enabled when a select callback is provided
         self.selector = "select" in kwargs and kwargs["select"] is not None
         self.index = 0
+        # Options of the running flow animation (see animate_flow), or None
+        self.flow_animation: Optional[Dict[str, Any]] = None
 
     def _get_map_layer_ids(self) -> List[str]:
         """Line layer creates .line and optionally .circle sub-layers."""
@@ -45,7 +47,9 @@ class LineLayer(Layer):
             getattr(self, "line_color", "#000"),
             float(getattr(self, "line_opacity", 1.0) or 1.0),
         )
-        w = int(getattr(self, "line_width", 2) or 2)
+        width = getattr(self, "line_width", 2)
+        # a data-driven width (MapLibre expression) has no single value
+        w = int(width) if isinstance(width, (int, float)) and width else 2
         top = 9 - max(1, w // 2)
         bottom = top + max(2, w)
         return [
@@ -108,6 +112,10 @@ class LineLayer(Layer):
             arglist=[self.map_id, data_in, pp, options],
         )
 
+        if self.flow_animation is not None:
+            # addLayer replaced the map layer; start the animation again
+            self.animate_flow(True, **self.flow_animation)
+
         if self.active:
             owner = self._get_shared_legend_owner()
             if owner is not None:
@@ -129,6 +137,35 @@ class LineLayer(Layer):
             "setSelectedIndex",
             arglist=[self.map_id, index],
         )
+
+    def animate_flow(self, on: bool = True, **options: Any) -> None:
+        """Move dashes along the lines, in the order of their coordinates.
+
+        Used to show a flow direction. The animation survives ``set_data``
+        and stops when the layer is removed.
+
+        Parameters
+        ----------
+        on : bool
+            Start (*True*) or stop (*False*) the animation.
+        **options : Any
+            ``dash`` and ``gap`` length in line widths (default 2 and 4),
+            ``steps`` per period (24) and ``fps`` (20).
+        """
+        if on:
+            self.flow_animation = options
+            self.map.runjs(
+                "/js/line_layer.js",
+                "startFlowAnimation",
+                arglist=[self.map_id, options],
+            )
+        else:
+            self.flow_animation = None
+            self.map.runjs(
+                "/js/line_layer.js",
+                "stopFlowAnimation",
+                arglist=[self.map_id],
+            )
 
     def activate(self) -> None:
         """Set the layer to active paint style and ensure it is visible."""

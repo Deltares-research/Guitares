@@ -8,7 +8,7 @@
  * @module line_layer
  */
 
-import { findBeforeId, getDashArray } from './utils.js';
+import { findBeforeId, getDashArray, isTopmostClick, isTopmostHover } from './utils.js';
 
 // ── Module state (for selector mode) ─────────────────────────────────
 
@@ -116,6 +116,8 @@ export function addLayer(id, data, pp, options) {
       mode: 'active',
       selectionOption: selectionOption,
     };
+    if (hoverProperty) window.hoverLayers[lineId] = true;
+    window.clickLayers[lineId] = true;
 
     popup = new maplibregl.Popup({
       offset: 10,
@@ -175,6 +177,73 @@ export function setData(id, data) {
   if (source) source.setData(data);
 }
 
+// ── Flow animation ───────────────────────────────────────────────────
+//
+// Dashes that move along the lines in the order of their coordinates,
+// e.g. to show the flow direction of a network. One animation per layer.
+
+const flowAnimations = {};
+
+/**
+ * Start moving dashes along the lines of a layer.
+ *
+ * @param {string} id - Base layer identifier.
+ * @param {Object} [options] - dash and gap length (in line widths,
+ *   default 2 and 4), steps per period (24) and fps (20).
+ */
+export function startFlowAnimation(id, options) {
+  stopFlowAnimation(id);
+  const lineId = id + '.line';
+  if (!map.getLayer(lineId)) return;
+  const opts = options || {};
+  const dash = opts.dash || 2;
+  const gap = opts.gap || 4;
+  const steps = opts.steps || 24;
+  const interval = 1000 / (opts.fps || 20);
+  const period = dash + gap;
+  // The pattern [dash, gap] with the dash starting at position q, which
+  // moves forward along the line with time; past the gap the dash wraps
+  // around the end of the period
+  const patterns = [];
+  for (let s = 0; s < steps; s++) {
+    const q = period * s / steps;
+    if (q <= gap) {
+      patterns.push([0, q, dash, gap - q]);
+    } else {
+      patterns.push([q - gap, gap, period - q, 0]);
+    }
+  }
+  const state = { step: 0, last: 0, raf: null };
+  flowAnimations[id] = state;
+  const frame = (timestamp) => {
+    if (!map.getLayer(lineId)) {
+      stopFlowAnimation(id);
+      return;
+    }
+    if (timestamp - state.last >= interval) {
+      state.last = timestamp;
+      map.setPaintProperty(lineId, 'line-dasharray', patterns[state.step]);
+      state.step = (state.step + 1) % steps;
+    }
+    state.raf = requestAnimationFrame(frame);
+  };
+  state.raf = requestAnimationFrame(frame);
+}
+
+/**
+ * Stop the flow animation of a layer and make its lines solid again.
+ * @param {string} id - Base layer identifier.
+ */
+export function stopFlowAnimation(id) {
+  const state = flowAnimations[id];
+  if (!state) return;
+  if (state.raf !== null) cancelAnimationFrame(state.raf);
+  delete flowAnimations[id];
+  if (map.getLayer(id + '.line')) {
+    map.setPaintProperty(id + '.line', 'line-dasharray', undefined);
+  }
+}
+
 // ── Selector: selection ──────────────────────────────────────────────
 
 /**
@@ -227,9 +296,12 @@ export function deactivate(id, pp) {
  */
 export function remove(id) {
   const opt = layers[id] ? layers[id].selectionOption : null;
+  stopFlowAnimation(id);
   if (map.getLayer(id + '.line')) map.removeLayer(id + '.line');
   if (map.getLayer(id + '.circle')) map.removeLayer(id + '.circle');
   if (map.getSource(id)) map.removeSource(id);
+  delete window.hoverLayers[id + '.line'];
+  delete window.clickLayers[id + '.line'];
   map.off('mouseenter', id + '.line', mouseEnter);
   map.off('mouseleave', id + '.line', mouseLeave);
   if (opt === 'single') {
@@ -248,7 +320,8 @@ function mouseEnter(e) {
   if (feature.properties.hover_popup_width) {
     popup.setMaxWidth(feature.properties.hover_popup_width);
   }
-  if (hoverProperty && feature.properties[hoverProperty]) {
+  if (hoverProperty && feature.properties[hoverProperty] &&
+      isTopmostHover(map, e.point, feature.layer.id)) {
     popup.setLngLat(e.lngLat).setText(feature.properties[hoverProperty]).addTo(map);
   }
   if (hoveredId !== null) {
@@ -272,6 +345,7 @@ function mouseLeave() {
 
 function clickSingle(e) {
   if (!e.features || e.features.length === 0) return;
+  if (!isTopmostClick(map, e.point, e.features[0].layer.id)) return;
   const layerId = e.features[0].source;
   const clickedIndex = e.features[0].properties.index;
   deselectAll(layerId);
@@ -283,6 +357,7 @@ function clickSingle(e) {
 
 function clickMultiple(e) {
   if (!e.features || e.features.length === 0) return;
+  if (!isTopmostClick(map, e.point, e.features[0].layer.id)) return;
   const layerId = e.features[0].source;
   const index = e.features[0].id;
   const state = map.getFeatureState({ source: layerId, id: index });

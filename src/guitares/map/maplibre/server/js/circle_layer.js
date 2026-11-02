@@ -11,7 +11,7 @@
  * @module circle_layer
  */
 
-import { findBeforeId } from './utils.js';
+import { findBeforeId, isTopmostClick, isTopmostHover } from './utils.js';
 
 // ── Module state (for selector mode) ─────────────────────────────────
 
@@ -117,8 +117,10 @@ export function addLayer(id, data, pp, options) {
     });
     const unit = opts.unit || '';
 
+    window.hoverLayers[id] = true;
     map.on('mouseenter', id, function(e) {
       map.getCanvas().style.cursor = 'pointer';
+      if (!isTopmostHover(map, e.point, id)) return;
       const val = e.features[0].properties[opts.hoverProperty];
       let text = opts.hoverProperty + ': ' + val;
       if (unit) text += ' ' + unit;
@@ -165,7 +167,10 @@ export function addLayer(id, data, pp, options) {
       data: data,
       mode: 'active',
       selectionOption: selectionOption,
+      paintDict: opts.paintDict || null,
     };
+    if (hoverProperty) window.hoverLayers[id] = true;
+    window.clickLayers[id] = true;
 
     popup = new maplibregl.Popup({
       offset: 10,
@@ -241,7 +246,12 @@ export function selectByIndex(id, index) {
  */
 export function activate(id, pp) {
   if (layers[id]) layers[id].mode = 'active';
-  if (layers[id]?.selectionOption) {
+  if (layers[id]?.paintDict) {
+    // Custom paint (data-driven colouring) is kept across activate/deactivate
+    for (const [key, value] of Object.entries(layers[id].paintDict)) {
+      map.setPaintProperty(id, key, value);
+    }
+  } else if (layers[id]?.selectionOption) {
     // Selector mode: restore feature-state expressions with active colors
     map.setPaintProperty(id, 'circle-stroke-color', [
       'case',
@@ -298,6 +308,8 @@ export function remove(id) {
   if (map.getSource(id)) map.removeSource(id);
   const legend = document.getElementById('legend' + id);
   if (legend) legend.remove();
+  delete window.hoverLayers[id];
+  delete window.clickLayers[id];
   map.off('mouseenter', id, mouseEnter);
   map.off('mouseleave', id, mouseLeave);
   if (opt === 'single') {
@@ -316,7 +328,8 @@ function mouseEnter(e) {
   if (feature.properties.hover_popup_width) {
     popup.setMaxWidth(feature.properties.hover_popup_width);
   }
-  if (hoverProperty && feature.properties[hoverProperty]) {
+  if (hoverProperty && feature.properties[hoverProperty] &&
+      isTopmostHover(map, e.point, feature.layer.id)) {
     const coords = feature.geometry.coordinates.slice();
     while (Math.abs(e.lngLat.lng - coords[0]) > 180) {
       coords[0] += e.lngLat.lng > coords[0] ? 360 : -360;
@@ -344,6 +357,7 @@ function mouseLeave() {
 
 function clickSingle(e) {
   if (!e.features || e.features.length === 0) return;
+  if (!isTopmostClick(map, e.point, e.features[0].layer.id)) return;
   const layerId = e.features[0].source;
   const clickedIndex = e.features[0].properties.index;
   deselectAll(layerId);
@@ -355,6 +369,7 @@ function clickSingle(e) {
 
 function clickMultiple(e) {
   if (!e.features || e.features.length === 0) return;
+  if (!isTopmostClick(map, e.point, e.features[0].layer.id)) return;
   const layerId = e.features[0].source;
   const index = e.features[0].id;
   const state = map.getFeatureState({ source: layerId, id: index });
