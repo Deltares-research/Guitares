@@ -259,7 +259,10 @@ class PopupmenuDialog(QDialog):
 
 
 class ProgressDialog(QProgressDialog):
-    """Progress dialog with elapsed and estimated remaining time labels.
+    """Progress dialog with elapsed and estimated remaining time.
+
+    The times are shown below the text, in the same label, so that the dialog
+    also lays out correctly when the text has several lines.
 
     Parameters
     ----------
@@ -279,15 +282,17 @@ class ProgressDialog(QProgressDialog):
         self.setMinimum(0)
         self.setMaximum(100)
         self.setWindowTitle(title)
-        self.time_elapsed = QLabel("Time elapsed :", self)
-        self.time_elapsed.setGeometry(15, 65, 200, 20)
-        self.time_remaining = QLabel("Est. time remaining :", self)
-        self.time_remaining.setGeometry(15, 85, 200, 20)
+        self.text = text
+        self.times = "Time elapsed : 0s\nEst. time remaining :"
         self.t0 = time.time()
         self.nmax = nmax
+        self._update_label()
         self.setMinimumDuration(100)
         self.setValue(0)
         self.show()
+
+    def _update_label(self) -> None:
+        self.setLabelText(f"{self.text}\n\n{self.times}")
 
     def set_value(self, i: int) -> None:
         """Update progress value and time estimates.
@@ -307,7 +312,7 @@ class ProgressDialog(QProgressDialog):
         else:
             new_string = f"Time elapsed : {int(dt)}s"
 
-        self.time_elapsed.setText(new_string)
+        elapsed = new_string
         frac = max(i, 1) / self.nmax
         trem = dt / frac - dt
 
@@ -317,7 +322,8 @@ class ProgressDialog(QProgressDialog):
             new_string = f"Est. time remaining : {int(tmin)}m {int(tsec)}s"
         else:
             new_string = f"Est. time remaining : {int(trem)}s"
-        self.time_remaining.setText(new_string)
+        self.times = f"{elapsed}\n{new_string}"
+        self._update_label()
         self.show()
         QApplication.processEvents()
 
@@ -329,7 +335,8 @@ class ProgressDialog(QProgressDialog):
         text : str
             The new label text.
         """
-        self.setLabelText(text)
+        self.text = text
+        self._update_label()
 
     def set_minimum(self, nmin: int) -> None:
         """Set the minimum (and maximum) progress value.
