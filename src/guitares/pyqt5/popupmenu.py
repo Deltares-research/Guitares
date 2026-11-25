@@ -94,10 +94,14 @@ class PopupMenu(QComboBox):
             val = self.element.getvar(
                 self.element.variable_group, self.element.variable
             )
-            if val:
-                if self.element.option_value:
-                    index = self.element.option_value.list.index(val)
-                    self.setCurrentIndex(index)
+            if self.element.option_value and val is not None:
+                if val in self.element.option_value.list:
+                    self.setCurrentIndex(self.element.option_value.list.index(val))
+                else:
+                    # A value that is not one of the options (e.g. "" when
+                    # the selected items differ) shows an empty menu, so that
+                    # choosing any option is a change and fires the callback.
+                    self.setCurrentIndex(-1)
         else:
             name = self.element.variable
             group = self.element.variable_group
@@ -124,6 +128,9 @@ class PopupMenu(QComboBox):
             return
 
         i = self.currentIndex()
+        if i < 0:
+            # Nothing selected (empty menu); not a user choice
+            return
         if self.element.select == "item":
             newval = self.element.option_value.list[i]
         else:

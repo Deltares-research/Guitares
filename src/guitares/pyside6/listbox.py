@@ -209,20 +209,24 @@ class ListBox(QListWidget):
 
     def add_items(self) -> None:
         """Populate the list box from the element's option strings."""
-        # Delete existing items
-        self.clear()
-
         if self.element.option_string.variable:
             group = self.element.option_string.variable_group
             name = self.element.option_string.variable
             v = self.element.getvar(group, name)
             if not v:
                 v = [""]
-            for itxt, txt in enumerate(v):
-                self.insertItem(itxt, txt)
         else:
-            for itxt, txt in enumerate(self.element.option_string.list):
-                self.insertItem(itxt, txt)
+            v = self.element.option_string.list
+        v = [str(txt) for txt in v]
+
+        # Only rebuild when the items changed. Clearing the list resets the
+        # current item and the scroll position, which breaks Shift-click
+        # range selection (the range then starts at the wrong item).
+        if v == [self.item(i).text() for i in range(self.count())]:
+            return
+        self.clear()
+        for itxt, txt in enumerate(v):
+            self.insertItem(itxt, txt)
 
     def set_geometry(self) -> None:
         """Position and size the list box and its label."""
